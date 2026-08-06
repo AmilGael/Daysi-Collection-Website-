@@ -13,8 +13,8 @@ npm install
 npm run dev
 ```
 
-Then open **http://localhost:3000** — you land on `/es`, and `/en` is the same
-site in English.
+Then open **http://localhost:3000** — it redirects to `/es`, or to `/en` if the
+browser asks for English. Both are the same site.
 
 | Command | What it does |
 | --- | --- |
@@ -22,7 +22,16 @@ site in English.
 | `npm run build` | Production build |
 | `npm start` | Serve the production build |
 | `npm test` | Pricing and security tests |
+| `npm run smoke` | Checks a running server over HTTP (see below) |
 | `npm run typecheck` | TypeScript, no emit |
+
+`npm run smoke` needs a server already running. It exists because routing can
+break in a way nothing else catches: next-intl reads `request.nextUrl` inside a
+`try/catch` that falls back to doing nothing, so handing it the wrong request
+object makes every redirect silently disappear. Types passed, unit tests passed,
+and every locale-prefixed page still returned 200 — but the bare `/` that people
+actually type returned a 404. Only a real request finds that, so run it before
+any deploy.
 
 No environment variables are needed to run it. Copy `.env.example` to
 `.env.local` when you are ready to turn on card payments or email notifications.

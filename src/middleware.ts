@@ -37,16 +37,22 @@ function contentSecurityPolicy(nonce: string): string {
 
 export default function middleware(request: NextRequest) {
   const nonce = crypto.randomUUID().replaceAll("-", "");
+  const policy = contentSecurityPolicy(nonce);
 
-  // The nonce travels on the request so the server components that render
-  // <script> tags can read it back out of headers().
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-nonce", nonce);
+  // Next.js reads the nonce back out of the request's own Content-Security-Policy
+  // header when it renders its <script> tags, and next-intl copies the request
+  // headers onto the rewrite it performs — so setting them here is what carries
+  // the nonce through to the page.
+  //
+  // The real NextRequest has to be handed to next-intl untouched: it reads
+  // `nextUrl` on its very first line inside a try/catch that falls back to
+  // "do nothing". Passing a rebuilt Request makes every redirect silently
+  // vanish, which leaves the bare "/" with nowhere to go.
+  request.headers.set("x-nonce", nonce);
+  request.headers.set("content-security-policy", policy);
 
-  const response = handleLocale(
-    new Request(request, { headers: requestHeaders }) as NextRequest,
-  );
-  response.headers.set("content-security-policy", contentSecurityPolicy(nonce));
+  const response = handleLocale(request);
+  response.headers.set("content-security-policy", policy);
   response.headers.set("x-nonce", nonce);
   return response;
 }
