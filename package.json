@@ -1,0 +1,36 @@
+{
+  "name": "daysi-collection",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bilingual website and client workflow tools for Daysi Collection Inc.",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "next": "15.5.4",
+    "next-intl": "3.26.5",
+    "qrcode": "^1.5.4",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "stripe": "18.5.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.1.13",
+    "@types/node": "22.15.3",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "19.1.9",
+    "@types/react-dom": "19.1.7",
+    "tailwindcss": "4.1.13",
+    "typescript": "5.8.3",
+    "vitest": "3.2.4"
+  },
+  "engines": {
+    "node": ">=20.9"
+  }
+}
