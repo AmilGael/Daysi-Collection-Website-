@@ -12,11 +12,10 @@ export default async function AppointmentsPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("appointments");
-  const tn = await getTranslations("nav");
 
   return (
     <>
-      <PageHeader eyebrow={tn("book")} title={t("title")} lead={t("lead")} />
+      <PageHeader title={t("title")} lead={t("lead")} />
       <div className="shell pb-28">
         <AppointmentBooking
           appointmentTypes={appointmentTypes}

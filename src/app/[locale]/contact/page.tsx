@@ -17,11 +17,10 @@ export default async function ContactPage({
   setRequestLocale(locale);
   const language = locale as Locale;
   const t = await getTranslations("contact");
-  const tn = await getTranslations("nav");
 
   return (
     <>
-      <PageHeader eyebrow={tn("contact")} title={t("title")} lead={t("lead")} />
+      <PageHeader title={t("title")} lead={t("lead")} />
 
       <section className="shell grid gap-14 pb-24 lg:grid-cols-[1fr_1.15fr] lg:gap-20">
         <div className="flex flex-col gap-10">

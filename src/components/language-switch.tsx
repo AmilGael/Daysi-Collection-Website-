@@ -26,7 +26,7 @@ export function LanguageSwitch({ tone = "ink" }: { tone?: "ink" | "paper" }) {
     <div
       role="group"
       aria-label={t("language")}
-      className={`inline-flex items-center rounded-full border p-0.5 ${track} ${
+      className={`inline-flex items-center rounded-[2px] border p-0.5 ${track} ${
         isPending ? "opacity-60" : ""
       }`}
     >
@@ -42,7 +42,7 @@ export function LanguageSwitch({ tone = "ink" }: { tone?: "ink" | "paper" }) {
               router.replace(pathname, { locale: option });
             })
           }
-          className={`rounded-full px-3 py-1 text-[0.6875rem] font-medium uppercase tracking-[0.16em] transition-colors ${
+          className={`rounded-[2px] px-3 py-1 text-[0.6875rem] font-medium uppercase tracking-[0.16em] transition-colors ${
             option === locale ? active : "hover:opacity-100"
           }`}
         >

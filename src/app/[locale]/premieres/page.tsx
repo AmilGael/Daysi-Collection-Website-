@@ -3,7 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { premieres, stylesInPremiere, translate, upcomingPremiere } from "@/content";
 import type { Locale } from "@/i18n/routing";
 import { SectionHeading, Tag } from "@/components/ui";
-import { StyleCard } from "@/components/style-card";
+import { LookbookGrid, StyleCard } from "@/components/style-card";
 import { PremiereSignup } from "@/components/premiere-signup";
 
 export default async function PremieresPage({
@@ -72,7 +72,7 @@ export default async function PremieresPage({
 
       <section className="shell reveal grid gap-14 py-24 lg:grid-cols-2 lg:gap-24">
         <div className="flex flex-col gap-6">
-          <SectionHeading eyebrow={t("title")} title={t("title")} lead={t("lead")} />
+          <SectionHeading title={t("title")} lead={t("lead")} />
           {next ? (
             <p className="leading-[1.75] text-ink-soft">
               {translate(next.inspiration, language)}
@@ -91,20 +91,20 @@ export default async function PremieresPage({
       </section>
 
       {next && stylesInPremiere(next).length > 0 ? (
-        <section className="shell reveal flex flex-col gap-10 pb-24">
-          <h2 className="text-heading">{t("included")}</h2>
-          <div className="grid gap-x-5 gap-y-12 sm:grid-cols-2 xl:grid-cols-3">
+        <section className="reveal flex flex-col gap-8 pb-24">
+          <h2 className="shell text-heading">{t("included")}</h2>
+          <LookbookGrid>
             {stylesInPremiere(next).map((style) => (
               <StyleCard key={style.id} style={style} />
             ))}
-          </div>
+          </LookbookGrid>
         </section>
       ) : null}
 
       {past.map((premiere) => (
         <section key={premiere.id} className="reveal border-t border-line py-24">
-          <div className="shell flex flex-col gap-12">
-            <div className="flex flex-wrap items-end justify-between gap-6">
+          <div className="flex flex-col gap-12">
+            <div className="shell flex flex-wrap items-end justify-between gap-6">
               <SectionHeading
                 eyebrow={`${t("released")} · ${formatDate(premiere.releaseDate)}`}
                 title={`${translate(premiere.title, language)} · ${translate(premiere.season, language)}`}
@@ -115,11 +115,11 @@ export default async function PremieresPage({
                 <Tag>{t("edition", { count: premiere.editionSize })}</Tag>
               </div>
             </div>
-            <div className="grid gap-x-5 gap-y-12 sm:grid-cols-2 xl:grid-cols-4">
+            <LookbookGrid>
               {stylesInPremiere(premiere).map((style) => (
                 <StyleCard key={style.id} style={style} />
               ))}
-            </div>
+            </LookbookGrid>
           </div>
         </section>
       ))}

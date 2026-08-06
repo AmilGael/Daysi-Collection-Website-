@@ -19,7 +19,7 @@ export async function GoogleBusiness() {
     <section className="shell reveal py-24">
       <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:gap-20">
         <div className="flex flex-col gap-8">
-          <SectionHeading eyebrow="Google" title={t("title")} lead={t("lead")} />
+          <SectionHeading title={t("title")} lead={t("lead")} />
 
           {googleProfileVerified ? (
             <div className="flex items-center gap-4">

@@ -37,7 +37,7 @@ export default async function AtelierPage({
 
       <section className="shell reveal grid gap-14 py-24 lg:grid-cols-2 lg:gap-24">
         <div className="flex flex-col gap-7">
-          <SectionHeading eyebrow={t("sectionStory")} title={th("storyTitle")} />
+          <SectionHeading index="01" title={th("storyTitle")} />
           <Prose>
             <p>{th("storyLead")}</p>
             <p>{th("storyBody")}</p>
@@ -57,12 +57,12 @@ export default async function AtelierPage({
       <section className="reveal bg-ink py-24 text-paper">
         <div className="shell grid gap-14 lg:grid-cols-2 lg:gap-24">
           <div className="flex flex-col gap-6">
-            <SectionHeading eyebrow={t("sectionCraft")} title={t("sectionCraft")} tone="paper" />
+            <SectionHeading index="02" title={t("sectionCraft")} tone="paper" />
             <p className="leading-[1.8] text-paper/70">{t("craftBody")}</p>
           </div>
           <div className="flex flex-col gap-6">
             <SectionHeading
-              eyebrow={t("sectionHeritage")}
+              index="03"
               title={t("sectionHeritage")}
               tone="paper"
             />
@@ -82,7 +82,7 @@ export default async function AtelierPage({
           />
         </div>
         <div className="flex flex-col gap-7">
-          <SectionHeading eyebrow={t("visitTitle")} title={t("visitTitle")} />
+          <SectionHeading index="04" title={t("visitTitle")} />
           <Prose>
             <p>{t("visitBody")}</p>
             <p>{translate(business.addressNote, language)}</p>

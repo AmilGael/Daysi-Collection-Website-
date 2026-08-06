@@ -24,7 +24,7 @@ export default async function RequestPage({
 
   return (
     <>
-      <PageHeader eyebrow={t("title")} title={t("title")} lead={t("lead")} />
+      <PageHeader title={t("title")} lead={t("lead")} />
       <div className="shell pb-28">
         <RequestForm
           initialKind={kind}

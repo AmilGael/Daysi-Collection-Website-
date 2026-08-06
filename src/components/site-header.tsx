@@ -113,7 +113,7 @@ export function SiteHeader() {
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-expanded={isMenuOpen}
             aria-label={isMenuOpen ? t("closeMenu") : t("openMenu")}
-            className={`flex h-10 w-10 items-center justify-center rounded-full border xl:hidden ${
+            className={`flex h-10 w-10 items-center justify-center rounded-[2px] border xl:hidden ${
               isOverPhotograph ? "border-paper/40" : "border-line"
             }`}
           >

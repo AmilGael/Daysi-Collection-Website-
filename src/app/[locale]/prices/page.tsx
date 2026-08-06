@@ -26,11 +26,10 @@ export default async function PricesPage({
   setRequestLocale(locale);
   const language = locale as Locale;
   const t = await getTranslations("prices");
-  const tn = await getTranslations("nav");
 
   return (
     <>
-      <PageHeader eyebrow={tn("prices")} title={t("title")} lead={t("lead")} />
+      <PageHeader title={t("title")} lead={t("lead")} />
 
       <section className="shell pb-20">
         <table className="w-full border-collapse text-left">
@@ -69,7 +68,7 @@ export default async function PricesPage({
 
       <section className="reveal bg-paper-warm py-20">
         <div className="shell flex flex-col gap-6">
-          <SectionHeading eyebrow={tn("prices")} title={t("why")} />
+          <SectionHeading title={t("why")} />
           <Prose>
             <p>{t("whyBody")}</p>
           </Prose>
@@ -78,7 +77,7 @@ export default async function PricesPage({
 
       <section className="shell reveal flex flex-col gap-12 py-24">
         <SectionHeading
-          eyebrow={t("estimateTitle")}
+          index="02"
           title={t("estimateTitle")}
           lead={t("estimateLead")}
         />

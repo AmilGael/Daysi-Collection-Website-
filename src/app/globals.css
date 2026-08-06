@@ -61,10 +61,11 @@
     font-variation-settings: "SOFT" 20, "WONK" 1;
   }
 
+  /* Nothing on this site is a pill. Corners are a hairline, or square. */
   :focus-visible {
     outline: 2px solid var(--color-ink);
     outline-offset: 3px;
-    border-radius: 2px;
+    border-radius: 1px;
   }
 
   ::selection {
@@ -86,23 +87,31 @@
 }
 
 @layer components {
-  /** The eyebrow above a section title: small, spaced, with a marigold rule. */
+  /**
+   * A small letterspaced label. Plain by design — a decorative rule on every
+   * label is the kind of tic that makes a page look assembled rather than
+   * designed. Where a section genuinely needs marking off, `.rule-label` puts
+   * the label on a hairline that runs the full width instead.
+   */
   .eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.6875rem;
+    font-size: 0.625rem;
     font-weight: 500;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--color-ink-faint);
   }
 
-  .eyebrow::before {
-    content: "";
-    width: 2rem;
-    height: 2px;
-    background: var(--color-marigold);
+  .rule-label {
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-line);
+    font-size: 0.625rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
   }
 
   /** Wraps a page section in the site's standard horizontal rhythm. */

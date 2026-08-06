@@ -135,7 +135,7 @@ export function AppointmentBooking({
             <ul className="flex flex-col gap-1.5">
               {selectedType.suitedFor.map((item) => (
                 <li key={item.en} className="flex items-start gap-2.5 text-[0.875rem] text-ink-faint">
-                  <span aria-hidden className="mt-2 h-1 w-1 shrink-0 rounded-full bg-ink-faint" />
+                  <span aria-hidden className="mt-2 h-1 w-1 shrink-0 rounded-[2px] bg-ink-faint" />
                   {translate(item, locale)}
                 </li>
               ))}
@@ -161,7 +161,7 @@ export function AppointmentBooking({
                       setDate(day.date);
                       setStartTime(null);
                     }}
-                    className={`flex min-w-20 shrink-0 flex-col items-center gap-1 rounded-lg border px-3 py-3 transition-colors ${
+                    className={`flex min-w-20 shrink-0 flex-col items-center gap-1 rounded-[2px] border px-3 py-3 transition-colors ${
                       day.date === date
                         ? "border-ink bg-ink text-paper"
                         : "border-line hover:border-ink/50"
@@ -189,7 +189,7 @@ export function AppointmentBooking({
                       type="button"
                       aria-pressed={slot === startTime}
                       onClick={() => setStartTime(slot)}
-                      className={`rounded-full border px-4 py-2 text-[0.875rem] tabular-nums transition-colors ${
+                      className={`rounded-[2px] border px-4 py-2 text-[0.875rem] tabular-nums transition-colors ${
                         slot === startTime
                           ? "border-ink bg-ink text-paper"
                           : "border-line hover:border-ink/50"

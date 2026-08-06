@@ -223,7 +223,7 @@ export function EstimateBuilder({
                 return (
                   <label
                     key={alteration.id}
-                    className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg border p-3.5 text-[0.875rem] transition-colors ${
+                    className={`flex cursor-pointer items-center justify-between gap-3 rounded-[2px] border p-3.5 text-[0.875rem] transition-colors ${
                       checked ? "border-ink" : "border-line hover:border-ink/40"
                     }`}
                   >

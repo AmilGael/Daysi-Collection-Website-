@@ -104,7 +104,7 @@ export function DesignStudio({
                 type="button"
                 aria-pressed={option.id === silhouetteId}
                 onClick={() => setSilhouetteId(option.id)}
-                className={`rounded-lg border px-4 py-3 text-left text-[0.9375rem] transition-colors ${
+                className={`rounded-[2px] border px-4 py-3 text-left text-[0.9375rem] transition-colors ${
                   option.id === silhouetteId
                     ? "border-ink bg-ink text-paper"
                     : "border-line hover:border-ink/50"
@@ -126,7 +126,7 @@ export function DesignStudio({
                 aria-label={translate(option.name, locale)}
                 aria-pressed={option.id === fabricId}
                 onClick={() => setFabricId(option.id)}
-                className={`aspect-square overflow-hidden rounded-lg border-2 transition-all ${
+                className={`aspect-square overflow-hidden rounded-[2px] border-2 transition-all ${
                   option.id === fabricId
                     ? "border-ink scale-95"
                     : "border-transparent hover:border-line"
@@ -170,7 +170,7 @@ export function DesignStudio({
                 aria-label={color.id}
                 aria-pressed={color.value === trimColor}
                 onClick={() => setTrimColor(color.value)}
-                className={`h-9 w-9 rounded-full border-2 transition-transform ${
+                className={`h-9 w-9 rounded-[2px] border-2 transition-transform ${
                   color.value === trimColor ? "border-ink scale-90" : "border-line"
                 }`}
                 style={{ backgroundColor: color.value }}

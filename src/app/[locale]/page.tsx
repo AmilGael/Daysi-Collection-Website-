@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import {
-  business,
+  alterationServices,
   premieres,
   publishedStyles,
   services,
@@ -9,10 +9,9 @@ import {
   upcomingPremiere,
 } from "@/content";
 import { Link, type Locale } from "@/i18n/routing";
-import { ButtonLink, SectionHeading, Tag } from "@/components/ui";
-import { StyleCard } from "@/components/style-card";
+import { ButtonLink, SectionHeading, Tag, TextLink } from "@/components/ui";
+import { LookbookGrid, StyleCard } from "@/components/style-card";
 import { GoogleBusiness } from "@/components/google-business";
-import { alterationServices } from "@/content";
 import { formatMoney } from "@/lib/money";
 
 export default async function HomePage({
@@ -27,10 +26,11 @@ export default async function HomePage({
       <Hero />
       <TrustStrip />
       <Story />
+      <BrandPromise />
       <Services />
       <FeaturedCollection />
-      <PricePromise />
       <Alterations />
+      <PricePromise />
       <NextPremiere />
       <GoogleBusiness />
     </>
@@ -38,14 +38,15 @@ export default async function HomePage({
 }
 
 /**
- * One photograph, one line of type over it, one action. The restraint is
- * borrowed from Stella Jean; the warmth comes from the photograph itself.
+ * One photograph, one line of type, one thing to do. Stella Jean's hero is a
+ * picture and a single line — no label above it, no paragraph beneath it, and
+ * not two buttons competing for the same click.
  */
 async function Hero() {
   const t = await getTranslations("home");
 
   return (
-    <section className="relative isolate -mt-20 flex min-h-[92svh] items-end overflow-hidden bg-ink pt-20">
+    <section className="relative isolate -mt-20 flex min-h-[94svh] items-end overflow-hidden bg-ink pt-20">
       <Image
         src="/images/hero.jpg"
         alt=""
@@ -54,22 +55,22 @@ async function Hero() {
         sizes="100vw"
         className="object-cover object-[68%_center]"
       />
-      {/* Keeps the type legible without flattening the photograph behind it. */}
       <div className="absolute inset-0 bg-gradient-to-r from-ink/90 via-ink/45 to-transparent" />
       <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-ink/60 to-transparent" />
 
-      <div className="shell relative z-10 pb-20 pt-32 sm:pb-28">
+      <div className="shell relative z-10 pb-24 pt-32">
         <div className="flex max-w-2xl flex-col gap-8">
-          <p className="eyebrow text-paper/70">{t("eyebrow")}</p>
           <h1 className="text-display text-balance text-paper">{t("heroTitle")}</h1>
-          <p className="max-w-xl text-lead text-pretty text-paper/75">{t("heroLine")}</p>
-          <div className="flex flex-wrap gap-3 pt-2">
+          <p className="max-w-md text-[0.9375rem] leading-relaxed text-paper/70">
+            {t("heroLine")}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-10 gap-y-5">
             <ButtonLink href="/appointments" tone="marigold">
               {t("heroPrimary")}
             </ButtonLink>
-            <ButtonLink href="/collection" tone="ghost">
+            <TextLink href="/collection" tone="paper">
               {t("heroSecondary")}
-            </ButtonLink>
+            </TextLink>
           </div>
         </div>
       </div>
@@ -84,13 +85,14 @@ async function TrustStrip() {
 
   return (
     <section className="border-b border-line bg-paper-warm">
-      <div className="shell flex gap-x-10 gap-y-3 overflow-x-auto py-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {items.map((item) => (
+      <div className="shell flex overflow-x-auto py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {items.map((item, index) => (
           <p
             key={item}
-            className="flex shrink-0 items-center gap-2.5 text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-ink-faint"
+            className={`shrink-0 whitespace-nowrap px-6 text-[0.625rem] font-medium uppercase tracking-[0.18em] text-ink-faint first:pl-0 ${
+              index > 0 ? "border-l border-line" : ""
+            }`}
           >
-            <span className="h-1 w-1 rounded-full bg-marigold" aria-hidden />
             {t(item)}
           </p>
         ))}
@@ -99,75 +101,102 @@ async function TrustStrip() {
   );
 }
 
+/**
+ * Deliberately off-balance: the photograph takes five columns and the text
+ * seven, sitting low against it. An even split down the middle is the layout
+ * you get when nobody chose one.
+ */
 async function Story() {
   const t = await getTranslations("home");
 
   return (
-    <section className="shell reveal grid gap-14 py-28 lg:grid-cols-2 lg:items-center lg:gap-24">
-      <div className="relative aspect-4/5 overflow-hidden bg-paper-warm lg:aspect-4/5">
+    <section className="shell reveal grid gap-12 py-24 lg:grid-cols-12 lg:gap-16 lg:py-36">
+      <div className="relative aspect-4/5 overflow-hidden bg-paper-warm lg:col-span-5">
         <Image
           src="/images/atelier/sewing.jpg"
           alt=""
           fill
-          sizes="(min-width: 1024px) 45vw, 90vw"
+          sizes="(min-width: 1024px) 40vw, 90vw"
           className="object-cover"
         />
       </div>
-      <div className="flex flex-col gap-7">
-        <SectionHeading
-          eyebrow={t("promise")}
-          title={t("storyTitle")}
-          lead={t("storyLead")}
-        />
-        <p className="max-w-xl leading-[1.75] text-ink-soft">{t("storyBody")}</p>
-        <Link href="/atelier" className="link-underline w-fit text-sm font-medium">
-          {t("storyLink")} →
-        </Link>
+      <div className="flex flex-col gap-7 lg:col-span-6 lg:col-start-7 lg:justify-end lg:pb-6">
+        <p className="rule-label">
+          <span>01</span>
+          <span>{t("storyLabel")}</span>
+        </p>
+        <h2 className="text-title text-balance">{t("storyTitle")}</h2>
+        <p className="text-lead text-ink-soft">{t("storyLead")}</p>
+        <p className="max-w-xl leading-[1.8] text-ink-soft">{t("storyBody")}</p>
+        <TextLink href="/atelier">{t("storyLink")}</TextLink>
       </div>
     </section>
   );
 }
 
 /**
- * The three services as photograph tiles rather than icon cards — Alts' pattern,
- * which lets the work do the arguing.
+ * The brand promise, alone on the page at display size. Alts gives its one
+ * sentence a whole section and no competition; this is the same move in
+ * Daysi's words.
+ */
+async function BrandPromise() {
+  const t = await getTranslations("home");
+
+  return (
+    <section className="reveal border-y border-line bg-paper-warm py-28 md:py-36">
+      <div className="shell">
+        <p className="mx-auto max-w-3xl text-center font-display text-[clamp(1.75rem,3.4vw,2.85rem)] leading-[1.25] text-balance">
+          {t("promise")}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * The three services as photograph tiles — Alts' benefit grid, which lets the
+ * work do the arguing instead of an icon.
  */
 async function Services() {
   const t = await getTranslations("home");
   const locale = (await getLocale()) as Locale;
 
   return (
-    <section className="reveal bg-ink py-28 text-paper">
-      <div className="shell flex flex-col gap-14">
-        <SectionHeading
-          eyebrow={t("eyebrow")}
-          title={t("servicesTitle")}
-          tone="paper"
-        />
-        <div className="grid gap-5 md:grid-cols-3">
-          {services.map((service) => (
-            <Link
-              key={service.id}
-              href="/services"
-              className="group relative aspect-4/5 overflow-hidden"
-            >
-              <Image
-                src={service.image}
-                alt=""
-                fill
-                sizes="(min-width: 768px) 32vw, 90vw"
-                className="object-cover transition-transform duration-[1.1s] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.05]"
-              />
-              <div className="image-veil absolute inset-0" />
-              <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 p-7">
-                <h3 className="text-heading text-paper">{translate(service.name, locale)}</h3>
-                <p className="text-sm leading-relaxed text-paper/70">
-                  {translate(service.promise, locale)}
-                </p>
-              </div>
-            </Link>
-          ))}
+    <section className="reveal py-24 lg:py-32">
+      <div className="shell flex flex-col gap-12">
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <SectionHeading index="02" title={t("servicesTitle")} />
+          <TextLink href="/services">{t("servicesLink")}</TextLink>
         </div>
+      </div>
+      <div className="mt-12 grid gap-px border-y border-line bg-line md:grid-cols-3">
+        {services.map((service, index) => (
+          <Link
+            key={service.id}
+            href="/services"
+            className="group relative aspect-4/5 overflow-hidden bg-ink"
+          >
+            <Image
+              src={service.image}
+              alt=""
+              fill
+              sizes="(min-width: 768px) 34vw, 100vw"
+              className="object-cover opacity-85 transition-all duration-[1.2s] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.04] group-hover:opacity-100"
+            />
+            <div className="image-veil absolute inset-0" />
+            <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 p-8">
+              <span className="font-display text-[0.9375rem] tabular-nums text-paper/45">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <h3 className="font-display text-[1.6rem] leading-tight text-paper">
+                {translate(service.name, locale)}
+              </h3>
+              <p className="max-w-xs text-[0.875rem] leading-relaxed text-paper/70">
+                {translate(service.promise, locale)}
+              </p>
+            </div>
+          </Link>
+        ))}
       </div>
     </section>
   );
@@ -175,45 +204,19 @@ async function Services() {
 
 async function FeaturedCollection() {
   const t = await getTranslations("home");
-  const featured = publishedStyles().slice(0, 4);
+  const featured = publishedStyles().slice(0, 3);
 
   return (
-    <section className="shell reveal flex flex-col gap-12 py-28">
-      <div className="flex flex-wrap items-end justify-between gap-6">
-        <SectionHeading
-          eyebrow={t("eyebrow")}
-          title={t("collectionTitle")}
-          lead={t("collectionLead")}
-        />
-        <Link href="/collection" className="link-underline text-sm font-medium">
-          {t("collectionLink")} →
-        </Link>
+    <section className="reveal py-24 lg:py-32">
+      <div className="shell mb-12 flex flex-wrap items-end justify-between gap-6">
+        <SectionHeading index="03" title={t("collectionTitle")} lead={t("collectionLead")} />
+        <TextLink href="/collection">{t("collectionLink")}</TextLink>
       </div>
-      <div className="grid gap-x-5 gap-y-12 sm:grid-cols-2 xl:grid-cols-4">
+      <LookbookGrid columns="three">
         {featured.map((style) => (
           <StyleCard key={style.id} style={style} />
         ))}
-      </div>
-    </section>
-  );
-}
-
-async function PricePromise() {
-  const t = await getTranslations("home");
-
-  return (
-    <section className="reveal bg-paper-warm py-28">
-      <div className="shell flex flex-col items-center gap-8 text-center">
-        <SectionHeading
-          eyebrow={t("eyebrow")}
-          title={t("pricesTitle")}
-          lead={t("pricesLead")}
-          align="center"
-        />
-        <ButtonLink href="/prices" tone="outline">
-          {t("pricesLink")}
-        </ButtonLink>
-      </div>
+      </LookbookGrid>
     </section>
   );
 }
@@ -224,18 +227,19 @@ async function Alterations() {
   const highlights = alterationServices.slice(0, 5);
 
   return (
-    <section className="shell reveal grid gap-14 py-28 lg:grid-cols-2 lg:items-center lg:gap-24">
-      <div className="flex flex-col gap-7 lg:order-2">
-        <SectionHeading
-          eyebrow={t("eyebrow")}
-          title={t("alterationsTitle")}
-          lead={t("alterationsLead")}
-        />
-        <dl className="flex flex-col">
+    <section className="shell reveal grid gap-12 py-24 lg:grid-cols-12 lg:gap-16 lg:py-32">
+      <div className="flex flex-col gap-7 lg:col-span-6 lg:order-2">
+        <p className="rule-label">
+          <span>04</span>
+          <span>{t("alterationsLabel")}</span>
+        </p>
+        <h2 className="text-title text-balance">{t("alterationsTitle")}</h2>
+        <p className="text-lead text-ink-soft">{t("alterationsLead")}</p>
+        <dl className="mt-2 flex flex-col">
           {highlights.map((alteration) => (
             <div
               key={alteration.id}
-              className="flex items-baseline justify-between gap-6 border-b border-line py-3.5"
+              className="flex items-baseline justify-between gap-6 border-b border-line py-3"
             >
               <dt className="text-[0.9375rem] text-ink-soft">
                 {translate(alteration.name, locale)}
@@ -246,18 +250,38 @@ async function Alterations() {
             </div>
           ))}
         </dl>
-        <ButtonLink href="/alterations" className="w-fit">
+        <ButtonLink href="/alterations" className="mt-2 w-fit">
           {t("alterationsLink")}
         </ButtonLink>
       </div>
-      <div className="relative aspect-4/5 overflow-hidden bg-paper-warm lg:order-1">
+      <div className="relative aspect-4/5 overflow-hidden bg-paper-warm lg:col-span-5 lg:order-1">
         <Image
           src="/images/atelier/hemming.jpg"
           alt=""
           fill
-          sizes="(min-width: 1024px) 45vw, 90vw"
+          sizes="(min-width: 1024px) 40vw, 90vw"
           className="object-cover"
         />
+      </div>
+    </section>
+  );
+}
+
+async function PricePromise() {
+  const t = await getTranslations("home");
+
+  return (
+    <section className="reveal border-y border-line bg-ink py-24 text-paper lg:py-28">
+      <div className="shell grid gap-10 lg:grid-cols-12 lg:items-end lg:gap-16">
+        <div className="flex flex-col gap-5 lg:col-span-7">
+          <h2 className="text-title text-balance text-paper">{t("pricesTitle")}</h2>
+          <p className="max-w-xl text-lead text-paper/70">{t("pricesLead")}</p>
+        </div>
+        <div className="lg:col-span-4 lg:col-start-9">
+          <ButtonLink href="/prices" tone="ghost">
+            {t("pricesLink")}
+          </ButtonLink>
+        </div>
       </div>
     </section>
   );
@@ -271,9 +295,9 @@ async function NextPremiere() {
   if (!premiere) return null;
 
   return (
-    <section className="reveal bg-ink py-28 text-paper">
-      <div className="shell grid gap-12 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:gap-20">
-        <div className="relative aspect-16/10 overflow-hidden">
+    <section className="reveal py-24 lg:py-32">
+      <div className="shell grid gap-12 lg:grid-cols-12 lg:items-center lg:gap-16">
+        <div className="relative aspect-16/10 overflow-hidden bg-paper-warm lg:col-span-7">
           <Image
             src={premiere.coverImage}
             alt=""
@@ -282,23 +306,21 @@ async function NextPremiere() {
             className="object-cover"
           />
         </div>
-        <div className="flex flex-col gap-7">
-          <SectionHeading
-            eyebrow={t("premiereTitle")}
-            title={`${translate(premiere.title, locale)} · ${translate(premiere.season, locale)}`}
-            lead={t("premiereLead")}
-            tone="paper"
-          />
+        <div className="flex flex-col gap-6 lg:col-span-4 lg:col-start-9">
+          <p className="rule-label">
+            <span>05</span>
+            <span>{t("premiereTitle")}</span>
+          </p>
+          <h2 className="text-title text-balance">
+            {translate(premiere.title, locale)}
+          </h2>
+          <p className="eyebrow">{translate(premiere.season, locale)}</p>
+          <p className="leading-[1.8] text-ink-soft">{translate(premiere.story, locale)}</p>
           <div className="flex flex-wrap gap-2">
             <Tag tone="marigold">{tp("pieces", { count: premiere.piecesPlanned })}</Tag>
-            <Tag tone="outline">{tp("edition", { count: premiere.editionSize })}</Tag>
+            <Tag>{tp("edition", { count: premiere.editionSize })}</Tag>
           </div>
-          <p className="max-w-lg leading-[1.75] text-paper/70">
-            {translate(premiere.story, locale)}
-          </p>
-          <ButtonLink href="/premieres" tone="ghost" className="w-fit">
-            {t("premiereLink")}
-          </ButtonLink>
+          <TextLink href="/premieres">{t("premiereLink")}</TextLink>
         </div>
       </div>
     </section>

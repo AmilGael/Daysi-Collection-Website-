@@ -52,7 +52,7 @@
   "home": {
     "eyebrow": "A medida · Arreglos · Herencia",
     "heroTitle": "Hecho para el cuerpo que usted tiene.",
-    "heroLine": "Prendas a medida, arreglos con precios que puede leer antes de preguntar, y series cortas inspiradas en la vestimenta afrolatina y garífuna.",
+    "heroLine": "Costura a medida y arreglos en el Bronx, desde 2008.",
     "heroPrimary": "Reservar una cita",
     "heroSecondary": "Ver la colección",
     "trust": {
@@ -69,7 +69,7 @@
     "storyLink": "Conozca el taller",
     "servicesTitle": "Tres maneras de trabajar juntas.",
     "collectionTitle": "La colección",
-    "collectionLead": "Series cortas, precios publicados, tallas de S a L. Cada pieza se puede hacer a su medida por un cargo extra fijo.",
+    "collectionLead": "Series cortas, precios publicados, tallas de S a L.",
     "collectionLink": "Ver todas las piezas",
     "pricesTitle": "El precio es el precio.",
     "pricesLead": "Los precios se fijan una sola vez, con el costo de la tela ya incluido, y no se negocian. Eso es lo que protege el trabajo y lo que lo hace justo para todo el que entra por la puerta.",
@@ -80,7 +80,10 @@
     "premiereTitle": "Próximo estreno",
     "premiereLead": "Cinco o seis piezas, cada tres meses, mostradas antes de hacerse.",
     "premiereLink": "Ver el estreno",
-    "findUs": "Encuéntrenos en Google"
+    "findUs": "Encuéntrenos en Google",
+    "storyLabel": "La costurera",
+    "alterationsLabel": "Arreglos",
+    "servicesLink": "Todos los servicios"
   },
   "collection": {
     "title": "La colección",

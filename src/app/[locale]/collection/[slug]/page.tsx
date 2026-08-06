@@ -14,7 +14,7 @@ import {
 } from "@/content";
 import { routing, type Locale } from "@/i18n/routing";
 import { StyleOrderPanel } from "@/components/style-order-panel";
-import { StyleCard } from "@/components/style-card";
+import { LookbookGrid, StyleCard } from "@/components/style-card";
 import { Tag } from "@/components/ui";
 
 export function generateStaticParams() {
@@ -133,13 +133,13 @@ export default async function StylePage({
       </article>
 
       {related.length > 0 ? (
-        <section className="shell reveal flex flex-col gap-10 border-t border-line py-20">
-          <h2 className="text-heading">{t("relatedTitle")}</h2>
-          <div className="grid gap-x-5 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+        <section className="reveal flex flex-col gap-8 pb-20">
+          <h2 className="shell text-heading">{t("relatedTitle")}</h2>
+          <LookbookGrid columns="three">
             {related.map((candidate) => (
               <StyleCard key={candidate.id} style={candidate} />
             ))}
-          </div>
+          </LookbookGrid>
         </section>
       ) : null}
     </>

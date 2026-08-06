@@ -11,14 +11,18 @@ import {
 } from "@/content";
 import type { Locale } from "@/i18n/routing";
 import { Link } from "@/i18n/routing";
-import { StyleCard } from "./style-card";
+import { LookbookGrid, StyleCard } from "./style-card";
 import { buttonClass } from "./ui";
 
 /**
- * The gallery with its two filters, by design and by size, plus a switch for
- * what is ready to wear right now. Filtering happens here rather than on the
- * server because the whole collection is small enough to send at once, which
- * makes every filter change instant on a phone.
+ * The lookbook with its two filters, by design and by size.
+ *
+ * The filters are set as a line of type rather than a row of pills: a fashion
+ * house lists its categories, it does not offer them as buttons. The active one
+ * is marked with a rule under it and nothing else.
+ *
+ * Filtering happens in the browser because the whole collection is small enough
+ * to send at once, which makes every change instant on a phone.
  */
 export function CollectionGallery({
   styles,
@@ -56,54 +60,57 @@ export function CollectionGallery({
   const hasFilters = categoryId !== null || sizeId !== null || readyOnly;
 
   return (
-    <div className="flex flex-col gap-10">
-      <div className="flex flex-col gap-6 border-y border-line py-6">
-        <div className="flex flex-wrap items-center gap-x-8 gap-y-5">
+    <div className="flex flex-col">
+      <div className="shell flex flex-col gap-5 pb-8">
+        <div className="flex flex-wrap items-baseline gap-x-10 gap-y-4">
           <FilterRow label={t("filterDesign")}>
-            <FilterChip active={categoryId === null} onClick={() => setCategoryId(null)}>
+            <FilterOption active={categoryId === null} onClick={() => setCategoryId(null)}>
               {t("all")}
-            </FilterChip>
+            </FilterOption>
             {categories.map((category) => (
-              <FilterChip
+              <FilterOption
                 key={category.id}
                 active={categoryId === category.id}
                 onClick={() => setCategoryId(category.id)}
               >
                 {translate(category.name, locale)}
-              </FilterChip>
+              </FilterOption>
             ))}
           </FilterRow>
 
           <FilterRow label={t("filterSize")}>
-            <FilterChip active={sizeId === null} onClick={() => setSizeId(null)}>
+            <FilterOption active={sizeId === null} onClick={() => setSizeId(null)}>
               {t("all")}
-            </FilterChip>
+            </FilterOption>
             {sizes.map((size) => (
-              <FilterChip
+              <FilterOption
                 key={size.id}
                 active={sizeId === size.id}
                 onClick={() => setSizeId(size.id)}
                 title={translate(size.measurements, locale)}
               >
                 {size.label}
-              </FilterChip>
+              </FilterOption>
             ))}
           </FilterRow>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-4">
           <label className="flex cursor-pointer items-center gap-2.5 text-[0.8125rem] text-ink-soft">
             <input
               type="checkbox"
               checked={readyOnly}
               onChange={(event) => setReadyOnly(event.target.checked)}
-              className="h-4 w-4 accent-ink"
+              className="h-3.5 w-3.5 accent-ink"
             />
             {t("readyOnly")}
           </label>
 
-          <div className="flex items-center gap-5">
-            <p aria-live="polite" className="text-[0.8125rem] text-ink-faint">
+          <div className="flex items-center gap-6">
+            <p
+              aria-live="polite"
+              className="text-[0.625rem] uppercase tracking-[0.16em] text-ink-faint"
+            >
               {t("showing", { count: visible.length })}
             </p>
             {hasFilters ? (
@@ -114,7 +121,7 @@ export function CollectionGallery({
                   setSizeId(null);
                   setReadyOnly(false);
                 }}
-                className="link-underline text-[0.8125rem] font-medium"
+                className="link-underline text-[0.625rem] uppercase tracking-[0.16em]"
               >
                 {t("clear")}
               </button>
@@ -124,13 +131,13 @@ export function CollectionGallery({
       </div>
 
       {visible.length > 0 ? (
-        <div className="grid gap-x-5 gap-y-14 sm:grid-cols-2 xl:grid-cols-3">
+        <LookbookGrid>
           {visible.map((style, index) => (
             <StyleCard key={style.id} style={style} priority={index < 3} />
           ))}
-        </div>
+        </LookbookGrid>
       ) : (
-        <div className="flex flex-col items-start gap-6 bg-paper-warm px-8 py-16 sm:items-center sm:text-center">
+        <div className="shell flex flex-col items-start gap-6 border-y border-line py-24">
           <p className="max-w-md text-lead text-ink-soft">{t("empty")}</p>
           <Link href="/request" className={buttonClass({ size: "small" })}>
             {t("emptyAction")}
@@ -138,23 +145,23 @@ export function CollectionGallery({
         </div>
       )}
 
-      <p className="text-[0.75rem] leading-relaxed text-ink-faint">{tc("placeholderImagery")}</p>
+      <p className="shell pt-6 text-[0.75rem] leading-relaxed text-ink-faint">
+        {tc("placeholderImagery")}
+      </p>
     </div>
   );
 }
 
-function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
+function FilterRow({ label, children }: { label?: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <span className="text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-ink-faint">
-        {label}
-      </span>
-      <div className="flex flex-wrap gap-2">{children}</div>
+    <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+      {label ? <span className="eyebrow">{label}</span> : null}
+      {children}
     </div>
   );
 }
 
-function FilterChip({
+function FilterOption({
   active,
   onClick,
   title,
@@ -171,10 +178,10 @@ function FilterChip({
       onClick={onClick}
       title={title}
       aria-pressed={active}
-      className={`rounded-full border px-4 py-1.5 text-[0.8125rem] transition-colors ${
+      className={`border-b pb-1 text-[0.9375rem] transition-colors ${
         active
-          ? "border-ink bg-ink text-paper"
-          : "border-line text-ink-soft hover:border-ink/50 hover:text-ink"
+          ? "border-ink text-ink"
+          : "border-transparent text-ink-faint hover:text-ink"
       }`}
     >
       {children}

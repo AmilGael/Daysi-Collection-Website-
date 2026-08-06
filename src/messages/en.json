@@ -52,7 +52,7 @@
   "home": {
     "eyebrow": "Custom · Alterations · Heritage",
     "heroTitle": "Made for the body you have.",
-    "heroLine": "Custom garments, alterations at prices you can read before you ask, and small-run pieces drawn from Afro-Latin and Garífuna dress.",
+    "heroLine": "Dressmaking and alterations in the Bronx, since 2008.",
     "heroPrimary": "Book a session",
     "heroSecondary": "See the collection",
     "trust": {
@@ -69,7 +69,7 @@
     "storyLink": "Inside the atelier",
     "servicesTitle": "Three ways to work together.",
     "collectionTitle": "The collection",
-    "collectionLead": "Small runs, published prices, sizes S to L. Every piece can be made to your measurements for a set extra charge.",
+    "collectionLead": "Small runs, published prices, sizes S to L.",
     "collectionLink": "See all pieces",
     "pricesTitle": "The price is the price.",
     "pricesLead": "Prices here are set once, with the cost of cloth already built in, and they are not negotiated. That is what protects the work and what makes it fair to everyone who walks in.",
@@ -80,7 +80,10 @@
     "premiereTitle": "Next premiere",
     "premiereLead": "Five or six pieces, every three months, shown before they are made.",
     "premiereLink": "See the premiere",
-    "findUs": "Find us on Google"
+    "findUs": "Find us on Google",
+    "storyLabel": "The seamstress",
+    "alterationsLabel": "Alterations",
+    "servicesLink": "All services"
   },
   "collection": {
     "title": "The collection",

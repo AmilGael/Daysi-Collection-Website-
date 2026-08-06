@@ -15,11 +15,10 @@ export default async function AlterationsPage({
   setRequestLocale(locale);
   const language = locale as Locale;
   const t = await getTranslations("alterations");
-  const tn = await getTranslations("nav");
 
   return (
     <>
-      <PageHeader eyebrow={tn("alterations")} title={t("title")} lead={t("lead")} />
+      <PageHeader title={t("title")} lead={t("lead")} />
 
       <section className="shell pb-20">
         <table className="w-full border-collapse text-left">
@@ -77,7 +76,6 @@ export default async function AlterationsPage({
           </div>
           <div className="flex flex-col gap-8">
             <SectionHeading
-              eyebrow={t("rushTitle")}
               title={t("requestTitle")}
               lead={t("requestLead")}
             />

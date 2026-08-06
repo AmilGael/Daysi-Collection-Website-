@@ -46,7 +46,7 @@ export function PremiereSignup({
 
   if (state.status === "done") {
     return (
-      <p className="rounded-lg bg-marigold px-6 py-5 text-[0.9375rem] text-ink">
+      <p className="rounded-[2px] bg-marigold px-6 py-5 text-[0.9375rem] text-ink">
         {t("signupDone", { date: readableDate })}
       </p>
     );

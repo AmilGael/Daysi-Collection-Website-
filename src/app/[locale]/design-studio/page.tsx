@@ -12,11 +12,10 @@ export default async function DesignStudioPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("studio");
-  const tn = await getTranslations("nav");
 
   return (
     <>
-      <PageHeader eyebrow={tn("studio")} title={t("title")} lead={t("lead")} />
+      <PageHeader title={t("title")} lead={t("lead")} />
       <div className="shell pb-28">
         <DesignStudio silhouettes={silhouettes} fabrics={fabrics} priceList={priceList} />
       </div>

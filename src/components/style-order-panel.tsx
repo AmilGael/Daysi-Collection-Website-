@@ -60,7 +60,7 @@ export function StyleOrderPanel({
                 type="button"
                 aria-pressed={isSelected}
                 onClick={() => setSizeId(offered.sizeId)}
-                className={`flex min-w-16 flex-col items-center gap-0.5 rounded-lg border px-4 py-2.5 transition-colors ${
+                className={`flex min-w-16 flex-col items-center gap-0.5 rounded-[2px] border px-4 py-2.5 transition-colors ${
                   isSelected
                     ? "border-ink bg-ink text-paper"
                     : "border-line hover:border-ink/50"
@@ -90,7 +90,7 @@ export function StyleOrderPanel({
       </fieldset>
 
       {style.customizationAvailable ? (
-        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-line p-4 transition-colors has-checked:border-ink">
+        <label className="flex cursor-pointer items-start gap-3 rounded-[2px] border border-line p-4 transition-colors has-checked:border-ink">
           <input
             type="checkbox"
             checked={customize}

@@ -198,7 +198,7 @@ export function RequestForm({
                 return (
                   <label
                     key={alteration.id}
-                    className={`flex cursor-pointer items-start justify-between gap-3 rounded-lg border p-3.5 text-[0.875rem] transition-colors ${
+                    className={`flex cursor-pointer items-start justify-between gap-3 rounded-[2px] border p-3.5 text-[0.875rem] transition-colors ${
                       checked ? "border-ink" : "border-line hover:border-ink/40"
                     }`}
                   >
@@ -250,7 +250,7 @@ export function RequestForm({
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   onChange={(event) => onPhotoChange(event.target.files?.[0])}
-                  className="text-[0.875rem] file:mr-4 file:rounded-full file:border-0 file:bg-ink file:px-4 file:py-2 file:text-[0.8125rem] file:text-paper"
+                  className="text-[0.875rem] file:mr-4 file:rounded-[2px] file:border-0 file:bg-ink file:px-4 file:py-2 file:text-[0.8125rem] file:text-paper"
                 />
                 {photo ? (
                   <div className="flex items-center gap-4">
@@ -260,7 +260,7 @@ export function RequestForm({
                       width={72}
                       height={72}
                       unoptimized
-                      className="h-18 w-18 rounded-lg object-cover"
+                      className="h-18 w-18 rounded-[2px] object-cover"
                     />
                     <button
                       type="button"

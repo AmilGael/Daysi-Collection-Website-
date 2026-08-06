@@ -11,7 +11,7 @@ import type { Estimate } from "@/lib/pricing";
  */
 
 const controlClass =
-  "w-full rounded-lg border border-line bg-paper px-4 py-3 text-[0.9375rem] text-ink transition-colors placeholder:text-ink-faint/60 focus:border-ink focus:outline-none";
+  "w-full rounded-[2px] border border-line bg-paper px-4 py-3 text-[0.9375rem] text-ink transition-colors placeholder:text-ink-faint/60 focus:border-ink focus:outline-none";
 
 export function Field({
   label,
@@ -26,6 +26,7 @@ export function Field({
   optional?: boolean;
   children: (props: { id: string; describedBy: string | undefined }) => ReactNode;
 }) {
+  const t = useTranslations();
   const id = useId();
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
@@ -35,7 +36,9 @@ export function Field({
     <div className="flex flex-col gap-2">
       <label htmlFor={id} className="text-[0.8125rem] font-medium text-ink">
         {label}
-        {optional ? <span className="ml-2 font-normal text-ink-faint">·</span> : null}
+        {optional ? (
+          <span className="ml-2 font-normal lowercase text-ink-faint">({t("common.optional")})</span>
+        ) : null}
       </label>
       {hint ? (
         <p id={hintId} className="text-[0.8125rem] leading-relaxed text-ink-faint">
@@ -98,7 +101,7 @@ export function ChoiceGroup<T extends string>({
               type="button"
               aria-pressed={isSelected}
               onClick={() => onChange(option.value)}
-              className={`rounded-lg border px-4 py-3 text-left text-[0.875rem] transition-colors ${
+              className={`rounded-[2px] border px-4 py-3 text-left text-[0.875rem] transition-colors ${
                 isSelected
                   ? "border-ink bg-ink text-paper"
                   : "border-line bg-paper text-ink hover:border-ink/50"
@@ -231,7 +234,7 @@ export function SubmitButton({
     <button
       type="submit"
       disabled={isSending || disabled}
-      className="inline-flex items-center justify-center gap-2 rounded-full bg-ink px-7 py-3.5 text-sm font-medium text-paper transition-all duration-300 hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-45"
+      className="inline-flex items-center justify-center gap-2 rounded-[2px] bg-ink px-7 py-3.5 text-sm font-medium text-paper transition-all duration-300 hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-45"
     >
       {isSending ? t("sending") : children}
     </button>
@@ -241,7 +244,7 @@ export function SubmitButton({
 export function FormError({ state }: { state: SubmitState }) {
   if (state.status !== "error") return null;
   return (
-    <p role="alert" className="rounded-lg bg-paper-warm px-4 py-3 text-[0.875rem] text-ink">
+    <p role="alert" className="rounded-[2px] bg-paper-warm px-4 py-3 text-[0.875rem] text-ink">
       {state.message}
     </p>
   );
