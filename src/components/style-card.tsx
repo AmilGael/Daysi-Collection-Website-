@@ -21,7 +21,10 @@ export function StyleCard({ style, priority = false }: { style: GarmentStyle; pr
   const price = findPriceEntry(style.priceEntryId);
 
   return (
-    <Link href={`/collection/${style.slug}`} className="group flex flex-col bg-paper">
+    <Link
+      href={`/collection/${style.slug}`}
+      className="group flex flex-col border-l border-t border-line bg-paper"
+    >
       <div className="relative aspect-3/4 overflow-hidden bg-paper-warm">
         {photo ? (
           <Image
@@ -71,15 +74,20 @@ export function LookbookGrid({
    */
   columns?: "gallery" | "three";
 }) {
-  // The hairlines come from a one-pixel gap over a line-coloured background,
-  // so the grid must never have more columns than pieces — an empty cell would
-  // show as a grey block rather than as nothing at all.
+  // The hairlines are drawn by the cards themselves — each carries a top and
+  // left border, and the wrapper clips the outermost pair away with a one-pixel
+  // shift. A line-coloured background under a pixel gap would do the same with
+  // less code, but it paints every EMPTY cell as a solid grey block the moment
+  // a row is short: ten pieces in three columns left two garment-sized slabs
+  // at the end of the collection.
   const count = Children.count(children);
 
   if (count === 1) {
     return (
       <div className="border-y border-line">
-        <div className="mx-auto w-full max-w-sm">{children}</div>
+        <div className="mx-auto w-full max-w-sm border-x border-line [&>*]:border-0">
+          {children}
+        </div>
       </div>
     );
   }
@@ -91,5 +99,9 @@ export function LookbookGrid({
         ? "md:grid-cols-3"
         : "sm:grid-cols-2 xl:grid-cols-3";
 
-  return <div className={`grid gap-px border-y border-line bg-line ${layout}`}>{children}</div>;
+  return (
+    <div className="overflow-hidden border-y border-line">
+      <div className={`-ml-px -mt-px grid ${layout}`}>{children}</div>
+    </div>
+  );
 }

@@ -4,7 +4,7 @@ import { Link } from "@/i18n/routing";
 import type { Locale } from "@/i18n/routing";
 import { Logo } from "./logo";
 import { LanguageSwitch } from "./language-switch";
-import { whatsappLink } from "@/lib/notify";
+import { whatsappLink } from "@/lib/whatsapp";
 
 const EXPLORE = [
   { href: "/collection", label: "collection" },

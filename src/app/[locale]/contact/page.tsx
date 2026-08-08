@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { business, translate } from "@/content";
 import type { Locale } from "@/i18n/routing";
-import { whatsappLink } from "@/lib/notify";
+import { whatsappLink } from "@/lib/whatsapp";
 import { PageHeader } from "@/components/page-header";
 import { ContactForm } from "@/components/contact-form";
 import { GoogleBusiness } from "@/components/google-business";

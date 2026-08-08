@@ -21,6 +21,23 @@ describe("client photo uploads", () => {
     expect(parseImageDataUrl(disguised)).toBeNull();
   });
 
+  it("accepts a real WebP", () => {
+    // RIFF <size> WEBP — both tags have to be present.
+    const webp = dataUrl("image/webp", [
+      0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
+    ]);
+    expect(parseImageDataUrl(webp)?.mime).toBe("image/webp");
+  });
+
+  it("rejects a RIFF container that is not WebP", () => {
+    // A WAV file: same RIFF header, "WAVE" where "WEBP" belongs. Checking the
+    // first four bytes alone would wave this through as an image.
+    const wav = dataUrl("image/webp", [
+      0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00, 0x57, 0x41, 0x56, 0x45,
+    ]);
+    expect(parseImageDataUrl(wav)).toBeNull();
+  });
+
   it("rejects a type that is not an image at all", () => {
     expect(parseImageDataUrl(dataUrl("text/html", PNG_HEADER))).toBeNull();
   });

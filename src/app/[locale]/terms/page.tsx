@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { whatsappLink } from "@/lib/notify";
+import { whatsappLink } from "@/lib/whatsapp";
 import { PageHeader } from "@/components/page-header";
 
 /**

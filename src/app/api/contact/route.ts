@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { contactSchema, isLikelyBot } from "@/lib/validation";
 import { callerKey, checkRateLimit, pruneRateLimits } from "@/lib/rate-limit";
 import { isSameOrigin, newReference } from "@/lib/security";
-import { notifyOwner } from "@/lib/notify";
-import { saveRequest } from "@/lib/request-store";
+import { recordRequest } from "@/lib/notify";
 
 /** The general contact form. */
 
@@ -46,8 +45,10 @@ export async function POST(request: Request) {
     status: "new" as const,
   };
 
-  await saveRequest(record);
-  await notifyOwner(record);
+  const delivered = await recordRequest(record);
+  if (!delivered) {
+    return NextResponse.json({ error: "not-recorded" }, { status: 500 });
+  }
 
   return NextResponse.json({ reference });
 }

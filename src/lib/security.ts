@@ -5,31 +5,54 @@ import { env } from "./env";
  * somewhere else that happens to have the client logged in. Combined with the
  * fact that nothing here uses ambient cookie authentication, this closes cross
  * site request forgery without a token round trip.
+ *
+ * The claimed origin is compared against the host the request itself arrived
+ * on, with `SITE_URL` accepted as well. Comparing against `SITE_URL` alone
+ * would mean one unset environment variable on a fresh deployment quietly
+ * refuses every form on the site with a 403 — and browsers are the audience of
+ * this check, so the request's own Host header is the honest reference point.
  */
 export function isSameOrigin(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (!origin) {
-    // Same-origin form posts from older browsers omit Origin but send Referer.
-    const referer = request.headers.get("referer");
-    if (!referer) return false;
-    return sameHost(referer);
-  }
-  return sameHost(origin);
-}
+  // Same-origin form posts from older browsers omit Origin but send Referer.
+  const claimed = request.headers.get("origin") ?? request.headers.get("referer");
+  if (!claimed) return false;
 
-function sameHost(candidate: string): boolean {
+  let claimedHost: string;
   try {
-    return new URL(candidate).origin === new URL(env.siteUrl).origin;
+    claimedHost = new URL(claimed).host;
   } catch {
     return false;
   }
+
+  const ownHost =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+
+  let configuredHost: string | null = null;
+  try {
+    configuredHost = new URL(env.siteUrl).host;
+  } catch {
+    // An unparseable SITE_URL just removes the override, not the check.
+  }
+
+  return claimedHost === ownHost || claimedHost === configuredHost;
 }
 
-/** The only image types a client can attach to a request. */
+/**
+ * The only image types a client can attach to a request. Each check names the
+ * offset its bytes sit at: WebP needs two, because "RIFF" alone is the generic
+ * container header shared by WAV audio and AVI video — the "WEBP" tag at byte
+ * eight is what makes it an image.
+ */
 const ALLOWED_IMAGES = [
-  { mime: "image/jpeg", magic: [0xff, 0xd8, 0xff] },
-  { mime: "image/png", magic: [0x89, 0x50, 0x4e, 0x47] },
-  { mime: "image/webp", magic: [0x52, 0x49, 0x46, 0x46] },
+  { mime: "image/jpeg", checks: [{ offset: 0, bytes: [0xff, 0xd8, 0xff] }] },
+  { mime: "image/png", checks: [{ offset: 0, bytes: [0x89, 0x50, 0x4e, 0x47] }] },
+  {
+    mime: "image/webp",
+    checks: [
+      { offset: 0, bytes: [0x52, 0x49, 0x46, 0x46] },
+      { offset: 8, bytes: [0x57, 0x45, 0x42, 0x50] },
+    ],
+  },
 ] as const;
 
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
@@ -60,7 +83,10 @@ export function parseImageDataUrl(dataUrl: string): UploadedImage | null {
   }
 
   if (bytes.byteLength === 0 || bytes.byteLength > MAX_UPLOAD_BYTES) return null;
-  if (!allowed.magic.every((byte, index) => bytes[index] === byte)) return null;
+  const matches = allowed.checks.every((check) =>
+    check.bytes.every((byte, index) => bytes[check.offset + index] === byte),
+  );
+  if (!matches) return null;
 
   return { mime: allowed.mime, bytes };
 }

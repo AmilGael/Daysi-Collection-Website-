@@ -13,7 +13,7 @@ import {
 import { formatMoney } from "@/lib/money";
 import type { Estimate } from "@/lib/pricing";
 import { Link, type Locale } from "@/i18n/routing";
-import { whatsappLink } from "@/lib/notify";
+import { whatsappLink } from "@/lib/whatsapp";
 import {
   BotTrap,
   Checkbox,

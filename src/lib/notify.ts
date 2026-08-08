@@ -1,8 +1,7 @@
-import { business } from "@/content";
 import { emailEnabled, env } from "./env";
 import { formatMoney } from "./money";
 import { forNotification } from "./security";
-import type { StoredRequest } from "./request-store";
+import { saveRequest, type StoredRequest } from "./request-store";
 
 /**
  * How Daysi hears that something came in. Email if a key is configured;
@@ -84,11 +83,22 @@ export async function notifyOwner(request: StoredRequest): Promise<void> {
 }
 
 /**
- * A pre-filled WhatsApp message the client can send with one tap. WhatsApp is
- * how Daysi's clients already reach her, so the site offers it beside every
- * form rather than instead of one.
+ * Stores a request and tells Daysi about it, and keeps the two failures apart:
+ * a disk that cannot be written (a read-only serverless filesystem, a full
+ * volume) must not stop the notification, because the email IS the request as
+ * far as Daysi is concerned. Returns false only when the request reached
+ * neither the store nor a configured mailbox — the one case where telling the
+ * client "sent" would be a lie.
  */
-export function whatsappLink(message: string): string {
-  const number = business.whatsapp.replace(/[^0-9]/g, "");
-  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+export async function recordRequest(request: StoredRequest): Promise<boolean> {
+  let stored = true;
+  try {
+    await saveRequest(request);
+  } catch (error) {
+    stored = false;
+    console.error(`[store] Could not persist ${request.reference}`, error);
+  }
+
+  await notifyOwner(request);
+  return stored || emailEnabled;
 }

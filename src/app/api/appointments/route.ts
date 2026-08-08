@@ -5,8 +5,8 @@ import { estimateAppointment } from "@/lib/pricing";
 import { appointmentSchema, isLikelyBot } from "@/lib/validation";
 import { callerKey, checkRateLimit, pruneRateLimits } from "@/lib/rate-limit";
 import { isSameOrigin, newReference } from "@/lib/security";
-import { notifyOwner } from "@/lib/notify";
-import { saveRequest, type StoredRequest } from "@/lib/request-store";
+import { recordRequest } from "@/lib/notify";
+import type { StoredRequest } from "@/lib/request-store";
 import { createCheckoutSession } from "@/lib/payments";
 import { paymentsEnabled } from "@/lib/env";
 
@@ -20,6 +20,18 @@ import { paymentsEnabled } from "@/lib/env";
 
 const BOOKINGS_PER_HOUR = 4;
 const ONE_HOUR = 3600;
+
+/**
+ * Bookings queue behind one another. The chain never rejects — a failed task
+ * still lets the next one run — and each caller gets its own task's result.
+ */
+let bookingChain: Promise<unknown> = Promise.resolve();
+
+function oneBookingAtATime<T>(task: () => Promise<T>): Promise<T> {
+  const run = bookingChain.then(task, task);
+  bookingChain = run.catch(() => undefined);
+  return run;
+}
 
 export async function GET(request: Request) {
   const typeId = new URL(request.url).searchParams.get("type") ?? "";
@@ -61,38 +73,50 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unknown-session" }, { status: 400 });
   }
 
-  const stillFree = await isSlotAvailable(type.id, booking.date, booking.startTime);
-  if (!stillFree) {
+  // The free-slot check and the write that claims the slot must not interleave
+  // with another booking's, or two clients passing the check together would
+  // both be told yes. Serialising just this stretch closes the race for the
+  // single instance this runs on.
+  const outcome = await oneBookingAtATime(async () => {
+    const stillFree = await isSlotAvailable(type.id, booking.date, booking.startTime);
+    if (!stillFree) return { slotTaken: true as const };
+
+    const reference = newReference("CIT");
+    const record: StoredRequest = {
+      reference,
+      kind: "appointment",
+      submittedAt: new Date().toISOString(),
+      locale: booking.client.locale,
+      client: {
+        name: booking.client.name,
+        email: booking.client.email,
+        phone: booking.client.phone,
+        preferredContact: booking.client.preferredContact,
+      },
+      details: {
+        // `date`, `startTime` and `minutes` are read back by the availability
+        // check, so their names and types are part of that contract.
+        date: booking.date,
+        startTime: booking.startTime,
+        minutes: type.minutes,
+        Session: translate(type.name, "en"),
+        Purpose: booking.purpose,
+      },
+      estimate,
+      status: "scheduled",
+    };
+
+    const delivered = await recordRequest(record);
+    return { slotTaken: false as const, reference, delivered };
+  });
+
+  if (outcome.slotTaken) {
     return NextResponse.json({ error: "slot-taken" }, { status: 409 });
   }
-
-  const reference = newReference("CIT");
-  const record: StoredRequest = {
-    reference,
-    kind: "appointment",
-    submittedAt: new Date().toISOString(),
-    locale: booking.client.locale,
-    client: {
-      name: booking.client.name,
-      email: booking.client.email,
-      phone: booking.client.phone,
-      preferredContact: booking.client.preferredContact,
-    },
-    details: {
-      // `date`, `startTime` and `minutes` are read back by the availability
-      // check, so their names and types are part of that contract.
-      date: booking.date,
-      startTime: booking.startTime,
-      minutes: type.minutes,
-      Session: translate(type.name, "en"),
-      Purpose: booking.purpose,
-    },
-    estimate,
-    status: "scheduled",
-  };
-
-  await saveRequest(record);
-  await notifyOwner(record);
+  if (!outcome.delivered) {
+    return NextResponse.json({ error: "not-recorded" }, { status: 500 });
+  }
+  const reference = outcome.reference;
 
   const checkout = paymentsEnabled
     ? await createCheckoutSession({

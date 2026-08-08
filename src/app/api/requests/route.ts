@@ -9,8 +9,8 @@ import {
 import { isLikelyBot, requestSchema, type ClientRequest } from "@/lib/validation";
 import { callerKey, checkRateLimit, pruneRateLimits } from "@/lib/rate-limit";
 import { isSameOrigin, newReference, parseImageDataUrl } from "@/lib/security";
-import { notifyOwner } from "@/lib/notify";
-import { saveRequest, saveRequestPhoto, type StoredRequest } from "@/lib/request-store";
+import { recordRequest } from "@/lib/notify";
+import { saveRequestPhoto, type StoredRequest } from "@/lib/request-store";
 
 /**
  * Alteration, order and commission requests — the workflow the whole site
@@ -76,8 +76,10 @@ export async function POST(request: Request) {
     status: "new",
   };
 
-  await saveRequest(record);
-  await notifyOwner(record);
+  const delivered = await recordRequest(record);
+  if (!delivered) {
+    return NextResponse.json({ error: "not-recorded" }, { status: 500 });
+  }
 
   return NextResponse.json({ reference, estimate });
 }
@@ -159,5 +161,10 @@ async function storePhoto(
   const image = parseImageDataUrl(submission.photoDataUrl);
   if (!image) return undefined;
 
-  return saveRequestPhoto(reference, image.mime, image.bytes);
+  try {
+    return await saveRequestPhoto(reference, image.mime, image.bytes);
+  } catch (error) {
+    console.error(`[store] Could not save the photo for ${reference}`, error);
+    return undefined;
+  }
 }

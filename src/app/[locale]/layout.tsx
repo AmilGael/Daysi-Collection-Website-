@@ -26,6 +26,15 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
+/**
+ * These pages are statically generated, and several of them read the clock:
+ * which premiere is upcoming, the footer's year. Without a revalidation window
+ * the "next premiere" a static build chose would still be announced as
+ * upcoming months after its release date passed. An hour keeps the calendar
+ * honest at no per-request cost.
+ */
+export const revalidate = 3600;
+
 export async function generateMetadata({
   params,
 }: {

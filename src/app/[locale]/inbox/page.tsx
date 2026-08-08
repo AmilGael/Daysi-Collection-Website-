@@ -31,9 +31,17 @@ export default async function InboxPage({
   const t = await getTranslations("inbox");
 
   const kinds = await storedKinds();
-  const records = (await Promise.all(kinds.map(listRequests)))
-    .flat()
-    .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+
+  // The store is append-only — a paid booking exists twice, once "scheduled"
+  // and once "paid". File order is chronological, so keeping the last record
+  // per reference shows each request once, at its current status.
+  const latest = new Map<string, StoredRequest>();
+  for (const record of (await Promise.all(kinds.map(listRequests))).flat()) {
+    latest.set(record.reference, record);
+  }
+  const records = [...latest.values()].sort((a, b) =>
+    b.submittedAt.localeCompare(a.submittedAt),
+  );
 
   return (
     <>
@@ -47,7 +55,7 @@ export default async function InboxPage({
         ) : (
           <div className="flex flex-col gap-4">
             {records.map((record) => (
-              <RequestRow key={`${record.reference}-${record.status}`} record={record} locale={language} />
+              <RequestRow key={record.reference} record={record} locale={language} />
             ))}
           </div>
         )}

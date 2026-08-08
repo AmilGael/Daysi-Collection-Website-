@@ -13,6 +13,7 @@ import { ExternalButtonLink, SectionHeading } from "./ui";
  */
 export async function GoogleBusiness() {
   const t = await getTranslations("google");
+  const tc = await getTranslations("contact");
   const locale = (await getLocale()) as Locale;
 
   return (
@@ -48,9 +49,14 @@ export async function GoogleBusiness() {
               <dt className="text-[0.6875rem] uppercase tracking-[0.18em] text-ink-faint">
                 {translate(business.serviceArea, locale)}
               </dt>
+              {/*
+                No summarised opening hours here: Monday's 10–18 is not
+                Friday's 10–16 or Saturday's 11–15, and this section is the one
+                place the site must never contradict the Google listing. The
+                contact page renders the full per-day table from the same data.
+              */}
               <dd className="mt-2 text-sm leading-relaxed text-ink-soft">
-                {business.hours[0]?.opens}–{business.hours[0]?.closes} ·{" "}
-                {locale === "es" ? "Lunes a sábado" : "Monday to Saturday"}
+                {tc("byAppointment")}
               </dd>
             </div>
           </dl>
