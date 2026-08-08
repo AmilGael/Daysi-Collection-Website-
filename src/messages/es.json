@@ -211,7 +211,9 @@
     "confirmCtaNoPayment": "Solicitar esta cita",
     "bookedTitle": "Su cita quedó reservada.",
     "bookedLead": "Referencia {reference}. Daysi se lo confirmará por {contact} y le mandará la dirección.",
-    "slotGone": "Esa hora se ocupó mientras usted llenaba el formulario. Escoja otra, por favor."
+    "slotGone": "Esa hora se ocupó mientras usted llenaba el formulario. Escoja otra, por favor.",
+    "previousMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente"
   },
   "request": {
     "title": "Hacer una solicitud",

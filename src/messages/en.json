@@ -211,7 +211,9 @@
     "confirmCtaNoPayment": "Request this session",
     "bookedTitle": "Your session is booked.",
     "bookedLead": "Reference {reference}. Daysi will confirm on {contact} and send the address.",
-    "slotGone": "That time was taken while you were filling this in. Please choose another."
+    "slotGone": "That time was taken while you were filling this in. Please choose another.",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month"
   },
   "request": {
     "title": "Make a request",

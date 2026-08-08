@@ -19,6 +19,7 @@ import {
   useRenderedAt,
   useSubmit,
 } from "./form";
+import { BookingCalendar } from "./booking-calendar";
 import { EstimateSummary } from "./estimate-summary";
 
 type ContactMethod = "whatsapp" | "phone" | "email";
@@ -151,48 +152,37 @@ export function AppointmentBooking({
           <>
             <fieldset className="flex flex-col gap-3">
               <legend className="mb-1 text-[0.8125rem] font-medium">{t("chooseDate")}</legend>
-              <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:thin]">
-                {days.slice(0, 21).map((day) => (
-                  <button
-                    key={day.date}
-                    type="button"
-                    aria-pressed={day.date === date}
-                    onClick={() => {
-                      setDate(day.date);
-                      setStartTime(null);
-                    }}
-                    className={`flex min-w-20 shrink-0 flex-col items-center gap-1 rounded-[2px] border px-3 py-3 transition-colors ${
-                      day.date === date
-                        ? "border-ink bg-ink text-paper"
-                        : "border-line hover:border-ink/50"
-                    }`}
-                  >
-                    <span className="text-[0.625rem] uppercase tracking-[0.12em] opacity-65">
-                      {weekdayLabel(day.date, locale)}
-                    </span>
-                    <span className="text-[1.125rem] font-medium">{dayNumber(day.date)}</span>
-                    <span className="text-[0.625rem] uppercase tracking-[0.12em] opacity-65">
-                      {monthLabel(day.date, locale)}
-                    </span>
-                  </button>
-                ))}
-              </div>
+              <BookingCalendar
+                days={days}
+                selectedDate={date}
+                onSelectDate={(picked) => {
+                  setDate(picked);
+                  setStartTime(null);
+                }}
+              />
             </fieldset>
 
             {selectedDay ? (
               <fieldset className="flex flex-col gap-3">
-                <legend className="mb-1 text-[0.8125rem] font-medium">{t("chooseTime")}</legend>
-                <div className="flex flex-wrap gap-2">
+                <legend className="mb-1 text-[0.8125rem] font-medium">
+                  {t("chooseTime")}
+                  <span className="ml-3 font-normal text-ink-faint">
+                    {readableDate(selectedDay.date, locale)}
+                  </span>
+                </legend>
+                {/* The same width as the calendar above, so date and time read
+                    as two rows of one table rather than two separate widgets. */}
+                <div className="grid w-full max-w-[22rem] grid-cols-4 gap-1.5">
                   {selectedDay.slots.map((slot) => (
                     <button
                       key={slot}
                       type="button"
                       aria-pressed={slot === startTime}
                       onClick={() => setStartTime(slot)}
-                      className={`rounded-[2px] border px-4 py-2 text-[0.875rem] tabular-nums transition-colors ${
+                      className={`h-10 rounded-[2px] text-[0.875rem] tabular-nums transition-colors ${
                         slot === startTime
-                          ? "border-ink bg-ink text-paper"
-                          : "border-line hover:border-ink/50"
+                          ? "bg-ink text-paper"
+                          : "border border-line hover:border-ink/50 hover:bg-paper-warm"
                       }`}
                     >
                       {slot}
@@ -305,16 +295,15 @@ export function AppointmentBooking({
   );
 }
 
-function formatDatePart(date: string, locale: Locale, options: Intl.DateTimeFormatOptions) {
-  // The slot dates are plain calendar days; parsing at noon keeps them from
-  // sliding a day either way when the browser applies its own zone.
-  return new Intl.DateTimeFormat(locale === "es" ? "es-US" : "en-US", options).format(
-    new Date(`${date}T12:00:00`),
-  );
+/**
+ * The chosen day written out beside the time slots — "vie, 14 de agosto".
+ * Slot dates are plain calendar days; parsing at noon keeps them from sliding
+ * a day either way when the browser applies its own zone.
+ */
+function readableDate(date: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale === "es" ? "es-US" : "en-US", {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+  }).format(new Date(`${date}T12:00:00`));
 }
-
-const weekdayLabel = (date: string, locale: Locale) =>
-  formatDatePart(date, locale, { weekday: "short" });
-const monthLabel = (date: string, locale: Locale) =>
-  formatDatePart(date, locale, { month: "short" });
-const dayNumber = (date: string) => date.slice(8, 10);
