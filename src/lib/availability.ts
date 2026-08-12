@@ -102,7 +102,7 @@ function latestPerReference(records: readonly StoredRequest[]): StoredRequest[] 
 }
 
 async function bookedSlots(): Promise<Set<string>> {
-  const appointments = latestPerReference(await listRequests("appointment"));
+  const appointments = latestPerReference(listRequests("appointment"));
   const taken = new Set<string>();
 
   for (const appointment of appointments) {

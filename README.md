@@ -52,14 +52,18 @@ No environment variables are needed to run it. Copy `.env.example` to
 | `/request` | Alteration, order or commission request |
 | `/atelier` | Daysi's story, craft and heritage |
 | `/contact` | WhatsApp, hours, service area, QR code, contact form |
+| `/sign-in` | Ask for a sign-in link — no password anywhere |
+| `/account`, `/account/orders` | A client's own orders, alterations and sessions |
+| `/cart` | The basket and the till |
+| `/office` | Daysi's back office: earnings, orders, sessions, messages |
 | `/terms`, `/privacy` | Terms of service and privacy notice |
 | `/checkout/thank-you`, `/checkout/cancelled` | Where Stripe returns the client |
-| `/inbox` | Every submission, newest first — **development only** |
 
 The one workflow that has to work end to end (PRD 6.4) is: open the site in
 either language → filter the gallery by design and size → see a fixed price →
 submit a request → Daysi is notified with everything she needs. Submit a request
-at `/es/request` and it appears at `/es/inbox`.
+at `/es/request`, then sign in as the owner address and it is waiting in
+`/es/office`.
 
 ## How it is put together
 
@@ -82,8 +86,13 @@ src/
 │   ├── payments.ts     Stripe Checkout sessions and webhook verification
 │   ├── security.ts     Origin check, upload checks, reference numbers
 │   ├── rate-limit.ts   Fixed-window limiter
-│   ├── request-store.ts Where a submission lands
-│   ├── notify.ts       Email to Daysi, WhatsApp links
+│   ├── records.ts      The append-only store every collection shares
+│   ├── request-store.ts Where a submission lands, and who may read it
+│   ├── auth/           Accounts, sessions, sign-in links — no passwords
+│   ├── cart.ts         The signed cart cookie: what, never how much
+│   ├── earnings.ts     Cleared money and owed money, kept apart
+│   ├── notify.ts       Email to Daysi, request delivery
+│   ├── whatsapp.ts     Pre-filled WhatsApp links (client-safe)
 │   └── mockup.ts       Canvas drawing for the design studio
 ├── messages/         en.json and es.json — every string on the site
 ├── components/       Presentation only
@@ -98,6 +107,39 @@ Two rules hold the shape:
 2. **Prices are produced on the server.** A browser says *what* it wants; the
    server decides what that costs. There is no code path that accepts an amount
    from a client.
+
+## Accounts
+
+**There are no passwords.** A client gives an email, a link arrives, clicking it
+signs them in. That removes the largest liability a small site can carry — a
+table of password hashes belonging to people who reuse passwords — and removes
+the reset flow, which is where hand-rolled auth usually breaks. Signing in is
+also signing up; asking someone to choose a flow before they can see their own
+order is friction that buys nothing.
+
+Links are single-use, last fifteen minutes, and are stored only as a SHA-256
+hash. Session cookies are random tokens, also stored only as a hash, `httpOnly`
+and `SameSite=Lax`. A copy of the whole store discloses no way to sign in as
+anybody. Without a mail key, development prints the link to the console;
+production refuses to print it rather than log a live credential.
+
+**Daysi's office is not a role anyone can be given.** The owner is whoever signs
+in with `OWNER_EMAIL`, derived on every read. There is no field on an account
+to flip, so a client cannot promote themselves and a second owner cannot be
+created by accident. A client who guesses `/office` gets a 404, not a 403 — a
+403 confirms there is something there.
+
+**The cart holds what you chose, never what it costs.** It lives in the client's
+own cookie so a guest can fill one without an account, and it is HMAC-signed —
+but the signature is belt-and-braces: prices come from the published list on
+every read, so a tampered cookie can at worst ask for a different garment, never
+for a cheaper one. A line naming a garment that does not exist is dropped, so
+tampering shrinks the basket rather than discounting it.
+
+**An order belongs to the signed-in account**, not to whatever address was typed
+in the form. Verified live: signed in as one client and typing another address
+into the email field files the order against the signed-in account, not the
+typed one.
 
 ## Security
 
@@ -153,9 +195,13 @@ the record so one can be deleted on its own. Nothing personal is logged.
 outside development. Before it is useful in production it needs real
 authentication — or the requests should simply be read from Daysi's email.
 
-## Two things to swap before launch
+## Before launch
 
-**`/inbox` needs authentication or removal.** See above.
+**Set `AUTH_SECRET`.** The app refuses to sign with a fallback key in
+production, so this is a hard requirement, not a nice-to-have.
+
+**Set `OWNER_EMAIL` to Daysi's real address.** Without it nobody gets the
+office, and with the wrong one somebody else does.
 
 **The file-backed store is a seam, not a database.** `lib/request-store.ts`
 writes newline-delimited JSON. The pages and route handlers only call

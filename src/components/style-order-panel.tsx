@@ -11,7 +11,7 @@ import {
   type SizeId,
 } from "@/content";
 import { formatMoney } from "@/lib/money";
-import { Link, type Locale } from "@/i18n/routing";
+import { Link, useRouter, type Locale } from "@/i18n/routing";
 import { buttonClass } from "./ui";
 
 /**
@@ -35,7 +35,10 @@ export function StyleOrderPanel({
 }) {
   const t = useTranslations("style");
   const tc = useTranslations("common");
+  const tcart = useTranslations("cart");
   const locale = useLocale() as Locale;
+  const router = useRouter();
+  const [addState, setAddState] = useState<"idle" | "adding" | "added">("idle");
 
   const firstAvailable = style.sizes.find((size) => size.inStock) ?? style.sizes[0];
   const [sizeId, setSizeId] = useState<SizeId | undefined>(firstAvailable?.sizeId);
@@ -45,6 +48,28 @@ export function StyleOrderPanel({
   const requestHref = `/request?kind=order&style=${style.slug}${
     sizeId ? `&size=${sizeId}` : ""
   }${customize ? "&customize=1" : ""}`;
+
+  async function addToCart() {
+    if (!sizeId) return;
+    setAddState("adding");
+    try {
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "add",
+          styleSlug: style.slug,
+          sizeId,
+          customize,
+        }),
+      });
+      setAddState(response.ok ? "added" : "idle");
+      // The cart badge lives in the header, which the server renders.
+      if (response.ok) router.refresh();
+    } catch {
+      setAddState("idle");
+    }
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -118,7 +143,18 @@ export function StyleOrderPanel({
             {formatMoney(total, locale)}
           </span>
         </div>
-        <Link href={requestHref} className={buttonClass({ className: "w-full" })}>
+        <button
+          type="button"
+          onClick={addToCart}
+          disabled={!sizeId || addState === "adding"}
+          className={buttonClass({ className: "w-full" })}
+        >
+          {addState === "added" ? tcart("added") : tcart("addToCart")}
+        </button>
+        <Link
+          href={requestHref}
+          className={buttonClass({ tone: "outline", className: "w-full" })}
+        >
           {t("orderCta")}
         </Link>
         <p className="text-[0.8125rem] text-ink-faint">{t("notInYourSize")}</p>

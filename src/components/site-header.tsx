@@ -5,7 +5,10 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/routing";
 import { Logo } from "./logo";
 import { LanguageSwitch } from "./language-switch";
+import { AccountMenu } from "./account-menu";
 import { buttonClass } from "./ui";
+
+export type HeaderViewer = { name: string; email: string; isOwner: boolean } | null;
 
 /**
  * The site's tabs. Seven destinations plus the one action the whole site is
@@ -28,7 +31,13 @@ const TABS = [
  */
 const DARK_HERO_ROUTES = ["/", "/premieres", "/atelier"];
 
-export function SiteHeader() {
+export function SiteHeader({
+  viewer,
+  cartCount,
+}: {
+  viewer: HeaderViewer;
+  cartCount: number;
+}) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -68,7 +77,7 @@ export function SiteHeader() {
           <Logo />
         </Link>
 
-        <nav aria-label={t("home")} className="hidden items-center gap-7 xl:flex">
+        <nav aria-label={t("home")} className="hidden items-center gap-7 2xl:flex">
           {TABS.map((tab) => {
             const isActive = pathname.startsWith(tab.href);
             return (
@@ -96,24 +105,38 @@ export function SiteHeader() {
           <div className="hidden sm:block">
             <LanguageSwitch tone={isOverPhotograph ? "paper" : "ink"} />
           </div>
+          <AccountMenu
+            viewer={viewer}
+            cartCount={cartCount}
+            tone={isOverPhotograph ? "paper" : "ink"}
+          />
           <Link
             href="/appointments"
             className={buttonClass({
               size: "small",
               tone: isOverPhotograph ? "marigold" : "solid",
-              className: "whitespace-nowrap",
+              className: "hidden whitespace-nowrap sm:inline-flex",
+            })}
+          >
+            {t("bookCta")}
+          </Link>
+          <Link
+            href="/appointments"
+            className={buttonClass({
+              size: "small",
+              tone: isOverPhotograph ? "marigold" : "solid",
+              className: "whitespace-nowrap sm:hidden",
             })}
           >
             {/* The full label needs room a phone header does not have. */}
-            <span className="hidden sm:inline">{t("bookCta")}</span>
-            <span className="sm:hidden">{t("bookCtaShort")}</span>
+            {t("bookCtaShort")}
           </Link>
           <button
             type="button"
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-expanded={isMenuOpen}
             aria-label={isMenuOpen ? t("closeMenu") : t("openMenu")}
-            className={`flex h-10 w-10 items-center justify-center rounded-[2px] border xl:hidden ${
+            className={`flex h-10 w-10 items-center justify-center rounded-[2px] border 2xl:hidden ${
               isOverPhotograph ? "border-paper/40" : "border-line"
             }`}
           >
@@ -134,7 +157,7 @@ export function SiteHeader() {
       </div>
 
       {isMenuOpen ? (
-        <div className="fixed inset-x-0 top-20 bottom-0 z-40 overflow-y-auto bg-paper xl:hidden">
+        <div className="fixed inset-x-0 top-20 bottom-0 z-40 overflow-y-auto bg-paper 2xl:hidden">
           <nav className="shell flex flex-col gap-1 py-8">
             {TABS.map((tab, index) => (
               <Link

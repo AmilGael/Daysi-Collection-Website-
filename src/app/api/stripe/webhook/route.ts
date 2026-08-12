@@ -43,7 +43,7 @@ export async function POST(request: Request) {
  */
 async function markPaid(reference: string): Promise<void> {
   for (const kind of ["appointment", "order", "commission", "alteration"] as const) {
-    const records = await listRequests(kind);
+    const records = listRequests(kind);
     const record = records.findLast((candidate) => candidate.reference === reference);
     if (!record) continue;
     await saveRequest({ ...record, status: "paid" });

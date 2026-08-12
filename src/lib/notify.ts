@@ -52,11 +52,18 @@ export function summarise(request: StoredRequest): string {
   return lines.join("\n");
 }
 
-export async function notifyOwner(request: StoredRequest): Promise<void> {
-  if (!emailEnabled) {
-    console.info(`[notify] ${request.kind} ${request.reference} saved; email not configured.`);
-    return;
-  }
+/**
+ * The one place mail leaves this application. Never throws: a message that
+ * could not be sent is logged, and the caller decides what that means for the
+ * client in front of them.
+ */
+export async function sendEmail(message: {
+  to: string;
+  subject: string;
+  text: string;
+  replyTo?: string;
+}): Promise<boolean> {
+  if (!emailEnabled) return false;
 
   try {
     const response = await fetch("https://api.resend.com/emails", {
@@ -67,19 +74,36 @@ export async function notifyOwner(request: StoredRequest): Promise<void> {
       },
       body: JSON.stringify({
         from: env.notificationFrom ?? `Daysi Collection <no-reply@${new URL(env.siteUrl).hostname}>`,
-        to: [env.ownerEmail],
-        reply_to: request.client.email,
-        subject: `${KIND_LABELS[request.kind]} — ${request.client.name} (${request.reference})`,
-        text: summarise(request),
+        to: [message.to],
+        ...(message.replyTo ? { reply_to: message.replyTo } : {}),
+        subject: message.subject,
+        text: message.text,
       }),
     });
 
     if (!response.ok) {
-      console.error(`[notify] Resend rejected ${request.reference}: ${response.status}`);
+      console.error(`[mail] Provider rejected a message: ${response.status}`);
+      return false;
     }
+    return true;
   } catch (error) {
-    console.error(`[notify] Could not send ${request.reference}`, error);
+    console.error("[mail] Could not send a message", error);
+    return false;
   }
+}
+
+export async function notifyOwner(request: StoredRequest): Promise<void> {
+  if (!emailEnabled) {
+    console.info(`[notify] ${request.kind} ${request.reference} saved; email not configured.`);
+    return;
+  }
+
+  await sendEmail({
+    to: env.ownerEmail!,
+    replyTo: request.client.email,
+    subject: `${KIND_LABELS[request.kind]} — ${request.client.name} (${request.reference})`,
+    text: summarise(request),
+  });
 }
 
 /**

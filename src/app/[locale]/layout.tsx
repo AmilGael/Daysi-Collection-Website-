@@ -7,6 +7,8 @@ import { isSupportedLocale, routing } from "@/i18n/routing";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Reveal } from "@/components/reveal";
+import { currentViewer } from "@/lib/auth/session";
+import { cartCount, readCart } from "@/lib/cart";
 import "../globals.css";
 
 const display = Fraunces({
@@ -27,13 +29,11 @@ export function generateStaticParams() {
 }
 
 /**
- * These pages are statically generated, and several of them read the clock:
- * which premiere is upcoming, the footer's year. Without a revalidation window
- * the "next premiere" a static build chose would still be announced as
- * upcoming months after its release date passed. An hour keeps the calendar
- * honest at no per-request cost.
+ * The header reads the session and cart cookies, so every page is rendered per
+ * request. That is the cost of a signed-in header, and it is the right trade:
+ * a cached page would show one visitor another visitor's basket.
  */
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -70,6 +70,10 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
   const messages = await getMessages();
 
+  // Who is looking, and what is in their basket. Both are read here so the
+  // header never renders "sign in" to somebody who already is.
+  const [viewer, cart] = await Promise.all([currentViewer(), readCart()]);
+
   return (
     <html lang={locale} className={`${display.variable} ${body.variable}`}>
       <body className="min-h-screen antialiased">
@@ -80,7 +84,18 @@ export default async function LocaleLayout({
           >
             {locale === "es" ? "Ir al contenido" : "Skip to content"}
           </a>
-          <SiteHeader />
+          <SiteHeader
+            viewer={
+              viewer
+                ? {
+                    name: viewer.account.name,
+                    email: viewer.account.email,
+                    isOwner: viewer.role === "owner",
+                  }
+                : null
+            }
+            cartCount={cartCount(cart)}
+          />
           <main id="main">{children}</main>
           <SiteFooter />
           <Reveal />

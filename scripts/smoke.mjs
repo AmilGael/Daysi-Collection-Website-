@@ -30,7 +30,12 @@ const PAGES = [
   "/contact",
   "/terms",
   "/privacy",
+  "/cart",
+  "/sign-in",
 ];
+
+/** Pages that must never render to somebody who is not signed in. */
+const PRIVATE = ["/account", "/account/orders", "/office"];
 
 const results = [];
 
@@ -84,6 +89,76 @@ for (const locale of LOCALES) {
       return { ok: response.status === 200, detail: String(response.status) };
     });
   }
+}
+
+for (const path of PRIVATE) {
+  await check(`${path} is not reachable signed out`, async () => {
+    const response = await fetch(`${BASE}/es${path}`, { redirect: "manual" });
+    const location = response.headers.get("location") ?? "";
+    const ok =
+      // Signed out: either bounced to sign-in, or simply not there.
+      (response.status === 307 && location.includes("/sign-in")) || response.status === 404;
+    return { ok, detail: `${response.status} ${location}` };
+  });
+}
+
+await check("the cart starts empty and prices nothing", async () => {
+  const response = await fetch(`${BASE}/api/cart`);
+  const body = await response.json().catch(() => null);
+  return {
+    ok: response.status === 200 && body?.count === 0 && body?.estimate === null,
+    detail: `${response.status} count=${body?.count}`,
+  };
+});
+
+await check("the cart refuses a garment that does not exist", async () => {
+  const response = await fetch(`${BASE}/api/cart`, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: BASE },
+    body: JSON.stringify({ action: "add", styleSlug: "free-dress", sizeId: "m", customize: false }),
+  });
+  return { ok: response.status === 400, detail: String(response.status) };
+});
+
+await check("signing in is a POST from this origin only", async () => {
+  const response = await fetch(`${BASE}/api/auth/sign-in`, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: "https://example.invalid" },
+    body: JSON.stringify({ email: "someone@example.com", locale: "es", renderedAt: 0 }),
+  });
+  return { ok: response.status === 403, detail: String(response.status) };
+});
+
+await check("a forged sign-in link is refused", async () => {
+  const response = await fetch(`${BASE}/api/auth/verify?token=not-a-real-token`, {
+    redirect: "manual",
+  });
+  const location = response.headers.get("location") ?? "";
+  // Bounced back to sign-in with an error, and carrying no session cookie.
+  const setCookie = response.headers.get("set-cookie") ?? "";
+  return {
+    ok: location.includes("/sign-in") && !setCookie.includes("daysi_session"),
+    detail: `${response.status} ${location}`,
+  };
+});
+
+/**
+ * Nothing from the private store may ever reach a rendered page.
+ *
+ * This exists because it once did: React's development build records the value
+ * of everything a Server Component awaits, and an awaited readFile put the
+ * whole sessions and orders file into the HTML of the account page — one
+ * client's session hashes visible to another. Reads are synchronous now, and
+ * this is what keeps them that way.
+ */
+const MUST_NEVER_APPEAR = ["tokenHash", "sign-in-links", "expiresAt"];
+
+for (const path of ["", "/collection", "/cart", "/sign-in"]) {
+  await check(`/es${path} leaks nothing from the store`, async () => {
+    const html = await (await fetch(`${BASE}/es${path}`)).text();
+    const found = MUST_NEVER_APPEAR.filter((needle) => html.includes(needle));
+    return { ok: found.length === 0, detail: found.join(", ") || "clean" };
+  });
 }
 
 // A nonce in the policy that no script carries would block every script on the

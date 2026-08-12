@@ -1,4 +1,5 @@
-import { mkdir, writeFile, readFile, readdir } from "node:fs/promises";
+import { mkdir, writeFile, readdir } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { Estimate } from "./pricing";
 
@@ -25,6 +26,12 @@ export type StoredRequest = {
   readonly kind: StoredRequestKind;
   readonly submittedAt: string;
   readonly locale: "es" | "en";
+  /**
+   * The account this belongs to, when there is one. Records written before
+   * accounts existed have none, so "my orders" also matches on email — see
+   * `requestsForAccount`.
+   */
+  readonly accountId?: string;
   readonly client: {
     readonly name: string;
     readonly email: string;
@@ -67,9 +74,10 @@ export async function saveRequestPhoto(
   return filename;
 }
 
-export async function listRequests(kind: StoredRequestKind): Promise<StoredRequest[]> {
+/** Synchronous for the reason given on `readRecords` in lib/records.ts. */
+export function listRequests(kind: StoredRequestKind): StoredRequest[] {
   try {
-    const contents = await readFile(fileFor(kind), "utf8");
+    const contents = readFileSync(fileFor(kind), "utf8");
     return contents
       .split("\n")
       .filter((line) => line.length > 0)
@@ -77,6 +85,40 @@ export async function listRequests(kind: StoredRequestKind): Promise<StoredReque
   } catch {
     return [];
   }
+}
+
+/**
+ * Everything a given account may see: their own records, and nobody else's.
+ *
+ * Ownership is by account id, falling back to a matching email for records
+ * written before accounts existed. The email is only ever compared against the
+ * *verified* address on the signed-in account — a client cannot reach another
+ * person's orders by claiming their address, because claiming it is not how
+ * they got here.
+ */
+export function requestsForAccount(
+  account: { id: string; email: string },
+  kinds: readonly StoredRequestKind[],
+): StoredRequest[] {
+  const all = kinds.flatMap(listRequests);
+  const mine = all.filter(
+    (record) =>
+      record.accountId === account.id ||
+      (record.accountId === undefined &&
+        record.client.email.trim().toLowerCase() === account.email),
+  );
+
+  return currentRecords(mine).sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+}
+
+/**
+ * The store is append-only, so one reference can appear several times as its
+ * status changes. The newest line is the current truth.
+ */
+export function currentRecords(records: readonly StoredRequest[]): StoredRequest[] {
+  const latest = new Map<string, StoredRequest>();
+  for (const record of records) latest.set(record.reference, record);
+  return [...latest.values()];
 }
 
 /** Every kind that currently has anything stored. Used by the owner inbox. */

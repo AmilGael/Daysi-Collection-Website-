@@ -137,6 +137,68 @@ export function estimateReadyMade(order: ReadyMadeOrder): Estimate | null {
   });
 }
 
+/**
+ * A whole cart, priced. Each line is looked up in the price list by what it
+ * names — the browser sends a garment, a size and a quantity, never a number.
+ * A line naming something unpriceable is dropped rather than guessed at, so a
+ * tampered cookie shrinks the basket instead of discounting it.
+ */
+export function estimateCart(
+  cart: readonly (ReadyMadeOrder & { quantity: number })[],
+): Estimate | null {
+  const lines: EstimateLine[] = [];
+  let anyCustomised = false;
+
+  for (const item of cart) {
+    const style = findStyle(item.styleSlug);
+    if (!style) continue;
+    if (!style.sizes.some((size) => size.sizeId === item.sizeId)) continue;
+
+    const price = findPriceEntry(style.priceEntryId);
+    if (!price) continue;
+
+    const quantity = Math.max(1, Math.floor(item.quantity));
+    const customised = item.customize && style.customizationAvailable;
+    if (customised) anyCustomised = true;
+
+    lines.push({
+      label: style.name,
+      note: {
+        en: `Size ${item.sizeId.toUpperCase()}${quantity > 1 ? ` · ${quantity} pieces` : ""}`,
+        es: `Talla ${item.sizeId.toUpperCase()}${quantity > 1 ? ` · ${quantity} piezas` : ""}`,
+      },
+      amount: price.fixedPrice * quantity,
+      taxBasis: "clothing",
+    });
+
+    if (customised) {
+      lines.push({
+        label: { en: "Made to your measurements", es: "Hecho a su medida" },
+        note: price.customizationNote,
+        amount: price.customizationExtra * quantity,
+        taxBasis: "clothing",
+      });
+    }
+  }
+
+  if (lines.length === 0) return null;
+
+  // One made-to-measure piece puts the whole basket on the deposit terms:
+  // Daysi cannot start cutting cloth for part of an order.
+  return build(
+    lines,
+    (total) => (anyCustomised ? applyRate(total, commissionDepositRate) : total),
+    {
+      en: anyCustomised
+        ? "Half now to reserve the cloth, half when the pieces are ready."
+        : "Paid in full. Your pieces are collected or sent once payment clears.",
+      es: anyCustomised
+        ? "La mitad ahora para reservar la tela, la mitad cuando las piezas estén listas."
+        : "Pagado por completo. Sus piezas se recogen o se envían al confirmarse el pago.",
+    },
+  );
+}
+
 // ── Alterations ────────────────────────────────────────────────────────────
 
 export type AlterationOrder = {
