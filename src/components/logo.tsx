@@ -27,7 +27,10 @@ export function Logo({
         priority
         className="h-10 w-auto shrink-0"
       />
-      <span className="flex flex-col leading-none">
+      {/* On a phone the mark carries the name on its own: the wordmark beside
+          it costs about seventy pixels the header does not have, and it is
+          the first thing that collides with the cart. */}
+      <span className="hidden flex-col leading-none sm:flex">
         <span className="font-display text-[1.35rem] tracking-[-0.01em]">Daysi</span>
         <span className="mt-[3px] text-[0.5rem] font-medium uppercase tracking-[0.42em] opacity-55">
           Collection

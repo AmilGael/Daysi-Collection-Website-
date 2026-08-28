@@ -44,6 +44,7 @@ No environment variables are needed to run it. Copy `.env.example` to
 | --- | --- |
 | `/` | The story: hero, trust strip, atelier, services, collection, prices, alterations, next premiere, Google Business |
 | `/collection` | The gallery, filtered by design and by size, with fixed prices |
+| `/gallery` | Eighteen years of finished work — runway, commissions, bridal, accessories, press |
 | `/collection/[slug]` | One piece: photography, sizes, customisation, running price |
 | `/premieres` | Limited-edition premieres and the sign-up list |
 | `/services` | Custom garments, alterations, ready-made |
@@ -96,6 +97,8 @@ src/
 │   ├── books.ts        The sales file for her accountant, QuickBooks-shaped
 │   ├── live-catalog.ts What Daysi has changed about the collection
 │   ├── live-pricing.ts What Daysi has changed about the prices and fabrics
+│   ├── live-gallery.ts The portfolio seed plus what she has added to it
+│   ├── office-validation.ts The shapes the office endpoints accept
 │   ├── notify.ts       Email to Daysi, request delivery
 │   ├── whatsapp.ts     Pre-filled WhatsApp links (client-safe)
 │   └── mockup.ts       Canvas drawing for the design studio
@@ -218,15 +221,18 @@ horizontal scaling.
 Everything below is real content structure with stand-in values, waiting on the
 items still outstanding in PRD Section 15.1:
 
-- **Photography.** The collection is fully real: every style in
-  `content/styles.ts`, every `fabric-*` swatch for the new prints, both
-  premiere covers and the owner portraits on the home and atelier story
-  sections come from Daysi's own photos in `public/images/real/`. The generated
-  style stand-ins under `public/images/styles/` have been deleted. Still
-  generated: the home hero (`hero.jpg`), the atelier scene shots
-  (`images/atelier/`) and the linen fabric swatches (`images/fabrics/`) used by
-  the design studio. The workshop video still `daysi-sewing` is 464px — replace
-  it with a frame from a higher-quality export when one exists.
+- **Photography.** There is none left that Daysi did not take or sit for. Every
+  style, every fabric swatch, both premiere covers, the home hero, the atelier,
+  the owner portraits and the twenty-eight gallery works are hers, in
+  `public/images/real/`, `public/images/gallery/` and `public/brand/`. The
+  generated stand-ins are deleted, and a test in `content/catalog.test.ts`
+  states the rule that keeps them out: the atelier offers no cloth it cannot
+  show you. The workshop video still `daysi-sewing` is 464px — replace it with
+  a frame from a higher-quality export when one exists.
+
+- **The logo** is hers, knocked out of the white paper it was drawn on into
+  `public/brand/`. It is a raster trace, so it is soft at very large sizes; a
+  vector from whoever drew it would render crisper and is worth asking for.
 - **Phone number and email.** The phone uses the reserved 555-01xx range, which
   cannot dial a real person. Set the real ones in `content/business.ts`.
 - **Address.** Neighbourhood only, on purpose — the atelier is a private home

@@ -126,27 +126,38 @@ export function SiteHeader({
             cartCount={cartCount}
             tone={isOverPhotograph ? "paper" : "ink"}
           />
-          <Link
-            href="/appointments"
-            className={buttonClass({
-              size: "small",
-              tone: isOverPhotograph ? "marigold" : "solid",
-              className: "hidden whitespace-nowrap sm:inline-flex",
-            })}
-          >
-            {t("bookCta")}
-          </Link>
-          <Link
-            href="/appointments"
-            className={buttonClass({
-              size: "small",
-              tone: isOverPhotograph ? "marigold" : "solid",
-              className: "whitespace-nowrap sm:hidden",
-            })}
-          >
-            {/* The full label needs room a phone header does not have. */}
-            {t("bookCtaShort")}
-          </Link>
+          {/*
+            The responsive switch sits on a wrapper rather than on the button.
+            buttonClass begins with `inline-flex`, so a `hidden` handed to it
+            through className is two display utilities of equal weight fighting
+            in the same layer — and `hidden` was losing, which put both labels
+            in the bar at once and pushed it 200px past the screen on a phone.
+          */}
+          <span className="hidden sm:contents">
+            <Link
+              href="/appointments"
+              className={buttonClass({
+                size: "small",
+                tone: isOverPhotograph ? "marigold" : "solid",
+                className: "whitespace-nowrap",
+              })}
+            >
+              {t("bookCta")}
+            </Link>
+          </span>
+          <span className="contents sm:hidden">
+            <Link
+              href="/appointments"
+              className={buttonClass({
+                size: "small",
+                tone: isOverPhotograph ? "marigold" : "solid",
+                className: "whitespace-nowrap",
+              })}
+            >
+              {/* The full label needs room a phone header does not have. */}
+              {t("bookCtaShort")}
+            </Link>
+          </span>
           <button
             type="button"
             onClick={() => setIsMenuOpen((open) => !open)}
