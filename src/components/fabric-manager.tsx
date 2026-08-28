@@ -180,7 +180,7 @@ export function FabricManager({
                   onChange={(event) =>
                     setPrices((current) => ({ ...current, [category]: event.target.value }))
                   }
-                  placeholder="—"
+                  placeholder="–"
                   className="w-20 bg-transparent py-1.5 pl-1 text-right text-[0.875rem] tabular-nums text-ink"
                 />
               </span>

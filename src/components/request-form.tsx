@@ -227,7 +227,7 @@ export function RequestForm({
           </fieldset>
 
           <Checkbox checked={rush} onChange={setRush}>
-            {ta("rushTitle")} — {ta("rushLead")}
+            {ta("rushTitle")} {ta("rushLead")}
           </Checkbox>
 
           <Field label={t("timing")}>

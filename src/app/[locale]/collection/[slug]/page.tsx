@@ -109,7 +109,7 @@ export default async function StylePage({
                   <dd>
                     {translate(fabric.name, language)}
                     <span className="text-ink-faint">
-                      {" — "}
+                      {". "}
                       {translate(fabric.description, language)}
                     </span>
                   </dd>

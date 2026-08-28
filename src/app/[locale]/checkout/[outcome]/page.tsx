@@ -38,8 +38,8 @@ export default async function CheckoutOutcomePage({
         <h1 className="text-title">{isPaid ? t("thankYouTitle") : t("cancelledTitle")}</h1>
         <p className="text-lead text-ink-soft">
           {isPaid
-            ? t("thankYouLead", { reference: reference ?? "—" })
-            : t("cancelledLead", { reference: reference ?? "—" })}
+            ? t("thankYouLead", { reference: reference ?? "–" })
+            : t("cancelledLead", { reference: reference ?? "–" })}
         </p>
         <p className="text-[0.875rem] text-ink-faint">{t("secureNote")}</p>
         <ButtonLink href="/" className="w-fit">

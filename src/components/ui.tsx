@@ -127,13 +127,13 @@ export function SectionHeading({
   const indexTone = tone === "paper" ? "text-paper-faint" : "text-ink-faint";
 
   return (
-    <div className={`flex max-w-2xl flex-col gap-5 ${alignment}`}>
+    <div className={`flex max-w-2xl flex-col gap-3 ${alignment}`}>
       {index ? (
         <span className={`font-display text-[0.9375rem] tabular-nums ${indexTone}`}>{index}</span>
       ) : null}
       {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
       <h2 className="text-section">{title}</h2>
-      {lead ? <p className={`text-lead ${leadTone} text-pretty`}>{lead}</p> : null}
+      {lead ? <p className={`mt-2 text-lead ${leadTone}`}>{lead}</p> : null}
     </div>
   );
 }
