@@ -10,3 +10,6 @@ next-env.d.ts
 # Client submissions written by the local file-backed store.
 # These contain personal data and must never be committed.
 /.data
+
+# Photos Daysi uploads from the office — data, not source.
+/public/uploads
