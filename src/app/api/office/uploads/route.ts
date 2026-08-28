@@ -1,18 +1,18 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { join } from "node:path";
 import { NextResponse } from "next/server";
 import { isSameOrigin, newReference } from "@/lib/security";
 import { currentViewer } from "@/lib/auth/session";
+import { uploadsDirectory } from "@/lib/uploads";
 
 /**
  * Where Daysi drops a photograph: a new shot of a piece, or the swatch of a
- * fabric she has just brought into the atelier. Files land in a gitignored
- * corner of /public under a server-chosen name — the browser's filename never
- * touches the disk — and the caller gets back the public path to reference
- * from an override or a fabric record.
+ * fabric she has just brought into the atelier. Files land under `.data`
+ * beside her records under a server-chosen name — the browser's filename never
+ * touches the disk — and the caller gets back the path to reference from an
+ * override or a fabric record. They are served back by `app/uploads/[name]`.
  */
 
-const UPLOAD_DIRECTORY = path.join(process.cwd(), "public", "uploads");
 const MAX_BYTES = 8 * 1024 * 1024;
 
 const EXTENSION_FOR: Record<string, string> = {
@@ -46,9 +46,10 @@ export async function POST(request: Request) {
   }
 
   const name = `${newReference("IMG").toLowerCase()}.${extension}`;
-  await mkdir(UPLOAD_DIRECTORY, { recursive: true });
+  const directory = uploadsDirectory();
+  await mkdir(directory, { recursive: true });
   await writeFile(
-    path.join(UPLOAD_DIRECTORY, name),
+    join(directory, name),
     new Uint8Array(await file.arrayBuffer()),
   );
 

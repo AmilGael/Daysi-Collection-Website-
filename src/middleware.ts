@@ -58,6 +58,9 @@ export default function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Everything except Next.js internals, the Stripe webhook, and static files.
-  matcher: ["/((?!api|_next|_vercel|.*\\..*).*)"],
+  // Everything except Next.js internals, the API routes, the photographs
+  // Daysi has uploaded, and static files. `uploads` is named rather than left
+  // to the "has a dot" rule: those are binary assets on a single URL, and a
+  // locale prefix in front of one would be a 404 dressed as a redirect.
+  matcher: ["/((?!api|uploads|_next|_vercel|.*\\..*).*)"],
 };

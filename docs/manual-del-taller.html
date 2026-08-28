@@ -1,0 +1,688 @@
+<title>Manual del taller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+
+<style>
+  /* ------------------------------------------------------------------
+     Her own palette, lifted from the site so the manual and the thing it
+     explains look like one object. Light is the default state; the two
+     dark rules below only ever redefine tokens.
+     ------------------------------------------------------------------ */
+  :root {
+    --ink: #14110d;
+    --ink-soft: #3f382e;
+    --ink-faint: #6d6355;
+    --paper: #fbf8f2;
+    --paper-warm: #f2ebdd;
+    --paper-deep: #e8dfcc;
+    --line: #ded3bd;
+    --marigold: #e8a302;
+    --accent-text: #8a6000;
+    --chip-ink: #14110d;
+    --chip-paper: #fbf8f2;
+
+    --step: clamp(1.5rem, 1.1rem + 1.4vw, 2.25rem);
+    --measure: 34rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #f4efe4;
+      --ink-soft: #cfc5b2;
+      --ink-faint: #9c9280;
+      --paper: #17140f;
+      --paper-warm: #201c16;
+      --paper-deep: #2a251d;
+      --line: #3b342a;
+      --marigold: #e8a302;
+      --accent-text: #f0b52e;
+      --chip-ink: #f4efe4;
+      --chip-paper: #17140f;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ink: #f4efe4;
+    --ink-soft: #cfc5b2;
+    --ink-faint: #9c9280;
+    --paper: #17140f;
+    --paper-warm: #201c16;
+    --paper-deep: #2a251d;
+    --line: #3b342a;
+    --marigold: #e8a302;
+    --accent-text: #f0b52e;
+    --chip-ink: #f4efe4;
+    --chip-paper: #17140f;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet {
+    max-width: 44rem;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 1.5rem + 4vw, 5.5rem) clamp(1.25rem, 0.75rem + 2.5vw, 2.5rem) 6rem;
+  }
+
+  /* --- masthead ------------------------------------------------------ */
+
+  .masthead { display: flex; flex-direction: column; gap: 1rem; }
+
+  .eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--ink-faint);
+    margin: 0;
+  }
+
+  h1 {
+    font-family: "Fraunces", "Iowan Old Style", Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(2.5rem, 1.9rem + 3vw, 4rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    max-width: var(--measure);
+    font-size: 1.1875rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  .rule {
+    height: 2px;
+    background: var(--marigold);
+    border: 0;
+    margin: var(--step) 0 0;
+  }
+
+  /* --- contents ------------------------------------------------------ */
+
+  .contents {
+    margin-top: var(--step);
+    padding: 1.5rem 1.75rem;
+    background: var(--paper-warm);
+    border: 1px solid var(--line);
+  }
+
+  .contents ol {
+    margin: 0.875rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.5rem;
+    counter-reset: toc;
+  }
+
+  .contents li { counter-increment: toc; display: flex; gap: 0.75rem; align-items: baseline; }
+
+  .contents li::before {
+    content: counter(toc, decimal-leading-zero);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--ink-faint);
+    min-width: 1.5rem;
+  }
+
+  .contents a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
+  .contents a:hover { border-bottom-color: var(--marigold); }
+
+  /* --- tasks --------------------------------------------------------- */
+
+  .task { margin-top: calc(var(--step) * 1.6); }
+
+  .task-head { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .task-number {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    color: var(--accent-text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  h2 {
+    font-family: "Fraunces", "Iowan Old Style", Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(1.6rem, 1.35rem + 1.1vw, 2.1rem);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .task p { max-width: var(--measure); color: var(--ink-soft); }
+
+  .task > p:first-of-type { margin-top: 0.875rem; }
+
+  /* Numbered because these genuinely are in order — do the second thing
+     after the first or it will not work. */
+  ol.steps {
+    counter-reset: step;
+    list-style: none;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 1.125rem;
+    max-width: var(--measure);
+  }
+
+  ol.steps > li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 2rem 1fr;
+    gap: 0.875rem;
+    align-items: start;
+  }
+
+  ol.steps > li::before {
+    content: counter(step);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.9;
+    color: var(--ink-faint);
+    border-top: 2px solid var(--line);
+    padding-top: 0.375rem;
+  }
+
+  /* --- the device: what she will actually see on screen --------------- */
+
+  /* A button, drawn the way her office draws buttons. */
+  .btn {
+    display: inline-block;
+    background: var(--chip-ink);
+    color: var(--chip-paper);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    padding: 0.25rem 0.6rem;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  /* A label or a heading printed on the page, not a button. */
+  .label {
+    display: inline-block;
+    border: 1px solid var(--line);
+    background: var(--paper-warm);
+    color: var(--ink);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    padding: 0.1rem 0.45rem;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  .path {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.875rem;
+    color: var(--accent-text);
+    white-space: nowrap;
+  }
+
+  /* --- asides -------------------------------------------------------- */
+
+  .note {
+    margin: 1.5rem 0 0;
+    max-width: var(--measure);
+    padding: 1rem 1.25rem;
+    background: var(--paper-warm);
+    border-left: 3px solid var(--marigold);
+  }
+
+  .note p { margin: 0; color: var(--ink-soft); font-size: 0.9375rem; }
+  .note p + p { margin-top: 0.625rem; }
+  .note strong { color: var(--ink); font-weight: 600; }
+
+  .careful { border-left-color: var(--ink-faint); }
+
+  /* --- closing ------------------------------------------------------- */
+
+  .closing {
+    margin-top: calc(var(--step) * 2);
+    padding-top: var(--step);
+    border-top: 1px solid var(--line);
+  }
+
+  .closing h2 { font-size: 1.4rem; }
+
+  a { color: inherit; }
+
+  a:focus-visible, .contents a:focus-visible {
+    outline: 2px solid var(--marigold);
+    outline-offset: 3px;
+  }
+
+  @media print {
+    body { background: #fff; color: #000; font-size: 11pt; }
+    .task { break-inside: avoid; }
+    .contents { break-after: page; }
+  }
+</style>
+
+<div class="sheet">
+
+  <header class="masthead">
+    <p class="eyebrow">Daysi Collection</p>
+    <h1>Manual del taller</h1>
+    <p class="standfirst">
+      Su sitio es suyo. Los precios, las prendas, las telas, las fotos y los
+      avisos los cambia usted misma, cuando quiera, sin llamar a nadie. Aquí
+      está cómo se hace cada cosa.
+    </p>
+  </header>
+
+  <hr class="rule">
+
+  <nav class="contents" aria-labelledby="contents-title">
+    <p class="eyebrow" id="contents-title">Lo que hay aquí</p>
+    <ol>
+      <li><a href="#entrar">Cómo entrar</a></li>
+      <li><a href="#precios">Cambiar un precio</a></li>
+      <li><a href="#prenda">Poner una prenda nueva en la colección</a></li>
+      <li><a href="#perchero">Esconder una pieza, o marcar las tallas que le quedan</a></li>
+      <li><a href="#telas">Poner un rollo de tela en la pared</a></li>
+      <li><a href="#trabajo">Agregar una pieza terminada a su trabajo</a></li>
+      <li><a href="#aviso">Poner un aviso en el sitio</a></li>
+      <li><a href="#pedidos">Los pedidos, los arreglos y las citas</a></li>
+      <li><a href="#libros">Bajar sus libros para la contadora</a></li>
+      <li><a href="#fotos">Qué foto sirve y qué foto no</a></li>
+      <li><a href="#problemas">Si algo no sale como esperaba</a></li>
+    </ol>
+  </nav>
+
+  <!-- 01 ------------------------------------------------------------- -->
+  <section class="task" id="entrar">
+    <div class="task-head">
+      <span class="task-number">01</span>
+      <h2>Cómo entrar</h2>
+    </div>
+    <p>
+      No hay contraseña que aprenderse ni que perder. Usted pide un enlace, le
+      llega a su correo, lo abre, y ya está adentro.
+    </p>
+    <ol class="steps">
+      <li>Arriba a la derecha del sitio, abra <span class="btn">Entrar</span>.</li>
+      <li>Escriba su correo — el suyo, el de siempre — y toque <span class="btn">Mándeme un enlace</span>.</li>
+      <li>Abra su correo y toque el enlace. El enlace vale quince minutos y se usa una sola vez.</li>
+      <li>
+        Ya adentro, su oficina está en <span class="label">La oficina</span>,
+        o directo en <span class="path">/es/office</span>.
+      </li>
+    </ol>
+    <div class="note">
+      <p>
+        <strong>Nadie más puede entrar a su oficina.</strong> El sitio conoce su
+        correo y solamente ese correo abre la oficina. Si otra persona pone su
+        propio correo, entra a su cuenta de cliente y nada más — la oficina para
+        ella sencillamente no existe.
+      </p>
+      <p>
+        Si el enlace no llega, busque en la carpeta de spam y pida otro en unos
+        minutos.
+      </p>
+    </div>
+  </section>
+
+  <!-- 02 ------------------------------------------------------------- -->
+  <section class="task" id="precios">
+    <div class="task-head">
+      <span class="task-number">02</span>
+      <h2>Cambiar un precio</h2>
+    </div>
+    <p>
+      Todo lo que cobra está en un solo lugar, y lo que escriba ahí es lo que el
+      sitio le cobra al cliente. No hay dos listas que cuadrar.
+    </p>
+    <ol class="steps">
+      <li>En la oficina, baje hasta <span class="label">La lista de precios</span>.</li>
+      <li>
+        Están separados en <span class="label">Prendas, por tela</span>,
+        <span class="label">Arreglos</span> y <span class="label">Sesiones</span>.
+        Busque la línea que quiere cambiar.
+      </li>
+      <li>
+        Escriba el número nuevo encima del viejo y toque
+        <span class="btn">Guardar</span>.
+      </li>
+    </ol>
+    <div class="note">
+      <p>
+        <strong>El cambio es inmediato.</strong> El próximo cliente que pida un
+        estimado paga el precio nuevo. Los pedidos que ya entraron guardan el
+        precio que tenían el día que se hicieron — a nadie se le cambia el precio
+        después.
+      </p>
+      <p>
+        En las prendas hay dos columnas: <span class="label">Precio</span> es la
+        pieza como está, y <span class="label">A la medida</span> es lo que se le
+        suma cuando la hace a la medida de la clienta.
+      </p>
+    </div>
+  </section>
+
+  <!-- 03 ------------------------------------------------------------- -->
+  <section class="task" id="prenda">
+    <div class="task-head">
+      <span class="task-number">03</span>
+      <h2>Poner una prenda nueva en la colección</h2>
+    </div>
+    <p>
+      Cuando termine una pieza que quiere vender en el sitio, la sube usted. No
+      necesita a nadie.
+    </p>
+    <ol class="steps">
+      <li>
+        En la oficina, busque
+        <span class="label">Agregar una prenda a la colección</span>.
+      </li>
+      <li>
+        <span class="label">Cómo se llama</span> — el nombre de la pieza, como
+        usted la llama en el taller.
+      </li>
+      <li>
+        <span class="label">Qué es</span> y <span class="label">Cómo está hecha</span> —
+        dos o tres líneas, en sus palabras. Es lo que lee la clienta.
+      </li>
+      <li>
+        <span class="label">Prenda</span> y <span class="label">Tela</span> —
+        de dónde sale el precio.
+      </li>
+      <li>
+        <span class="label">Tallas que tiene</span> — marque solamente las que
+        tiene hechas. Las demás salen agotadas.
+      </li>
+      <li>
+        <span class="label">Fotografías</span> — por lo menos una. La primera es
+        la portada.
+      </li>
+      <li>Toque <span class="btn">Ponerla en el sitio</span>.</li>
+    </ol>
+    <div class="note">
+      <p>
+        <strong>El precio casi siempre se pone solo.</strong> Si esa prenda y esa
+        tela ya están en su lista, el sitio le muestra el precio que ya tiene y no
+        la deja escribir otro — así no hay dos precios distintos para la misma
+        cosa.
+      </p>
+      <p>
+        Solamente cuando la combinación es nueva le pide un precio, y el que
+        escriba ahí queda publicado en la lista.
+      </p>
+    </div>
+  </section>
+
+  <!-- 04 ------------------------------------------------------------- -->
+  <section class="task" id="perchero">
+    <div class="task-head">
+      <span class="task-number">04</span>
+      <h2>Esconder una pieza, o marcar las tallas que le quedan</h2>
+    </div>
+    <p>
+      Se vendió la última mediana, o quiere sacar una pieza del sitio por un
+      tiempo sin borrarla. Las dos cosas se hacen en el mismo lugar.
+    </p>
+    <ol class="steps">
+      <li>En la oficina, vaya a <span class="label">La colección, en el perchero</span>.</li>
+      <li>
+        Para las tallas: en <span class="label">Tallas en existencia</span>,
+        desmarque la que se acabó. La pieza se queda en el sitio y esa talla sale
+        agotada.
+      </li>
+      <li>
+        Para esconderla entera: cambie <span class="label">Visible</span> a
+        <span class="label">Oculto</span>.
+      </li>
+    </ol>
+    <div class="note">
+      <p>
+        <strong>Nada se borra nunca.</strong> Una pieza oculta desaparece del
+        sitio pero sigue guardada, con sus fotos y su precio. El día que la
+        quiera de vuelta, la pone en <span class="label">Visible</span> y regresa
+        igual que estaba.
+      </p>
+    </div>
+  </section>
+
+  <!-- 05 ------------------------------------------------------------- -->
+  <section class="task" id="telas">
+    <div class="task-head">
+      <span class="task-number">05</span>
+      <h2>Poner un rollo de tela en la pared</h2>
+    </div>
+    <p>
+      La tela que agregue aquí aparece en dos sitios a la vez: en el taller de
+      diseño, donde la clienta juega con ella, y en la lista de precios.
+    </p>
+    <ol class="steps">
+      <li>En la oficina, vaya a <span class="label">La pared de telas</span>.</li>
+      <li>
+        <span class="label">Nombre</span> — cómo le dice usted a esa tela.
+      </li>
+      <li>
+        <span class="label">Foto de la muestra</span> — un pedazo de la tela,
+        de cerca y bien plano. Mire el punto 10.
+      </li>
+      <li>
+        <span class="label">Precio de una pieza, por prenda</span> — cuánto
+        cuesta un vestido en esa tela, un pantalón, una blusa. Llene por lo
+        menos uno.
+      </li>
+      <li>Toque <span class="btn">Agregar la tela</span>.</li>
+    </ol>
+  </section>
+
+  <!-- 06 ------------------------------------------------------------- -->
+  <section class="task" id="trabajo">
+    <div class="task-head">
+      <span class="task-number">06</span>
+      <h2>Agregar una pieza terminada a su trabajo</h2>
+    </div>
+    <p>
+      La galería es todo lo que usted ha hecho — pasarela, encargos, novias,
+      bolsos, el taller. No es para vender: es para que la clienta vea de qué es
+      capaz antes de pedirle algo.
+    </p>
+    <ol class="steps">
+      <li>En la oficina, vaya a <span class="label">El trabajo</span>.</li>
+      <li>
+        <span class="label">Fotografía</span> — la foto de la pieza terminada.
+      </li>
+      <li>
+        <span class="label">Dónde va</span> — escoja la sección: pasarela,
+        encargos, novias, accesorios, taller o prensa.
+      </li>
+      <li>
+        <span class="label">Una línea sobre la pieza</span> — qué es y para
+        quién fue. Una línea basta.
+      </li>
+      <li>Toque <span class="btn">Agregar al trabajo</span>.</li>
+    </ol>
+  </section>
+
+  <!-- 07 ------------------------------------------------------------- -->
+  <section class="task" id="aviso">
+    <div class="task-head">
+      <span class="task-number">07</span>
+      <h2>Poner un aviso en el sitio</h2>
+    </div>
+    <p>
+      Para cuando se va de viaje, cierra por una semana, o los arreglos se están
+      tardando más de lo normal. El aviso sale arriba, donde todos lo ven.
+    </p>
+    <ol class="steps">
+      <li>En la oficina, busque <span class="label">Un aviso en el sitio</span>.</li>
+      <li>Escriba el aviso. Corto y claro: cuándo vuelve, o cuánto se está tardando.</li>
+      <li>Marque <span class="label">Mostrarlo en el sitio</span>.</li>
+      <li>Toque <span class="btn">Guardar aviso</span>.</li>
+    </ol>
+    <div class="note careful">
+      <p>
+        <strong>Acuérdese de quitarlo.</strong> Un aviso que dice «cerrado hasta
+        el 10» todavía puesto el día 20 le cuesta clientas. Para quitarlo,
+        desmarque <span class="label">Mostrarlo en el sitio</span> y guarde otra
+        vez.
+      </p>
+    </div>
+  </section>
+
+  <!-- 08 ------------------------------------------------------------- -->
+  <section class="task" id="pedidos">
+    <div class="task-head">
+      <span class="task-number">08</span>
+      <h2>Los pedidos, los arreglos y las citas</h2>
+    </div>
+    <p>
+      Todo lo que entra por el sitio aparece en <span class="label">Pedidos y
+      arreglos</span>, lo más reciente primero, con el nombre y el correo de
+      quien lo pidió.
+    </p>
+    <p>Cada uno lleva un estado, y usted lo va moviendo conforme avanza el trabajo:</p>
+    <ol class="steps">
+      <li><span class="label">Recibido</span> — entró y todavía no lo ha tocado.</li>
+      <li><span class="label">Contestado</span> — ya le escribió o la llamó.</li>
+      <li><span class="label">Reservado</span> — tiene día y hora en el calendario.</li>
+      <li><span class="label">Pagado</span> — ya cobró.</li>
+      <li><span class="label">Cerrado</span> — se entregó y se acabó.</li>
+    </ol>
+    <div class="note">
+      <p>
+        <strong>El estado no es solo para usted.</strong> La clienta ve el mismo
+        estado en su cuenta, así que moverlo le ahorra una llamada preguntando
+        cómo va.
+      </p>
+      <p>
+        Una cita que se cancela libera su hora sola: ese espacio vuelve a
+        aparecer disponible para otra clienta.
+      </p>
+    </div>
+  </section>
+
+  <!-- 09 ------------------------------------------------------------- -->
+  <section class="task" id="libros">
+    <div class="task-head">
+      <span class="task-number">09</span>
+      <h2>Bajar sus libros para la contadora</h2>
+    </div>
+    <p>
+      El sitio no le lleva la contabilidad, pero sí le entrega todo lo que
+      facturó en un archivo que la contadora abre en Excel o mete en QuickBooks
+      sin tener que escribir nada a mano.
+    </p>
+    <ol class="steps">
+      <li>En la oficina, vaya a <span class="label">Los libros</span>.</li>
+      <li>
+        Escoja las fechas: <span class="label">Este año</span>,
+        <span class="label">El año pasado</span>,
+        <span class="label">Este trimestre</span>, o ponga usted
+        <span class="label">Desde</span> y <span class="label">Hasta</span>.
+      </li>
+      <li>Toque <span class="btn">Descargar el archivo</span>.</li>
+      <li>Mándeselo a su contadora tal como está. No hay que arreglarle nada.</li>
+    </ol>
+    <div class="note">
+      <p>
+        Cada línea lleva la fecha, la clienta, qué era, cuánto fue y el impuesto.
+        El impuesto lo calcula con la misma regla con la que se le cobró a la
+        clienta, así que los números cuadran solos.
+      </p>
+    </div>
+  </section>
+
+  <!-- 10 ------------------------------------------------------------- -->
+  <section class="task" id="fotos">
+    <div class="task-head">
+      <span class="task-number">10</span>
+      <h2>Qué foto sirve y qué foto no</h2>
+    </div>
+    <p>
+      Las fotos son lo que vende la pieza. Con estas cuatro cosas ya salen bien
+      desde el teléfono.
+    </p>
+    <ol class="steps">
+      <li>
+        <strong>Luz de ventana, no lámpara.</strong> De día, cerca de una
+        ventana, sin flash. El flash aplana la tela y le cambia el color.
+      </li>
+      <li>
+        <strong>Fondo liso.</strong> Una pared, una puerta, una sábana. Lo que
+        haya detrás compite con la prenda.
+      </li>
+      <li>
+        <strong>La prenda completa y derecha.</strong> El teléfono parado, no
+        acostado. La pieza entera dentro de la foto.
+      </li>
+      <li>
+        <strong>Para las telas, bien de cerca.</strong> Que se vea el dibujo y
+        el tejido, con la tela plana. No le sirve una foto de la tela arrugada
+        ni de lejos.
+      </li>
+    </ol>
+    <div class="note careful">
+      <p>
+        <strong>Mande la foto original.</strong> Si la manda por WhatsApp y
+        después la baja de ahí, llega chiquita y se ve borrosa en el sitio.
+        Súbala directo desde el carrete del teléfono.
+      </p>
+    </div>
+  </section>
+
+  <!-- 11 ------------------------------------------------------------- -->
+  <section class="task" id="problemas">
+    <div class="task-head">
+      <span class="task-number">11</span>
+      <h2>Si algo no sale como esperaba</h2>
+    </div>
+    <ol class="steps">
+      <li>
+        <strong>«Ese cambio no se guardó».</strong> Casi siempre es el internet.
+        Toque otra vez. Si sigue igual, salga y vuelva a entrar.
+      </li>
+      <li>
+        <strong>No le llega el enlace para entrar.</strong> Revise spam. El
+        enlace vale quince minutos; si se pasó, pida uno nuevo.
+      </li>
+      <li>
+        <strong>Subió la pieza y no la ve en el sitio.</strong> Recargue la
+        página. Si sigue sin salir, mire que esté en
+        <span class="label">Visible</span> y que tenga al menos una talla marcada.
+      </li>
+      <li>
+        <strong>Se equivocó en algo.</strong> Escríbalo bien encima y guarde. El
+        sitio guarda cada cambio en orden, así que siempre se puede ver qué decía
+        antes.
+      </li>
+    </ol>
+  </section>
+
+  <section class="closing">
+    <h2>Una cosa que solo usted puede hacer</h2>
+    <p>
+      El sitio está entero en español y en inglés. El español lo escribimos
+      nosotros, pero las palabras son suyas y usted es quien sabe cómo se dicen
+      las cosas en su taller. Léalo con calma cuando pueda —
+      <span class="path">/es</span> — y diga qué suena raro, qué está de más y
+      qué falta. Se cambia y ya.
+    </p>
+  </section>
+
+</div>

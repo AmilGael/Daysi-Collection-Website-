@@ -11,5 +11,3 @@ next-env.d.ts
 # These contain personal data and must never be committed.
 /.data
 
-# Photos Daysi uploads from the office — data, not source.
-/public/uploads

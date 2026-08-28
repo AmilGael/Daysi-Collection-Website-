@@ -202,19 +202,68 @@ the record so one can be deleted on its own. Nothing personal is logged.
 The old dev-only `/inbox` is gone: `/office` is the real thing, behind the
 owner's sign-in.
 
-## Before launch
+## Deploying
 
-**Set `AUTH_SECRET`.** The app refuses to sign with a fallback key in
-production, so this is a hard requirement, not a nice-to-have.
+**This site needs a disk, and that decides the host.** Everything it
+remembers — Daysi's price changes, her uploads, client accounts, orders and
+bookings — is written to `DATA_DIR` as newline-delimited JSON. Serverless
+hosts do not have a writable filesystem, so on Vercel or Netlify the first
+sign-in fails and every edit she makes is lost. That is not a bug to work
+around at deploy time; it is the shape of the store.
 
-**Set `OWNER_EMAIL` to Daysi's real address.** Without it nobody gets the
-office, and with the wrong one somebody else does.
+So: one long-running container, one persistent volume mounted at `/data`, one
+machine. `Dockerfile` and `fly.toml` are set up for Fly, which is the cheapest
+host with a real disk — around $2/month for the machine and $0.15/month for a
+1GB volume. The same Dockerfile runs on Railway or Render if you prefer their
+console; they start higher, around $5 and $7 a month.
 
-**The file-backed store is a seam, not a database.** `lib/request-store.ts`
-writes newline-delimited JSON. The pages and route handlers only call
-`saveRequest` and `listRequests`, so moving to Postgres, Sanity or Airtable
-touches that one file. It works as-is on a single instance; it will not survive
-horizontal scaling.
+**One machine, always.** The store is a single file opened in append mode. Two
+machines would interleave each other's lines and neither would notice. If you
+ever scale, that is the moment the store has to become a database — and it is
+built for it: callers only ever `appendRecord` and `readRecords`, so
+`lib/records.ts` is the whole migration.
+
+### First deploy
+
+```
+fly launch --no-deploy          # reads fly.toml; keep the app name
+fly volumes create daysi_data --size 1 --region ewr
+fly secrets set AUTH_SECRET="$(openssl rand -base64 32)" \
+                OWNER_EMAIL="her real address" \
+                SITE_URL="https://daysicollection.com" \
+                RESEND_API_KEY="re_..." \
+                NOTIFICATION_FROM="Daysi Collection <no-reply@daysicollection.com>"
+fly deploy
+fly scale count 1
+```
+
+### What has to be set, and what happens if it is not
+
+| Variable | Required? | If it is missing |
+|---|---|---|
+| `AUTH_SECRET` | **Yes** | The app refuses to start signing. A key everyone can read is not a key. |
+| `OWNER_EMAIL` | **Yes** | Nobody gets the office. Set to the wrong address and somebody else does. |
+| `RESEND_API_KEY` | **Yes** | Sign-in links are generated and never delivered. Production refuses to print them rather than log a live credential — so nobody can sign in, Daysi included. |
+| `SITE_URL` | **Yes** | Sign-in links, the QR code and Stripe's return URL all point at localhost. |
+| `NOTIFICATION_FROM` | With Resend | The address the mail comes from; must be on a domain verified with Resend. |
+| `DATA_DIR` | Set in `fly.toml` | Falls back to `.data` inside the bundle, which a deploy replaces. Everything she has done disappears on the next release. |
+| `STRIPE_SECRET_KEY` | No | Card payment is not offered. Orders are placed and settled in person, and the site says so. |
+| `STRIPE_WEBHOOK_SECRET` | With Stripe | The webhook refuses every call, which is the safe default: nothing is marked paid on trust. |
+
+### Backups
+
+One directory holds everything: `fly ssh console -C "tar cz /data" > backup.tgz`.
+It contains client names, addresses and order history, so it is personal data —
+keep it somewhere private and delete old copies.
+
+## Her manual
+
+`docs/manual-del-taller.html` is the guide Daysi actually uses: every task in
+the office, in Spanish, written against the exact labels on her screen rather
+than against the code. It is deliberately not a developer document — she signs
+in, changes a price, puts a piece on the rack, pulls her books for the
+accountant. If a label in `messages/es.json` changes, the manual has to change
+with it, or it starts describing a screen that no longer exists.
 
 ## Placeholder content
 

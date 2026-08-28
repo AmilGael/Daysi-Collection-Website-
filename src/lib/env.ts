@@ -1,3 +1,5 @@
+import path from "node:path";
+
 /**
  * Every secret the site can use, read in one place and never re-read from
  * `process.env` elsewhere. Each one is optional: the site runs completely
@@ -11,6 +13,14 @@ function optional(name: string): string | null {
 }
 
 export const env = {
+  /**
+   * Everything the running site writes — records, sessions, and the photographs
+   * Daysi uploads — lives under this one directory, so a host needs exactly one
+   * persistent disk mounted at one path. Unset, it is `.data` beside the source,
+   * which is what development has always used.
+   */
+  dataDirectory: optional("DATA_DIR") ?? path.join(process.cwd(), ".data"),
+
   // Development follows whatever port the server was actually given, so
   // sign-in links and the QR code stay correct when 3000 is taken. Production
   // sets SITE_URL explicitly.

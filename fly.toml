@@ -1,0 +1,33 @@
+# Fly.io, chosen because it is the cheapest host that gives a real disk:
+# roughly $2/month for the machine and $0.15/month for a 1GB volume. Railway
+# and Render both work from the same Dockerfile if you prefer their console;
+# they start around $5 and $7 a month.
+
+app = "daysi-collection"
+primary_region = "ewr"  # Newark — the closest region to the Bronx.
+
+[build]
+
+[env]
+  PORT = "3000"
+  # Everything the site writes goes here, and here is the volume.
+  DATA_DIR = "/data"
+
+[[mounts]]
+  source = "daysi_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  # The machine sleeps when nobody is on the site and wakes on the next
+  # request, which is most of the day for an atelier. It must never scale past
+  # one: the store is a single file on a single disk, and two writers would
+  # interleave lines. `fly scale count 1` is the only correct count.
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

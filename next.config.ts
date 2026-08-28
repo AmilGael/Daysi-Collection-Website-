@@ -24,6 +24,12 @@ const securityHeaders = [
 const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  /**
+   * Builds a self-contained server that carries only the dependencies it
+   * actually imports, so the deployed image is small enough to rebuild and
+   * redeploy quickly. Required by the Dockerfile, which copies `server.js`.
+   */
+  output: "standalone",
   images: {
     formats: ["image/avif", "image/webp"],
   },
