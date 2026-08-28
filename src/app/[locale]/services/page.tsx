@@ -4,6 +4,7 @@ import { services, translate } from "@/content";
 import type { Locale } from "@/i18n/routing";
 import { PageHeader } from "@/components/page-header";
 import { ButtonLink } from "@/components/ui";
+import { PHOTO_QUALITY } from "@/lib/images";
 
 /**
  * The three services, each given a band of its own.
@@ -51,6 +52,7 @@ export default async function ServicesPage({
                     src={service.image}
                     alt=""
                     fill
+                    quality={PHOTO_QUALITY}
                     sizes="(min-width: 1024px) 55vw, 90vw"
                     className="object-cover"
                   />

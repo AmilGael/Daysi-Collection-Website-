@@ -4,6 +4,7 @@ import { business, translate } from "@/content";
 import type { Locale } from "@/i18n/routing";
 import { ButtonLink, Prose, SectionHeading } from "@/components/ui";
 import { GoogleBusiness } from "@/components/google-business";
+import { PHOTO_QUALITY } from "@/lib/images";
 
 export default async function AtelierPage({
   params,
@@ -24,6 +25,7 @@ export default async function AtelierPage({
           alt=""
           fill
           priority
+          quality={PHOTO_QUALITY}
           sizes="100vw"
           className="object-cover object-[38%_28%]"
         />
@@ -48,9 +50,10 @@ export default async function AtelierPage({
         </div>
         <div className="relative aspect-4/5 overflow-hidden bg-paper-warm">
           <Image
-            src="/images/real/daysi-portrait-seated.jpg"
+            src="/images/real/daysi-portrait-standing.jpg"
             alt={t("portraitAlt")}
             fill
+            quality={PHOTO_QUALITY}
             sizes="(min-width: 1024px) 45vw, 90vw"
             className="object-cover"
           />
@@ -80,6 +83,7 @@ export default async function AtelierPage({
             src="/images/real/atelier-shelves.jpg"
             alt=""
             fill
+            quality={PHOTO_QUALITY}
             sizes="(min-width: 1024px) 45vw, 90vw"
             className="object-cover"
           />

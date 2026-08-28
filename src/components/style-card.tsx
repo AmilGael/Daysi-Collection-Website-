@@ -4,6 +4,7 @@ import { useLocale } from "next-intl";
 import { findPriceEntry, primaryPhoto, translate, type GarmentStyle } from "@/content";
 import { formatMoney } from "@/lib/money";
 import { Link, type Locale } from "@/i18n/routing";
+import { PHOTO_QUALITY } from "@/lib/images";
 
 /**
  * One piece in the lookbook.
@@ -32,6 +33,7 @@ export function StyleCard({ style, priority = false }: { style: GarmentStyle; pr
             alt={translate(photo.alt, locale)}
             fill
             priority={priority}
+            quality={PHOTO_QUALITY}
             sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
             className="object-cover transition-transform duration-[1.2s] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.03]"
           />

@@ -227,8 +227,14 @@ items still outstanding in PRD Section 15.1:
   `public/images/real/`, `public/images/gallery/` and `public/brand/`. The
   generated stand-ins are deleted, and a test in `content/catalog.test.ts`
   states the rule that keeps them out: the atelier offers no cloth it cannot
-  show you. The workshop video still `daysi-sewing` is 464px — replace it with
-  a frame from a higher-quality export when one exists.
+  show you. The two 464px stills lifted from her process video are gone as
+  well: the home workroom picture and the custom-garment picture are now cut
+  from 3414×5120 originals, so nothing on the site is upscaled any more.
+
+  The photographs are served at `quality={PHOTO_QUALITY}` (85) rather than
+  next/image's default 75. The number was measured, not guessed — the
+  reasoning and the byte cost are in `lib/images.ts`. Office thumbnails keep
+  the default.
 
 - **The logo** is hers, knocked out of the white paper it was drawn on into
   `public/brand/`. It is a raster trace, so it is soft at very large sizes; a

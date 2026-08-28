@@ -6,6 +6,7 @@ import type { Locale } from "@/i18n/routing";
 import { formatMoney } from "@/lib/money";
 import { PageHeader } from "@/components/page-header";
 import { ButtonLink, SectionHeading } from "@/components/ui";
+import { PHOTO_QUALITY } from "@/lib/images";
 
 export default async function AlterationsPage({
   params,
@@ -71,6 +72,7 @@ export default async function AlterationsPage({
               src="/images/real/craft-detail.jpg"
               alt=""
               fill
+              quality={PHOTO_QUALITY}
               sizes="(min-width: 1024px) 45vw, 90vw"
               className="object-cover"
             />

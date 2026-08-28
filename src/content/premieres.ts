@@ -69,7 +69,7 @@ export const services: readonly Service[] = [
       { en: "A written estimate before work begins", es: "Un estimado por escrito antes de empezar" },
       { en: "Two fittings included", es: "Dos pruebas incluidas" },
     ],
-    image: "/images/real/gingham-dress.jpg",
+    image: "/images/real/custom-dress.jpg",
   },
   {
     id: "alterations",

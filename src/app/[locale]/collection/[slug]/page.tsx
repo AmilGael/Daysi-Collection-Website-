@@ -17,6 +17,7 @@ import { routing, type Locale } from "@/i18n/routing";
 import { StyleOrderPanel } from "@/components/style-order-panel";
 import { LookbookGrid, StyleCard } from "@/components/style-card";
 import { Tag } from "@/components/ui";
+import { PHOTO_QUALITY } from "@/lib/images";
 
 export function generateStaticParams() {
   return routing.locales.flatMap((locale) =>
@@ -77,6 +78,7 @@ export default async function StylePage({
                 alt={translate(photo.alt, language)}
                 fill
                 priority
+                quality={PHOTO_QUALITY}
                 sizes="(min-width: 1024px) 55vw, 92vw"
                 className="object-cover"
               />

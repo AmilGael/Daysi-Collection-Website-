@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { GalleryCategoryId } from "@/content/types";
+import { PHOTO_QUALITY } from "@/lib/images";
 
 export type WallWork = {
   readonly id: string;
@@ -109,6 +110,7 @@ export function GalleryWall({
                 alt={work.caption}
                 width={work.width}
                 height={work.height}
+                quality={PHOTO_QUALITY}
                 sizes="(min-width: 1280px) 22vw, (min-width: 768px) 30vw, 45vw"
                 className="h-auto w-full transition-transform duration-[1.2s] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.03]"
               />
@@ -147,6 +149,7 @@ export function GalleryWall({
               alt={open.caption}
               width={open.width}
               height={open.height}
+              quality={PHOTO_QUALITY}
               sizes="92vw"
               className="max-h-full w-auto max-w-full object-contain"
               priority

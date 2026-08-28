@@ -14,6 +14,7 @@ import { ButtonLink, SectionHeading, Tag, TextLink } from "@/components/ui";
 import { LookbookGrid, StyleCard } from "@/components/style-card";
 import { GoogleBusiness } from "@/components/google-business";
 import { formatMoney } from "@/lib/money";
+import { PHOTO_QUALITY } from "@/lib/images";
 
 export default async function HomePage({
   params,
@@ -54,6 +55,7 @@ async function Hero() {
         alt=""
         fill
         priority
+        quality={PHOTO_QUALITY}
         sizes="100vw"
         className="object-cover object-[72%_18%]"
       />
@@ -118,8 +120,11 @@ async function Story() {
           src="/images/real/daysi-portrait.jpg"
           alt={t("storyPortraitAlt")}
           fill
+          quality={PHOTO_QUALITY}
           sizes="(min-width: 1024px) 40vw, 90vw"
-          className="object-cover object-top"
+          // The file is already cut to 4:5, so nothing here is deciding
+          // where her head sits — the crop was chosen, not defaulted.
+          className="object-cover"
         />
       </div>
       <div className="flex flex-col gap-7 lg:col-span-6 lg:col-start-7 lg:justify-end lg:pb-6">
@@ -182,6 +187,7 @@ async function Services() {
               src={service.image}
               alt=""
               fill
+              quality={PHOTO_QUALITY}
               sizes="(min-width: 768px) 34vw, 100vw"
               className="object-cover opacity-85 transition-all duration-[1.2s] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.04] group-hover:opacity-100"
             />
@@ -258,9 +264,10 @@ async function Alterations() {
       </div>
       <div className="relative aspect-4/5 overflow-hidden bg-paper-warm lg:col-span-5 lg:order-1">
         <Image
-          src="/images/real/daysi-sewing.jpg"
+          src="/images/real/workroom.jpg"
           alt=""
           fill
+          quality={PHOTO_QUALITY}
           sizes="(min-width: 1024px) 40vw, 90vw"
           className="object-cover"
         />
@@ -304,6 +311,7 @@ async function NextPremiere() {
             src={premiere.coverImage}
             alt=""
             fill
+            quality={PHOTO_QUALITY}
             sizes="(min-width: 1024px) 55vw, 90vw"
             className="object-cover"
           />
