@@ -138,7 +138,7 @@ export function FabricManager({
               maxLength={40}
               required
               placeholder={t("fabricNamePlaceholder")}
-              className="w-56 border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink focus:outline-none"
+              className="w-56 border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink"
             />
           </label>
 
@@ -181,7 +181,7 @@ export function FabricManager({
                     setPrices((current) => ({ ...current, [category]: event.target.value }))
                   }
                   placeholder="—"
-                  className="w-20 bg-transparent py-1.5 pl-1 text-right text-[0.875rem] tabular-nums text-ink focus:outline-none"
+                  className="w-20 bg-transparent py-1.5 pl-1 text-right text-[0.875rem] tabular-nums text-ink"
                 />
               </span>
             </label>

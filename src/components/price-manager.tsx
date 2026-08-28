@@ -158,7 +158,7 @@ function PriceTable({
             {draftFor(row).map((value, index) => (
               <label key={columns[index]} className="flex items-center gap-2 text-[0.75rem] text-ink-faint">
                 {columns[index]}
-                <span className="flex items-center border border-line bg-paper px-2">
+                <span className="flex items-center border border-line bg-paper px-2 focus-within:border-ink">
                   <span className="text-[0.8125rem] text-ink-faint">$</span>
                   <input
                     type="number"
@@ -174,7 +174,7 @@ function PriceTable({
                         return rest;
                       });
                     }}
-                    className="w-24 bg-transparent py-1.5 pl-1 text-right text-[0.875rem] tabular-nums focus:outline-none"
+                    className="w-24 bg-transparent py-1.5 pl-1 text-right text-[0.875rem] tabular-nums"
                   />
                 </span>
               </label>

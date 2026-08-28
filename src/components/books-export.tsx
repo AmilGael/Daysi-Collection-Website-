@@ -95,7 +95,7 @@ export function BooksExport({
               setFrom(event.target.value);
               setState("idle");
             }}
-            className="border border-line bg-paper px-3 py-2 text-[0.875rem] text-ink focus:border-ink focus:outline-none"
+            className="border border-line bg-paper px-3 py-2 text-[0.875rem] text-ink focus:border-ink"
           />
         </label>
         <label className="flex flex-col gap-1.5 text-[0.75rem] text-ink-faint">
@@ -107,7 +107,7 @@ export function BooksExport({
               setTo(event.target.value);
               setState("idle");
             }}
-            className="border border-line bg-paper px-3 py-2 text-[0.875rem] text-ink focus:border-ink focus:outline-none"
+            className="border border-line bg-paper px-3 py-2 text-[0.875rem] text-ink focus:border-ink"
           />
         </label>
         <button

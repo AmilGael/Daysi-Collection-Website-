@@ -49,7 +49,7 @@ async function Hero() {
   const t = await getTranslations("home");
 
   return (
-    <section className="relative isolate -mt-20 flex min-h-[94svh] items-end overflow-hidden bg-ink pt-20">
+    <section className="on-ink relative isolate -mt-20 flex min-h-[94svh] items-end overflow-hidden bg-ink pt-20">
       <Image
         src="/images/real/hero.jpg"
         alt=""
@@ -181,7 +181,7 @@ async function Services() {
           <Link
             key={service.id}
             href="/services"
-            className="group relative aspect-4/5 overflow-hidden bg-ink"
+            className="on-ink group relative aspect-4/5 overflow-hidden bg-ink"
           >
             <Image
               src={service.image}
@@ -280,7 +280,7 @@ async function PricePromise() {
   const t = await getTranslations("home");
 
   return (
-    <section className="reveal border-y border-line bg-ink py-24 text-paper lg:py-28">
+    <section className="on-ink reveal border-y border-line bg-ink py-24 text-paper lg:py-28">
       <div className="shell grid gap-10 lg:grid-cols-12 lg:items-end lg:gap-16">
         <div className="flex flex-col gap-5 lg:col-span-7">
           <h2 className="text-title text-balance text-paper">{t("pricesTitle")}</h2>

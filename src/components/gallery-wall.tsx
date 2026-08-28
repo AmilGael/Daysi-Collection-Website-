@@ -130,7 +130,7 @@ export function GalleryWall({
           role="dialog"
           aria-modal="true"
           aria-label={open.caption}
-          className="fixed inset-0 z-50 flex flex-col bg-ink/97"
+          className="on-ink fixed inset-0 z-50 flex flex-col bg-ink/97"
           onClick={() => setOpenIndex(null)}
         >
           <div className="flex items-center justify-between gap-4 px-5 py-4">

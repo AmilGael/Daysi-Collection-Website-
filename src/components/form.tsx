@@ -11,7 +11,7 @@ import type { Estimate } from "@/lib/pricing";
  */
 
 const controlClass =
-  "w-full rounded-[2px] border border-line bg-paper px-4 py-3 text-[0.9375rem] text-ink transition-colors placeholder:text-ink-faint/60 focus:border-ink focus:outline-none";
+  "w-full rounded-[2px] border border-line-strong bg-paper px-4 py-3 text-[0.9375rem] text-ink transition-colors placeholder:text-ink-faint focus:border-ink";
 
 export function Field({
   label,
@@ -47,7 +47,7 @@ export function Field({
       ) : null}
       {children({ id, describedBy })}
       {error ? (
-        <p id={errorId} role="alert" className="text-[0.8125rem] text-marigold-deep">
+        <p id={errorId} role="alert" className="text-[0.8125rem] text-alert">
           {error}
         </p>
       ) : null}

@@ -19,7 +19,7 @@ export default async function AtelierPage({
 
   return (
     <>
-      <section className="relative isolate -mt-20 flex min-h-[70svh] items-end overflow-hidden bg-ink pt-20">
+      <section className="on-ink relative isolate -mt-20 flex min-h-[70svh] items-end overflow-hidden bg-ink pt-20">
         <Image
           src="/images/real/atelier-workspace.jpg"
           alt=""
@@ -60,7 +60,7 @@ export default async function AtelierPage({
         </div>
       </section>
 
-      <section className="reveal bg-ink py-24 text-paper">
+      <section className="on-ink reveal bg-ink py-24 text-paper">
         <div className="shell grid gap-14 lg:grid-cols-2 lg:gap-24">
           <div className="flex flex-col gap-6">
             <SectionHeading index="02" title={t("sectionCraft")} tone="paper" />

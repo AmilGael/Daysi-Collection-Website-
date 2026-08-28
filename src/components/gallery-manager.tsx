@@ -153,7 +153,7 @@ export function GalleryManager({
             <select
               value={category}
               onChange={(event) => setCategory(event.target.value as GalleryCategoryId)}
-              className="border border-line bg-paper px-3 py-2 text-[0.875rem] text-ink focus:border-ink focus:outline-none"
+              className="border border-line bg-paper px-3 py-2 text-[0.875rem] text-ink focus:border-ink"
             >
               {categories.map((option) => (
                 <option key={option.id} value={option.id}>
@@ -171,7 +171,7 @@ export function GalleryManager({
             onChange={(event) => setCaption(event.target.value)}
             maxLength={200}
             placeholder={t("galleryCaptionPlaceholder")}
-            className="border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink focus:outline-none"
+            className="border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink"
           />
         </label>
 

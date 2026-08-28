@@ -17,7 +17,20 @@
   --color-paper-deep: #e8dfcc;
   --color-line: #ded3bd;
   --color-marigold: #e8a302;
-  --color-marigold-deep: #a97600;
+  /* Text-capable, unlike the old #a97600 which measured 3.75:1 on paper and
+     was carrying every validation error on the site at 13px. */
+  --color-marigold-deep: #825e07;
+
+  /* A field edge has to be findable: --color-line is a hairline for rules and
+     measures 1.25:1 against the warm panels the forms sit in. */
+  --color-line-strong: #8e8471;
+
+  /* An error is not a success. These were the same swatch. */
+  --color-alert: #9c2f18;
+
+  /* The focus ring, which was --color-ink and therefore 1.0:1 — invisible —
+     on the footer, the hero, the lightbox and every dark band. */
+  --color-focus: #825e07;
 
   --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
   --font-body: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -63,7 +76,7 @@
 
   /* Nothing on this site is a pill. Corners are a hairline, or square. */
   :focus-visible {
-    outline: 2px solid var(--color-ink);
+    outline: 2px solid var(--color-focus);
     outline-offset: 3px;
     border-radius: 1px;
   }
@@ -87,6 +100,15 @@
 }
 
 @layer components {
+  /**
+   * Marks a subtree that sits on ink. The focus ring is the one thing that
+   * must be found rather than merely be present, so it takes its own value
+   * here instead of inheriting a colour tuned for paper.
+   */
+  .on-ink {
+    --color-focus: #efb01a;
+  }
+
   /**
    * A small letterspaced label. Plain by design — a decorative rule on every
    * label is the kind of tic that makes a page look assembled rather than

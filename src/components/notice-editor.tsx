@@ -51,7 +51,7 @@ export function NoticeEditor({
         rows={2}
         maxLength={200}
         placeholder={t("noticePlaceholder")}
-        className="w-full resize-none border border-line bg-paper px-4 py-3 text-[0.9375rem] leading-relaxed placeholder:text-ink-faint focus:border-ink focus:outline-none"
+        className="w-full resize-none border border-line bg-paper px-4 py-3 text-[0.9375rem] leading-relaxed placeholder:text-ink-faint focus:border-ink"
       />
       <div className="flex flex-wrap items-center gap-5">
         <label className="flex cursor-pointer items-center gap-2 text-[0.875rem]">

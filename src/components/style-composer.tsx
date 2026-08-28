@@ -183,7 +183,7 @@ export function StyleComposer({
         </Field>
         <Field label={t("stylePrice")}>
           {needsPrice ? (
-            <span className="flex items-center border border-line bg-paper px-2">
+            <span className="flex items-center border border-line bg-paper px-2 focus-within:border-ink">
               <span className="text-[0.8125rem] text-ink-faint">$</span>
               <input
                 type="number"
@@ -191,7 +191,7 @@ export function StyleComposer({
                 step="0.01"
                 value={price}
                 onChange={(event) => setPrice(event.target.value)}
-                className="w-full bg-transparent py-2 pl-1 text-[0.9375rem] tabular-nums text-ink focus:outline-none"
+                className="w-full bg-transparent py-2 pl-1 text-[0.9375rem] tabular-nums text-ink"
               />
             </span>
           ) : (
@@ -250,7 +250,7 @@ export function StyleComposer({
 }
 
 const inputClass =
-  "w-full border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink focus:outline-none";
+  "w-full border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

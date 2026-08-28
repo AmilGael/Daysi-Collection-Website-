@@ -84,7 +84,7 @@ export function SiteHeader({
     <header
       className={`sticky top-0 z-40 transition-all duration-500 ease-[cubic-bezier(0.22,0.61,0.36,1)] ${
         isOverPhotograph
-          ? "border-b border-transparent bg-transparent text-paper"
+          ? "on-ink border-b border-transparent bg-transparent text-paper"
           : "border-b border-line bg-paper/92 text-ink backdrop-blur-md"
       }`}
     >

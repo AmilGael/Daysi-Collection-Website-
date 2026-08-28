@@ -30,7 +30,7 @@ export async function SiteFooter() {
   );
 
   return (
-    <footer className="mt-32 bg-ink text-paper">
+    <footer className="on-ink mt-32 bg-ink text-paper">
       <div className="shell grid gap-14 py-20 md:grid-cols-[1.4fr_1fr_1fr] lg:gap-20">
         <div className="flex flex-col gap-6">
           <Logo tone="paper" className="text-paper" />
