@@ -11,11 +11,27 @@ import { buttonClass } from "./ui";
 export type HeaderViewer = { name: string; email: string; isOwner: boolean } | null;
 
 /**
- * The site's tabs. Seven destinations plus the one action the whole site is
- * pointing at, which stays visible at every width.
+ * The bar carries the six destinations a client actually navigates by: what
+ * they can buy, what Daysi has made, what it costs, and who she is. Eight
+ * would not fit — the Spanish labels overflow 1280px — and a bar you have to
+ * squint at is not a shorter bar, it is a worse one.
+ *
+ * Everything else lives one click away in the menu, which is why the menu
+ * button stays visible at every width rather than only on a phone.
  */
-const TABS = [
+const PRIMARY_TABS = [
   { href: "/collection", label: "collection" },
+  { href: "/gallery", label: "gallery" },
+  { href: "/alterations", label: "alterations" },
+  { href: "/prices", label: "prices" },
+  { href: "/design-studio", label: "studio" },
+  { href: "/atelier", label: "atelier" },
+] as const;
+
+/** Every destination, in the order the menu lists them. */
+const ALL_TABS = [
+  { href: "/collection", label: "collection" },
+  { href: "/gallery", label: "gallery" },
   { href: "/premieres", label: "premieres" },
   { href: "/services", label: "services" },
   { href: "/alterations", label: "alterations" },
@@ -78,7 +94,7 @@ export function SiteHeader({
         </Link>
 
         <nav aria-label={t("home")} className="hidden items-center gap-4 xl:flex 2xl:gap-7">
-          {TABS.map((tab) => {
+          {PRIMARY_TABS.map((tab) => {
             const isActive = pathname.startsWith(tab.href);
             return (
               <Link
@@ -136,7 +152,7 @@ export function SiteHeader({
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-expanded={isMenuOpen}
             aria-label={isMenuOpen ? t("closeMenu") : t("openMenu")}
-            className={`flex h-10 w-10 items-center justify-center rounded-[2px] border xl:hidden ${
+            className={`flex h-10 w-10 items-center justify-center rounded-[2px] border ${
               isOverPhotograph ? "border-paper/40" : "border-line"
             }`}
           >
@@ -157,9 +173,9 @@ export function SiteHeader({
       </div>
 
       {isMenuOpen ? (
-        <div className="fixed inset-x-0 top-20 bottom-0 z-40 overflow-y-auto bg-paper xl:hidden">
+        <div className="fixed inset-x-0 top-20 bottom-0 z-40 overflow-y-auto bg-paper">
           <nav className="shell flex flex-col gap-1 py-8">
-            {TABS.map((tab, index) => (
+            {ALL_TABS.map((tab, index) => (
               <Link
                 key={tab.href}
                 href={tab.href}

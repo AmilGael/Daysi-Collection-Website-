@@ -6,6 +6,7 @@ import { currentViewer } from "@/lib/auth/session";
 import { earningsFrom, loadLedger, monthlyReceived } from "@/lib/earnings";
 import { listRequests, currentRecords } from "@/lib/request-store";
 import { allLiveStyles, storedNotice, styleOverrides } from "@/lib/live-catalog";
+import { GALLERY_ORDER, manageableGallery } from "@/lib/live-gallery";
 import {
   customFabrics,
   liveAlterations,
@@ -22,6 +23,7 @@ import { NoticeEditor } from "@/components/notice-editor";
 import { PriceManager } from "@/components/price-manager";
 import { FabricManager } from "@/components/fabric-manager";
 import { BooksExport } from "@/components/books-export";
+import { GalleryManager, type ManagedWork } from "@/components/gallery-manager";
 
 /**
  * Daysi's office.
@@ -44,6 +46,7 @@ export default async function OfficePage({
   if (viewer.role !== "owner") notFound();
 
   const t = await getTranslations("office");
+  const tg = await getTranslations("gallery");
 
   const ledger = loadLedger();
   const earnings = earningsFrom(ledger);
@@ -78,6 +81,17 @@ export default async function OfficePage({
     coverSrc: overridesById.get(style.id)?.coverSrc,
   }));
   const notice = storedNotice();
+
+  const galleryWorksManaged: ManagedWork[] = manageableGallery().map((work) => ({
+    id: work.id,
+    src: work.src,
+    width: work.width,
+    height: work.height,
+    category: work.category,
+    caption: translate(work.caption, language),
+    hidden: work.hidden,
+  }));
+  const galleryCategories = GALLERY_ORDER.map((id) => ({ id, label: tg(`category.${id}`) }));
 
   // Ranges an accountant actually asks for, built from today rather than hard
   // coded, so this still offers the right years in 2027.
@@ -197,6 +211,16 @@ export default async function OfficePage({
             </p>
           </div>
           <CollectionManager styles={managedStyles} locale={language} />
+        </section>
+
+        <section className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-heading">{t("galleryTitle")}</h2>
+            <p className="max-w-xl text-[0.875rem] leading-relaxed text-ink-faint">
+              {t("galleryLead")}
+            </p>
+          </div>
+          <GalleryManager works={galleryWorksManaged} categories={galleryCategories} />
         </section>
 
         <section className="flex flex-col gap-6">

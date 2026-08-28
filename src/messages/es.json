@@ -18,7 +18,8 @@
     "closeMenu": "Cerrar menú",
     "language": "Idioma",
     "bookCta": "Reservar una cita",
-    "bookCtaShort": "Reservar"
+    "bookCtaShort": "Reservar",
+    "gallery": "El trabajo"
   },
   "common": {
     "from": "Desde",
@@ -507,6 +508,32 @@
     "booksTo": "Hasta",
     "booksDownload": "Descargar el archivo",
     "booksWorking": "Preparando…",
-    "booksEmpty": "No se facturó nada en esas fechas. Pruebe un rango más amplio."
+    "booksEmpty": "No se facturó nada en esas fechas. Pruebe un rango más amplio.",
+    "galleryTitle": "El trabajo",
+    "galleryLead": "Cada pieza terminada que un cliente puede ver. Desmarque una para quitarla del sitio sin perderla, y agregue una foto nueva cada vez que termine algo.",
+    "galleryAdd": "Agregar una pieza terminada",
+    "galleryPhoto": "Fotografía",
+    "galleryCategory": "Dónde va",
+    "galleryCaption": "Una línea sobre la pieza",
+    "galleryCaptionPlaceholder": "Un vestido marfil con cintura bordada, hecho para una boda en junio.",
+    "gallerySave": "Agregar al trabajo",
+    "gallerySaved": "Agregada. Ya está en el sitio."
+  },
+  "gallery": {
+    "title": "El trabajo",
+    "lead": "Dieciocho años de piezas terminadas — pasarela, encargos, novias, accesorios y prensa. Nada de esto está a la venta; todo esto es lo que Daysi sabe hacer.",
+    "all": "Todo",
+    "count": "{count, plural, one {# pieza} other {# piezas}}",
+    "close": "Cerrar",
+    "previous": "Pieza anterior",
+    "next": "Pieza siguiente",
+    "category": {
+      "runway": "Pasarela",
+      "commissions": "Encargos",
+      "bridal": "Novias y ocasión",
+      "accessories": "Accesorios y estampados",
+      "press": "Prensa",
+      "workroom": "En el taller"
+    }
   }
 }

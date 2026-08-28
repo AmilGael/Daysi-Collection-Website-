@@ -18,7 +18,8 @@
     "closeMenu": "Close menu",
     "language": "Language",
     "bookCta": "Book a session",
-    "bookCtaShort": "Book"
+    "bookCtaShort": "Book",
+    "gallery": "The work"
   },
   "common": {
     "from": "From",
@@ -507,6 +508,32 @@
     "booksTo": "To",
     "booksDownload": "Download the file",
     "booksWorking": "Preparing…",
-    "booksEmpty": "Nothing was invoiced in those dates. Try a wider range."
+    "booksEmpty": "Nothing was invoiced in those dates. Try a wider range.",
+    "galleryTitle": "The work",
+    "galleryLead": "Every finished piece a client can browse. Untick one to take it off the site without losing it, and add a new photograph whenever you finish something.",
+    "galleryAdd": "Add a piece you have finished",
+    "galleryPhoto": "Photograph",
+    "galleryCategory": "Where it belongs",
+    "galleryCaption": "A line about it",
+    "galleryCaptionPlaceholder": "An ivory gown with a beaded waist, made for a wedding in June.",
+    "gallerySave": "Add to the work",
+    "gallerySaved": "Added. It is on the site now."
+  },
+  "gallery": {
+    "title": "The work",
+    "lead": "Eighteen years of finished pieces — runway, commissions, bridal, accessories and press. None of it is for sale; all of it is what Daysi can make.",
+    "all": "Everything",
+    "count": "{count, plural, one {# piece} other {# pieces}}",
+    "close": "Close",
+    "previous": "Previous piece",
+    "next": "Next piece",
+    "category": {
+      "runway": "Runway",
+      "commissions": "Commissions",
+      "bridal": "Bridal and occasion",
+      "accessories": "Accessories and prints",
+      "press": "Press",
+      "workroom": "In the workroom"
+    }
   }
 }
