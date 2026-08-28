@@ -134,7 +134,12 @@
 
   /**
    * Sections fade up as they arrive. The observer that adds `.is-visible` lives
-   * in reveal.tsx; without JavaScript the content is simply already visible.
+   * in reveal.tsx.
+   *
+   * The opacity below is unconditional, so without the observer the content
+   * stays hidden — which is every route, below the fold, for a reader with
+   * scripting off. The `scripting: none` query is the fallback, and it is
+   * evaluated at parse time so there is no flash of hidden content.
    */
   .reveal {
     opacity: 0;
@@ -147,6 +152,14 @@
   .reveal.is-visible {
     opacity: 1;
     transform: none;
+  }
+
+  /* No script, no observer, nothing to fade — so nothing is hidden. */
+  @media (scripting: none) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

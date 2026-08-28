@@ -34,7 +34,6 @@ export function CollectionGallery({
   sizes: readonly Size[];
 }) {
   const t = useTranslations("collection");
-  const tc = useTranslations("common");
   const locale = useLocale() as Locale;
 
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -145,9 +144,6 @@ export function CollectionGallery({
         </div>
       )}
 
-      <p className="shell pt-6 text-[0.75rem] leading-relaxed text-ink-faint">
-        {tc("placeholderImagery")}
-      </p>
     </div>
   );
 }
