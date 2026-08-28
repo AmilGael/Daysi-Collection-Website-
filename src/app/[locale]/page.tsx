@@ -15,7 +15,7 @@ import { LookbookGrid, StyleCard } from "@/components/style-card";
 import { GoogleBusiness } from "@/components/google-business";
 import { formatMoney } from "@/lib/money";
 import { PHOTO_QUALITY } from "@/lib/images";
-import { HERO_IMAGE } from "@/content/photographs";
+import { HERO_ASPECT, HERO_IMAGE } from "@/content/photographs";
 
 export default async function HomePage({
   params,
@@ -46,20 +46,19 @@ export default async function HomePage({
  * picture and a single line — no label above it, no paragraph beneath it, and
  * not two buttons competing for the same click.
  *
- * The photograph and the type hold separate halves of the screen rather than
- * one sitting on the other. The old hero laid a dark gradient across a full
- * bleed studio portrait so the headline had something to sit on, which cost
- * three things at once: the photograph's colour, its shape — a 2:3 portrait
- * enlarged 2.3 times into a landscape band, which is why she looked soft — and
- * its subject, since the frame cropped away everything but a shoulder.
+ * The picture and the type hold separate parts of the screen rather than one
+ * sitting on the other. The first version of this page laid a dark gradient
+ * across a full bleed portrait so the headline had something to sit on, which
+ * cost the picture its colour, its shape and its subject at once.
  *
- * Split, none of that is needed. The type sits on ink, at ink's own contrast.
- * The photograph is shown at close to its own ratio, so the whole walk is in
- * frame and nothing is painted over it.
+ * Split, none of that is needed. The type sits on ink, at ink's own contrast,
+ * and the picture is shown at its own proportions with nothing painted over
+ * it. That matters more here than it did with a photograph: this is the
+ * October 2019 cover, and a cover is a thing somebody laid out.
  *
  * The two are not given a half each. The type takes the room it needs and the
- * photograph takes a third, which is what a 2:3 portrait wants; an even split
- * down the middle is the layout you get when nobody chose one.
+ * cover takes what its height allows; an even split down the middle is the
+ * layout you get when nobody chose one.
  */
 async function Hero() {
   const t = await getTranslations("home");
@@ -68,18 +67,19 @@ async function Hero() {
     <section className="on-ink relative -mt-20 bg-ink text-paper">
       {/*
         The type keeps `.shell`, so its first character lands under the logo
-        without arithmetic. The photograph leaves the shell instead: a block in
-        the flow on a phone, where it follows the copy, and a column against
-        the right edge of the screen from lg up.
+        without arithmetic. The cover leaves the shell instead: a block in the
+        flow on a phone, where it follows the copy, and a column against the
+        right edge of the screen from lg up.
 
-        The column is 34% and not a half. `object-cover` scales to the box's
-        width, so a wider column renders a taller image and throws away more of
-        it: at 42% the frame cut her mid-calf. A 2:3 photograph in a 34% column
-        loses about 50px of the 770 it renders, which is ceiling and floor
-        rather than the person walking.
+        Centred rather than sat on the baseline, which is what it did when the
+        picture beside it was a photograph bled to the bottom of the frame. A
+        cover is a rectangle with a top and a bottom, and a two-line English
+        headline pinned to the floor beside one leaves a third of the ink
+        empty above it and nothing under it. Centred, the headline meets the
+        cover at Kalifa rather than at her hem.
       */}
-      <div className="shell relative z-10 flex flex-col justify-end gap-8 pb-16 pt-32 lg:min-h-[92svh] lg:pb-24 lg:pt-28">
-        <div className="flex flex-col gap-8 lg:max-w-[36rem]">
+      <div className="shell relative z-10 flex flex-col justify-end gap-8 pb-16 pt-32 lg:min-h-[92svh] lg:justify-center lg:pb-24 lg:pt-28">
+        <div className="flex flex-col gap-8 lg:max-w-[42rem]">
           <h1 className="max-w-[13ch] text-display text-paper">{t("heroTitle")}</h1>
           <p className="max-w-md text-[0.9375rem] leading-relaxed text-paper-soft">
             {t("heroLine")}
@@ -96,23 +96,34 @@ async function Hero() {
       </div>
 
       {/*
+        The cover, whole.
+
+        Every other picture on this site is a photograph and takes a crop
+        without complaining. This one is a printed cover with a masthead, a
+        logo and a headline already laid out on it, so the frame is cut to the
+        file's own proportions and the height decides the width. Nothing of it
+        is lost at any viewport, which is the whole point of putting it here.
+
         `top-20` rather than `inset-y-0`, and that 80px is the header's own
-        height. The header over this page is transparent light-on-dark, which
-        works over ink and fails over a photograph lit violet and white: the
-        tabs, the language pair and the account glyphs all landed on the bright
-        half and went to roughly 1.5:1. Starting the photograph below the bar
-        fixes it without laying a scrim over her work, and gives the image a
-        top edge that reads as a decision rather than a bleed.
+        height. The chrome over this page is transparent light-on-dark, which
+        works on ink and fails on a yellow cover — the tabs and the account
+        glyphs would sit on it at roughly 1.5:1. Held below the bar, the
+        chrome stays on ink and the cover keeps a top edge, which is also what
+        makes it read as an object on the page rather than as a second set of
+        branding arguing with the header.
       */}
-      <div className="relative aspect-4/5 w-full lg:absolute lg:bottom-0 lg:right-0 lg:top-20 lg:aspect-auto lg:w-[34%]">
+      <div
+        className="relative w-full lg:absolute lg:right-0 lg:top-20 lg:h-[calc(100%-5rem)] lg:w-auto"
+        style={{ aspectRatio: HERO_ASPECT }}
+      >
         <Image
           src={HERO_IMAGE}
           alt={t("heroImageAlt")}
           fill
           priority
           quality={PHOTO_QUALITY}
-          sizes="(min-width: 1024px) 34vw, 100vw"
-          className="object-cover object-[50%_46%]"
+          sizes="(min-width: 1024px) 32vw, 100vw"
+          className="object-cover"
         />
       </div>
     </section>
