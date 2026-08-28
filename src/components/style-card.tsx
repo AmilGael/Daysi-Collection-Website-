@@ -35,7 +35,7 @@ export function StyleCard({ style, priority = false }: { style: GarmentStyle; pr
             priority={priority}
             quality={PHOTO_QUALITY}
             sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
-            className="object-cover transition-transform duration-[1.2s] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.03]"
+            className="photo-hover object-cover transition-transform duration-[600ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.03]"
           />
         ) : null}
       </div>

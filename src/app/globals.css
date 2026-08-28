@@ -16,6 +16,13 @@
   --color-paper-warm: #f2ebdd;
   --color-paper-deep: #e8dfcc;
   --color-line: #ded3bd;
+
+  /* Text on the dark grounds. Paper at an alpha composites to a near-grey —
+     3% saturation over ink — so the warm brand disappears exactly where the
+     photographs are, and the three lowest steps failed contrast outright.
+     Two named values, tinted, replace nine alphas. */
+  --color-paper-soft: #bab3a0;
+  --color-paper-faint: #908b7f;
   --color-marigold: #e8a302;
   /* Text-capable, unlike the old #a97600 which measured 3.75:1 on paper and
      was carrying every validation error on the site at 13px. */
@@ -46,13 +53,24 @@
   --text-lead: clamp(1.075rem, 1.5vw, 1.3rem);
   --text-lead--line-height: 1.6;
 
-  --ease-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* The built-in easings are too weak to read as deliberate, and Tailwind's
+     unqualified `transition-*` defaults to ease-in-out, which delays the
+     moment the eye is already on. */
+  --ease-soft: cubic-bezier(0.23, 1, 0.32, 1);
+  --default-transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  --default-transition-duration: 150ms;
 }
 
 @layer base {
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    /* The header menu and the lightbox both set body overflow hidden, which
+       took the scrollbar away and slid the whole page sideways on open. */
+    scrollbar-gutter: stable;
+    color-scheme: light;
+    scrollbar-color: var(--color-line) var(--color-paper);
+    scrollbar-width: thin;
   }
 
   body {
@@ -60,6 +78,8 @@
     color: var(--color-ink);
     font-family: var(--font-body);
     font-feature-settings: "kern", "liga";
+    /* The macOS default caret is pure black, which this palette does not use. */
+    caret-color: var(--color-marigold-deep);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -100,6 +120,41 @@
 }
 
 @layer components {
+  /**
+   * A touch does not hover, but it fires one anyway. Without this a tap on a
+   * gallery tile starts a zoom and a caption veil that are still running when
+   * the lightbox opens over them, and they stay stuck behind it.
+   */
+  @media (hover: none), (pointer: coarse) {
+    .photo-hover {
+      transform: none !important;
+    }
+    .photo-hover-veil {
+      opacity: 0 !important;
+    }
+  }
+
+  /** Nothing in the world appears from nothing, so nothing here scales from 0. */
+  @keyframes surfaceIn {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .surface-in {
+    animation: surfaceIn 0.18s var(--ease-soft) both;
+  }
+
+  .surface-in--corner {
+    animation: surfaceIn 0.16s var(--ease-soft) both;
+    transform-origin: top right;
+  }
+
   /**
    * Marks a subtree that sits on ink. The focus ring is the one thing that
    * must be found rather than merely be present, so it takes its own value

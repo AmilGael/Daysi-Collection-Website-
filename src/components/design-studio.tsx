@@ -126,7 +126,7 @@ export function DesignStudio({
                 aria-label={translate(option.name, locale)}
                 aria-pressed={option.id === fabricId}
                 onClick={() => setFabricId(option.id)}
-                className={`aspect-square overflow-hidden rounded-[2px] border-2 transition-all ${
+                className={`aspect-square overflow-hidden rounded-[2px] border-2 transition-[border-color,transform] active:brightness-95 ${
                   option.id === fabricId
                     ? "border-ink scale-95"
                     : "border-transparent hover:border-line"

@@ -82,7 +82,7 @@ export function AccountMenu({
         {isOpen ? (
           <div
             role="menu"
-            className="absolute right-0 top-12 z-50 w-60 border border-line bg-paper text-ink shadow-[0_18px_40px_-24px_rgba(20,17,13,0.5)]"
+            className="surface-in--corner absolute right-0 top-12 z-50 w-60 border border-line bg-paper text-ink shadow-[0_18px_40px_-24px_rgba(20,17,13,0.5)]"
           >
             {viewer ? (
               <>

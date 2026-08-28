@@ -82,7 +82,7 @@ export function SiteHeader({
 
   return (
     <header
-      className={`sticky top-0 z-40 transition-all duration-500 ease-[cubic-bezier(0.22,0.61,0.36,1)] ${
+      className={`sticky top-0 z-40 transition-[background-color,border-color,color] duration-300 ${
         isOverPhotograph
           ? "on-ink border-b border-transparent bg-transparent text-paper"
           : "border-b border-line bg-paper/92 text-ink backdrop-blur-md"
@@ -108,8 +108,10 @@ export function SiteHeader({
                 {t(tab.label)}
                 <span
                   aria-hidden
-                  className={`absolute -bottom-2 left-0 h-px bg-marigold transition-all duration-300 ${
-                    isActive ? "w-full" : "w-0"
+                  /* Scales rather than grows: width is a layout property and
+                     animating it relays the line every frame. */
+                  className={`absolute -bottom-2 left-0 h-px w-full origin-left bg-marigold transition-transform duration-300 ${
+                    isActive ? "scale-x-100" : "scale-x-0"
                   }`}
                 />
               </Link>
@@ -163,19 +165,19 @@ export function SiteHeader({
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-expanded={isMenuOpen}
             aria-label={isMenuOpen ? t("closeMenu") : t("openMenu")}
-            className={`flex h-10 w-10 items-center justify-center rounded-[2px] border ${
+            className={`flex h-10 w-10 items-center justify-center rounded-[2px] border transition-transform active:scale-[0.97] ${
               isOverPhotograph ? "border-paper/40" : "border-line"
             }`}
           >
             <span className="relative block h-3 w-4">
               <span
-                className={`absolute left-0 h-px w-full bg-current transition-all duration-300 ${
-                  isMenuOpen ? "top-1.5 rotate-45" : "top-0"
+                className={`absolute left-0 top-0 h-px w-full bg-current transition-transform duration-300 ${
+                  isMenuOpen ? "translate-y-1.5 rotate-45" : "translate-y-0"
                 }`}
               />
               <span
-                className={`absolute left-0 h-px w-full bg-current transition-all duration-300 ${
-                  isMenuOpen ? "top-1.5 -rotate-45" : "top-3"
+                className={`absolute left-0 top-0 h-px w-full bg-current transition-transform duration-300 ${
+                  isMenuOpen ? "translate-y-1.5 -rotate-45" : "translate-y-3"
                 }`}
               />
             </span>

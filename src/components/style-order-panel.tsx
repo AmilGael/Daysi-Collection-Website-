@@ -94,7 +94,7 @@ export function StyleOrderPanel({
                 <span className="text-sm font-medium">{size?.label ?? offered.sizeId}</span>
                 <span
                   className={`text-[0.625rem] uppercase tracking-[0.1em] ${
-                    isSelected ? "text-paper/60" : "text-ink-faint"
+                    isSelected ? "text-paper-faint" : "text-ink-faint"
                   }`}
                 >
                   {offered.inStock ? tc("inStock") : tc("madeToOrder")}

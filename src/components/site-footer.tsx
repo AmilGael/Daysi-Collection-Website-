@@ -34,17 +34,17 @@ export async function SiteFooter() {
       <div className="shell grid gap-14 py-20 md:grid-cols-[1.4fr_1fr_1fr] lg:gap-20">
         <div className="flex flex-col gap-6">
           <Logo tone="paper" className="text-paper" />
-          <p className="max-w-sm text-sm leading-relaxed text-paper/60">
+          <p className="max-w-sm text-sm leading-relaxed text-paper-faint">
             {t("footer.tagline")}
           </p>
-          <div className="flex flex-col gap-1 text-sm text-paper/75">
+          <div className="flex flex-col gap-1 text-sm text-paper-soft">
             <a href={whatsappLink("Hola Daysi,")} className="link-underline w-fit">
               {business.phone}
             </a>
             <a href={`mailto:${business.email}`} className="link-underline w-fit">
               {business.email}
             </a>
-            <span className="pt-2 text-paper/50">{translate(business.serviceArea, locale)}</span>
+            <span className="pt-2 text-paper-faint">{translate(business.serviceArea, locale)}</span>
           </div>
           <LanguageSwitch tone="paper" />
         </div>
@@ -66,7 +66,7 @@ export async function SiteFooter() {
         </FooterColumn>
       </div>
 
-      <div className="shell flex flex-col gap-6 border-t border-paper/12 py-8 text-xs text-paper/45 sm:flex-row sm:items-center sm:justify-between">
+      <div className="shell flex flex-col gap-6 border-t border-paper/12 py-8 text-xs text-paper-faint sm:flex-row sm:items-center sm:justify-between">
         <p>{t("footer.rights", { year: new Date().getFullYear() })}</p>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           <Link href="/terms" className="hover:text-paper">
@@ -86,7 +86,7 @@ export async function SiteFooter() {
               {network}
             </a>
           ))}
-          <span className="text-paper/35">{t("footer.built")}</span>
+          <span className="text-paper-faint">{t("footer.built")}</span>
         </div>
       </div>
     </footer>
@@ -96,7 +96,7 @@ export async function SiteFooter() {
 function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="text-[0.6875rem] font-medium uppercase tracking-[0.2em] text-paper/40">
+      <h3 className="text-[0.6875rem] font-medium uppercase tracking-[0.2em] text-paper-faint">
         {title}
       </h3>
       <div className="flex flex-col gap-2.5">{children}</div>
@@ -106,7 +106,7 @@ function FooterColumn({ title, children }: { title: string; children: React.Reac
 
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="w-fit text-sm text-paper/75 transition-colors hover:text-paper">
+    <Link href={href} className="w-fit text-sm text-paper-soft transition-colors hover:text-paper">
       {children}
     </Link>
   );

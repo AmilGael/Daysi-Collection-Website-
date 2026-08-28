@@ -112,9 +112,9 @@ export function GalleryWall({
                 height={work.height}
                 quality={PHOTO_QUALITY}
                 sizes="(min-width: 1280px) 22vw, (min-width: 768px) 30vw, 45vw"
-                className="h-auto w-full transition-transform duration-[1.2s] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.03]"
+                className="photo-hover h-auto w-full transition-transform duration-[600ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.03]"
               />
-              <span className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+              <span className="photo-hover-veil pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                 <span className="image-veil absolute inset-0" />
                 <span className="absolute inset-x-0 bottom-0 p-4 text-left text-[0.8125rem] leading-snug text-paper">
                   {work.caption}
@@ -134,7 +134,7 @@ export function GalleryWall({
           onClick={() => setOpenIndex(null)}
         >
           <div className="flex items-center justify-between gap-4 px-5 py-4">
-            <p className="text-[0.6875rem] uppercase tracking-[0.18em] text-paper/50">
+            <p className="text-[0.6875rem] uppercase tracking-[0.18em] text-paper-faint">
               {(openIndex ?? 0) + 1} / {shown.length}
             </p>
             <CloseButton onClose={() => setOpenIndex(null)} label={t("close")} />
@@ -163,7 +163,7 @@ export function GalleryWall({
             <StepButton onClick={() => step(-1)} label={t("previous")}>
               ‹
             </StepButton>
-            <p className="max-w-xl text-center text-[0.875rem] leading-relaxed text-paper/80">
+            <p className="max-w-xl text-center text-[0.875rem] leading-relaxed text-paper-soft">
               {open.caption}
             </p>
             <StepButton onClick={() => step(1)} label={t("next")}>
@@ -197,7 +197,7 @@ function FilterButton({
       {children}
       <span
         aria-hidden
-        className={`absolute -bottom-1.5 left-0 h-px bg-marigold transition-all duration-300 ${
+        className={`absolute -bottom-1.5 left-0 h-px w-full origin-left bg-marigold transition-transform duration-300 ${
           active ? "w-full" : "w-0"
         }`}
       />
@@ -215,7 +215,7 @@ function CloseButton({ onClose, label }: { onClose: () => void; label: string })
       type="button"
       onClick={onClose}
       aria-label={label}
-      className="flex h-10 w-10 items-center justify-center rounded-[2px] border border-paper/30 text-paper transition-colors hover:border-paper/70"
+      className="flex h-10 w-10 items-center justify-center rounded-[2px] border border-paper/30 text-paper transition-[color,border-color,transform] active:scale-[0.97] hover:border-paper/70"
     >
       <span className="relative block h-3.5 w-3.5">
         <span className="absolute left-0 top-1.5 h-px w-full rotate-45 bg-current" />

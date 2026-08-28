@@ -111,7 +111,7 @@ export function ChoiceGroup<T extends string>({
               {option.description ? (
                 <span
                   className={`mt-1 block text-[0.8125rem] leading-snug ${
-                    isSelected ? "text-paper/65" : "text-ink-faint"
+                    isSelected ? "text-paper-soft" : "text-ink-faint"
                   }`}
                 >
                   {option.description}
@@ -234,7 +234,7 @@ export function SubmitButton({
     <button
       type="submit"
       disabled={isSending || disabled}
-      className="inline-flex items-center justify-center gap-2 rounded-[2px] bg-ink px-7 py-3.5 text-sm font-medium text-paper transition-all duration-300 hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-45"
+      className="inline-flex items-center justify-center gap-2 rounded-[2px] bg-ink px-7 py-3.5 text-sm font-medium text-paper transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-45"
     >
       {isSending ? t("sending") : children}
     </button>

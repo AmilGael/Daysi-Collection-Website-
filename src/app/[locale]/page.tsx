@@ -65,7 +65,7 @@ async function Hero() {
       <div className="shell relative z-10 pb-24 pt-32">
         <div className="flex max-w-2xl flex-col gap-8">
           <h1 className="text-display text-balance text-paper">{t("heroTitle")}</h1>
-          <p className="max-w-md text-[0.9375rem] leading-relaxed text-paper/70">
+          <p className="max-w-md text-[0.9375rem] leading-relaxed text-paper-soft">
             {t("heroLine")}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-x-10 gap-y-5">
@@ -189,17 +189,17 @@ async function Services() {
               fill
               quality={PHOTO_QUALITY}
               sizes="(min-width: 768px) 34vw, 100vw"
-              className="object-cover opacity-85 transition-all duration-[1.2s] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.04] group-hover:opacity-100"
+              className="photo-hover object-cover opacity-85 transition-[transform,opacity] duration-[600ms] ease-soft group-hover:scale-[1.04] group-hover:opacity-100"
             />
             <div className="image-veil absolute inset-0" />
             <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 p-8">
-              <span className="font-display text-[0.9375rem] tabular-nums text-paper/45">
+              <span className="font-display text-[0.9375rem] tabular-nums text-paper-faint">
                 {String(index + 1).padStart(2, "0")}
               </span>
               <h3 className="font-display text-[1.6rem] leading-tight text-paper">
                 {translate(service.name, locale)}
               </h3>
-              <p className="max-w-xs text-[0.875rem] leading-relaxed text-paper/70">
+              <p className="max-w-xs text-[0.875rem] leading-relaxed text-paper-soft">
                 {translate(service.promise, locale)}
               </p>
             </div>
@@ -284,7 +284,7 @@ async function PricePromise() {
       <div className="shell grid gap-10 lg:grid-cols-12 lg:items-end lg:gap-16">
         <div className="flex flex-col gap-5 lg:col-span-7">
           <h2 className="text-title text-balance text-paper">{t("pricesTitle")}</h2>
-          <p className="max-w-xl text-lead text-paper/70">{t("pricesLead")}</p>
+          <p className="max-w-xl text-lead text-paper-soft">{t("pricesLead")}</p>
         </div>
         <div className="lg:col-span-4 lg:col-start-9">
           <ButtonLink href="/prices" tone="ghost">
