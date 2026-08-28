@@ -241,19 +241,27 @@
 
   /* --- asides -------------------------------------------------------- */
 
+  /* An aside is set the way her site sets one: a marigold hairline above it
+     and a small letterspaced label, not a tinted card with a coloured tab.
+     Marigold is a rule here, which is the only thing her palette lets yellow
+     be. Naming each aside also makes the page scannable — she can find the
+     warning about WhatsApp without reading the paragraph above it. */
   .note {
     margin: 1.5rem 0 0;
     max-width: var(--measure);
-    padding: 1rem 1.25rem;
-    background: var(--paper-warm);
-    border-left: 3px solid var(--marigold);
+    padding-top: 0.875rem;
+    border-top: 2px solid var(--marigold);
   }
 
+  .note .eyebrow { margin-bottom: 0.5rem; color: var(--accent-text); }
   .note p { margin: 0; color: var(--ink-soft); font-size: 0.9375rem; }
   .note p + p { margin-top: 0.625rem; }
   .note strong { color: var(--ink); font-weight: 600; }
 
-  .careful { border-left-color: var(--ink-faint); }
+  /* The ones that are a caution rather than a reassurance take the ink rule:
+     same shape, no colour, so a warning never reads as a highlight. */
+  .careful { border-top-color: var(--ink-soft); }
+  .careful .eyebrow { color: var(--ink-faint); }
 
   /* --- closing ------------------------------------------------------- */
 
@@ -330,6 +338,7 @@
       </li>
     </ol>
     <div class="note">
+      <p class="eyebrow">Quién puede entrar</p>
       <p>
         <strong>Nadie más puede entrar a su oficina.</strong> El sitio conoce su
         correo y solamente ese correo abre la oficina. Si otra persona pone su
@@ -366,6 +375,7 @@
       </li>
     </ol>
     <div class="note">
+      <p class="eyebrow">Lo que pasa al guardar</p>
       <p>
         <strong>El cambio es inmediato.</strong> El próximo cliente que pida un
         estimado paga el precio nuevo. Los pedidos que ya entraron guardan el
@@ -418,6 +428,7 @@
       <li>Toque <span class="btn">Ponerla en el sitio</span>.</li>
     </ol>
     <div class="note">
+      <p class="eyebrow">Sobre el precio</p>
       <p>
         <strong>El precio casi siempre se pone solo.</strong> Si esa prenda y esa
         tela ya están en su lista, el sitio le muestra el precio que ya tiene y no
@@ -454,6 +465,7 @@
       </li>
     </ol>
     <div class="note">
+      <p class="eyebrow">Nada se borra</p>
       <p>
         <strong>Nada se borra nunca.</strong> Una pieza oculta desaparece del
         sitio pero sigue guardada, con sus fotos y su precio. El día que la
@@ -536,6 +548,7 @@
       <li>Toque <span class="btn">Guardar aviso</span>.</li>
     </ol>
     <div class="note careful">
+      <p class="eyebrow">No se le olvide</p>
       <p>
         <strong>Acuérdese de quitarlo.</strong> Un aviso que dice «cerrado hasta
         el 10» todavía puesto el día 20 le cuesta clientas. Para quitarlo,
@@ -565,6 +578,7 @@
       <li><span class="label">Cerrado</span> — se entregó y se acabó.</li>
     </ol>
     <div class="note">
+      <p class="eyebrow">Por qué le importa a la clienta</p>
       <p>
         <strong>El estado no es solo para usted.</strong> La clienta ve el mismo
         estado en su cuenta, así que moverlo le ahorra una llamada preguntando
@@ -600,6 +614,7 @@
       <li>Mándeselo a su contadora tal como está. No hay que arreglarle nada.</li>
     </ol>
     <div class="note">
+      <p class="eyebrow">Qué trae el archivo</p>
       <p>
         Cada línea lleva la fecha, la clienta, qué era, cuánto fue y el impuesto.
         El impuesto lo calcula con la misma regla con la que se le cobró a la
@@ -638,6 +653,7 @@
       </li>
     </ol>
     <div class="note careful">
+      <p class="eyebrow">Cuidado con WhatsApp</p>
       <p>
         <strong>Mande la foto original.</strong> Si la manda por WhatsApp y
         después la baja de ahí, llega chiquita y se ve borrosa en el sitio.
