@@ -31,12 +31,17 @@ export const env = {
 
   resendApiKey: optional("RESEND_API_KEY"),
   /**
-   * Where alteration and order requests are sent — and the one address that
-   * gets the owner's office. Daysi's account is recognised by her email
-   * matching this, so there is no role to grant and nothing a client can flip
-   * on their own record to promote themselves.
+   * Where alteration and order requests are sent — and the addresses that get
+   * the owner's office. One email, or a few separated by commas: Daysi's own,
+   * and whoever is helping her run the site. An account is recognised as the
+   * owner by its email being on this list, so there is no role to grant and
+   * nothing a client can flip on their own record to promote themselves —
+   * adding an owner is an explicit edit to this variable, never an accident.
    */
-  ownerEmail: optional("OWNER_EMAIL"),
+  ownerEmails: (optional("OWNER_EMAIL") ?? "")
+    .split(",")
+    .map((address) => address.trim().toLowerCase())
+    .filter((address) => address.length > 0),
   notificationFrom: optional("NOTIFICATION_FROM"),
 
   /**
@@ -51,7 +56,7 @@ export const env = {
 export const paymentsEnabled = env.stripeSecretKey !== null;
 
 /** Email notifications are only attempted when there is somewhere to send them. */
-export const emailEnabled = env.resendApiKey !== null && env.ownerEmail !== null;
+export const emailEnabled = env.resendApiKey !== null && env.ownerEmails.length > 0;
 
 export const isProduction = process.env.NODE_ENV === "production";
 

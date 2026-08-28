@@ -58,7 +58,7 @@ export function summarise(request: StoredRequest): string {
  * client in front of them.
  */
 export async function sendEmail(message: {
-  to: string;
+  to: string | readonly string[];
   subject: string;
   text: string;
   replyTo?: string;
@@ -74,7 +74,7 @@ export async function sendEmail(message: {
       },
       body: JSON.stringify({
         from: env.notificationFrom ?? `Daysi Collection <no-reply@${new URL(env.siteUrl).hostname}>`,
-        to: [message.to],
+        to: [message.to].flat(),
         ...(message.replyTo ? { reply_to: message.replyTo } : {}),
         subject: message.subject,
         text: message.text,
@@ -99,7 +99,7 @@ export async function notifyOwner(request: StoredRequest): Promise<void> {
   }
 
   await sendEmail({
-    to: env.ownerEmail!,
+    to: env.ownerEmails,
     replyTo: request.client.email,
     subject: `${KIND_LABELS[request.kind]} — ${request.client.name} (${request.reference})`,
     text: summarise(request),

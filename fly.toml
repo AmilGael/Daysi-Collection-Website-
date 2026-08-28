@@ -3,7 +3,7 @@
 # and Render both work from the same Dockerfile if you prefer their console;
 # they start around $5 and $7 a month.
 
-app = "daysi-collection"
+app = "daysicollectioninc"
 primary_region = "ewr"  # Newark — the closest region to the Bronx.
 
 [build]
