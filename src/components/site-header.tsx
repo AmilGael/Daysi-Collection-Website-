@@ -74,7 +74,7 @@ export function SiteHeader({
     >
       <div className="shell flex h-20 items-center justify-between gap-4 2xl:gap-6">
         <Link href="/" aria-label="Daysi Collection">
-          <Logo />
+          <Logo tone={isOverPhotograph ? "paper" : "ink"} />
         </Link>
 
         <nav aria-label={t("home")} className="hidden items-center gap-4 xl:flex 2xl:gap-7">

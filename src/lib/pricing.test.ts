@@ -155,9 +155,9 @@ describe("appointments", () => {
 
 describe("commissions", () => {
   it("refuses a garment and cloth pair with no published price", () => {
-    // Shirts are not offered in floral linen, so there is no price to quote.
+    // Shirts are not offered in the medallon print, so there is no price to quote.
     expect(
-      estimateCommission({ categoryId: "shirts", fabricId: "floral-linen", customize: true }),
+      estimateCommission({ categoryId: "shirts", fabricId: "medallon-print", customize: true }),
     ).toBeNull();
   });
 
@@ -178,7 +178,7 @@ describe("every estimate", () => {
     const estimates = [
       estimateReadyMade({ styleSlug: "yurumein", sizeId: "s", customize: true }),
       estimateAlteration({ alterationIds: ["resize", "sleeves"], rush: true }),
-      estimateCommission({ categoryId: "dresses", fabricId: "black-linen", customize: true }),
+      estimateCommission({ categoryId: "dresses", fabricId: "medallon-print", customize: true }),
       estimateAppointment("consultation-60"),
     ];
 

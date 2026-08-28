@@ -37,7 +37,7 @@ export async function generateMetadata({
   return {
     title: `${translate(style.name, language)} · Daysi Collection`,
     description: translate(style.description, language),
-    openGraph: { images: [primaryPhoto(style)?.src ?? "/images/hero.jpg"] },
+    openGraph: { images: [primaryPhoto(style)?.src ?? "/images/real/hero.jpg"] },
   };
 }
 

@@ -89,7 +89,7 @@ export const services: readonly Service[] = [
       { en: "Work guaranteed for thirty days", es: "Trabajo garantizado por treinta días" },
       { en: "Request it online, no phone call needed", es: "Solicítelo en línea, sin necesidad de llamar" },
     ],
-    image: "/images/atelier/hemming.jpg",
+    image: "/images/real/craft-detail.jpg",
   },
   {
     id: "ready-made",

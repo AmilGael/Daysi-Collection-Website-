@@ -16,8 +16,8 @@ export const categories: readonly DesignCategory[] = [
     slug: "pants",
     name: { en: "Pants", es: "Pantalones" },
     blurb: {
-      en: "Wide legs, high waists and soft linens that hold their shape all day.",
-      es: "Piernas anchas, cinturas altas y linos suaves que aguantan todo el día.",
+      en: "Wide legs, high waists and cloth that holds its shape all day.",
+      es: "Piernas anchas, cinturas altas y telas que aguantan la forma todo el día.",
     },
   },
   {
@@ -34,8 +34,8 @@ export const categories: readonly DesignCategory[] = [
     slug: "heritage",
     name: { en: "Heritage", es: "Herencia" },
     blurb: {
-      en: "Pieces drawn from Afro-Latin and Garífuna dress, made with intention.",
-      es: "Piezas inspiradas en la vestimenta afrolatina y garífuna, hechas con intención.",
+      en: "Pieces drawn from Garífuna dress, made with intention.",
+      es: "Piezas inspiradas en la vestimenta garífuna, hechas con intención.",
     },
   },
 ];
@@ -68,53 +68,13 @@ export const sizes: readonly Size[] = [
  */
 export const fabrics: readonly Fabric[] = [
   {
-    id: "floral-linen",
-    name: { en: "Floral linen", es: "Lino floral" },
-    description: {
-      en: "Mid-weight linen, hand-picked print in marigold and black.",
-      es: "Lino de peso medio, estampado escogido a mano en amarillo y negro.",
-    },
-    swatchImage: "/images/fabrics/floral-linen.jpg",
-    averageColor: "#C8A23A",
-  },
-  {
-    id: "marigold-linen",
-    name: { en: "Marigold linen", es: "Lino amarillo" },
-    description: {
-      en: "The house yellow, in a linen heavy enough to hold a pleat.",
-      es: "El amarillo de la casa, en un lino con cuerpo para sostener un pliegue.",
-    },
-    swatchImage: "/images/fabrics/marigold-linen.jpg",
-    averageColor: "#D5A312",
-  },
-  {
-    id: "natural-linen",
-    name: { en: "Natural linen", es: "Lino natural" },
-    description: {
-      en: "Undyed linen that softens with every wash.",
-      es: "Lino sin teñir que se suaviza con cada lavado.",
-    },
-    swatchImage: "/images/fabrics/natural-linen.jpg",
-    averageColor: "#D9CFBC",
-  },
-  {
-    id: "black-linen",
-    name: { en: "Black linen", es: "Lino negro" },
-    description: {
-      en: "Deep black linen with a faint sheen in the weave.",
-      es: "Lino negro profundo con un brillo tenue en el tejido.",
-    },
-    swatchImage: "/images/fabrics/black-linen.jpg",
-    averageColor: "#221F1C",
-  },
-  {
     id: "wax-print",
     name: { en: "Wax print cotton", es: "Algodón wax" },
     description: {
       en: "West African wax print, teal ground with marigold geometry.",
       es: "Estampado wax de África Occidental, fondo verde azulado con geometría amarilla.",
     },
-    swatchImage: "/images/fabrics/wax-print.jpg",
+    swatchImage: "/images/real/fabric-wax-print.jpg",
     averageColor: "#25545C",
   },
   {
@@ -124,17 +84,17 @@ export const fabrics: readonly Fabric[] = [
       en: "Black ground with cream and marigold leaves, a Caribbean reference.",
       es: "Fondo negro con hojas crema y amarillas, una referencia caribeña.",
     },
-    swatchImage: "/images/fabrics/tropical-leaf.jpg",
+    swatchImage: "/images/real/fabric-tropical-leaf.jpg",
     averageColor: "#2A2A22",
   },
   {
     id: "daisy-cotton",
     name: { en: "Daisy cotton", es: "Algodón margarita" },
     description: {
-      en: "White poplin scattered with the daisy from the Daysi Collection mark.",
-      es: "Popelina blanca sembrada con la margarita del sello Daysi Collection.",
+      en: "White cotton with one large orange bloom placed by hand.",
+      es: "Algodón blanco con una flor naranja grande colocada a mano.",
     },
-    swatchImage: "/images/fabrics/daisy-cotton.jpg",
+    swatchImage: "/images/real/fabric-daisy-cotton.jpg",
     averageColor: "#EFEAE0",
   },
   {

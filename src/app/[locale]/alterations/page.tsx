@@ -68,7 +68,7 @@ export default async function AlterationsPage({
         <div className="shell grid gap-12 py-24 lg:grid-cols-2 lg:items-center lg:gap-20">
           <div className="relative aspect-4/3 overflow-hidden">
             <Image
-              src="/images/atelier/hemming.jpg"
+              src="/images/real/craft-detail.jpg"
               alt=""
               fill
               sizes="(min-width: 1024px) 45vw, 90vw"

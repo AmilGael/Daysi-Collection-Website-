@@ -50,12 +50,12 @@ async function Hero() {
   return (
     <section className="relative isolate -mt-20 flex min-h-[94svh] items-end overflow-hidden bg-ink pt-20">
       <Image
-        src="/images/hero.jpg"
+        src="/images/real/hero.jpg"
         alt=""
         fill
         priority
         sizes="100vw"
-        className="object-cover object-[68%_center]"
+        className="object-cover object-[72%_18%]"
       />
       <div className="absolute inset-0 bg-gradient-to-r from-ink/90 via-ink/45 to-transparent" />
       <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-ink/60 to-transparent" />
