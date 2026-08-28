@@ -151,7 +151,7 @@ export function GalleryWall({
               height={open.height}
               quality={PHOTO_QUALITY}
               sizes="92vw"
-              className="max-h-full w-auto max-w-full object-contain"
+              className="h-auto max-h-full w-auto max-w-full object-contain"
               priority
             />
           </div>

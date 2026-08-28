@@ -45,7 +45,7 @@ export function FabricManager({
     canvas.width = 10;
     canvas.height = 10;
     const context = canvas.getContext("2d");
-    if (!context) return "#8a8a8a";
+    if (!context) return "#8e8471";
     context.drawImage(bitmap, 0, 0, 10, 10);
     const { data } = context.getImageData(0, 0, 10, 10);
     let r = 0;

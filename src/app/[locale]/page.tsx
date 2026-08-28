@@ -64,7 +64,7 @@ async function Hero() {
 
       <div className="shell relative z-10 pb-24 pt-32">
         <div className="flex max-w-2xl flex-col gap-8">
-          <h1 className="text-display text-balance text-paper">{t("heroTitle")}</h1>
+          <h1 className="text-display text-paper">{t("heroTitle")}</h1>
           <p className="max-w-md text-[0.9375rem] leading-relaxed text-paper-soft">
             {t("heroLine")}
           </p>
@@ -89,7 +89,7 @@ async function TrustStrip() {
 
   return (
     <section className="border-b border-line bg-paper-warm">
-      <div className="shell flex overflow-x-auto py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="shell flex flex-wrap justify-center gap-y-2 py-4 md:flex-nowrap md:justify-start md:overflow-x-auto md:[scrollbar-width:none] md:[&::-webkit-scrollbar]:hidden">
         {items.map((item, index) => (
           <p
             key={item}
@@ -132,7 +132,7 @@ async function Story() {
           <span>01</span>
           <span>{t("storyLabel")}</span>
         </p>
-        <h2 className="text-title text-balance">{t("storyTitle")}</h2>
+        <h2 className="text-title">{t("storyTitle")}</h2>
         <p className="text-lead text-ink-soft">{t("storyLead")}</p>
         <p className="max-w-xl leading-[1.8] text-ink-soft">{t("storyBody")}</p>
         <TextLink href="/atelier">{t("storyLink")}</TextLink>
@@ -152,7 +152,7 @@ async function BrandPromise() {
   return (
     <section className="reveal border-y border-line bg-paper-warm py-28 md:py-36">
       <div className="shell">
-        <p className="mx-auto max-w-3xl text-center font-display text-[clamp(1.75rem,3.4vw,2.85rem)] leading-[1.25] text-balance">
+        <p className="mx-auto max-w-3xl text-center font-display text-[clamp(1.75rem,3.4vw,2.85rem)] leading-[1.25]">
           {t("promise")}
         </p>
       </div>
@@ -177,7 +177,7 @@ async function Services() {
         </div>
       </div>
       <div className="mt-12 grid gap-px border-y border-line bg-line md:grid-cols-3">
-        {services.map((service, index) => (
+        {services.map((service) => (
           <Link
             key={service.id}
             href="/services"
@@ -193,9 +193,6 @@ async function Services() {
             />
             <div className="image-veil absolute inset-0" />
             <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 p-8">
-              <span className="font-display text-[0.9375rem] tabular-nums text-paper-faint">
-                {String(index + 1).padStart(2, "0")}
-              </span>
               <h3 className="font-display text-[1.6rem] leading-tight text-paper">
                 {translate(service.name, locale)}
               </h3>
@@ -241,7 +238,7 @@ async function Alterations() {
           <span>04</span>
           <span>{t("alterationsLabel")}</span>
         </p>
-        <h2 className="text-title text-balance">{t("alterationsTitle")}</h2>
+        <h2 className="text-title">{t("alterationsTitle")}</h2>
         <p className="text-lead text-ink-soft">{t("alterationsLead")}</p>
         <dl className="mt-2 flex flex-col">
           {highlights.map((alteration) => (
@@ -283,7 +280,7 @@ async function PricePromise() {
     <section className="on-ink reveal border-y border-line bg-ink py-24 text-paper lg:py-28">
       <div className="shell grid gap-10 lg:grid-cols-12 lg:items-end lg:gap-16">
         <div className="flex flex-col gap-5 lg:col-span-7">
-          <h2 className="text-title text-balance text-paper">{t("pricesTitle")}</h2>
+          <h2 className="text-title text-paper">{t("pricesTitle")}</h2>
           <p className="max-w-xl text-lead text-paper-soft">{t("pricesLead")}</p>
         </div>
         <div className="lg:col-span-4 lg:col-start-9">
@@ -321,7 +318,7 @@ async function NextPremiere() {
             <span>05</span>
             <span>{t("premiereTitle")}</span>
           </p>
-          <h2 className="text-title text-balance">
+          <h2 className="text-title">
             {translate(premiere.title, locale)}
           </h2>
           <p className="eyebrow">{translate(premiere.season, locale)}</p>

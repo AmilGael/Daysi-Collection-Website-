@@ -132,7 +132,7 @@ export function SectionHeading({
         <span className={`font-display text-[0.9375rem] tabular-nums ${indexTone}`}>{index}</span>
       ) : null}
       {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-      <h2 className="text-title text-balance">{title}</h2>
+      <h2 className="text-section">{title}</h2>
       {lead ? <p className={`text-lead ${leadTone} text-pretty`}>{lead}</p> : null}
     </div>
   );

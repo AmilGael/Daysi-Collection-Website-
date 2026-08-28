@@ -51,7 +51,7 @@ export function StyleCard({ style, priority = false }: { style: GarmentStyle; pr
         </div>
         <p className="text-[0.6875rem] uppercase tracking-[0.14em] text-ink-faint">
           {translate(style.color, locale)}
-          <span className="px-2 text-line">/</span>
+          <span className="px-2 text-ink-faint">/</span>
           {style.sizes.map((size) => size.sizeId.toUpperCase()).join(" ")}
         </p>
       </div>

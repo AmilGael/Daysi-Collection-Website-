@@ -42,16 +42,29 @@
   --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
   --font-body: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
 
+  /* Tracking tightens as size grows. This is optical correction: the same
+     letterspacing that reads normal at 17px reads loose and amateur at 96. */
   --text-display: clamp(2.75rem, 7vw, 6rem);
   --text-display--line-height: 0.95;
-  --text-display--letter-spacing: -0.03em;
+  --text-display--letter-spacing: -0.035em;
+
   --text-title: clamp(2rem, 4.2vw, 3.5rem);
-  --text-title--line-height: 1.05;
-  --text-title--letter-spacing: -0.02em;
+  --text-title--line-height: 1.04;
+  --text-title--letter-spacing: -0.025em;
+
+  /* The rung that was missing. Every interior page ran its h1 and its section
+     h2 at the same 56px in the same face, so no page had a primary. */
+  --text-section: clamp(1.6rem, 2.8vw, 2.4rem);
+  --text-section--line-height: 1.1;
+  --text-section--letter-spacing: -0.02em;
+
   --text-heading: clamp(1.4rem, 2.2vw, 1.95rem);
-  --text-heading--line-height: 1.2;
+  --text-heading--line-height: 1.18;
+  --text-heading--letter-spacing: -0.015em;
+
   --text-lead: clamp(1.075rem, 1.5vw, 1.3rem);
-  --text-lead--line-height: 1.6;
+  --text-lead--line-height: 1.55;
+  --text-lead--letter-spacing: -0.006em;
 
   /* The built-in easings are too weak to read as deliberate, and Tailwind's
      unqualified `transition-*` defaults to ease-in-out, which delays the
@@ -92,6 +105,14 @@
     font-family: var(--font-display);
     font-weight: 400;
     font-variation-settings: "SOFT" 20, "WONK" 1;
+    text-wrap: balance;
+  }
+
+  p,
+  li,
+  dd,
+  blockquote {
+    text-wrap: pretty;
   }
 
   /* Nothing on this site is a pill. Corners are a hairline, or square. */
@@ -268,5 +289,25 @@
 
   .link-underline:hover {
     background-size: 100% 40%;
+  }
+}
+
+/**
+ * The hero, on a phone.
+ *
+ * `--text-display` floors at 2.75rem, which is a desktop floor: at 390px the
+ * English headline sets in two lines and the Spanish one — the same sentence,
+ * about a fifth longer, as Spanish always is — sets in three and pushes the
+ * call to action toward the fold. 2.25rem is the step below the largest size
+ * that holds Spanish to two lines.
+ *
+ * Unlayered, so it wins against the theme's own `:root` without touching a
+ * single component.
+ */
+@media (max-width: 699px) {
+  :root {
+    --text-display: 2.25rem;
+    --text-display--line-height: 1;
+    --text-display--letter-spacing: -0.02em;
   }
 }

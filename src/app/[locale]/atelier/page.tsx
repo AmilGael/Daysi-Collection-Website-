@@ -64,7 +64,7 @@ export default async function AtelierPage({
         <div className="shell grid gap-14 lg:grid-cols-2 lg:gap-24">
           <div className="flex flex-col gap-6">
             <SectionHeading index="02" title={t("sectionCraft")} tone="paper" />
-            <p className="leading-[1.8] text-paper-soft">{t("craftBody")}</p>
+            <p className="max-w-[68ch] leading-[1.8] text-paper-soft">{t("craftBody")}</p>
           </div>
           <div className="flex flex-col gap-6">
             <SectionHeading
@@ -72,7 +72,7 @@ export default async function AtelierPage({
               title={t("sectionHeritage")}
               tone="paper"
             />
-            <p className="leading-[1.8] text-paper-soft">{t("heritageBody")}</p>
+            <p className="max-w-[68ch] leading-[1.8] text-paper-soft">{t("heritageBody")}</p>
           </div>
         </div>
       </section>

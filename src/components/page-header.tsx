@@ -24,7 +24,7 @@ export function PageHeader({
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-end lg:gap-16">
         <div className="flex flex-col gap-4">
           {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-          <h1 className="text-title text-balance">{title}</h1>
+          <h1 className="text-title">{title}</h1>
         </div>
         {lead ? (
           <p className="max-w-xl text-pretty text-[1.0625rem] leading-[1.7] text-ink-soft lg:pb-2">
