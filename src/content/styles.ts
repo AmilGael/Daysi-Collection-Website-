@@ -6,24 +6,28 @@ import type { GarmentStyle } from "./types";
  * A style carries no price of its own — it points at a price list entry, so the
  * gallery, the detail page and the estimate builder all read the same number.
  *
- * The photography here was generated to stand in for Daysi's own garments while
- * her shoot is being produced. See README, "Placeholder content".
+ * Photography: every style below is one of Daysi's own garments, photographed
+ * for the site and stored under /images/real. The generated stand-ins that
+ * once filled this catalog are gone. See README, "Placeholder content".
  */
 export const styles: readonly GarmentStyle[] = [
   {
-    id: "flor-de-sol",
-    slug: "flor-de-sol",
-    name: { en: "Flor de Sol dress", es: "Vestido Flor de Sol" },
-    categoryId: "dresses",
-    priceEntryId: "dresses--floral-linen",
-    color: { en: "Marigold and black on cream", es: "Amarillo y negro sobre crema" },
+    id: "frutera",
+    slug: "frutera",
+    name: { en: "Frutera two-piece", es: "Conjunto Frutera" },
+    categoryId: "heritage",
+    priceEntryId: "heritage--frutera-print",
+    color: {
+      en: "Emerald over a painted market scene",
+      es: "Esmeralda sobre una escena de mercado pintada",
+    },
     description: {
-      en: "A fitted waist under a full skirt, with puff sleeves that hold their shape without a lining.",
-      es: "Cintura entallada bajo una falda amplia, con mangas abullonadas que mantienen su forma sin forro.",
+      en: "An emerald bow blouse over a skirt of market women carrying fruit. The piece Daysi shows first.",
+      es: "Blusa esmeralda con lazo sobre una falda de fruteras con canastas. La pieza que Daysi enseña primero.",
     },
     detail: {
-      en: "Cut on the straight grain so the print reads clean across the front. Side pockets set into the seam. Back zip, no waist elastic.",
-      es: "Cortado a hilo para que el estampado se lea limpio al frente. Bolsillos en la costura lateral. Cierre atrás, sin elástico en la cintura.",
+      en: "The blouse ties high or hangs open; the skirt is cut so the line of women runs unbroken around the hem. Sold as a set.",
+      es: "La blusa se anuda alta o cae abierta; la falda va cortada para que la fila de fruteras corra sin cortes por el ruedo. Se vende como conjunto.",
     },
     sizes: [
       { sizeId: "s", inStock: true },
@@ -32,64 +36,66 @@ export const styles: readonly GarmentStyle[] = [
     ],
     photos: [
       {
-        src: "/images/styles/puff-sleeve-dress.jpg",
+        src: "/images/real/frutera-set.jpg",
         alt: {
-          en: "Full-length view of the Flor de Sol dress in marigold and black floral linen.",
-          es: "Vista completa del vestido Flor de Sol en lino floral amarillo y negro.",
+          en: "The Frutera two-piece: an emerald bow blouse over the market-scene skirt, photographed in the atelier.",
+          es: "El conjunto Frutera: blusa esmeralda con lazo sobre la falda de fruteras, fotografiado en el taller.",
         },
         isPrimary: true,
       },
-    ],
-    customizationAvailable: true,
-    isPublished: true,
-  },
-  {
-    id: "serena",
-    slug: "serena",
-    name: { en: "Serena midi dress", es: "Vestido midi Serena" },
-    categoryId: "dresses",
-    priceEntryId: "dresses--natural-linen",
-    color: { en: "Cream with a black print", es: "Crema con estampado negro" },
-    description: {
-      en: "A square neckline and a straight midi line. The quiet one in the collection.",
-      es: "Escote cuadrado y línea midi recta. La pieza tranquila de la colección.",
-    },
-    detail: {
-      en: "Sleeveless, with a facing at the neck and arm so nothing shows from the outside. Falls just below the knee.",
-      es: "Sin mangas, con vista en el escote y la sisa para que nada se vea por fuera. Cae justo bajo la rodilla.",
-    },
-    sizes: [
-      { sizeId: "s", inStock: true },
-      { sizeId: "m", inStock: true },
-      { sizeId: "l", inStock: false },
-    ],
-    photos: [
       {
-        src: "/images/styles/square-neck-midi.jpg",
+        src: "/images/real/frutera-set-full.jpg",
         alt: {
-          en: "Full-length view of the Serena sleeveless midi dress in cream linen.",
-          es: "Vista completa del vestido midi Serena sin mangas en lino crema.",
+          en: "Full-length view of the Frutera two-piece.",
+          es: "Vista completa del conjunto Frutera.",
         },
-        isPrimary: true,
+        isPrimary: false,
+      },
+      {
+        src: "/images/real/frutera-capri.jpg",
+        alt: {
+          en: "The Frutera two-piece worn on a terrace at golden hour.",
+          es: "El conjunto Frutera llevado en una terraza al atardecer.",
+        },
+        isPrimary: false,
+      },
+      {
+        src: "/images/real/frutera-campaign.jpg",
+        alt: {
+          en: "Four Frutera skirts styled with green, blue and marigold tops.",
+          es: "Cuatro faldas Frutera con blusas verde, azul y amarilla.",
+        },
+        isPrimary: false,
+      },
+      {
+        src: "/images/real/frutera-courtyard.jpg",
+        alt: {
+          en: "The Frutera skirt worn with a knotted marigold top in a courtyard.",
+          es: "La falda Frutera con una blusa amarilla anudada, en un patio.",
+        },
+        isPrimary: false,
       },
     ],
     customizationAvailable: true,
     isPublished: true,
   },
   {
-    id: "marisol",
-    slug: "marisol",
-    name: { en: "Marisol shirt dress", es: "Vestido camisero Marisol" },
-    categoryId: "dresses",
-    priceEntryId: "dresses--marigold-linen",
-    color: { en: "Marigold", es: "Amarillo" },
+    id: "sirena",
+    slug: "sirena",
+    name: { en: "Sirena shirt dress", es: "Vestido camisero Sirena" },
+    categoryId: "heritage",
+    priceEntryId: "heritage--fish-batik",
+    color: {
+      en: "Black and white with red fish",
+      es: "Negro y blanco con peces rojos",
+    },
     description: {
-      en: "Front buttons all the way down and a belt in the same cloth, so you set the waist yourself.",
-      es: "Botones al frente de arriba abajo y un cinturón de la misma tela, para que usted marque la cintura.",
+      en: "A standing collar and a low, swinging tier in hand-waxed fish batik. Made in a run of twelve.",
+      es: "Cuello alto y un volante bajo que gira, en batik de peces encerado a mano. Hecho en una serie de doce.",
     },
     detail: {
-      en: "A collar with a stand, a flared skirt and a belt loop hidden in the side seam. Wears open over trousers just as well.",
-      es: "Cuello con pie, falda acampanada y presilla escondida en la costura lateral. Se lleva abierto sobre pantalón igual de bien.",
+      en: "Buttons run from collar to hem, and the print is placed so a fish lands on the chest of every piece. No two are cut alike.",
+      es: "Los botones corren del cuello al ruedo, y el estampado va colocado para que un pez caiga en el pecho de cada pieza. No hay dos iguales.",
     },
     sizes: [
       { sizeId: "s", inStock: true },
@@ -98,31 +104,56 @@ export const styles: readonly GarmentStyle[] = [
     ],
     photos: [
       {
-        src: "/images/styles/belted-shirt-dress.jpg",
+        src: "/images/real/fish-batik-dress.jpg",
         alt: {
-          en: "Full-length view of the Marisol belted shirt dress in marigold linen.",
-          es: "Vista completa del vestido camisero Marisol con cinturón en lino amarillo.",
+          en: "The Sirena shirt dress in black fish batik with red fish, worn front-on.",
+          es: "El vestido camisero Sirena en batik negro con peces rojos, visto de frente.",
         },
         isPrimary: true,
+      },
+      {
+        src: "/images/real/fish-batik-dress-model.jpg",
+        alt: {
+          en: "The Sirena shirt dress worn with arms crossed.",
+          es: "El vestido camisero Sirena llevado con los brazos cruzados.",
+        },
+        isPrimary: false,
+      },
+      {
+        src: "/images/real/sirena-model-front.jpg",
+        alt: {
+          en: "Full-length front view of the Sirena shirt dress.",
+          es: "Vista frontal completa del vestido camisero Sirena.",
+        },
+        isPrimary: false,
+      },
+      {
+        src: "/images/real/sirena-subway.jpg",
+        alt: {
+          en: "The Sirena shirt dress worn seated on a subway platform bench.",
+          es: "El vestido Sirena llevado en una banca del metro.",
+        },
+        isPrimary: false,
       },
     ],
     customizationAvailable: true,
     isPublished: true,
+    premiereId: "otono-2026",
   },
   {
-    id: "malecon",
-    slug: "malecon",
-    name: { en: "Malecón palazzo pants", es: "Pantalón palazzo Malecón" },
+    id: "ocelote",
+    slug: "ocelote",
+    name: { en: "Ocelote lounge set", es: "Conjunto Ocelote" },
     categoryId: "pants",
-    priceEntryId: "pants--floral-linen",
-    color: { en: "Marigold and black on cream", es: "Amarillo y negro sobre crema" },
+    priceEntryId: "pants--ocelote-print",
+    color: { en: "Ivory, coral and black", es: "Marfil, coral y negro" },
     description: {
-      en: "A high waist and a wide leg that moves like a skirt when you walk.",
-      es: "Cintura alta y pierna ancha que se mueve como una falda al caminar.",
+      en: "A camp shirt and a wide cropped pant in the same painted leopard bloom. Worn together or apart.",
+      es: "Camisa campera y pantalón ancho corto en la misma flor de leopardo pintada. Se llevan juntos o por separado.",
     },
     detail: {
-      en: "Flat front, elastic only at the back of the waistband, deep pockets. Hemmed to your height at no extra cost.",
-      es: "Frente plano, elástico solo en la parte de atrás de la pretina, bolsillos profundos. Ruedo a su altura sin costo extra.",
+      en: "The shirt wears open over the pant, and the elastic sits only at the back of the waist. A full bloom is placed on each leg.",
+      es: "La camisa se lleva abierta sobre el pantalón, y el elástico va solo en la parte de atrás de la cintura. Una flor completa cae en cada pierna.",
     },
     sizes: [
       { sizeId: "s", inStock: true },
@@ -131,64 +162,47 @@ export const styles: readonly GarmentStyle[] = [
     ],
     photos: [
       {
-        src: "/images/styles/palazzo-pants.jpg",
+        src: "/images/real/ocelote-set.jpg",
         alt: {
-          en: "Full-length view of the Malecón wide-leg palazzo pants in floral linen.",
-          es: "Vista completa del pantalón palazzo Malecón de pierna ancha en lino floral.",
+          en: "The Ocelote lounge set laid flat: camp shirt and wide cropped pant in a coral and black bloom on ivory.",
+          es: "El conjunto Ocelote extendido: camisa campera y pantalón ancho corto en flor coral y negra sobre marfil.",
         },
         isPrimary: true,
       },
-    ],
-    customizationAvailable: true,
-    isPublished: true,
-  },
-  {
-    id: "concordia",
-    slug: "concordia",
-    name: { en: "Concordia culottes", es: "Culotte Concordia" },
-    categoryId: "pants",
-    priceEntryId: "pants--black-linen",
-    color: { en: "Black", es: "Negro" },
-    description: {
-      en: "Mid-calf and full through the leg. The pair that works for the office and for dinner after.",
-      es: "A media pantorrilla y amplio de pierna. El par que sirve para la oficina y para la cena después.",
-    },
-    detail: {
-      en: "Two pressed pleats at the front, side zip, no back pockets so the line stays clean.",
-      es: "Dos pliegues planchados al frente, cierre lateral, sin bolsillos traseros para que la línea quede limpia.",
-    },
-    sizes: [
-      { sizeId: "s", inStock: false },
-      { sizeId: "m", inStock: true },
-      { sizeId: "l", inStock: true },
-    ],
-    photos: [
       {
-        src: "/images/styles/culottes.jpg",
+        src: "/images/real/ocelote-blouse.jpg",
         alt: {
-          en: "Full-length view of the Concordia mid-calf culottes in black linen.",
-          es: "Vista completa del culotte Concordia a media pantorrilla en lino negro.",
+          en: "The Ocelote camp shirt buttoned, front view.",
+          es: "La camisa campera Ocelote abotonada, vista de frente.",
         },
-        isPrimary: true,
+        isPrimary: false,
+      },
+      {
+        src: "/images/real/ocelote-blouse-back.jpg",
+        alt: {
+          en: "Back view of the Ocelote camp shirt.",
+          es: "Vista trasera de la camisa campera Ocelote.",
+        },
+        isPrimary: false,
       },
     ],
     customizationAvailable: true,
     isPublished: true,
   },
   {
-    id: "domingo",
-    slug: "domingo",
-    name: { en: "Domingo linen joggers", es: "Jogger de lino Domingo" },
-    categoryId: "pants",
-    priceEntryId: "pants--natural-linen",
-    color: { en: "Natural", es: "Natural" },
+    id: "medallon",
+    slug: "medallon",
+    name: { en: "Medallón two-piece", es: "Conjunto Medallón" },
+    categoryId: "dresses",
+    priceEntryId: "dresses--medallon-print",
+    color: { en: "Black and gold", es: "Negro y dorado" },
     description: {
-      en: "A cuffed ankle and a soft waist, cut in linen so it never reads as sportswear.",
-      es: "Tobillo con puño y cintura suave, cortado en lino para que nunca parezca ropa deportiva.",
+      en: "A twisted bandeau and a full midi skirt in golden medallions, hemmed by hand in white ric-rac.",
+      es: "Bandeau torcido y falda midi amplia en medallones dorados, con ruedo de trensilla blanca cosido a mano.",
     },
     detail: {
-      en: "Drawcord in a matching linen tape, ribbed cuff faced in the same cloth, patch pockets.",
-      es: "Cordón en cinta de lino a juego, puño forrado en la misma tela, bolsillos de parche.",
+      en: "The skirt sits at the natural waist and turns when you do. The same ric-rac from the hem ties the waist. Worn as a set or apart.",
+      es: "La falda asienta en la cintura natural y gira cuando usted gira. La misma trensilla del ruedo amarra la cintura. Se lleva como conjunto o por separado.",
     },
     sizes: [
       { sizeId: "s", inStock: true },
@@ -197,12 +211,53 @@ export const styles: readonly GarmentStyle[] = [
     ],
     photos: [
       {
-        src: "/images/styles/linen-joggers.jpg",
+        src: "/images/real/medallon-set.jpg",
         alt: {
-          en: "Full-length view of the Domingo cuffed linen joggers in natural linen.",
-          es: "Vista completa del jogger Domingo con puño en lino natural.",
+          en: "The Medallón two-piece: bandeau and full midi skirt in black with golden medallions.",
+          es: "El conjunto Medallón: bandeau y falda midi amplia en negro con medallones dorados.",
         },
         isPrimary: true,
+      },
+    ],
+    customizationAvailable: true,
+    isPublished: true,
+  },
+  {
+    id: "laguna",
+    slug: "laguna",
+    name: { en: "Laguna camp shirt", es: "Camisa campera Laguna" },
+    categoryId: "shirts",
+    priceEntryId: "shirts--laguna-wax",
+    color: { en: "Steel blue, marigold and turquoise", es: "Azul acero, amarillo y turquesa" },
+    description: {
+      en: "The Yurumein cut in its second colourway: a cooler wax print for the same easy collar.",
+      es: "El corte Yurumein en su segundo color: un wax más fresco para el mismo cuello relajado.",
+    },
+    detail: {
+      en: "Chest pocket matched to the print, back cut in one piece so the fans run unbroken. Wears open or buttoned.",
+      es: "Bolsillo de pecho igualado al estampado, espalda de una pieza para que los abanicos corran sin cortes. Se lleva abierta o abotonada.",
+    },
+    sizes: [
+      { sizeId: "s", inStock: true },
+      { sizeId: "m", inStock: true },
+      { sizeId: "l", inStock: true },
+    ],
+    photos: [
+      {
+        src: "/images/real/laguna-shirt.jpg",
+        alt: {
+          en: "The Laguna camp shirt in steel-blue wax print, front view.",
+          es: "La camisa campera Laguna en wax azul acero, vista de frente.",
+        },
+        isPrimary: true,
+      },
+      {
+        src: "/images/real/laguna-shirt-back.jpg",
+        alt: {
+          en: "Back view of the Laguna camp shirt.",
+          es: "Vista trasera de la camisa campera Laguna.",
+        },
+        isPrimary: false,
       },
     ],
     customizationAvailable: true,
@@ -230,10 +285,10 @@ export const styles: readonly GarmentStyle[] = [
     ],
     photos: [
       {
-        src: "/images/styles/wax-print-shirt.jpg",
+        src: "/images/real/wax-print-shirt.jpg",
         alt: {
-          en: "The Yurumein camp shirt in teal and marigold wax print cotton.",
-          es: "La camisa campera Yurumein en algodón wax verde azulado y amarillo.",
+          en: "The Yurumein camp shirt in teal and marigold wax print cotton, photographed in the atelier.",
+          es: "La camisa campera Yurumein en algodón wax verde azulado y amarillo, fotografiada en el taller.",
         },
         isPrimary: true,
       },
@@ -263,10 +318,10 @@ export const styles: readonly GarmentStyle[] = [
     ],
     photos: [
       {
-        src: "/images/styles/tropical-leaf-shirt.jpg",
+        src: "/images/real/tropical-leaf-shirt.jpg",
         alt: {
-          en: "The Guanaba camp shirt in a black, cream and marigold tropical leaf print.",
-          es: "La camisa campera Guanaba en estampado de hoja tropical negro, crema y amarillo.",
+          en: "The Guanaba camp shirt in a black, cream and marigold tropical leaf print, on its hanger in the atelier.",
+          es: "La camisa campera Guanaba en estampado de hoja tropical negro, crema y amarillo, en su gancho en el taller.",
         },
         isPrimary: true,
       },
@@ -296,49 +351,15 @@ export const styles: readonly GarmentStyle[] = [
     ],
     photos: [
       {
-        src: "/images/styles/orange-bloom-shirt.jpg",
+        src: "/images/real/orange-bloom-shirt.jpg",
         alt: {
-          en: "The Amapola camp shirt in cream cotton with a large orange flower.",
-          es: "La camisa campera Amapola en algodón crema con una flor naranja grande.",
+          en: "The Amapola camp shirt in cream cotton with a large orange flower, freshly made in the atelier.",
+          es: "La camisa campera Amapola en algodón crema con una flor naranja grande, recién hecha en el taller.",
         },
         isPrimary: true,
       },
     ],
     customizationAvailable: true,
     isPublished: true,
-  },
-  {
-    id: "wanaragua",
-    slug: "wanaragua",
-    name: { en: "Wanaragua wrap dress", es: "Vestido cruzado Wanaragua" },
-    categoryId: "heritage",
-    priceEntryId: "heritage--wax-print",
-    color: { en: "Black, white and marigold", es: "Negro, blanco y amarillo" },
-    description: {
-      en: "A wrap front with a matching head wrap, drawn from Garífuna dress. Made in a run of twelve.",
-      es: "Delantero cruzado con turbante a juego, inspirado en la vestimenta garífuna. Hecho en una serie de doce.",
-    },
-    detail: {
-      en: "The skirt is cut in four panels so it turns properly when you move. Head wrap included, two metres, hemmed on all sides.",
-      es: "La falda va cortada en cuatro paños para que gire bien al moverse. Turbante incluido, dos metros, con ruedo en todos los lados.",
-    },
-    sizes: [
-      { sizeId: "s", inStock: true },
-      { sizeId: "m", inStock: true },
-      { sizeId: "l", inStock: true },
-    ],
-    photos: [
-      {
-        src: "/images/styles/garifuna-wrap-dress.jpg",
-        alt: {
-          en: "The Wanaragua wrap dress with a matching head wrap in black, white and marigold print.",
-          es: "El vestido cruzado Wanaragua con turbante a juego en estampado negro, blanco y amarillo.",
-        },
-        isPrimary: true,
-      },
-    ],
-    customizationAvailable: true,
-    isPublished: true,
-    premiereId: "otono-2026",
   },
 ];
