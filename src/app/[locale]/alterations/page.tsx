@@ -1,10 +1,12 @@
 import Image from "next/image";
 import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import { alterationServices, translate } from "@/content";
+import { liveAlterations } from "@/lib/live-pricing";
 import type { Locale } from "@/i18n/routing";
 import { formatMoney } from "@/lib/money";
 import { PageHeader } from "@/components/page-header";
 import { ButtonLink, SectionHeading } from "@/components/ui";
+import { PHOTO_QUALITY } from "@/lib/images";
 
 export default async function AlterationsPage({
   params,
@@ -36,7 +38,7 @@ export default async function AlterationsPage({
             </tr>
           </thead>
           <tbody>
-            {alterationServices.map((alteration) => (
+            {liveAlterations().map((alteration) => (
               <tr key={alteration.id} className="border-b border-line align-top">
                 <td className="py-5 pr-6">
                   <p className="text-[1.0625rem]">{translate(alteration.name, language)}</p>
@@ -67,9 +69,10 @@ export default async function AlterationsPage({
         <div className="shell grid gap-12 py-24 lg:grid-cols-2 lg:items-center lg:gap-20">
           <div className="relative aspect-4/3 overflow-hidden">
             <Image
-              src="/images/atelier/hemming.jpg"
+              src="/images/real/craft-detail.jpg"
               alt=""
               fill
+              quality={PHOTO_QUALITY}
               sizes="(min-width: 1024px) 45vw, 90vw"
               className="object-cover"
             />

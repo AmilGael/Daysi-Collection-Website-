@@ -1,18 +1,20 @@
 import Image from "next/image";
 import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import {
-  alterationServices,
   premieres,
-  publishedStyles,
   services,
   translate,
   upcomingPremiere,
 } from "@/content";
+import { liveStyles } from "@/lib/live-catalog";
+import { liveAlterations } from "@/lib/live-pricing";
+import { SiteNoticeBar } from "@/components/site-notice";
 import { Link, type Locale } from "@/i18n/routing";
 import { ButtonLink, SectionHeading, Tag, TextLink } from "@/components/ui";
 import { LookbookGrid, StyleCard } from "@/components/style-card";
 import { GoogleBusiness } from "@/components/google-business";
 import { formatMoney } from "@/lib/money";
+import { PHOTO_QUALITY } from "@/lib/images";
 
 export default async function HomePage({
   params,
@@ -24,6 +26,7 @@ export default async function HomePage({
   return (
     <>
       <Hero />
+      <SiteNoticeBar />
       <TrustStrip />
       <Story />
       <BrandPromise />
@@ -48,12 +51,13 @@ async function Hero() {
   return (
     <section className="relative isolate -mt-20 flex min-h-[94svh] items-end overflow-hidden bg-ink pt-20">
       <Image
-        src="/images/hero.jpg"
+        src="/images/real/hero.jpg"
         alt=""
         fill
         priority
+        quality={PHOTO_QUALITY}
         sizes="100vw"
-        className="object-cover object-[68%_center]"
+        className="object-cover object-[72%_18%]"
       />
       <div className="absolute inset-0 bg-gradient-to-r from-ink/90 via-ink/45 to-transparent" />
       <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-ink/60 to-transparent" />
@@ -113,10 +117,13 @@ async function Story() {
     <section className="shell reveal grid gap-12 py-24 lg:grid-cols-12 lg:gap-16 lg:py-36">
       <div className="relative aspect-4/5 overflow-hidden bg-paper-warm lg:col-span-5">
         <Image
-          src="/images/atelier/sewing.jpg"
-          alt=""
+          src="/images/real/daysi-portrait.jpg"
+          alt={t("storyPortraitAlt")}
           fill
+          quality={PHOTO_QUALITY}
           sizes="(min-width: 1024px) 40vw, 90vw"
+          // The file is already cut to 4:5, so nothing here is deciding
+          // where her head sits — the crop was chosen, not defaulted.
           className="object-cover"
         />
       </div>
@@ -180,6 +187,7 @@ async function Services() {
               src={service.image}
               alt=""
               fill
+              quality={PHOTO_QUALITY}
               sizes="(min-width: 768px) 34vw, 100vw"
               className="object-cover opacity-85 transition-all duration-[1.2s] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.04] group-hover:opacity-100"
             />
@@ -204,7 +212,7 @@ async function Services() {
 
 async function FeaturedCollection() {
   const t = await getTranslations("home");
-  const featured = publishedStyles().slice(0, 3);
+  const featured = liveStyles().slice(0, 3);
 
   return (
     <section className="reveal py-24 lg:py-32">
@@ -224,7 +232,7 @@ async function FeaturedCollection() {
 async function Alterations() {
   const t = await getTranslations("home");
   const locale = (await getLocale()) as Locale;
-  const highlights = alterationServices.slice(0, 5);
+  const highlights = liveAlterations().slice(0, 5);
 
   return (
     <section className="shell reveal grid gap-12 py-24 lg:grid-cols-12 lg:gap-16 lg:py-32">
@@ -256,9 +264,10 @@ async function Alterations() {
       </div>
       <div className="relative aspect-4/5 overflow-hidden bg-paper-warm lg:col-span-5 lg:order-1">
         <Image
-          src="/images/atelier/hemming.jpg"
+          src="/images/real/workroom.jpg"
           alt=""
           fill
+          quality={PHOTO_QUALITY}
           sizes="(min-width: 1024px) 40vw, 90vw"
           className="object-cover"
         />
@@ -302,6 +311,7 @@ async function NextPremiere() {
             src={premiere.coverImage}
             alt=""
             fill
+            quality={PHOTO_QUALITY}
             sizes="(min-width: 1024px) 55vw, 90vw"
             className="object-cover"
           />

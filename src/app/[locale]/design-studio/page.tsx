@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { fabrics, priceList } from "@/content";
+import { liveFabrics, livePriceList } from "@/lib/live-pricing";
 import { silhouettes } from "@/content/silhouettes";
 import { PageHeader } from "@/components/page-header";
 import { DesignStudio } from "@/components/design-studio";
@@ -17,7 +17,7 @@ export default async function DesignStudioPage({
     <>
       <PageHeader title={t("title")} lead={t("lead")} />
       <div className="shell pb-28">
-        <DesignStudio silhouettes={silhouettes} fabrics={fabrics} priceList={priceList} />
+        <DesignStudio silhouettes={silhouettes} fabrics={liveFabrics()} priceList={livePriceList()} />
       </div>
     </>
   );

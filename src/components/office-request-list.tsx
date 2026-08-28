@@ -1,0 +1,123 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import type { Locale } from "@/i18n/routing";
+import { formatMoney } from "@/lib/money";
+import type { StoredRequest } from "@/lib/request-store";
+
+const STATUSES = ["new", "answered", "scheduled", "paid", "closed"] as const;
+
+/**
+ * The office's working copy of the request table: the same columns a client
+ * sees in their own history, plus the one control that makes it an office —
+ * the status, editable. Each change appends a fresh record server-side.
+ */
+export function OfficeRequestList({
+  records,
+  locale,
+  emptyMessage,
+}: {
+  records: readonly StoredRequest[];
+  locale: Locale;
+  emptyMessage: string;
+}) {
+  const t = useTranslations("account");
+  const to = useTranslations("office");
+  const router = useRouter();
+  const [busyReference, setBusyReference] = useState<string | null>(null);
+  const [failedReference, setFailedReference] = useState<string | null>(null);
+
+  if (records.length === 0) {
+    return (
+      <p className="border border-dashed border-line px-6 py-14 text-center text-[0.9375rem] text-ink-faint">
+        {emptyMessage}
+      </p>
+    );
+  }
+
+  async function setStatus(record: StoredRequest, status: StoredRequest["status"]) {
+    setBusyReference(record.reference);
+    setFailedReference(null);
+    try {
+      const response = await fetch("/api/office/requests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: record.kind, reference: record.reference, status }),
+      });
+      if (!response.ok) throw new Error("update-failed");
+      router.refresh();
+    } catch {
+      setFailedReference(record.reference);
+    } finally {
+      setBusyReference(null);
+    }
+  }
+
+  return (
+    <div className="flex flex-col border-t border-line">
+      {records.map((record) => (
+        <article
+          key={record.reference}
+          className="grid gap-3 border-b border-line py-5 sm:grid-cols-[8rem_1fr_auto] sm:items-center sm:gap-6"
+        >
+          <div className="flex flex-col gap-1.5">
+            <span className="font-mono text-[0.75rem]">{record.reference}</span>
+            <time className="text-[0.75rem] text-ink-faint" dateTime={record.submittedAt}>
+              {new Intl.DateTimeFormat(locale === "es" ? "es-US" : "en-US", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              }).format(new Date(record.submittedAt))}
+            </time>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <p className="text-[0.9375rem]">
+              {t(`kind.${record.kind}`)} · {record.client.name || record.client.email}
+            </p>
+            <p className="text-[0.8125rem] leading-relaxed text-ink-faint">
+              {summarise(record)}
+            </p>
+            {failedReference === record.reference ? (
+              <p className="text-[0.75rem] text-ink">{to("updateFailed")}</p>
+            ) : null}
+          </div>
+
+          <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-2">
+            {record.estimate ? (
+              <span className="text-[0.9375rem] tabular-nums">
+                {formatMoney(record.estimate.total, locale)}
+              </span>
+            ) : null}
+            <label className="flex items-center gap-2">
+              <span className="sr-only">{to("statusLabel")}</span>
+              <select
+                value={record.status}
+                disabled={busyReference === record.reference}
+                onChange={(event) =>
+                  setStatus(record, event.target.value as StoredRequest["status"])
+                }
+                className="border border-line bg-paper px-3 py-1.5 text-[0.8125rem] disabled:opacity-50"
+              >
+                {STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {t(`status.${status}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function summarise(record: StoredRequest): string {
+  const values = Object.values(record.details)
+    .map((value) => (Array.isArray(value) ? value.join(", ") : String(value)))
+    .filter((value) => value.length > 0 && value !== "false");
+  return values.slice(0, 2).join(" · ");
+}

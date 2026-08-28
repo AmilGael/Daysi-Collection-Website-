@@ -185,3 +185,25 @@ export type BusinessInfo = {
     readonly facebook: string | null;
   };
 };
+
+/**
+ * ERD: GALLERY_WORK. A finished piece Daysi has made, shown as portfolio
+ * rather than stock — no size, no price, nothing to add to a basket.
+ */
+export type GalleryCategoryId =
+  | "runway"
+  | "commissions"
+  | "bridal"
+  | "accessories"
+  | "press"
+  | "workroom";
+
+export type GalleryWork = {
+  readonly id: string;
+  readonly src: string;
+  /** Intrinsic size, so the grid can hold the space before the file arrives. */
+  readonly width: number;
+  readonly height: number;
+  readonly category: GalleryCategoryId;
+  readonly caption: Localized;
+};

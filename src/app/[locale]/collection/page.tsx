@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { categories, publishedStyles, sizes } from "@/content";
+import { categories, sizes } from "@/content";
+import { liveStyles } from "@/lib/live-catalog";
 import { PageHeader } from "@/components/page-header";
 import { CollectionGallery } from "@/components/collection-gallery";
 
@@ -15,7 +16,7 @@ export default async function CollectionPage({
   return (
     <div className="pb-24">
       <PageHeader title={t("title")} lead={t("lead")} />
-      <CollectionGallery styles={publishedStyles()} categories={categories} sizes={sizes} />
+      <CollectionGallery styles={liveStyles()} categories={categories} sizes={sizes} />
     </div>
   );
 }

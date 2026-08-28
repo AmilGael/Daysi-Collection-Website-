@@ -12,10 +12,12 @@ import {
   sizes,
   translate,
 } from "@/content";
+import { liveStyles } from "@/lib/live-catalog";
 import { routing, type Locale } from "@/i18n/routing";
 import { StyleOrderPanel } from "@/components/style-order-panel";
 import { LookbookGrid, StyleCard } from "@/components/style-card";
 import { Tag } from "@/components/ui";
+import { PHOTO_QUALITY } from "@/lib/images";
 
 export function generateStaticParams() {
   return routing.locales.flatMap((locale) =>
@@ -36,7 +38,7 @@ export async function generateMetadata({
   return {
     title: `${translate(style.name, language)} · Daysi Collection`,
     description: translate(style.description, language),
-    openGraph: { images: [primaryPhoto(style)?.src ?? "/images/hero.jpg"] },
+    openGraph: { images: [primaryPhoto(style)?.src ?? "/images/real/hero.jpg"] },
   };
 }
 
@@ -48,7 +50,7 @@ export default async function StylePage({
   const { locale, slug } = await params;
   setRequestLocale(locale);
 
-  const style = publishedStyles().find((candidate) => candidate.slug === slug);
+  const style = liveStyles().find((candidate) => candidate.slug === slug);
   if (!style) notFound();
 
   const language = (await getLocale()) as Locale;
@@ -61,7 +63,7 @@ export default async function StylePage({
   const premiere = style.premiereId ? findPremiere(style.premiereId) : undefined;
   if (!price) notFound();
 
-  const related = publishedStyles()
+  const related = liveStyles()
     .filter((candidate) => candidate.id !== style.id && candidate.categoryId === style.categoryId)
     .slice(0, 3);
 
@@ -76,6 +78,7 @@ export default async function StylePage({
                 alt={translate(photo.alt, language)}
                 fill
                 priority
+                quality={PHOTO_QUALITY}
                 sizes="(min-width: 1024px) 55vw, 92vw"
                 className="object-cover"
               />

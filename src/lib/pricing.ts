@@ -1,14 +1,10 @@
+import { commissionDepositRate, findCategory, findStyle, type Cents, type Localized } from "@/content";
 import {
-  commissionDepositRate,
-  findAlteration,
-  findAppointmentType,
-  findCategory,
-  findFabric,
-  findPriceEntry,
-  findStyle,
-  type Cents,
-  type Localized,
-} from "@/content";
+  liveFindAlteration as findAlteration,
+  liveFindAppointmentType as findAppointmentType,
+  liveFindFabric as findFabric,
+  liveFindPriceEntry as findPriceEntry,
+} from "./live-pricing";
 import { applyRate, sum } from "./money";
 
 /**
@@ -63,11 +59,18 @@ export type Estimate = {
 const SALES_TAX_RATE = 0.08875;
 const CLOTHING_EXEMPTION_THRESHOLD: Cents = 11000;
 
+/**
+ * Whether the sales tax actually lands on this line. Exported because the
+ * bookkeeping export has to stamp a tax code on every line it writes, and a
+ * second copy of the threshold in another file is how an invoice and a tax
+ * return start disagreeing.
+ */
+export function isTaxable(line: EstimateLine): boolean {
+  return line.taxBasis === "clothing" && line.amount >= CLOTHING_EXEMPTION_THRESHOLD;
+}
+
 function taxFor(lines: readonly EstimateLine[]): Cents {
-  const taxable = lines.filter(
-    (line) => line.taxBasis === "clothing" && line.amount >= CLOTHING_EXEMPTION_THRESHOLD,
-  );
-  return applyRate(sum(taxable.map((line) => line.amount)), SALES_TAX_RATE);
+  return applyRate(sum(lines.filter(isTaxable).map((line) => line.amount)), SALES_TAX_RATE);
 }
 
 function build(

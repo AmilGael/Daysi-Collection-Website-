@@ -14,11 +14,13 @@ npm run dev
 ```
 
 Then open **http://localhost:3000** — it redirects to `/es`, or to `/en` if the
-browser asks for English. Both are the same site.
+browser asks for English. Both are the same site. If 3000 is taken, `PORT=3001
+npm run dev` works too: everything that builds an absolute link (sign-in links,
+the QR code) follows the assigned port in development.
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Development server on port 3000 |
+| `npm run dev` | Development server (port 3000, or `PORT`) |
 | `npm run build` | Production build |
 | `npm start` | Serve the production build |
 | `npm test` | Pricing and security tests |
@@ -42,6 +44,7 @@ No environment variables are needed to run it. Copy `.env.example` to
 | --- | --- |
 | `/` | The story: hero, trust strip, atelier, services, collection, prices, alterations, next premiere, Google Business |
 | `/collection` | The gallery, filtered by design and by size, with fixed prices |
+| `/gallery` | Eighteen years of finished work — runway, commissions, bridal, accessories, press |
 | `/collection/[slug]` | One piece: photography, sizes, customisation, running price |
 | `/premieres` | Limited-edition premieres and the sign-up list |
 | `/services` | Custom garments, alterations, ready-made |
@@ -55,7 +58,7 @@ No environment variables are needed to run it. Copy `.env.example` to
 | `/sign-in` | Ask for a sign-in link — no password anywhere |
 | `/account`, `/account/orders` | A client's own orders, alterations and sessions |
 | `/cart` | The basket and the till |
-| `/office` | Daysi's back office: earnings, orders, sessions, messages |
+| `/office` | Daysi's back office: earnings, the collection and its photos, fabrics, the price list, the books, a site notice, orders, sessions, messages |
 | `/terms`, `/privacy` | Terms of service and privacy notice |
 | `/checkout/thank-you`, `/checkout/cancelled` | Where Stripe returns the client |
 
@@ -91,6 +94,11 @@ src/
 │   ├── auth/           Accounts, sessions, sign-in links — no passwords
 │   ├── cart.ts         The signed cart cookie: what, never how much
 │   ├── earnings.ts     Cleared money and owed money, kept apart
+│   ├── books.ts        The sales file for her accountant, QuickBooks-shaped
+│   ├── live-catalog.ts What Daysi has changed about the collection
+│   ├── live-pricing.ts What Daysi has changed about the prices and fabrics
+│   ├── live-gallery.ts The portfolio seed plus what she has added to it
+│   ├── office-validation.ts The shapes the office endpoints accept
 │   ├── notify.ts       Email to Daysi, request delivery
 │   ├── whatsapp.ts     Pre-filled WhatsApp links (client-safe)
 │   └── mockup.ts       Canvas drawing for the design studio
@@ -191,9 +199,8 @@ locked-down permissions policy.
 directory with owner-only permissions (`700` / `600`). Photos are stored beside
 the record so one can be deleted on its own. Nothing personal is logged.
 
-`/inbox` shows client contact details and has no login, so it refuses to render
-outside development. Before it is useful in production it needs real
-authentication — or the requests should simply be read from Daysi's email.
+The old dev-only `/inbox` is gone: `/office` is the real thing, behind the
+owner's sign-in.
 
 ## Before launch
 
@@ -214,10 +221,24 @@ horizontal scaling.
 Everything below is real content structure with stand-in values, waiting on the
 items still outstanding in PRD Section 15.1:
 
-- **Photography.** Generated to stand in for Daysi's own pieces while her
-  shoot is produced. Consistent framing and lighting throughout, so replacing
-  them one at a time will not break the look. Swap the files in
-  `public/images/` and the paths in `content/styles.ts`.
+- **Photography.** There is none left that Daysi did not take or sit for. Every
+  style, every fabric swatch, both premiere covers, the home hero, the atelier,
+  the owner portraits and the twenty-eight gallery works are hers, in
+  `public/images/real/`, `public/images/gallery/` and `public/brand/`. The
+  generated stand-ins are deleted, and a test in `content/catalog.test.ts`
+  states the rule that keeps them out: the atelier offers no cloth it cannot
+  show you. The two 464px stills lifted from her process video are gone as
+  well: the home workroom picture and the custom-garment picture are now cut
+  from 3414×5120 originals, so nothing on the site is upscaled any more.
+
+  The photographs are served at `quality={PHOTO_QUALITY}` (85) rather than
+  next/image's default 75. The number was measured, not guessed — the
+  reasoning and the byte cost are in `lib/images.ts`. Office thumbnails keep
+  the default.
+
+- **The logo** is hers, knocked out of the white paper it was drawn on into
+  `public/brand/`. It is a raster trace, so it is soft at very large sizes; a
+  vector from whoever drew it would render crisper and is worth asking for.
 - **Phone number and email.** The phone uses the reserved 555-01xx range, which
   cannot dial a real person. Set the real ones in `content/business.ts`.
 - **Address.** Neighbourhood only, on purpose — the atelier is a private home
@@ -227,11 +248,60 @@ items still outstanding in PRD Section 15.1:
   to `true` once her real listing is connected, and the rating and review count
   come from it.
 - **Prices.** Structurally complete and internally consistent, built from the
-  July 8 collection notes and the rates discussed in the meetings. Confirm each
-  figure with Daysi before launch — they all live in `content/price-list.ts`.
+  July 8 collection notes and the rates discussed in the meetings. The coded
+  figures live in `content/price-list.ts`, but Daysi confirms and corrects them
+  herself now: the office (`/office`) has an editable price list, and her
+  changes land as append-only overrides in `.data/` that every quote on the
+  site reads (see `lib/live-pricing.ts`). The same office lets her drop new
+  photos onto a piece, add fabrics (swatch photo + per-category prices) to the
+  design studio, set stock and visibility per style, pin a site notice, and
+  work the request inbox. Uploads land in the gitignored `public/uploads/`.
 - **Sales tax.** New York exempts clothing under $110 per item; above that it is
   taxed in full. The rate and threshold are constants at the top of
-  `lib/pricing.ts`. Confirm both with Daysi's accountant.
+  `lib/pricing.ts`, and the same `isTaxable` rule stamps the tax code on every
+  line of the bookkeeping export, so an invoice and a tax return cannot
+  disagree. Confirm both with Daysi's accountant.
+
+## Her story, in her words
+
+The biography copy — `home.storyTitle`, `storyLead`, `storyBody`, `promise`, and
+`atelier.craftBody` / `heritageBody` — is drawn from the bio Daysi supplied, and
+the quotations in it are hers verbatim. Do not paraphrase them back into
+invented atmosphere: the placeholder copy this replaced had her learning to cut
+in Santo Domingo, which is the wrong country. She is Honduran, and Garífuna.
+
+The facts the copy rests on: she began sewing at twelve; her father worked a
+spinning wheel; the Garífuna are a minority people with their own culture in
+Honduras, and that is where the styles, patterns and textiles come from; she
+cuts for women of every shape and size; she is a wife, mother, daughter and
+sister. The Spanish is an idiomatic rendering rather than a literal one — PRD 7.1
+item 3 asks that it read naturally and that **Daysi reviews it herself**, which
+has not happened yet.
+
+## Outside services
+
+Every integration here is optional and switches off cleanly when its key is
+missing (`lib/env.ts`), so the site runs whole with none of them configured.
+Two were considered and deliberately answered differently, because the PRD
+(Section 15) commits Daysi to a total ongoing cost of roughly the price of a
+domain name — about $12 a year, with nothing else recurring.
+
+- **Stripe** — in use. Per-transaction fees only, no subscription, so it keeps
+  that promise. Card data never touches this application; see Security.
+- **QuickBooks** — served by an export rather than a subscription. QuickBooks
+  Online is about $35 a month, which alone is thirty-five times the yearly
+  figure Daysi is being asked to sign off on. The office instead writes the
+  artefact bookkeeping actually needs: a line-item sales file in the shape
+  QuickBooks' invoice importer expects, which Excel, Google Sheets and any
+  accountant read just as happily. See `lib/books.ts`. If she ever does
+  subscribe, a live sync is a small addition on top of the same ledger — the
+  normalising work is already done.
+- **Shopify** — deliberately not integrated. At about $39 a month it would
+  duplicate a storefront she already owns outright (gallery, cart, Stripe
+  checkout, fixed prices, and the stock controls in the office), and running
+  two inventories over garments cut in runs of twelve is how the same piece
+  gets sold twice. If she later sells on another channel, the thing to build is
+  a one-way product feed out of `live-catalog.ts`, not a second store.
 
 ## Editing content
 

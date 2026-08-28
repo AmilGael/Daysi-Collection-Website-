@@ -1,12 +1,30 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound, redirect } from "next/navigation";
 import type { Locale } from "@/i18n/routing";
+import { categories, translate } from "@/content";
 import { currentViewer } from "@/lib/auth/session";
 import { earningsFrom, loadLedger, monthlyReceived } from "@/lib/earnings";
 import { listRequests, currentRecords } from "@/lib/request-store";
+import { allLiveStyles, storedNotice, styleOverrides } from "@/lib/live-catalog";
+import { GALLERY_ORDER, manageableGallery } from "@/lib/live-gallery";
+import {
+  customFabrics,
+  liveAlterations,
+  liveAppointmentTypes,
+  liveFabrics,
+  livePriceList,
+} from "@/lib/live-pricing";
 import { formatMoney } from "@/lib/money";
+import { exportSummary } from "@/lib/books";
 import { PageHeader } from "@/components/page-header";
-import { RequestList } from "@/components/request-list";
+import { OfficeRequestList } from "@/components/office-request-list";
+import { CollectionManager, type ManagedStyle } from "@/components/collection-manager";
+import { NoticeEditor } from "@/components/notice-editor";
+import { PriceManager } from "@/components/price-manager";
+import { FabricManager } from "@/components/fabric-manager";
+import { BooksExport } from "@/components/books-export";
+import { GalleryManager, type ManagedWork } from "@/components/gallery-manager";
+import { StyleComposer } from "@/components/style-composer";
 
 /**
  * Daysi's office.
@@ -29,6 +47,7 @@ export default async function OfficePage({
   if (viewer.role !== "owner") notFound();
 
   const t = await getTranslations("office");
+  const tg = await getTranslations("gallery");
 
   const ledger = loadLedger();
   const earnings = earningsFrom(ledger);
@@ -40,6 +59,115 @@ export default async function OfficePage({
 
   const appointments = ledger.filter((record) => record.kind === "appointment");
   const work = ledger.filter((record) => record.kind !== "appointment");
+
+  const overridesById = new Map(styleOverrides().map((override) => [override.styleId, override]));
+  const managedStyles: ManagedStyle[] = allLiveStyles().map((style) => ({
+    id: style.id,
+    name: translate(style.name, language),
+    category: translate(
+      categories.find((category) => category.id === style.categoryId)?.name ?? {
+        en: style.categoryId,
+        es: style.categoryId,
+      },
+      language,
+    ),
+    photo: (style.photos.find((photo) => photo.isPrimary) ?? style.photos[0])?.src ?? "",
+    photoCount: style.photos.length,
+    isPublished: style.isPublished,
+    sizes: style.sizes.map((size) => ({
+      sizeId: size.sizeId as "s" | "m" | "l",
+      inStock: size.inStock,
+    })),
+    addedPhotos: overridesById.get(style.id)?.addedPhotos ?? [],
+    coverSrc: overridesById.get(style.id)?.coverSrc,
+  }));
+  const notice = storedNotice();
+
+  const composerCategories = categories.map((category) => ({
+    id: category.id,
+    label: translate(category.name, language),
+  }));
+  const composerFabrics = liveFabrics().map((fabric) => ({
+    id: fabric.id,
+    label: translate(fabric.name, language),
+  }));
+  const pricedPairs = Object.fromEntries(
+    livePriceList().map((entry) => [entry.id, entry.fixedPrice]),
+  );
+
+  const galleryWorksManaged: ManagedWork[] = manageableGallery().map((work) => ({
+    id: work.id,
+    src: work.src,
+    width: work.width,
+    height: work.height,
+    category: work.category,
+    caption: translate(work.caption, language),
+    hidden: work.hidden,
+  }));
+  const galleryCategories = GALLERY_ORDER.map((id) => ({ id, label: tg(`category.${id}`) }));
+
+  // Ranges an accountant actually asks for, built from today rather than hard
+  // coded, so this still offers the right years in 2027.
+  const today = new Date();
+  const year = today.getFullYear();
+  const quarter = Math.floor(today.getMonth() / 3);
+  const iso = (date: Date) => date.toISOString().slice(0, 10);
+  const bookPresets = [
+    { label: t("booksThisYear"), from: `${year}-01-01`, to: `${year}-12-31` },
+    { label: t("booksLastYear"), from: `${year - 1}-01-01`, to: `${year - 1}-12-31` },
+    {
+      label: t("booksThisQuarter"),
+      from: iso(new Date(year, quarter * 3, 1)),
+      to: iso(new Date(year, quarter * 3 + 3, 0)),
+    },
+  ];
+  const booksSummary = exportSummary(ledger, `${year}-01-01`, `${year}-12-31`);
+
+  const priceEntries = livePriceList().map((entry) => ({
+    id: entry.id,
+    garment: translate(
+      categories.find((category) => category.id === entry.categoryId)?.name ?? {
+        en: entry.categoryId,
+        es: entry.categoryId,
+      },
+      language,
+    ),
+    fabric: translate(
+      liveFabrics().find((fabric) => fabric.id === entry.fabricId)?.name ?? {
+        en: entry.fabricId,
+        es: entry.fabricId,
+      },
+      language,
+    ),
+    fixedPrice: entry.fixedPrice,
+    customizationExtra: entry.customizationExtra,
+  }));
+  const priceAlterations = liveAlterations().map((alteration) => ({
+    id: alteration.id,
+    name: translate(alteration.name, language),
+    fixedPrice: alteration.fixedPrice,
+    rushSurcharge: alteration.rushSurcharge,
+  }));
+  const priceAppointments = liveAppointmentTypes().map((type) => ({
+    id: type.id,
+    name: translate(type.name, language),
+    fee: type.fee,
+  }));
+
+  const customIds = new Set(customFabrics().map((fabric) => fabric.id));
+  const fabricWall = liveFabrics().map((fabric) => ({
+    id: fabric.id,
+    name: translate(fabric.name, language),
+    swatchImage: fabric.swatchImage,
+    custom: customIds.has(fabric.id),
+  }));
+  const fabricCategories = (["dresses", "pants", "shirts", "heritage"] as const).map((id) => ({
+    id,
+    label: translate(
+      categories.find((category) => category.id === id)?.name ?? { en: id, es: id },
+      language,
+    ),
+  }));
 
   return (
     <>
@@ -89,13 +217,108 @@ export default async function OfficePage({
         </section>
 
         <section className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-heading">{t("collection")}</h2>
+            <p className="max-w-xl text-[0.875rem] leading-relaxed text-ink-faint">
+              {t("collectionLead")}
+            </p>
+          </div>
+          <CollectionManager styles={managedStyles} locale={language} />
+
+          <div className="flex flex-col gap-4 border-t border-line pt-8">
+            <div className="flex flex-col gap-2">
+              <h3 className="text-[0.9375rem] font-medium">{t("styleAddTitle")}</h3>
+              <p className="max-w-xl text-[0.875rem] leading-relaxed text-ink-faint">
+                {t("styleAddLead")}
+              </p>
+            </div>
+            <StyleComposer
+              categories={composerCategories}
+              fabrics={composerFabrics}
+              pricedPairs={pricedPairs}
+              locale={language}
+            />
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-heading">{t("galleryTitle")}</h2>
+            <p className="max-w-xl text-[0.875rem] leading-relaxed text-ink-faint">
+              {t("galleryLead")}
+            </p>
+          </div>
+          <GalleryManager works={galleryWorksManaged} categories={galleryCategories} />
+        </section>
+
+        <section className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-heading">{t("fabricsTitle")}</h2>
+            <p className="max-w-xl text-[0.875rem] leading-relaxed text-ink-faint">
+              {t("fabricsLead")}
+            </p>
+          </div>
+          <FabricManager fabrics={fabricWall} categories={fabricCategories} />
+        </section>
+
+        <section className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-heading">{t("pricesTitle")}</h2>
+            <p className="max-w-xl text-[0.875rem] leading-relaxed text-ink-faint">
+              {t("pricesLead")}
+            </p>
+          </div>
+          <PriceManager
+            entries={priceEntries}
+            alterations={priceAlterations}
+            appointments={priceAppointments}
+          />
+        </section>
+
+        <section className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-heading">{t("booksTitle")}</h2>
+            <p className="max-w-xl text-[0.875rem] leading-relaxed text-ink-faint">
+              {t("booksLead")}
+            </p>
+          </div>
+          <p className="text-[0.875rem] text-ink-soft">
+            {t("booksSummary", {
+              year: String(year),
+              invoices: booksSummary.invoices,
+              received: formatMoney(booksSummary.received, language),
+              outstanding: formatMoney(booksSummary.outstanding, language),
+              tax: formatMoney(booksSummary.salesTax, language),
+            })}
+          </p>
+          <BooksExport
+            presets={bookPresets}
+            initialFrom={`${year}-01-01`}
+            initialTo={`${year}-12-31`}
+          />
+        </section>
+
+        <section className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-heading">{t("noticeTitle")}</h2>
+            <p className="max-w-xl text-[0.875rem] leading-relaxed text-ink-faint">
+              {t("noticeLead")}
+            </p>
+          </div>
+          <NoticeEditor
+            initialMessage={notice?.message ?? ""}
+            initialVisible={notice?.visible ?? false}
+          />
+        </section>
+
+        <section className="flex flex-col gap-6">
           <h2 className="text-heading">{t("work")}</h2>
-          <RequestList records={work} locale={language} emptyMessage={t("noWork")} />
+          <OfficeRequestList records={work} locale={language} emptyMessage={t("noWork")} />
         </section>
 
         <section className="flex flex-col gap-6">
           <h2 className="text-heading">{t("sessions")}</h2>
-          <RequestList
+          <OfficeRequestList
             records={appointments}
             locale={language}
             emptyMessage={t("noSessions")}
@@ -105,7 +328,11 @@ export default async function OfficePage({
         <section className="grid gap-12 lg:grid-cols-2 lg:gap-16">
           <div className="flex flex-col gap-6">
             <h2 className="text-heading">{t("messages")}</h2>
-            <RequestList records={messages} locale={language} emptyMessage={t("noMessages")} />
+            <OfficeRequestList
+              records={messages}
+              locale={language}
+              emptyMessage={t("noMessages")}
+            />
           </div>
           <div className="flex flex-col gap-6">
             <h2 className="text-heading">{t("premiereList")}</h2>

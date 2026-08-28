@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { findPriceEntry, findAppointmentType, findAlteration } from "@/content";
+import { liveFindAlteration as findAlteration, liveFindAppointmentType as findAppointmentType } from "./live-pricing";
+import { liveFindPriceEntry as findPriceEntry } from "./live-pricing";
 import {
   estimateAlteration,
   estimateAppointment,
@@ -15,9 +16,9 @@ import {
 
 describe("ready-made orders", () => {
   it("charges the published fixed price for the piece", () => {
-    const published = findPriceEntry("dresses--floral-linen");
+    const published = findPriceEntry("heritage--frutera-print");
     const estimate = estimateReadyMade({
-      styleSlug: "flor-de-sol",
+      styleSlug: "frutera",
       sizeId: "m",
       customize: false,
     });
@@ -26,9 +27,9 @@ describe("ready-made orders", () => {
   });
 
   it("adds the customisation charge as a set amount, not a negotiation", () => {
-    const published = findPriceEntry("dresses--floral-linen");
+    const published = findPriceEntry("heritage--frutera-print");
     const estimate = estimateReadyMade({
-      styleSlug: "flor-de-sol",
+      styleSlug: "frutera",
       sizeId: "m",
       customize: true,
     });
@@ -40,7 +41,7 @@ describe("ready-made orders", () => {
 
   it("takes payment in full for a piece bought as cut", () => {
     const estimate = estimateReadyMade({
-      styleSlug: "flor-de-sol",
+      styleSlug: "frutera",
       sizeId: "m",
       customize: false,
     });
@@ -51,7 +52,7 @@ describe("ready-made orders", () => {
 
   it("takes half up front once a piece is made to measure", () => {
     const estimate = estimateReadyMade({
-      styleSlug: "flor-de-sol",
+      styleSlug: "frutera",
       sizeId: "m",
       customize: true,
     });
@@ -60,7 +61,7 @@ describe("ready-made orders", () => {
   });
 
   it("refuses a size the style is not offered in", () => {
-    expect(estimateReadyMade({ styleSlug: "flor-de-sol", sizeId: "xxl", customize: false })).toBeNull();
+    expect(estimateReadyMade({ styleSlug: "frutera", sizeId: "xxl", customize: false })).toBeNull();
   });
 
   it("refuses a style that does not exist", () => {
@@ -76,7 +77,7 @@ describe("New York clothing sales tax", () => {
 
   it("taxes a garment at or above the exemption", () => {
     const estimate = estimateReadyMade({
-      styleSlug: "flor-de-sol",
+      styleSlug: "frutera",
       sizeId: "m",
       customize: false,
     });
@@ -154,9 +155,9 @@ describe("appointments", () => {
 
 describe("commissions", () => {
   it("refuses a garment and cloth pair with no published price", () => {
-    // Shirts are not offered in floral linen, so there is no price to quote.
+    // Shirts are not offered in the medallon print, so there is no price to quote.
     expect(
-      estimateCommission({ categoryId: "shirts", fabricId: "floral-linen", customize: true }),
+      estimateCommission({ categoryId: "shirts", fabricId: "medallon-print", customize: true }),
     ).toBeNull();
   });
 
@@ -177,7 +178,7 @@ describe("every estimate", () => {
     const estimates = [
       estimateReadyMade({ styleSlug: "yurumein", sizeId: "s", customize: true }),
       estimateAlteration({ alterationIds: ["resize", "sleeves"], rush: true }),
-      estimateCommission({ categoryId: "dresses", fabricId: "black-linen", customize: true }),
+      estimateCommission({ categoryId: "dresses", fabricId: "medallon-print", customize: true }),
       estimateAppointment("consultation-60"),
     ];
 

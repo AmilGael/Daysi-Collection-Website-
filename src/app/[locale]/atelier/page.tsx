@@ -4,6 +4,7 @@ import { business, translate } from "@/content";
 import type { Locale } from "@/i18n/routing";
 import { ButtonLink, Prose, SectionHeading } from "@/components/ui";
 import { GoogleBusiness } from "@/components/google-business";
+import { PHOTO_QUALITY } from "@/lib/images";
 
 export default async function AtelierPage({
   params,
@@ -20,14 +21,18 @@ export default async function AtelierPage({
     <>
       <section className="relative isolate -mt-20 flex min-h-[70svh] items-end overflow-hidden bg-ink pt-20">
         <Image
-          src="/images/atelier/workspace.jpg"
+          src="/images/real/atelier-workspace.jpg"
           alt=""
           fill
           priority
+          quality={PHOTO_QUALITY}
           sizes="100vw"
-          className="object-cover"
+          className="object-cover object-[38%_28%]"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/95 via-ink/55 to-ink/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink/95 via-ink/60 to-ink/45" />
+        {/* The workroom is a bright photograph, so the header needs its own
+            ground to stay legible while it is in its light-on-dark state. */}
+        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-ink/70 to-transparent" />
         <div className="shell relative z-10 flex max-w-2xl flex-col gap-6 pb-16 pt-28">
           <p className="eyebrow text-paper/70">{business.neighborhood}</p>
           <h1 className="text-display text-paper">{t("title")}</h1>
@@ -45,9 +50,10 @@ export default async function AtelierPage({
         </div>
         <div className="relative aspect-4/5 overflow-hidden bg-paper-warm">
           <Image
-            src="/images/atelier/sewing.jpg"
-            alt=""
+            src="/images/real/daysi-portrait-standing.jpg"
+            alt={t("portraitAlt")}
             fill
+            quality={PHOTO_QUALITY}
             sizes="(min-width: 1024px) 45vw, 90vw"
             className="object-cover"
           />
@@ -74,9 +80,10 @@ export default async function AtelierPage({
       <section className="shell reveal grid gap-14 py-24 lg:grid-cols-2 lg:items-center lg:gap-24">
         <div className="relative aspect-4/3 overflow-hidden bg-paper-warm">
           <Image
-            src="/images/atelier/rack.jpg"
+            src="/images/real/atelier-shelves.jpg"
             alt=""
             fill
+            quality={PHOTO_QUALITY}
             sizes="(min-width: 1024px) 45vw, 90vw"
             className="object-cover"
           />

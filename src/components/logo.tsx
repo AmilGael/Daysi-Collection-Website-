@@ -1,13 +1,36 @@
+import Image from "next/image";
+
 /**
- * The Daysi Collection mark, redrawn as vector from the printed logo: a ring, a
- * daisy, and the wordmark. It is drawn rather than photographed so it stays
- * crisp at any size and inherits the surrounding text colour.
+ * Daysi's own mark, knocked out of the white paper it was drawn on so it can
+ * sit on the dark hero and on the light chrome alike. Two files rather than
+ * one tinted file: the art is fine enough — the daisy's petals, the figure's
+ * shoulder — that a CSS filter would silt it up.
+ *
+ * The wordmark stays typeset rather than cropped from the same drawing. Hers
+ * is set small under the circle and turns to mud at header size; this is the
+ * same lockup, rebuilt so it is legible at 36px.
  */
-export function Logo({ className = "" }: { className?: string }) {
+export function Logo({
+  tone = "ink",
+  className = "",
+}: {
+  tone?: "ink" | "paper";
+  className?: string;
+}) {
   return (
     <span className={`inline-flex items-center gap-3 ${className}`}>
-      <DaisyMark className="h-9 w-9 shrink-0" />
-      <span className="flex flex-col leading-none">
+      <Image
+        src={tone === "paper" ? "/brand/mark-paper.png" : "/brand/mark-ink.png"}
+        alt=""
+        width={512}
+        height={451}
+        priority
+        className="h-10 w-auto shrink-0"
+      />
+      {/* On a phone the mark carries the name on its own: the wordmark beside
+          it costs about seventy pixels the header does not have, and it is
+          the first thing that collides with the cart. */}
+      <span className="hidden flex-col leading-none sm:flex">
         <span className="font-display text-[1.35rem] tracking-[-0.01em]">Daysi</span>
         <span className="mt-[3px] text-[0.5rem] font-medium uppercase tracking-[0.42em] opacity-55">
           Collection
@@ -17,33 +40,24 @@ export function Logo({ className = "" }: { className?: string }) {
   );
 }
 
-export function DaisyMark({ className = "" }: { className?: string }) {
+/**
+ * The mark on its own, for places that already say the name — the sign-in
+ * card, an empty state, the office.
+ */
+export function DaisyMark({
+  tone = "ink",
+  className = "",
+}: {
+  tone?: "ink" | "paper";
+  className?: string;
+}) {
   return (
-    <svg
-      viewBox="0 0 48 48"
-      role="img"
-      aria-label="Daysi Collection"
+    <Image
+      src={tone === "paper" ? "/brand/mark-paper.png" : "/brand/mark-ink.png"}
+      alt="Daysi Collection"
+      width={512}
+      height={451}
       className={className}
-      fill="none"
-    >
-      <circle cx="24" cy="24" r="22" stroke="currentColor" strokeWidth="1.25" />
-      {/*
-        Twelve petals set far enough out that the ring of background between
-        them and the centre reads as a daisy in any colour — the mark inherits
-        the text colour, so it cannot rely on a second fill for contrast.
-      */}
-      {Array.from({ length: 12 }, (_, index) => (
-        <ellipse
-          key={index}
-          cx="24"
-          cy="12.5"
-          rx="2.4"
-          ry="5.6"
-          fill="currentColor"
-          transform={`rotate(${index * 30} 24 24)`}
-        />
-      ))}
-      <circle cx="24" cy="24" r="3.6" fill="currentColor" />
-    </svg>
+    />
   );
 }

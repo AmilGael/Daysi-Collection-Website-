@@ -1,5 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { alterationServices, categories, fabrics, publishedStyles } from "@/content";
+import { categories } from "@/content";
+import { liveAlterations, liveFabrics } from "@/lib/live-pricing";
+import { liveStyles } from "@/lib/live-catalog";
 import { PageHeader } from "@/components/page-header";
 import { RequestForm } from "@/components/request-form";
 
@@ -31,10 +33,10 @@ export default async function RequestPage({
           initialStyleSlug={first(query.style)}
           initialSizeId={first(query.size)}
           initialCustomize={first(query.customize) === "1"}
-          styles={publishedStyles()}
-          alterations={alterationServices}
+          styles={liveStyles()}
+          alterations={liveAlterations()}
           categories={categories}
-          fabrics={fabrics}
+          fabrics={liveFabrics()}
         />
       </div>
     </>

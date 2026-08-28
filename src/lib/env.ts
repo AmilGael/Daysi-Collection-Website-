@@ -11,7 +11,10 @@ function optional(name: string): string | null {
 }
 
 export const env = {
-  siteUrl: optional("SITE_URL") ?? "http://localhost:3000",
+  // Development follows whatever port the server was actually given, so
+  // sign-in links and the QR code stay correct when 3000 is taken. Production
+  // sets SITE_URL explicitly.
+  siteUrl: optional("SITE_URL") ?? `http://localhost:${process.env.PORT ?? "3000"}`,
 
   stripeSecretKey: optional("STRIPE_SECRET_KEY"),
   stripeWebhookSecret: optional("STRIPE_WEBHOOK_SECRET"),

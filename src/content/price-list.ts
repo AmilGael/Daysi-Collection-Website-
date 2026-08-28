@@ -12,19 +12,17 @@ import type { AlterationService, AppointmentType, PriceListEntry } from "./types
  * refuse to negotiate them.
  */
 export const priceList: readonly PriceListEntry[] = [
-  entry("dresses", "floral-linen", 32500, 9500),
-  entry("dresses", "marigold-linen", 29500, 9500),
-  entry("dresses", "natural-linen", 28500, 9500),
-  entry("dresses", "black-linen", 29500, 9500),
   entry("dresses", "daisy-cotton", 26500, 9500),
-  entry("pants", "floral-linen", 21500, 6500),
-  entry("pants", "natural-linen", 18500, 6500),
-  entry("pants", "black-linen", 19500, 6500),
   entry("shirts", "wax-print", 16500, 5500),
   entry("shirts", "tropical-leaf", 17500, 5500),
   entry("shirts", "daisy-cotton", 14500, 5500),
   entry("heritage", "wax-print", 39500, 12000),
   entry("heritage", "tropical-leaf", 37500, 12000),
+  entry("heritage", "fish-batik", 39500, 12000),
+  entry("heritage", "frutera-print", 42500, 12000),
+  entry("pants", "ocelote-print", 23500, 6500),
+  entry("shirts", "laguna-wax", 16500, 5500),
+  entry("dresses", "medallon-print", 32500, 9500),
 ];
 
 function entry(

@@ -5,6 +5,7 @@ import type { Locale } from "@/i18n/routing";
 import { SectionHeading, Tag } from "@/components/ui";
 import { LookbookGrid, StyleCard } from "@/components/style-card";
 import { PremiereSignup } from "@/components/premiere-signup";
+import { PHOTO_QUALITY } from "@/lib/images";
 
 export default async function PremieresPage({
   params,
@@ -37,6 +38,7 @@ export default async function PremieresPage({
             alt=""
             fill
             priority
+            quality={PHOTO_QUALITY}
             sizes="100vw"
             className="object-cover object-[65%_center]"
           />

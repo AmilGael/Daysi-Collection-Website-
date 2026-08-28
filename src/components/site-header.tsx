@@ -11,11 +11,27 @@ import { buttonClass } from "./ui";
 export type HeaderViewer = { name: string; email: string; isOwner: boolean } | null;
 
 /**
- * The site's tabs. Seven destinations plus the one action the whole site is
- * pointing at, which stays visible at every width.
+ * The bar carries the six destinations a client actually navigates by: what
+ * they can buy, what Daysi has made, what it costs, and who she is. Eight
+ * would not fit — the Spanish labels overflow 1280px — and a bar you have to
+ * squint at is not a shorter bar, it is a worse one.
+ *
+ * Everything else lives one click away in the menu, which is why the menu
+ * button stays visible at every width rather than only on a phone.
  */
-const TABS = [
+const PRIMARY_TABS = [
   { href: "/collection", label: "collection" },
+  { href: "/gallery", label: "gallery" },
+  { href: "/alterations", label: "alterations" },
+  { href: "/prices", label: "prices" },
+  { href: "/design-studio", label: "studio" },
+  { href: "/atelier", label: "atelier" },
+] as const;
+
+/** Every destination, in the order the menu lists them. */
+const ALL_TABS = [
+  { href: "/collection", label: "collection" },
+  { href: "/gallery", label: "gallery" },
   { href: "/premieres", label: "premieres" },
   { href: "/services", label: "services" },
   { href: "/alterations", label: "alterations" },
@@ -72,20 +88,20 @@ export function SiteHeader({
           : "border-b border-line bg-paper/92 text-ink backdrop-blur-md"
       }`}
     >
-      <div className="shell flex h-20 items-center justify-between gap-6">
+      <div className="shell flex h-20 items-center justify-between gap-4 2xl:gap-6">
         <Link href="/" aria-label="Daysi Collection">
-          <Logo />
+          <Logo tone={isOverPhotograph ? "paper" : "ink"} />
         </Link>
 
-        <nav aria-label={t("home")} className="hidden items-center gap-7 2xl:flex">
-          {TABS.map((tab) => {
+        <nav aria-label={t("home")} className="hidden items-center gap-4 xl:flex 2xl:gap-7">
+          {PRIMARY_TABS.map((tab) => {
             const isActive = pathname.startsWith(tab.href);
             return (
               <Link
                 key={tab.href}
                 href={tab.href}
                 aria-current={isActive ? "page" : undefined}
-                className={`relative text-[0.6875rem] font-medium uppercase tracking-[0.18em] transition-colors ${
+                className={`relative whitespace-nowrap text-[0.6875rem] font-medium uppercase tracking-[0.18em] transition-colors ${
                   isActive ? "opacity-100" : "opacity-70 hover:opacity-100"
                 }`}
               >
@@ -110,33 +126,44 @@ export function SiteHeader({
             cartCount={cartCount}
             tone={isOverPhotograph ? "paper" : "ink"}
           />
-          <Link
-            href="/appointments"
-            className={buttonClass({
-              size: "small",
-              tone: isOverPhotograph ? "marigold" : "solid",
-              className: "hidden whitespace-nowrap sm:inline-flex",
-            })}
-          >
-            {t("bookCta")}
-          </Link>
-          <Link
-            href="/appointments"
-            className={buttonClass({
-              size: "small",
-              tone: isOverPhotograph ? "marigold" : "solid",
-              className: "whitespace-nowrap sm:hidden",
-            })}
-          >
-            {/* The full label needs room a phone header does not have. */}
-            {t("bookCtaShort")}
-          </Link>
+          {/*
+            The responsive switch sits on a wrapper rather than on the button.
+            buttonClass begins with `inline-flex`, so a `hidden` handed to it
+            through className is two display utilities of equal weight fighting
+            in the same layer — and `hidden` was losing, which put both labels
+            in the bar at once and pushed it 200px past the screen on a phone.
+          */}
+          <span className="hidden sm:contents">
+            <Link
+              href="/appointments"
+              className={buttonClass({
+                size: "small",
+                tone: isOverPhotograph ? "marigold" : "solid",
+                className: "whitespace-nowrap",
+              })}
+            >
+              {t("bookCta")}
+            </Link>
+          </span>
+          <span className="contents sm:hidden">
+            <Link
+              href="/appointments"
+              className={buttonClass({
+                size: "small",
+                tone: isOverPhotograph ? "marigold" : "solid",
+                className: "whitespace-nowrap",
+              })}
+            >
+              {/* The full label needs room a phone header does not have. */}
+              {t("bookCtaShort")}
+            </Link>
+          </span>
           <button
             type="button"
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-expanded={isMenuOpen}
             aria-label={isMenuOpen ? t("closeMenu") : t("openMenu")}
-            className={`flex h-10 w-10 items-center justify-center rounded-[2px] border 2xl:hidden ${
+            className={`flex h-10 w-10 items-center justify-center rounded-[2px] border ${
               isOverPhotograph ? "border-paper/40" : "border-line"
             }`}
           >
@@ -157,9 +184,9 @@ export function SiteHeader({
       </div>
 
       {isMenuOpen ? (
-        <div className="fixed inset-x-0 top-20 bottom-0 z-40 overflow-y-auto bg-paper 2xl:hidden">
+        <div className="fixed inset-x-0 top-20 bottom-0 z-40 overflow-y-auto bg-paper">
           <nav className="shell flex flex-col gap-1 py-8">
-            {TABS.map((tab, index) => (
+            {ALL_TABS.map((tab, index) => (
               <Link
                 key={tab.href}
                 href={tab.href}
