@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
@@ -57,6 +57,15 @@ export async function generateMetadata({
     },
   };
 }
+
+/**
+ * Paints the phone's own chrome in the site's paper rather than leaving it
+ * the browser's default white — one of the surfaces a page does not draw but
+ * is still judged on.
+ */
+export const viewport: Viewport = {
+  themeColor: "#fbf8f2",
+};
 
 export default async function LocaleLayout({
   children,

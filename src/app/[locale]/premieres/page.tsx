@@ -45,24 +45,24 @@ export default async function PremieresPage({
           <div className="absolute inset-0 bg-gradient-to-r from-ink/92 via-ink/55 to-transparent" />
           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-ink/60 to-transparent" />
           <div className="shell relative z-10 flex max-w-2xl flex-col gap-7 pb-20 pt-28">
-            <p className="eyebrow text-paper/70">
+            <p className="eyebrow text-paper-soft">
               {t("upcoming")} · {translate(next.season, language)}
             </p>
             <h1 className="text-display text-paper">{translate(next.title, language)}</h1>
-            <p className="max-w-xl text-lead text-paper/75">{translate(next.story, language)}</p>
+            <p className="max-w-xl text-lead text-paper-soft">{translate(next.story, language)}</p>
             <div className="flex flex-wrap gap-2">
               <Tag tone="marigold">{t("pieces", { count: next.piecesPlanned })}</Tag>
               <Tag tone="outline">{t("edition", { count: next.editionSize })}</Tag>
             </div>
-            <dl className="flex flex-wrap gap-x-10 gap-y-3 border-t border-paper/20 pt-6 text-paper/75">
+            <dl className="flex flex-wrap gap-x-10 gap-y-3 border-t border-paper/20 pt-6 text-paper-soft">
               <div>
-                <dt className="text-[0.6875rem] uppercase tracking-[0.18em] text-paper/45">
+                <dt className="text-[0.6875rem] uppercase tracking-[0.18em] text-paper-faint">
                   {t("revealOn")}
                 </dt>
                 <dd className="mt-1">{formatDate(next.revealDate)}</dd>
               </div>
               <div>
-                <dt className="text-[0.6875rem] uppercase tracking-[0.18em] text-paper/45">
+                <dt className="text-[0.6875rem] uppercase tracking-[0.18em] text-paper-faint">
                   {t("releaseOn")}
                 </dt>
                 <dd className="mt-1">{formatDate(next.releaseDate)}</dd>

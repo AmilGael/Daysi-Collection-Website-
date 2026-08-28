@@ -33,8 +33,8 @@ export const premieres: readonly Premiere[] = [
     season: { en: "Summer 2026", es: "Verano 2026" },
     title: { en: "Prints and Sun", es: "Estampados y Sol" },
     story: {
-      en: "The collection that started the fixed price list: five ready-made pieces, one promise — the price you see is the price you pay — in sizes cut for the women who actually walk into the atelier.",
-      es: "La colección que dio origen a la lista de precios fijos: cinco piezas listas, una promesa — el precio que ve es el precio que paga — en tallas cortadas para las mujeres que de verdad entran al taller.",
+      en: "The collection that started the fixed price list: five ready-made pieces, one promise (the price you see is the price you pay) in sizes cut for the women who actually walk into the atelier.",
+      es: "La colección que dio origen a la lista de precios fijos: cinco piezas listas, una promesa (el precio que ve es el precio que paga) en tallas cortadas para las mujeres que de verdad entran al taller.",
     },
     inspiration: {
       en: "A summer of bold prints, shown on the block before it was shown anywhere else.",
@@ -100,8 +100,8 @@ export const services: readonly Service[] = [
       es: "Series cortas, precios fijos, tallas de S a L.",
     },
     description: {
-      en: "A small collection cut in advance and priced clearly. Every piece can be customised — a different neckline, sleeve or length — for a set extra charge rather than a negotiation.",
-      es: "Una colección pequeña cortada de antemano y con precio claro. Cada pieza se puede personalizar — otro escote, otra manga, otro largo — por un cargo extra fijo y no por negociación.",
+      en: "A small collection cut in advance and priced clearly. Every piece can be customised (a different neckline, sleeve or length) for a set extra charge rather than a negotiation.",
+      es: "Una colección pequeña cortada de antemano y con precio claro. Cada pieza se puede personalizar (otro escote, otra manga, otro largo) por un cargo extra fijo y no por negociación.",
     },
     includes: [
       { en: "Filter by design and by size", es: "Filtre por diseño y por talla" },

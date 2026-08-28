@@ -13,8 +13,13 @@ export type HeaderViewer = { name: string; email: string; isOwner: boolean } | n
 /**
  * The bar carries the six destinations a client actually navigates by: what
  * they can buy, what Daysi has made, what it costs, and who she is. Eight
- * would not fit — the Spanish labels overflow 1280px — and a bar you have to
- * squint at is not a shorter bar, it is a worse one.
+ * would not fit — the Spanish labels overflow — and a bar you have to squint
+ * at is not a shorter bar, it is a worse one.
+ *
+ * Measured in Spanish, the wider locale, the six tabs plus the logo and the
+ * booking controls need 1189px, and that is already with the tight gaps and
+ * the short button label. So the bar appears at 1200px: low enough that a
+ * laptop window sharing the screen with something else still gets it.
  *
  * Everything else lives one click away in the menu, which is why the menu
  * button stays visible at every width rather than only on a phone.
@@ -81,10 +86,11 @@ export function SiteHeader({
     DARK_HERO_ROUTES.includes(pathname) && !isScrolled && !isMenuOpen;
 
   return (
+    <>
     <header
-      className={`sticky top-0 z-40 transition-all duration-500 ease-[cubic-bezier(0.22,0.61,0.36,1)] ${
+      className={`sticky top-0 z-40 transition-[background-color,border-color,color] duration-300 ${
         isOverPhotograph
-          ? "border-b border-transparent bg-transparent text-paper"
+          ? "on-ink border-b border-transparent bg-transparent text-paper"
           : "border-b border-line bg-paper/92 text-ink backdrop-blur-md"
       }`}
     >
@@ -93,7 +99,7 @@ export function SiteHeader({
           <Logo tone={isOverPhotograph ? "paper" : "ink"} />
         </Link>
 
-        <nav aria-label={t("home")} className="hidden items-center gap-4 xl:flex 2xl:gap-7">
+        <nav aria-label={t("home")} className="hidden items-center gap-3 min-[75rem]:flex 2xl:gap-6">
           {PRIMARY_TABS.map((tab) => {
             const isActive = pathname.startsWith(tab.href);
             return (
@@ -108,8 +114,10 @@ export function SiteHeader({
                 {t(tab.label)}
                 <span
                   aria-hidden
-                  className={`absolute -bottom-2 left-0 h-px bg-marigold transition-all duration-300 ${
-                    isActive ? "w-full" : "w-0"
+                  /* Scales rather than grows: width is a layout property and
+                     animating it relays the line every frame. */
+                  className={`absolute -bottom-2 left-0 h-px w-full origin-left bg-marigold transition-transform duration-300 ${
+                    isActive ? "scale-x-100" : "scale-x-0"
                   }`}
                 />
               </Link>
@@ -132,8 +140,12 @@ export function SiteHeader({
             through className is two display utilities of equal weight fighting
             in the same layer — and `hidden` was losing, which put both labels
             in the bar at once and pushed it 200px past the screen on a phone.
+
+            The short label serves two windows: a phone, and 1200–1280px,
+            where the tab bar has just arrived and the full label is the 72px
+            that would push it back off the screen.
           */}
-          <span className="hidden sm:contents">
+          <span className="hidden sm:contents min-[75rem]:hidden xl:contents">
             <Link
               href="/appointments"
               className={buttonClass({
@@ -145,7 +157,7 @@ export function SiteHeader({
               {t("bookCta")}
             </Link>
           </span>
-          <span className="contents sm:hidden">
+          <span className="contents sm:hidden min-[75rem]:contents xl:hidden">
             <Link
               href="/appointments"
               className={buttonClass({
@@ -154,7 +166,6 @@ export function SiteHeader({
                 className: "whitespace-nowrap",
               })}
             >
-              {/* The full label needs room a phone header does not have. */}
               {t("bookCtaShort")}
             </Link>
           </span>
@@ -162,20 +173,21 @@ export function SiteHeader({
             type="button"
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-expanded={isMenuOpen}
+            aria-controls="site-menu"
             aria-label={isMenuOpen ? t("closeMenu") : t("openMenu")}
-            className={`flex h-10 w-10 items-center justify-center rounded-[2px] border ${
+            className={`flex h-10 w-10 items-center justify-center rounded-[2px] border transition-transform active:scale-[0.97] ${
               isOverPhotograph ? "border-paper/40" : "border-line"
             }`}
           >
             <span className="relative block h-3 w-4">
               <span
-                className={`absolute left-0 h-px w-full bg-current transition-all duration-300 ${
-                  isMenuOpen ? "top-1.5 rotate-45" : "top-0"
+                className={`absolute left-0 top-0 h-px w-full bg-current transition-transform duration-300 ${
+                  isMenuOpen ? "translate-y-1.5 rotate-45" : "translate-y-0"
                 }`}
               />
               <span
-                className={`absolute left-0 h-px w-full bg-current transition-all duration-300 ${
-                  isMenuOpen ? "top-1.5 -rotate-45" : "top-3"
+                className={`absolute left-0 top-0 h-px w-full bg-current transition-transform duration-300 ${
+                  isMenuOpen ? "translate-y-1.5 -rotate-45" : "translate-y-3"
                 }`}
               />
             </span>
@@ -183,29 +195,43 @@ export function SiteHeader({
         </div>
       </div>
 
-      {isMenuOpen ? (
-        <div className="fixed inset-x-0 top-20 bottom-0 z-40 overflow-y-auto bg-paper">
-          <nav className="shell flex flex-col gap-1 py-8">
-            {ALL_TABS.map((tab, index) => (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                className="border-b border-line py-5 font-display text-[1.75rem] text-ink"
-                style={{ animation: `menuIn 0.4s ${index * 0.04}s both` }}
-              >
-                {t(tab.label)}
-              </Link>
-            ))}
-            <Link href="/contact" className="border-b border-line py-5 font-display text-[1.75rem]">
-              {t("contact")}
-            </Link>
-            <div className="pt-8 sm:hidden">
-              <LanguageSwitch />
-            </div>
-          </nav>
-          <style>{`@keyframes menuIn { from { opacity: 0; transform: translateY(0.75rem) } to { opacity: 1; transform: none } }`}</style>
-        </div>
-      ) : null}
     </header>
+
+    {/*
+      The panel is a sibling of the header, not a child, and that placement is
+      load-bearing. The scrolled header wears `backdrop-blur-md`, and an
+      ancestor with a backdrop-filter becomes the containing block for fixed
+      descendants — inside the 80px header, `top-20 bottom-0` resolves to a
+      zero-height strip and the menu opens into nothing. Opening the menu
+      forces the blurred variant (isOverPhotograph is false while it is open),
+      so as a child this panel could never be seen at all.
+    */}
+    {isMenuOpen ? (
+      <div
+        id="site-menu"
+        className="fixed inset-x-0 top-20 bottom-0 z-30 overflow-y-auto bg-paper text-ink"
+      >
+        <nav className="shell flex flex-col gap-1 py-8">
+          {ALL_TABS.map((tab, index) => (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className="border-b border-line py-5 font-display text-[1.75rem] text-ink"
+              style={{ animation: `menuIn 0.4s ${index * 0.04}s both` }}
+            >
+              {t(tab.label)}
+            </Link>
+          ))}
+          <Link href="/contact" className="border-b border-line py-5 font-display text-[1.75rem]">
+            {t("contact")}
+          </Link>
+          <div className="pt-8 sm:hidden">
+            <LanguageSwitch />
+          </div>
+        </nav>
+        <style>{`@keyframes menuIn { from { opacity: 0; transform: translateY(0.75rem) } to { opacity: 1; transform: none } }`}</style>
+      </div>
+    ) : null}
+    </>
   );
 }

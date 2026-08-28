@@ -73,7 +73,7 @@ export default async function AccountPage({
             <dl className="flex flex-col gap-2 text-[0.875rem]">
               <div className="flex gap-3">
                 <dt className="w-16 shrink-0 text-ink-faint">{t("name")}</dt>
-                <dd>{viewer.account.name || "—"}</dd>
+                <dd>{viewer.account.name || "–"}</dd>
               </div>
               <div className="flex gap-3">
                 <dt className="w-16 shrink-0 text-ink-faint">{t("email")}</dt>

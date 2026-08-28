@@ -19,7 +19,7 @@ export function LanguageSwitch({ tone = "ink" }: { tone?: "ink" | "paper" }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const track = tone === "paper" ? "border-paper/35 text-paper/60" : "border-line text-ink-faint";
+  const track = tone === "paper" ? "border-paper/35 text-paper-faint" : "border-line text-ink-faint";
   const active = tone === "paper" ? "bg-paper text-ink" : "bg-ink text-paper";
 
   return (

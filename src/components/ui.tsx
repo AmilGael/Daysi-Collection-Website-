@@ -12,7 +12,7 @@ import { Link } from "@/i18n/routing";
  */
 
 const buttonBase =
-  "inline-flex items-center justify-center gap-2 rounded-[2px] text-[0.6875rem] font-medium uppercase tracking-[0.16em] transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex items-center justify-center gap-2 rounded-[2px] text-[0.6875rem] font-medium uppercase tracking-[0.16em] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100";
 
 const buttonSizes = {
   medium: "px-8 py-4",
@@ -123,17 +123,17 @@ export function SectionHeading({
   tone?: "ink" | "paper";
 }) {
   const alignment = align === "center" ? "text-center items-center mx-auto" : "items-start";
-  const leadTone = tone === "paper" ? "text-paper/70" : "text-ink-soft";
-  const indexTone = tone === "paper" ? "text-paper/35" : "text-ink-faint";
+  const leadTone = tone === "paper" ? "text-paper-soft" : "text-ink-soft";
+  const indexTone = tone === "paper" ? "text-paper-faint" : "text-ink-faint";
 
   return (
-    <div className={`flex max-w-2xl flex-col gap-5 ${alignment}`}>
+    <div className={`flex max-w-2xl flex-col gap-3 ${alignment}`}>
       {index ? (
         <span className={`font-display text-[0.9375rem] tabular-nums ${indexTone}`}>{index}</span>
       ) : null}
       {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-      <h2 className="text-title text-balance">{title}</h2>
-      {lead ? <p className={`text-lead ${leadTone} text-pretty`}>{lead}</p> : null}
+      <h2 className="text-section">{title}</h2>
+      {lead ? <p className={`mt-2 text-lead ${leadTone}`}>{lead}</p> : null}
     </div>
   );
 }

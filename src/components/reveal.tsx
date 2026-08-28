@@ -8,9 +8,10 @@ import { usePathname } from "@/i18n/routing";
  * the fade-up in globals.css keys off. Mounted once in the layout rather than
  * per section, so sections stay server-rendered.
  *
- * Without JavaScript nothing calls this and the CSS leaves the content hidden,
- * so the fallback is handled here too: if the observer is unavailable,
- * everything is revealed immediately.
+ * With scripting off, nothing here runs at all — that case is handled in CSS,
+ * by the `scripting: none` block beside the `.reveal` rule. The guard below is
+ * a different failure: a browser that runs scripts but has no
+ * IntersectionObserver, where this reveals everything immediately.
  */
 export function Reveal() {
   const pathname = usePathname();

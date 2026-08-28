@@ -11,7 +11,7 @@ import type { Estimate } from "@/lib/pricing";
  */
 
 const controlClass =
-  "w-full rounded-[2px] border border-line bg-paper px-4 py-3 text-[0.9375rem] text-ink transition-colors placeholder:text-ink-faint/60 focus:border-ink focus:outline-none";
+  "w-full rounded-[2px] border border-line-strong bg-paper px-4 py-3 text-[0.9375rem] text-ink transition-colors placeholder:text-ink-faint focus:border-ink";
 
 export function Field({
   label,
@@ -47,7 +47,7 @@ export function Field({
       ) : null}
       {children({ id, describedBy })}
       {error ? (
-        <p id={errorId} role="alert" className="text-[0.8125rem] text-marigold-deep">
+        <p id={errorId} role="alert" className="text-[0.8125rem] text-alert">
           {error}
         </p>
       ) : null}
@@ -111,7 +111,7 @@ export function ChoiceGroup<T extends string>({
               {option.description ? (
                 <span
                   className={`mt-1 block text-[0.8125rem] leading-snug ${
-                    isSelected ? "text-paper/65" : "text-ink-faint"
+                    isSelected ? "text-paper-soft" : "text-ink-faint"
                   }`}
                 >
                   {option.description}
@@ -234,7 +234,7 @@ export function SubmitButton({
     <button
       type="submit"
       disabled={isSending || disabled}
-      className="inline-flex items-center justify-center gap-2 rounded-[2px] bg-ink px-7 py-3.5 text-sm font-medium text-paper transition-all duration-300 hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-45"
+      className="inline-flex items-center justify-center gap-2 rounded-[2px] bg-ink px-7 py-3.5 text-sm font-medium text-paper transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-45"
     >
       {isSending ? t("sending") : children}
     </button>

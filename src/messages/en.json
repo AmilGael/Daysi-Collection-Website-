@@ -47,8 +47,7 @@
     "somethingWentWrong": "Something went wrong. Please try again, or write on WhatsApp.",
     "whatsapp": "WhatsApp",
     "email": "Email",
-    "phone": "Phone",
-    "placeholderImagery": "Photography in progress. These images stand in for Daysi's own pieces while her shoot is produced."
+    "phone": "Phone"
   },
   "home": {
     "eyebrow": "Custom · Alterations · Heritage",
@@ -118,7 +117,7 @@
   },
   "alterations": {
     "title": "Alterations",
-    "lead": "The published list. No estimate needed for anything on it — this is what it costs.",
+    "lead": "The published list. No estimate needed for anything on it: this is what it costs.",
     "tableService": "Alteration",
     "tablePrice": "Price",
     "tableTurnaround": "Back with you",
@@ -158,7 +157,7 @@
   },
   "studio": {
     "title": "Design studio",
-    "lead": "Choose a silhouette and lay a cloth over it — you see it wrapped on a figure, in the light. It is a sketch, not a photograph: enough to see whether the print does what you hoped before anything is cut.",
+    "lead": "Choose a silhouette and lay a cloth over it, and you see it wrapped on a figure, in the light. It is a sketch, not a photograph: enough to see whether the print does what you hoped before anything is cut.",
     "silhouette": "Silhouette",
     "fabric": "Cloth",
     "scale": "Print scale",
@@ -193,7 +192,7 @@
     "sectionCraft": "The craft",
     "sectionHeritage": "The heritage",
     "craftBody": "Extensive research and careful technique govern how each piece is developed and designed, and the price agreed at the start is the price at the end. Daysi makes for women of every shape and size. “Every woman is beautiful,” she says. “It just takes the right design and alterations to accentuate it.”",
-    "heritageBody": "Daysi is Honduran by nationality and Garífuna by community — a minority people with a deep culture of their own in Honduras. That is where the styles, the patterns and the textiles come from. “When it was time to go out, I remember how elegant the women in my family dressed,” she says. “Sometimes I just imagine what my mother or one of my aunts would have worn back then.”",
+    "heritageBody": "Daysi is Honduran by nationality and Garífuna by community, a minority people with a deep culture of their own in Honduras. That is where the styles, the patterns and the textiles come from. “When it was time to go out, I remember how elegant the women in my family dressed,” she says. “Sometimes I just imagine what my mother or one of my aunts would have worn back then.”",
     "visitTitle": "Visiting",
     "visitBody": "The atelier is private and works by appointment, so nobody is ever fitted while somebody else waits. The full address is sent when your session is confirmed.",
     "portraitAlt": "Daysi Fernández standing in an emerald blouse, arms folded and one hand raised to her temple."
@@ -280,7 +279,7 @@
     "thankYouTitle": "Payment received.",
     "thankYouLead": "Reference {reference}. A receipt is on its way to your email, and Daysi has been told.",
     "cancelledTitle": "Payment cancelled.",
-    "cancelledLead": "Nothing was charged. Your request is still saved under {reference} — you can pay later or settle in person.",
+    "cancelledLead": "Nothing was charged. Your request is still saved under {reference}. You can pay later or settle in person.",
     "backHome": "Back to the site",
     "secureNote": "Card details are handled by Stripe on their own secure page. This site never sees them."
   },
@@ -299,7 +298,7 @@
       },
       "prices": {
         "title": "3. Prices",
-        "body": "Prices published on this site are fixed and are not negotiated. They include the cost of cloth at the rates in effect when they were set. A written estimate is valid for thirty days. If the work you ask for changes after an estimate is given, a new estimate is issued before the work continues — the price never changes without you seeing it first."
+        "body": "Prices published on this site are fixed and are not negotiated. They include the cost of cloth at the rates in effect when they were set. A written estimate is valid for thirty days. If the work you ask for changes after an estimate is given, a new estimate is issued before the work continues. The price never changes without you seeing it first."
       },
       "deposits": {
         "title": "4. Deposits and payment",
@@ -319,7 +318,7 @@
       },
       "designs": {
         "title": "8. Designs and photographs",
-        "body": "Original designs, patterns, sketches and prints made by Daysi Collection Inc. remain hers. A commission gives you the garment, not the right to reproduce the design. Photographs of finished work may be used to show the work, unless you ask in writing that yours are not — just say so, and they will not be."
+        "body": "Original designs, patterns, sketches and prints made by Daysi Collection Inc. remain hers. A commission gives you the garment, not the right to reproduce the design. Photographs of finished work may be used to show the work, unless you ask in writing that yours are not. Just say so, and they will not be."
       },
       "privacy": {
         "title": "9. Your information",
@@ -330,7 +329,7 @@
         "body": "These terms are governed by the law of the State of New York. Nothing here removes any right you have under consumer protection law."
       }
     },
-    "questions": "Anything here you would like explained before you book? Ask on WhatsApp — you will get a plain answer."
+    "questions": "Anything here you would like explained before you book? Ask on WhatsApp. You will get a plain answer."
   },
   "privacy": {
     "title": "Privacy",
@@ -464,7 +463,7 @@
     "collection": "The collection, on the rack",
     "collectionLead": "Tick a size to say it is in stock today; untick it and the site offers that size made to order instead. Untick “shown” to take a piece off the site without deleting anything.",
     "noticeTitle": "A notice on the site",
-    "noticeLead": "One line shown on the home page and the booking page — vacation dates, a delayed week, a premiere reminder. Uncheck the box to take it down; the wording stays for next time.",
+    "noticeLead": "One line shown on the home page and the booking page: vacation dates, a delayed week, a premiere reminder. Uncheck the box to take it down; the wording stays for next time.",
     "noticePlaceholder": "The atelier is closed August 25–30. Orders placed this week are cut on my return.",
     "noticeVisible": "Show it on the site",
     "saveNotice": "Save notice",
@@ -474,13 +473,13 @@
     "statusLabel": "Status",
     "shown": "Shown",
     "hidden": "Hidden",
-    "collectionNote": "{count, plural, one {# piece is} other {# pieces are}} live on the site right now. Changes land immediately — there is no separate publish step.",
+    "collectionNote": "{count, plural, one {# piece is} other {# pieces are}} live on the site right now. Changes land immediately. There is no separate publish step.",
     "stockLegend": "Sizes in stock for {name}",
     "addPhoto": "Add a photo",
     "photoCount": "{count, plural, one {# photo} other {# photos}}",
     "photoCoverAsk": "Use this photo as the cover for the piece?",
     "fabricsTitle": "The fabric wall",
-    "fabricsLead": "Every cloth the design studio can offer. Add a bolt you have brought in: photograph the swatch, name it, and give the price of a piece made in it — leave a category blank and it simply is not offered there.",
+    "fabricsLead": "Every cloth the design studio can offer. Add a bolt you have brought in: photograph the swatch, name it, and give the price of a piece made in it. Leave a category blank and it simply is not offered there.",
     "fabricAdd": "Put a new bolt on the wall",
     "fabricName": "Name",
     "fabricNamePlaceholder": "Cherry poplin",
@@ -491,7 +490,7 @@
     "fabricYours": "added by you",
     "fabricNote": "The customization charge for each category stays the same as the rest of the list, so “made to your measurements” costs what it always costs.",
     "pricesTitle": "The price list",
-    "pricesLead": "The numbers the whole site quotes — the tables, the estimate builder and the checkout all read this one list. A change is live the moment it saves.",
+    "pricesLead": "The numbers the whole site quotes: the tables, the estimate builder and the checkout all read this one list. A change is live the moment it saves.",
     "pricesGarments": "Garments, by fabric",
     "pricesAlterations": "Alterations",
     "pricesSessions": "Sessions",
@@ -501,7 +500,7 @@
     "pricesFee": "Fee",
     "savePrice": "Save",
     "booksTitle": "The books",
-    "booksLead": "Every sale, alteration and session as one file for your accountant. It opens in QuickBooks, in Excel, and in anything else that reads a spreadsheet — with the New York clothing tax already marked line by line.",
+    "booksLead": "Every sale, alteration and session as one file for your accountant. It opens in QuickBooks, in Excel, and in anything else that reads a spreadsheet, with the New York clothing tax already marked line by line.",
     "booksSummary": "So far in {year}: {invoices, plural, one {# invoice} other {# invoices}}, {received} cleared, {outstanding} still owed to you, {tax} of it sales tax.",
     "booksThisYear": "This year",
     "booksLastYear": "Last year",
@@ -540,12 +539,12 @@
     "styleSaved": "On the site. It is in the collection now.",
     "stylePhotoRequired": "Add at least one photograph.",
     "styleSizeRequired": "Choose at least one size.",
-    "stylePriceRequired": "This garment and cloth have no price yet — set one.",
+    "stylePriceRequired": "This garment and cloth have no price yet. Set one.",
     "styleNote": "You write it once, in your own words, and it shows in both languages. Daysi's own pieces already on the site keep their English and Spanish versions."
   },
   "gallery": {
     "title": "The work",
-    "lead": "Eighteen years of finished pieces — runway, commissions, bridal, accessories and press. None of it is for sale; all of it is what Daysi can make.",
+    "lead": "Eighteen years of finished pieces: runway, commissions, bridal, accessories and press. None of it is for sale; all of it is what Daysi can make.",
     "all": "Everything",
     "count": "{count, plural, one {# piece} other {# pieces}}",
     "close": "Close",

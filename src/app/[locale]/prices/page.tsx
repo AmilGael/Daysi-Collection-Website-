@@ -112,7 +112,7 @@ export default async function PricesPage({
       </section>
 
       <section className="shell reveal flex flex-col gap-10 py-24">
-        <SectionHeading index="02" title={t("estimateTitle")} lead={t("estimateLead")} />
+        <SectionHeading title={t("estimateTitle")} lead={t("estimateLead")} />
         <EstimateBuilder
           styles={liveStyles()}
           categories={categories}

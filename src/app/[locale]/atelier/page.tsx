@@ -19,7 +19,7 @@ export default async function AtelierPage({
 
   return (
     <>
-      <section className="relative isolate -mt-20 flex min-h-[70svh] items-end overflow-hidden bg-ink pt-20">
+      <section className="on-ink relative isolate -mt-20 flex min-h-[70svh] items-end overflow-hidden bg-ink pt-20">
         <Image
           src="/images/real/atelier-workspace.jpg"
           alt=""
@@ -34,9 +34,9 @@ export default async function AtelierPage({
             ground to stay legible while it is in its light-on-dark state. */}
         <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-ink/70 to-transparent" />
         <div className="shell relative z-10 flex max-w-2xl flex-col gap-6 pb-16 pt-28">
-          <p className="eyebrow text-paper/70">{business.neighborhood}</p>
+          <p className="eyebrow text-paper-soft">{business.neighborhood}</p>
           <h1 className="text-display text-paper">{t("title")}</h1>
-          <p className="text-lead text-paper/75">{t("lead")}</p>
+          <p className="text-lead text-paper-soft">{t("lead")}</p>
         </div>
       </section>
 
@@ -60,11 +60,11 @@ export default async function AtelierPage({
         </div>
       </section>
 
-      <section className="reveal bg-ink py-24 text-paper">
+      <section className="on-ink reveal bg-ink py-24 text-paper">
         <div className="shell grid gap-14 lg:grid-cols-2 lg:gap-24">
           <div className="flex flex-col gap-6">
             <SectionHeading index="02" title={t("sectionCraft")} tone="paper" />
-            <p className="leading-[1.8] text-paper/70">{t("craftBody")}</p>
+            <p className="max-w-[68ch] leading-[1.8] text-paper-soft">{t("craftBody")}</p>
           </div>
           <div className="flex flex-col gap-6">
             <SectionHeading
@@ -72,7 +72,7 @@ export default async function AtelierPage({
               title={t("sectionHeritage")}
               tone="paper"
             />
-            <p className="leading-[1.8] text-paper/70">{t("heritageBody")}</p>
+            <p className="max-w-[68ch] leading-[1.8] text-paper-soft">{t("heritageBody")}</p>
           </div>
         </div>
       </section>

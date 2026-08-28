@@ -66,7 +66,7 @@ export default async function ServicesPage({
                   <span className="font-display text-[0.9375rem] tabular-nums text-ink-faint">
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <h2 className="text-title text-balance">{translate(service.name, language)}</h2>
+                  <h2 className="text-title">{translate(service.name, language)}</h2>
                   <p className="text-lead text-ink-soft">
                     {translate(service.promise, language)}
                   </p>
