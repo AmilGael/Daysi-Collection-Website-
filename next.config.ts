@@ -32,6 +32,12 @@ const config: NextConfig = {
   output: "standalone",
   images: {
     formats: ["image/avif", "image/webp"],
+    /**
+     * Next.js 16 rejects any quality not listed here. 85 is PHOTO_QUALITY
+     * (src/lib/images.ts); 75 is the next/image default, still used by the
+     * office thumbnails and other non-photographic slots.
+     */
+    qualities: [75, 85],
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
