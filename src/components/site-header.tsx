@@ -72,12 +72,12 @@ export function SiteHeader({
           : "border-b border-line bg-paper/92 text-ink backdrop-blur-md"
       }`}
     >
-      <div className="shell flex h-20 items-center justify-between gap-6">
+      <div className="shell flex h-20 items-center justify-between gap-4 2xl:gap-6">
         <Link href="/" aria-label="Daysi Collection">
           <Logo />
         </Link>
 
-        <nav aria-label={t("home")} className="hidden items-center gap-7 2xl:flex">
+        <nav aria-label={t("home")} className="hidden items-center gap-4 xl:flex 2xl:gap-7">
           {TABS.map((tab) => {
             const isActive = pathname.startsWith(tab.href);
             return (
@@ -85,7 +85,7 @@ export function SiteHeader({
                 key={tab.href}
                 href={tab.href}
                 aria-current={isActive ? "page" : undefined}
-                className={`relative text-[0.6875rem] font-medium uppercase tracking-[0.18em] transition-colors ${
+                className={`relative whitespace-nowrap text-[0.6875rem] font-medium uppercase tracking-[0.18em] transition-colors ${
                   isActive ? "opacity-100" : "opacity-70 hover:opacity-100"
                 }`}
               >
@@ -136,7 +136,7 @@ export function SiteHeader({
             onClick={() => setIsMenuOpen((open) => !open)}
             aria-expanded={isMenuOpen}
             aria-label={isMenuOpen ? t("closeMenu") : t("openMenu")}
-            className={`flex h-10 w-10 items-center justify-center rounded-[2px] border 2xl:hidden ${
+            className={`flex h-10 w-10 items-center justify-center rounded-[2px] border xl:hidden ${
               isOverPhotograph ? "border-paper/40" : "border-line"
             }`}
           >
@@ -157,7 +157,7 @@ export function SiteHeader({
       </div>
 
       {isMenuOpen ? (
-        <div className="fixed inset-x-0 top-20 bottom-0 z-40 overflow-y-auto bg-paper 2xl:hidden">
+        <div className="fixed inset-x-0 top-20 bottom-0 z-40 overflow-y-auto bg-paper xl:hidden">
           <nav className="shell flex flex-col gap-1 py-8">
             {TABS.map((tab, index) => (
               <Link

@@ -1,13 +1,14 @@
 import Image from "next/image";
 import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import {
-  alterationServices,
   premieres,
-  publishedStyles,
   services,
   translate,
   upcomingPremiere,
 } from "@/content";
+import { liveStyles } from "@/lib/live-catalog";
+import { liveAlterations } from "@/lib/live-pricing";
+import { SiteNoticeBar } from "@/components/site-notice";
 import { Link, type Locale } from "@/i18n/routing";
 import { ButtonLink, SectionHeading, Tag, TextLink } from "@/components/ui";
 import { LookbookGrid, StyleCard } from "@/components/style-card";
@@ -24,6 +25,7 @@ export default async function HomePage({
   return (
     <>
       <Hero />
+      <SiteNoticeBar />
       <TrustStrip />
       <Story />
       <BrandPromise />
@@ -113,11 +115,11 @@ async function Story() {
     <section className="shell reveal grid gap-12 py-24 lg:grid-cols-12 lg:gap-16 lg:py-36">
       <div className="relative aspect-4/5 overflow-hidden bg-paper-warm lg:col-span-5">
         <Image
-          src="/images/atelier/sewing.jpg"
-          alt=""
+          src="/images/real/daysi-portrait.jpg"
+          alt={t("storyPortraitAlt")}
           fill
           sizes="(min-width: 1024px) 40vw, 90vw"
-          className="object-cover"
+          className="object-cover object-top"
         />
       </div>
       <div className="flex flex-col gap-7 lg:col-span-6 lg:col-start-7 lg:justify-end lg:pb-6">
@@ -204,7 +206,7 @@ async function Services() {
 
 async function FeaturedCollection() {
   const t = await getTranslations("home");
-  const featured = publishedStyles().slice(0, 3);
+  const featured = liveStyles().slice(0, 3);
 
   return (
     <section className="reveal py-24 lg:py-32">
@@ -224,7 +226,7 @@ async function FeaturedCollection() {
 async function Alterations() {
   const t = await getTranslations("home");
   const locale = (await getLocale()) as Locale;
-  const highlights = alterationServices.slice(0, 5);
+  const highlights = liveAlterations().slice(0, 5);
 
   return (
     <section className="shell reveal grid gap-12 py-24 lg:grid-cols-12 lg:gap-16 lg:py-32">
@@ -256,7 +258,7 @@ async function Alterations() {
       </div>
       <div className="relative aspect-4/5 overflow-hidden bg-paper-warm lg:col-span-5 lg:order-1">
         <Image
-          src="/images/atelier/hemming.jpg"
+          src="/images/real/daysi-sewing.jpg"
           alt=""
           fill
           sizes="(min-width: 1024px) 40vw, 90vw"

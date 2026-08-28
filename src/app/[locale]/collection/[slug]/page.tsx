@@ -12,6 +12,7 @@ import {
   sizes,
   translate,
 } from "@/content";
+import { liveStyles } from "@/lib/live-catalog";
 import { routing, type Locale } from "@/i18n/routing";
 import { StyleOrderPanel } from "@/components/style-order-panel";
 import { LookbookGrid, StyleCard } from "@/components/style-card";
@@ -48,7 +49,7 @@ export default async function StylePage({
   const { locale, slug } = await params;
   setRequestLocale(locale);
 
-  const style = publishedStyles().find((candidate) => candidate.slug === slug);
+  const style = liveStyles().find((candidate) => candidate.slug === slug);
   if (!style) notFound();
 
   const language = (await getLocale()) as Locale;
@@ -61,7 +62,7 @@ export default async function StylePage({
   const premiere = style.premiereId ? findPremiere(style.premiereId) : undefined;
   if (!price) notFound();
 
-  const related = publishedStyles()
+  const related = liveStyles()
     .filter((candidate) => candidate.id !== style.id && candidate.categoryId === style.categoryId)
     .slice(0, 3);
 

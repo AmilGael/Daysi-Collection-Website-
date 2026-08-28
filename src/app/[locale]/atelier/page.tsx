@@ -45,8 +45,8 @@ export default async function AtelierPage({
         </div>
         <div className="relative aspect-4/5 overflow-hidden bg-paper-warm">
           <Image
-            src="/images/atelier/sewing.jpg"
-            alt=""
+            src="/images/real/daysi-portrait-seated.jpg"
+            alt={t("portraitAlt")}
             fill
             sizes="(min-width: 1024px) 45vw, 90vw"
             className="object-cover"

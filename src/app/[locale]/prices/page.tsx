@@ -1,15 +1,12 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import {
-  alterationServices,
-  appointmentTypes,
   categories,
-  fabrics,
   findCategory,
   findFabric,
-  priceList,
-  publishedStyles,
   translate,
 } from "@/content";
+import { liveAlterations, liveAppointmentTypes, liveFabrics, livePriceList } from "@/lib/live-pricing";
+import { liveStyles } from "@/lib/live-catalog";
 import type { Locale } from "@/i18n/routing";
 import { formatMoney } from "@/lib/money";
 import { paymentsEnabled } from "@/lib/env";
@@ -42,9 +39,9 @@ export default async function PricesPage({
             </tr>
           </thead>
           <tbody>
-            {priceList.map((entry) => {
+            {livePriceList().map((entry) => {
               const category = findCategory(entry.categoryId);
-              const fabric = findFabric(entry.fabricId);
+              const fabric = liveFabrics().find((candidate) => candidate.id === entry.fabricId);
               return (
                 <tr key={entry.id} className="border-b border-line">
                   <td className="py-4 pr-6 text-[0.9375rem]">
@@ -82,12 +79,12 @@ export default async function PricesPage({
           lead={t("estimateLead")}
         />
         <EstimateBuilder
-          styles={publishedStyles()}
+          styles={liveStyles()}
           categories={categories}
-          fabrics={fabrics}
-          alterations={alterationServices}
-          appointmentTypes={appointmentTypes}
-          priceList={priceList}
+          fabrics={liveFabrics()}
+          alterations={liveAlterations()}
+          appointmentTypes={liveAppointmentTypes()}
+          priceList={livePriceList()}
           paymentsEnabled={paymentsEnabled}
         />
       </section>

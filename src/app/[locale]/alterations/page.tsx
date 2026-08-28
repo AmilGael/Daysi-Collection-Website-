@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import { alterationServices, translate } from "@/content";
+import { liveAlterations } from "@/lib/live-pricing";
 import type { Locale } from "@/i18n/routing";
 import { formatMoney } from "@/lib/money";
 import { PageHeader } from "@/components/page-header";
@@ -36,7 +37,7 @@ export default async function AlterationsPage({
             </tr>
           </thead>
           <tbody>
-            {alterationServices.map((alteration) => (
+            {liveAlterations().map((alteration) => (
               <tr key={alteration.id} className="border-b border-line align-top">
                 <td className="py-5 pr-6">
                   <p className="text-[1.0625rem]">{translate(alteration.name, language)}</p>
