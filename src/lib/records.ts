@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { env } from "./env";
 
 /**
  * The append-only, newline-delimited JSON store everything on this site is
@@ -16,7 +17,7 @@ import path from "node:path";
  * read, so replacing the two functions below is the whole migration.
  */
 
-const DATA_DIRECTORY = path.join(process.cwd(), ".data");
+const DATA_DIRECTORY = env.dataDirectory;
 const OWNER_ONLY_DIRECTORY = 0o700;
 const OWNER_ONLY_FILE = 0o600;
 
