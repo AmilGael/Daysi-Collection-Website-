@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Manual del taller</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -5,9 +7,9 @@
 
 <style>
   /* ------------------------------------------------------------------
-     Her own palette, lifted from the site so the manual and the thing it
-     explains look like one object. Light is the default state; the two
-     dark rules below only ever redefine tokens.
+     Her palette, from the site, so the manual and the thing it explains
+     look like one object. Light is the default; the dark rules below only
+     ever redefine tokens.
      ------------------------------------------------------------------ */
   :root {
     --ink: #14110d;
@@ -15,48 +17,56 @@
     --ink-faint: #6d6355;
     --paper: #fbf8f2;
     --paper-warm: #f2ebdd;
-    --paper-deep: #e8dfcc;
     --line: #ded3bd;
+    --line-soft: #ebe2ce;
     --marigold: #e8a302;
     --accent-text: #8a6000;
     --chip-ink: #14110d;
     --chip-paper: #fbf8f2;
 
-    --step: clamp(1.5rem, 1.1rem + 1.4vw, 2.25rem);
-    --measure: 34rem;
+    /* Tight steps and generous steps, so the page has a rhythm rather than
+       one interval repeated until everything weighs the same. */
+    --gap-tight: 0.5rem;
+    --gap-copy: 1.125rem;
+    --gap-block: 1.75rem;
+    --gap-task: clamp(3.25rem, 2.2rem + 4vw, 5rem);
+
+    --measure: 33rem;
   }
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --ink: #f4efe4;
-      --ink-soft: #cfc5b2;
-      --ink-faint: #9c9280;
+      --ink: #f6f1e7;
+      --ink-soft: #cdc3b1;
+      --ink-faint: #948a79;
       --paper: #17140f;
-      --paper-warm: #201c16;
-      --paper-deep: #2a251d;
+      --paper-warm: #201c15;
       --line: #3b342a;
+      --line-soft: #2c261e;
       --marigold: #e8a302;
       --accent-text: #f0b52e;
-      --chip-ink: #f4efe4;
+      --chip-ink: #f6f1e7;
       --chip-paper: #17140f;
     }
   }
 
   :root[data-theme="dark"] {
-    --ink: #f4efe4;
-    --ink-soft: #cfc5b2;
-    --ink-faint: #9c9280;
+    --ink: #f6f1e7;
+    --ink-soft: #cdc3b1;
+    --ink-faint: #948a79;
     --paper: #17140f;
-    --paper-warm: #201c16;
-    --paper-deep: #2a251d;
+    --paper-warm: #201c15;
     --line: #3b342a;
+    --line-soft: #2c261e;
     --marigold: #e8a302;
     --accent-text: #f0b52e;
-    --chip-ink: #f4efe4;
+    --chip-ink: #f6f1e7;
     --chip-paper: #17140f;
   }
 
   * { box-sizing: border-box; }
+
+  ::selection { background: var(--marigold); color: #14110d; }
 
   body {
     margin: 0;
@@ -64,146 +74,164 @@
     color: var(--ink);
     font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
     font-size: 1.0625rem;
-    line-height: 1.7;
+    line-height: 1.65;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Light text on a dark ground needs a little more leading and tracking or
+     it reads thin. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) body { line-height: 1.72; letter-spacing: 0.003em; }
   }
 
   .sheet {
-    max-width: 44rem;
+    max-width: 42rem;
     margin: 0 auto;
-    padding: clamp(2.5rem, 1.5rem + 4vw, 5.5rem) clamp(1.25rem, 0.75rem + 2.5vw, 2.5rem) 6rem;
+    padding: clamp(2.75rem, 1.5rem + 4vw, 6rem) clamp(1.25rem, 0.75rem + 2.5vw, 2.5rem) 7rem;
   }
+
+  p { text-wrap: pretty; }
 
   /* --- masthead ------------------------------------------------------ */
 
-  .masthead { display: flex; flex-direction: column; gap: 1rem; }
+  .masthead { display: flex; flex-direction: column; gap: var(--gap-tight); }
 
   .eyebrow {
     font-size: 0.6875rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.2em;
     color: var(--ink-faint);
     margin: 0;
   }
 
+  /* Tracking tightens as size grows — optical correction, not decoration.
+     A display face at 4rem with default tracking reads loose and amateur. */
   h1 {
     font-family: "Fraunces", "Iowan Old Style", Georgia, serif;
     font-weight: 600;
-    font-size: clamp(2.5rem, 1.9rem + 3vw, 4rem);
-    line-height: 1.02;
-    letter-spacing: -0.02em;
-    margin: 0;
+    font-size: clamp(2.375rem, 1.7rem + 3.2vw, 3.75rem);
+    line-height: 1.0;
+    letter-spacing: -0.032em;
+    margin: 0.25rem 0 0;
     text-wrap: balance;
   }
 
   .standfirst {
     max-width: var(--measure);
     font-size: 1.1875rem;
-    line-height: 1.6;
+    line-height: 1.55;
+    letter-spacing: -0.006em;
     color: var(--ink-soft);
-    margin: 0;
+    margin: var(--gap-copy) 0 0;
   }
 
+  /* One marigold rule on the page, closing the masthead. Yellow is a rule
+     or a fill in her palette, never text and never a bar down a card. */
   .rule {
     height: 2px;
     background: var(--marigold);
     border: 0;
-    margin: var(--step) 0 0;
+    margin: var(--gap-task) 0 0;
   }
 
   /* --- contents ------------------------------------------------------ */
 
-  .contents {
-    margin-top: var(--step);
-    padding: 1.5rem 1.75rem;
-    background: var(--paper-warm);
-    border: 1px solid var(--line);
-  }
+  .contents { margin-top: var(--gap-block); }
 
   .contents ol {
-    margin: 0.875rem 0 0;
+    margin: var(--gap-block) 0 0;
     padding: 0;
     list-style: none;
     display: grid;
-    gap: 0.5rem;
+    gap: 0.125rem;
     counter-reset: toc;
   }
 
-  .contents li { counter-increment: toc; display: flex; gap: 0.75rem; align-items: baseline; }
+  .contents li { counter-increment: toc; }
 
-  .contents li::before {
-    content: counter(toc, decimal-leading-zero);
-    font-variant-numeric: tabular-nums;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--ink-faint);
-    min-width: 1.5rem;
+  .contents a {
+    display: grid;
+    grid-template-columns: 2.25rem 1fr;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    color: var(--ink);
+    text-decoration: none;
+    border-top: 1px solid var(--line-soft);
+    transition: color 150ms cubic-bezier(0.23, 1, 0.32, 1);
   }
 
-  .contents a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
-  .contents a:hover { border-bottom-color: var(--marigold); }
+  .contents li:last-child a { border-bottom: 1px solid var(--line-soft); }
+
+  /* The number is a locator, not an ornament: the text says "mire el punto 10"
+     and this is how she finds it. Quiet, tabular, aligned. */
+  .contents a::before {
+    content: counter(toc, decimal-leading-zero);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.8125rem;
+    color: var(--ink-faint);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .contents a:hover { color: var(--accent-text); }
+  }
 
   /* --- tasks --------------------------------------------------------- */
 
-  .task { margin-top: calc(var(--step) * 1.6); }
-
-  .task-head { display: flex; flex-direction: column; gap: 0.5rem; }
-
-  .task-number {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.22em;
-    color: var(--accent-text);
-    font-variant-numeric: tabular-nums;
-  }
+  /* More space above a heading than below it: the gap belongs to the
+     boundary between tasks, not to the heading-and-body pair. */
+  .task { margin-top: var(--gap-task); }
 
   h2 {
     font-family: "Fraunces", "Iowan Old Style", Georgia, serif;
     font-weight: 600;
-    font-size: clamp(1.6rem, 1.35rem + 1.1vw, 2.1rem);
-    line-height: 1.15;
-    letter-spacing: -0.015em;
+    font-size: clamp(1.5rem, 1.3rem + 0.9vw, 1.9rem);
+    line-height: 1.12;
+    letter-spacing: -0.022em;
     margin: 0;
     text-wrap: balance;
   }
 
-  .task p { max-width: var(--measure); color: var(--ink-soft); }
+  h2 .n {
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    color: var(--ink-faint);
+    margin-right: 0.75rem;
+    vertical-align: 0.28em;
+  }
 
-  .task > p:first-of-type { margin-top: 0.875rem; }
+  .task p { max-width: var(--measure); color: var(--ink-soft); margin: var(--gap-copy) 0 0; }
 
-  /* Numbered because these genuinely are in order — do the second thing
-     after the first or it will not work. */
   ol.steps {
     counter-reset: step;
     list-style: none;
-    margin: 1.5rem 0 0;
+    margin: var(--gap-block) 0 0;
     padding: 0;
     display: grid;
-    gap: 1.125rem;
+    gap: var(--gap-copy);
     max-width: var(--measure);
   }
 
   ol.steps > li {
     counter-increment: step;
     display: grid;
-    grid-template-columns: 2rem 1fr;
+    grid-template-columns: 1.5rem 1fr;
     gap: 0.875rem;
-    align-items: start;
+    align-items: baseline;
   }
 
   ol.steps > li::before {
-    content: counter(step);
+    content: counter(step) ".";
     font-variant-numeric: tabular-nums;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    line-height: 1.9;
+    font-size: 0.875rem;
     color: var(--ink-faint);
-    border-top: 2px solid var(--line);
-    padding-top: 0.375rem;
   }
 
-  /* --- the device: what she will actually see on screen --------------- */
+  /* --- what she will actually see on screen --------------------------- */
 
   /* A button, drawn the way her office draws buttons. */
   .btn {
@@ -213,77 +241,76 @@
     font-size: 0.6875rem;
     font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.14em;
-    padding: 0.25rem 0.6rem;
+    letter-spacing: 0.12em;
+    padding: 0.2rem 0.55rem;
     border-radius: 2px;
     white-space: nowrap;
+    vertical-align: 0.05em;
   }
 
-  /* A label or a heading printed on the page, not a button. */
+  /* A label printed on the page, not a button. */
   .label {
     display: inline-block;
     border: 1px solid var(--line);
     background: var(--paper-warm);
     color: var(--ink);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    padding: 0.1rem 0.45rem;
+    font-size: 0.9375rem;
+    padding: 0.05rem 0.4rem;
     border-radius: 2px;
     white-space: nowrap;
   }
 
   .path {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
     color: var(--accent-text);
     white-space: nowrap;
+    font-weight: 500;
   }
 
   /* --- asides -------------------------------------------------------- */
 
-  /* An aside is set the way her site sets one: a marigold hairline above it
-     and a small letterspaced label, not a tinted card with a coloured tab.
-     Marigold is a rule here, which is the only thing her palette lets yellow
-     be. Naming each aside also makes the page scannable — she can find the
-     warning about WhatsApp without reading the paragraph above it. */
+  /* A marigold hairline, which is the only thing her palette lets yellow be,
+     and a bold lead-in that names the point. No label above it: the lead-in
+     was already doing that job, and saying it twice is what made the page
+     look busy. */
   .note {
-    margin: 1.5rem 0 0;
+    margin: var(--gap-block) 0 0;
     max-width: var(--measure);
     padding-top: 0.875rem;
     border-top: 2px solid var(--marigold);
   }
 
-  .note .eyebrow { margin-bottom: 0.5rem; color: var(--accent-text); }
   .note p { margin: 0; color: var(--ink-soft); font-size: 0.9375rem; }
   .note p + p { margin-top: 0.625rem; }
   .note strong { color: var(--ink); font-weight: 600; }
 
-  /* The ones that are a caution rather than a reassurance take the ink rule:
-     same shape, no colour, so a warning never reads as a highlight. */
+  /* A caution takes the ink rule: same shape, no colour, so a warning never
+     reads as a highlight. */
   .careful { border-top-color: var(--ink-soft); }
-  .careful .eyebrow { color: var(--ink-faint); }
 
   /* --- closing ------------------------------------------------------- */
 
-  .closing {
-    margin-top: calc(var(--step) * 2);
-    padding-top: var(--step);
-    border-top: 1px solid var(--line);
-  }
+  .closing { margin-top: calc(var(--gap-task) * 1.4); }
 
   .closing h2 { font-size: 1.4rem; }
 
   a { color: inherit; }
 
-  a:focus-visible, .contents a:focus-visible {
+  a:focus-visible {
     outline: 2px solid var(--marigold);
     outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: 0.01ms !important; }
   }
 
   @media print {
-    body { background: #fff; color: #000; font-size: 11pt; }
+    body { background: #fff; color: #000; font-size: 10.5pt; line-height: 1.5; }
     .task { break-inside: avoid; }
     .contents { break-after: page; }
+    .btn { background: #000 !important; color: #fff !important; }
   }
 </style>
 
@@ -320,10 +347,7 @@
 
   <!-- 01 ------------------------------------------------------------- -->
   <section class="task" id="entrar">
-    <div class="task-head">
-      <span class="task-number">01</span>
-      <h2>Cómo entrar</h2>
-    </div>
+    <h2><span class="n">01</span>Cómo entrar</h2>
     <p>
       No hay contraseña que aprenderse ni que perder. Usted pide un enlace, le
       llega a su correo, lo abre, y ya está adentro.
@@ -338,7 +362,6 @@
       </li>
     </ol>
     <div class="note">
-      <p class="eyebrow">Quién puede entrar</p>
       <p>
         <strong>Nadie más puede entrar a su oficina.</strong> El sitio conoce su
         correo y solamente ese correo abre la oficina. Si otra persona pone su
@@ -354,10 +377,7 @@
 
   <!-- 02 ------------------------------------------------------------- -->
   <section class="task" id="precios">
-    <div class="task-head">
-      <span class="task-number">02</span>
-      <h2>Cambiar un precio</h2>
-    </div>
+    <h2><span class="n">02</span>Cambiar un precio</h2>
     <p>
       Todo lo que cobra está en un solo lugar, y lo que escriba ahí es lo que el
       sitio le cobra al cliente. No hay dos listas que cuadrar.
@@ -375,7 +395,6 @@
       </li>
     </ol>
     <div class="note">
-      <p class="eyebrow">Lo que pasa al guardar</p>
       <p>
         <strong>El cambio es inmediato.</strong> El próximo cliente que pida un
         estimado paga el precio nuevo. Los pedidos que ya entraron guardan el
@@ -392,10 +411,7 @@
 
   <!-- 03 ------------------------------------------------------------- -->
   <section class="task" id="prenda">
-    <div class="task-head">
-      <span class="task-number">03</span>
-      <h2>Poner una prenda nueva en la colección</h2>
-    </div>
+    <h2><span class="n">03</span>Poner una prenda nueva en la colección</h2>
     <p>
       Cuando termine una pieza que quiere vender en el sitio, la sube usted. No
       necesita a nadie.
@@ -428,7 +444,6 @@
       <li>Toque <span class="btn">Ponerla en el sitio</span>.</li>
     </ol>
     <div class="note">
-      <p class="eyebrow">Sobre el precio</p>
       <p>
         <strong>El precio casi siempre se pone solo.</strong> Si esa prenda y esa
         tela ya están en su lista, el sitio le muestra el precio que ya tiene y no
@@ -444,10 +459,7 @@
 
   <!-- 04 ------------------------------------------------------------- -->
   <section class="task" id="perchero">
-    <div class="task-head">
-      <span class="task-number">04</span>
-      <h2>Esconder una pieza, o marcar las tallas que le quedan</h2>
-    </div>
+    <h2><span class="n">04</span>Esconder una pieza, o marcar las tallas que le quedan</h2>
     <p>
       Se vendió la última mediana, o quiere sacar una pieza del sitio por un
       tiempo sin borrarla. Las dos cosas se hacen en el mismo lugar.
@@ -465,7 +477,6 @@
       </li>
     </ol>
     <div class="note">
-      <p class="eyebrow">Nada se borra</p>
       <p>
         <strong>Nada se borra nunca.</strong> Una pieza oculta desaparece del
         sitio pero sigue guardada, con sus fotos y su precio. El día que la
@@ -477,10 +488,7 @@
 
   <!-- 05 ------------------------------------------------------------- -->
   <section class="task" id="telas">
-    <div class="task-head">
-      <span class="task-number">05</span>
-      <h2>Poner un rollo de tela en la pared</h2>
-    </div>
+    <h2><span class="n">05</span>Poner un rollo de tela en la pared</h2>
     <p>
       La tela que agregue aquí aparece en dos sitios a la vez: en el taller de
       diseño, donde la clienta juega con ella, y en la lista de precios.
@@ -505,10 +513,7 @@
 
   <!-- 06 ------------------------------------------------------------- -->
   <section class="task" id="trabajo">
-    <div class="task-head">
-      <span class="task-number">06</span>
-      <h2>Agregar una pieza terminada a su trabajo</h2>
-    </div>
+    <h2><span class="n">06</span>Agregar una pieza terminada a su trabajo</h2>
     <p>
       La galería es todo lo que usted ha hecho — pasarela, encargos, novias,
       bolsos, el taller. No es para vender: es para que la clienta vea de qué es
@@ -533,10 +538,7 @@
 
   <!-- 07 ------------------------------------------------------------- -->
   <section class="task" id="aviso">
-    <div class="task-head">
-      <span class="task-number">07</span>
-      <h2>Poner un aviso en el sitio</h2>
-    </div>
+    <h2><span class="n">07</span>Poner un aviso en el sitio</h2>
     <p>
       Para cuando se va de viaje, cierra por una semana, o los arreglos se están
       tardando más de lo normal. El aviso sale arriba, donde todos lo ven.
@@ -548,7 +550,6 @@
       <li>Toque <span class="btn">Guardar aviso</span>.</li>
     </ol>
     <div class="note careful">
-      <p class="eyebrow">No se le olvide</p>
       <p>
         <strong>Acuérdese de quitarlo.</strong> Un aviso que dice «cerrado hasta
         el 10» todavía puesto el día 20 le cuesta clientas. Para quitarlo,
@@ -560,10 +561,7 @@
 
   <!-- 08 ------------------------------------------------------------- -->
   <section class="task" id="pedidos">
-    <div class="task-head">
-      <span class="task-number">08</span>
-      <h2>Los pedidos, los arreglos y las citas</h2>
-    </div>
+    <h2><span class="n">08</span>Los pedidos, los arreglos y las citas</h2>
     <p>
       Todo lo que entra por el sitio aparece en <span class="label">Pedidos y
       arreglos</span>, lo más reciente primero, con el nombre y el correo de
@@ -578,7 +576,6 @@
       <li><span class="label">Cerrado</span> — se entregó y se acabó.</li>
     </ol>
     <div class="note">
-      <p class="eyebrow">Por qué le importa a la clienta</p>
       <p>
         <strong>El estado no es solo para usted.</strong> La clienta ve el mismo
         estado en su cuenta, así que moverlo le ahorra una llamada preguntando
@@ -593,10 +590,7 @@
 
   <!-- 09 ------------------------------------------------------------- -->
   <section class="task" id="libros">
-    <div class="task-head">
-      <span class="task-number">09</span>
-      <h2>Bajar sus libros para la contadora</h2>
-    </div>
+    <h2><span class="n">09</span>Bajar sus libros para la contadora</h2>
     <p>
       El sitio no le lleva la contabilidad, pero sí le entrega todo lo que
       facturó en un archivo que la contadora abre en Excel o mete en QuickBooks
@@ -614,7 +608,6 @@
       <li>Mándeselo a su contadora tal como está. No hay que arreglarle nada.</li>
     </ol>
     <div class="note">
-      <p class="eyebrow">Qué trae el archivo</p>
       <p>
         Cada línea lleva la fecha, la clienta, qué era, cuánto fue y el impuesto.
         El impuesto lo calcula con la misma regla con la que se le cobró a la
@@ -625,10 +618,7 @@
 
   <!-- 10 ------------------------------------------------------------- -->
   <section class="task" id="fotos">
-    <div class="task-head">
-      <span class="task-number">10</span>
-      <h2>Qué foto sirve y qué foto no</h2>
-    </div>
+    <h2><span class="n">10</span>Qué foto sirve y qué foto no</h2>
     <p>
       Las fotos son lo que vende la pieza. Con estas cuatro cosas ya salen bien
       desde el teléfono.
@@ -653,7 +643,6 @@
       </li>
     </ol>
     <div class="note careful">
-      <p class="eyebrow">Cuidado con WhatsApp</p>
       <p>
         <strong>Mande la foto original.</strong> Si la manda por WhatsApp y
         después la baja de ahí, llega chiquita y se ve borrosa en el sitio.
@@ -664,10 +653,7 @@
 
   <!-- 11 ------------------------------------------------------------- -->
   <section class="task" id="problemas">
-    <div class="task-head">
-      <span class="task-number">11</span>
-      <h2>Si algo no sale como esperaba</h2>
-    </div>
+    <h2><span class="n">11</span>Si algo no sale como esperaba</h2>
     <ol class="steps">
       <li>
         <strong>«Ese cambio no se guardó».</strong> Casi siempre es el internet.
