@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { isSameOrigin } from "@/lib/security";
-import { currentViewer } from "@/lib/auth/session";
+import { ownerRoute } from "@/lib/api-guard";
 import {
   liveAlterations,
   liveAppointmentTypes,
@@ -26,47 +24,34 @@ const updateSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("appointment"), id: z.string().max(80), fee: cents }),
 ]);
 
-export async function PUT(request: Request) {
-  if (!isSameOrigin(request)) {
-    return NextResponse.json({ error: "bad-origin" }, { status: 403 });
-  }
+/** A price cannot be set on something that is not for sale. */
+function unknown(what: string): NextResponse {
+  return NextResponse.json({ error: `unknown-${what}` }, { status: 404 });
+}
 
-  const viewer = await currentViewer();
-  if (!viewer || viewer.role !== "owner") {
-    return NextResponse.json({ error: "not-found" }, { status: 404 });
-  }
-
-  const parsed = updateSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) {
-    return NextResponse.json({ error: "invalid" }, { status: 400 });
-  }
-
-  const update = parsed.data;
+export const PUT = ownerRoute(updateSchema, async (update) => {
   if (update.kind === "entry") {
-    if (!livePriceList().some((entry) => entry.id === update.id)) {
-      return NextResponse.json({ error: "unknown-entry" }, { status: 404 });
-    }
+    if (!livePriceList().some((entry) => entry.id === update.id)) return unknown("entry");
     await saveEntryOverride({
       entryId: update.id,
       fixedPrice: update.fixedPrice,
       customizationExtra: update.customizationExtra,
     });
-  } else if (update.kind === "alteration") {
+    return;
+  }
+
+  if (update.kind === "alteration") {
     if (!liveAlterations().some((alteration) => alteration.id === update.id)) {
-      return NextResponse.json({ error: "unknown-alteration" }, { status: 404 });
+      return unknown("alteration");
     }
     await saveAlterationOverride({
       alterationId: update.id,
       fixedPrice: update.fixedPrice,
       rushSurcharge: update.rushSurcharge,
     });
-  } else {
-    if (!liveAppointmentTypes().some((type) => type.id === update.id)) {
-      return NextResponse.json({ error: "unknown-appointment" }, { status: 404 });
-    }
-    await saveAppointmentOverride({ typeId: update.id, fee: update.fee });
+    return;
   }
 
-  revalidatePath("/", "layout");
-  return NextResponse.json({ ok: true });
-}
+  if (!liveAppointmentTypes().some((type) => type.id === update.id)) return unknown("appointment");
+  await saveAppointmentOverride({ typeId: update.id, fee: update.fee });
+});

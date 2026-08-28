@@ -15,6 +15,7 @@ import { LookbookGrid, StyleCard } from "@/components/style-card";
 import { GoogleBusiness } from "@/components/google-business";
 import { formatMoney } from "@/lib/money";
 import { PHOTO_QUALITY } from "@/lib/images";
+import { HERO_IMAGE } from "@/content/photographs";
 
 export default async function HomePage({
   params,
@@ -44,27 +45,42 @@ export default async function HomePage({
  * One photograph, one line of type, one thing to do. Stella Jean's hero is a
  * picture and a single line — no label above it, no paragraph beneath it, and
  * not two buttons competing for the same click.
+ *
+ * The photograph and the type hold separate halves of the screen rather than
+ * one sitting on the other. The old hero laid a dark gradient across a full
+ * bleed studio portrait so the headline had something to sit on, which cost
+ * three things at once: the photograph's colour, its shape — a 2:3 portrait
+ * enlarged 2.3 times into a landscape band, which is why she looked soft — and
+ * its subject, since the frame cropped away everything but a shoulder.
+ *
+ * Split, none of that is needed. The type sits on ink, at ink's own contrast.
+ * The photograph is shown at close to its own ratio, so the whole walk is in
+ * frame and nothing is painted over it.
+ *
+ * The two are not given a half each. The type takes the room it needs and the
+ * photograph takes a third, which is what a 2:3 portrait wants; an even split
+ * down the middle is the layout you get when nobody chose one.
  */
 async function Hero() {
   const t = await getTranslations("home");
 
   return (
-    <section className="on-ink relative isolate -mt-20 flex min-h-[94svh] items-end overflow-hidden bg-ink pt-20">
-      <Image
-        src="/images/real/hero.jpg"
-        alt=""
-        fill
-        priority
-        quality={PHOTO_QUALITY}
-        sizes="100vw"
-        className="object-cover object-[72%_18%]"
-      />
-      <div className="absolute inset-0 bg-gradient-to-r from-ink/90 via-ink/45 to-transparent" />
-      <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-ink/60 to-transparent" />
+    <section className="on-ink relative -mt-20 bg-ink text-paper">
+      {/*
+        The type keeps `.shell`, so its first character lands under the logo
+        without arithmetic. The photograph leaves the shell instead: a block in
+        the flow on a phone, where it follows the copy, and a column against
+        the right edge of the screen from lg up.
 
-      <div className="shell relative z-10 pb-24 pt-32">
-        <div className="flex max-w-2xl flex-col gap-8">
-          <h1 className="text-display text-paper">{t("heroTitle")}</h1>
+        The column is 34% and not a half. `object-cover` scales to the box's
+        width, so a wider column renders a taller image and throws away more of
+        it: at 42% the frame cut her mid-calf. A 2:3 photograph in a 34% column
+        loses about 50px of the 770 it renders, which is ceiling and floor
+        rather than the person walking.
+      */}
+      <div className="shell relative z-10 flex flex-col justify-end gap-8 pb-16 pt-32 lg:min-h-[92svh] lg:pb-24 lg:pt-28">
+        <div className="flex flex-col gap-8 lg:max-w-[36rem]">
+          <h1 className="max-w-[13ch] text-display text-paper">{t("heroTitle")}</h1>
           <p className="max-w-md text-[0.9375rem] leading-relaxed text-paper-soft">
             {t("heroLine")}
           </p>
@@ -77,6 +93,27 @@ async function Hero() {
             </TextLink>
           </div>
         </div>
+      </div>
+
+      {/*
+        `top-20` rather than `inset-y-0`, and that 80px is the header's own
+        height. The header over this page is transparent light-on-dark, which
+        works over ink and fails over a photograph lit violet and white: the
+        tabs, the language pair and the account glyphs all landed on the bright
+        half and went to roughly 1.5:1. Starting the photograph below the bar
+        fixes it without laying a scrim over her work, and gives the image a
+        top edge that reads as a decision rather than a bleed.
+      */}
+      <div className="relative aspect-4/5 w-full lg:absolute lg:bottom-0 lg:right-0 lg:top-20 lg:aspect-auto lg:w-[34%]">
+        <Image
+          src={HERO_IMAGE}
+          alt={t("heroImageAlt")}
+          fill
+          priority
+          quality={PHOTO_QUALITY}
+          sizes="(min-width: 1024px) 34vw, 100vw"
+          className="object-cover object-[50%_46%]"
+        />
       </div>
     </section>
   );

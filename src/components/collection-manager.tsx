@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { Locale } from "@/i18n/routing";
+import { postOffice, uploadPhoto } from "./office-client";
 
 /** What the office needs to know about a style to manage it — nothing more. */
 export type ManagedStyle = {
@@ -40,11 +41,7 @@ export function CollectionManager({
   async function addPhoto(row: ManagedStyle, file: File, asCover: boolean) {
     setFailedId(null);
     try {
-      const upload = new FormData();
-      upload.append("file", file);
-      const uploaded = await fetch("/api/office/uploads", { method: "POST", body: upload });
-      if (!uploaded.ok) throw new Error("upload-failed");
-      const { src } = (await uploaded.json()) as { src: string };
+      const src = await uploadPhoto(file);
       await save({
         ...row,
         photoCount: row.photoCount + 1,
@@ -60,18 +57,13 @@ export function CollectionManager({
     setRows((current) => current.map((row) => (row.id === next.id ? next : row)));
     setFailedId(null);
     try {
-      const response = await fetch("/api/office/styles", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          styleId: next.id,
-          isPublished: next.isPublished,
-          stock: Object.fromEntries(next.sizes.map((size) => [size.sizeId, size.inStock])),
-          addedPhotos: next.addedPhotos,
-          ...(next.coverSrc ? { coverSrc: next.coverSrc } : {}),
-        }),
+      await postOffice("/api/office/styles", "PUT", {
+        styleId: next.id,
+        isPublished: next.isPublished,
+        stock: Object.fromEntries(next.sizes.map((size) => [size.sizeId, size.inStock])),
+        addedPhotos: next.addedPhotos,
+        ...(next.coverSrc ? { coverSrc: next.coverSrc } : {}),
       });
-      if (!response.ok) throw new Error("save-failed");
       setSavedId(next.id);
       setTimeout(() => setSavedId((id) => (id === next.id ? null : id)), 2000);
       router.refresh();

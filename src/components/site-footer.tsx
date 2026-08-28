@@ -46,7 +46,7 @@ export async function SiteFooter() {
             </a>
             <span className="pt-2 text-paper-faint">{translate(business.serviceArea, locale)}</span>
           </div>
-          <LanguageSwitch tone="paper" />
+          <LanguageSwitch />
         </div>
 
         <FooterColumn title={t("footer.explore")}>

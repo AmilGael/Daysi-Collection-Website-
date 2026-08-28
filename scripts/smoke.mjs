@@ -18,7 +18,7 @@ const LOCALES = ["es", "en"];
 const PAGES = [
   "",
   "/collection",
-  "/collection/flor-de-sol",
+  "/collection/medallon",
   "/premieres",
   "/services",
   "/alterations",
@@ -185,13 +185,23 @@ await check("a cross-origin request is refused", async () => {
   return { ok: response.status === 403, detail: String(response.status) };
 });
 
+/**
+ * The garment named here has to be one that exists. It was `flor-de-sol` until
+ * that style and its invented linen were deleted, and this check went on
+ * failing for a while afterwards because nothing else referenced the slug.
+ *
+ * The figure is `dresses--medallon-print` in content/price-list.ts. Pinning it
+ * rather than accepting any number is the point: an endpoint that answers 200
+ * with the wrong garment's price is the failure worth catching, and repricing
+ * a garment is a deliberate act that can update one line here.
+ */
 await check("the estimate endpoint prices a real garment", async () => {
   const response = await fetch(`${BASE}/api/estimates`, {
     method: "POST",
     headers: { "content-type": "application/json", origin: BASE },
     body: JSON.stringify({
       kind: "ready-made",
-      styleSlug: "flor-de-sol",
+      styleSlug: "medallon",
       sizeId: "m",
       customize: false,
     }),

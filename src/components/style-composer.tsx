@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { formatMoney } from "@/lib/money";
 import type { Locale } from "@/i18n/routing";
 import { buttonClass } from "./ui";
+import { postOffice, uploadPhoto, type SaveState } from "./office-client";
 
 export type ComposerCategory = { readonly id: string; readonly label: string };
 export type ComposerFabric = { readonly id: string; readonly label: string };
@@ -49,7 +50,7 @@ export function StyleComposer({
   const [fabricId, setFabricId] = useState(fabrics[0]?.id ?? "");
   const [price, setPrice] = useState("");
   const [sizes, setSizes] = useState({ s: true, m: true, l: true });
-  const [state, setState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  const [state, setState] = useState<SaveState>("idle");
   const [problem, setProblem] = useState<string | null>(null);
 
   const existingPrice = pricedPairs[`${categoryId}--${fabricId}`];
@@ -68,29 +69,20 @@ export function StyleComposer({
     try {
       const uploaded: string[] = [];
       for (const file of files.slice(0, 8)) {
-        const form = new FormData();
-        form.append("file", file);
-        const response = await fetch("/api/office/uploads", { method: "POST", body: form });
-        if (!response.ok) throw new Error("upload-failed");
-        uploaded.push(((await response.json()) as { src: string }).src);
+        uploaded.push(await uploadPhoto(file));
       }
 
-      const saved = await fetch("/api/office/styles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          description: description.trim(),
-          detail: detail.trim(),
-          color: color.trim(),
-          categoryId,
-          fabricId,
-          sizes,
-          photos: uploaded,
-          ...(needsPrice ? { fixedPrice: Math.round(parseFloat(price) * 100) } : {}),
-        }),
+      await postOffice("/api/office/styles", "POST", {
+        name: name.trim(),
+        description: description.trim(),
+        detail: detail.trim(),
+        color: color.trim(),
+        categoryId,
+        fabricId,
+        sizes,
+        photos: uploaded,
+        ...(needsPrice ? { fixedPrice: Math.round(parseFloat(price) * 100) } : {}),
       });
-      if (!saved.ok) throw new Error("save-failed");
 
       setState("saved");
       setName("");

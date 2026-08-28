@@ -1,8 +1,5 @@
-import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { isSameOrigin } from "@/lib/security";
-import { currentViewer } from "@/lib/auth/session";
+import { ownerRoute } from "@/lib/api-guard";
 import { saveNotice } from "@/lib/live-catalog";
 
 /**
@@ -16,23 +13,6 @@ const noticeSchema = z.object({
   visible: z.boolean(),
 });
 
-export async function PUT(request: Request) {
-  if (!isSameOrigin(request)) {
-    return NextResponse.json({ error: "bad-origin" }, { status: 403 });
-  }
-
-  const viewer = await currentViewer();
-  if (!viewer || viewer.role !== "owner") {
-    return NextResponse.json({ error: "not-found" }, { status: 404 });
-  }
-
-  const parsed = noticeSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) {
-    return NextResponse.json({ error: "invalid" }, { status: 400 });
-  }
-
-  await saveNotice(parsed.data);
-  revalidatePath("/", "layout");
-
-  return NextResponse.json({ ok: true });
-}
+export const PUT = ownerRoute(noticeSchema, async (notice) => {
+  await saveNotice(notice);
+});

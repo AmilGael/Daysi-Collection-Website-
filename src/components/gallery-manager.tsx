@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { GalleryCategoryId } from "@/content/types";
 import { buttonClass } from "./ui";
+import { postOffice, uploadPhoto, type SaveState } from "./office-client";
 
 export type ManagedWork = {
   readonly id: string;
@@ -38,7 +39,7 @@ export function GalleryManager({
   const [caption, setCaption] = useState("");
   const [category, setCategory] = useState<GalleryCategoryId>(categories[0]?.id ?? "commissions");
   const [preview, setPreview] = useState<string | null>(null);
-  const [state, setState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  const [state, setState] = useState<SaveState>("idle");
 
   async function toggle(work: ManagedWork) {
     const hidden = !work.hidden;
@@ -68,24 +69,14 @@ export function GalleryManager({
     setState("saving");
     try {
       const bitmap = await createImageBitmap(file);
-      const form = new FormData();
-      form.append("file", file);
-      const uploaded = await fetch("/api/office/uploads", { method: "POST", body: form });
-      if (!uploaded.ok) throw new Error("upload-failed");
-      const { src } = (await uploaded.json()) as { src: string };
-
-      const saved = await fetch("/api/office/gallery", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          src,
-          width: bitmap.width,
-          height: bitmap.height,
-          category,
-          caption: caption.trim(),
-        }),
+      const src = await uploadPhoto(file);
+      await postOffice("/api/office/gallery", "POST", {
+        src,
+        width: bitmap.width,
+        height: bitmap.height,
+        category,
+        caption: caption.trim(),
       });
-      if (!saved.ok) throw new Error("save-failed");
 
       setState("saved");
       setCaption("");

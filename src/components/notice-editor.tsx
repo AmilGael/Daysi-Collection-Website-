@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { buttonClass } from "./ui";
+import { postOffice, type SaveState } from "./office-client";
 
 /**
  * The one line Daysi can pin to the site herself — vacation dates, a delayed
@@ -21,18 +22,13 @@ export function NoticeEditor({
   const router = useRouter();
   const [message, setMessage] = useState(initialMessage);
   const [visible, setVisible] = useState(initialVisible);
-  const [state, setState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  const [state, setState] = useState<SaveState>("idle");
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setState("saving");
     try {
-      const response = await fetch("/api/office/notice", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, visible }),
-      });
-      if (!response.ok) throw new Error("save-failed");
+      await postOffice("/api/office/notice", "PUT", { message, visible });
       setState("saved");
       router.refresh();
     } catch {

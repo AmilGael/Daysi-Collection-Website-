@@ -18,6 +18,7 @@ import { StyleOrderPanel } from "@/components/style-order-panel";
 import { LookbookGrid, StyleCard } from "@/components/style-card";
 import { Tag } from "@/components/ui";
 import { PHOTO_QUALITY } from "@/lib/images";
+import { HERO_IMAGE } from "@/content/photographs";
 
 export function generateStaticParams() {
   return routing.locales.flatMap((locale) =>
@@ -38,7 +39,7 @@ export async function generateMetadata({
   return {
     title: `${translate(style.name, language)} · Daysi Collection`,
     description: translate(style.description, language),
-    openGraph: { images: [primaryPhoto(style)?.src ?? "/images/real/hero.jpg"] },
+    openGraph: { images: [primaryPhoto(style)?.src ?? HERO_IMAGE] },
   };
 }
 

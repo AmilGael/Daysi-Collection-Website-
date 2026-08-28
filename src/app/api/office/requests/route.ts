@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { isSameOrigin } from "@/lib/security";
-import { currentViewer } from "@/lib/auth/session";
+import { ownerRoute } from "@/lib/api-guard";
 import { currentRecords, listRequests, saveRequest } from "@/lib/request-store";
 
 /**
@@ -10,7 +9,8 @@ import { currentRecords, listRequests, saveRequest } from "@/lib/request-store";
  * the new status and the old lines remain as the record's history.
  *
  * A caller who is not the signed-in owner gets a 404, the same nothing the
- * office page itself gives — not a 403 that confirms there is an office.
+ * office page itself gives — not a 403 that confirms there is an office. That
+ * rule now lives in lib/api-guard rather than in each route.
  */
 
 const updateSchema = z.object({
@@ -19,32 +19,16 @@ const updateSchema = z.object({
   status: z.enum(["new", "answered", "scheduled", "paid", "closed"]),
 });
 
-export async function PATCH(request: Request) {
-  if (!isSameOrigin(request)) {
-    return NextResponse.json({ error: "bad-origin" }, { status: 403 });
-  }
-
-  const viewer = await currentViewer();
-  if (!viewer || viewer.role !== "owner") {
-    return NextResponse.json({ error: "not-found" }, { status: 404 });
-  }
-
-  const parsed = updateSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) {
-    return NextResponse.json({ error: "invalid" }, { status: 400 });
-  }
-
-  const { kind, reference, status } = parsed.data;
+export const PATCH = ownerRoute(updateSchema, async ({ kind, reference, status }) => {
   const record = currentRecords(listRequests(kind)).find(
     (candidate) => candidate.reference === reference,
   );
   if (!record) {
     return NextResponse.json({ error: "unknown-reference" }, { status: 404 });
   }
-  if (record.status === status) {
-    return NextResponse.json({ reference, status });
-  }
+  // Already there. Saying so is cheaper than writing a line that changes
+  // nothing to a file that is its own history.
+  if (record.status !== status) await saveRequest({ ...record, status });
 
-  await saveRequest({ ...record, status });
   return NextResponse.json({ reference, status });
-}
+});

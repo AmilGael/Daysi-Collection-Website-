@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { buttonClass } from "./ui";
+import { postOffice } from "./office-client";
 
 export type ManagedEntry = {
   readonly id: string;
@@ -127,12 +128,7 @@ function PriceTable({
     if (cents.some((value) => !Number.isFinite(value) || value < 0)) return;
     setState((current) => ({ ...current, [row.id]: "saving" }));
     try {
-      const response = await fetch("/api/office/prices", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(toBody(row.id, cents)),
-      });
-      if (!response.ok) throw new Error("save-failed");
+      await postOffice("/api/office/prices", "PUT", toBody(row.id, cents));
       setState((current) => ({ ...current, [row.id]: "saved" }));
       router.refresh();
     } catch {

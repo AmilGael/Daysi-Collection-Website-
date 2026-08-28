@@ -29,14 +29,21 @@ export default async function AtelierPage({
           sizes="100vw"
           className="object-cover object-[38%_28%]"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/95 via-ink/60 to-ink/45" />
+        {/*
+          The middle stop carries the eyebrow, and at /60 it measured 4.43:1 —
+          seven hundredths short of the 4.5 a 10px label needs, which is the
+          kind of miss no one finds by looking. /66 reads 5.0. Measured on the
+          composited frame with the copy hidden.
+        */}
+        <div className="absolute inset-0 bg-gradient-to-t from-ink/95 via-ink/66 to-ink/45" />
         {/* The workroom is a bright photograph, so the header needs its own
             ground to stay legible while it is in its light-on-dark state. */}
         <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-ink/70 to-transparent" />
         <div className="shell relative z-10 flex max-w-2xl flex-col gap-6 pb-16 pt-28">
-          <p className="eyebrow text-paper-soft">{business.neighborhood}</p>
+          {/* Full paper over a photograph; see the note in premieres/page.tsx. */}
+          <p className="eyebrow text-paper">{business.neighborhood}</p>
           <h1 className="text-display text-paper">{t("title")}</h1>
-          <p className="text-lead text-paper-soft">{t("lead")}</p>
+          <p className="text-lead text-paper">{t("lead")}</p>
         </div>
       </section>
 
