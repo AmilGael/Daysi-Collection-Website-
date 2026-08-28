@@ -87,14 +87,44 @@ export function applyOverrides(
   });
 }
 
+
+/**
+ * Seed plus the garments Daysi has added, with her overrides applied to both.
+ * A garment she edits twice is one garment: the newest record wins.
+ */
+export function assembleStyles(
+  seed: readonly GarmentStyle[],
+  added: readonly GarmentStyle[],
+  overrides: readonly StyleOverride[],
+): GarmentStyle[] {
+  const newest = new Map(added.map((style) => [style.id, style]));
+  const seeded = new Set(seed.map((style) => style.id));
+  const catalog = [
+    ...seed.map((style) => newest.get(style.id) ?? style),
+    ...[...newest.values()].filter((style) => !seeded.has(style.id)),
+  ];
+  return applyOverrides(catalog, overrides);
+}
+
+const ADDED_STYLES = "added-styles";
+
+/** The garments Daysi has created from the office, newest record per id. */
+export function addedStyles(): GarmentStyle[] {
+  return latestBy(readRecords<GarmentStyle>(ADDED_STYLES), (style) => style.id);
+}
+
+export async function saveAddedStyle(style: GarmentStyle): Promise<void> {
+  await appendRecord(ADDED_STYLES, style);
+}
+
 /** The catalog as the public site should see it right now. */
 export function liveStyles(): GarmentStyle[] {
-  return applyOverrides(styles, styleOverrides()).filter((style) => style.isPublished);
+  return allLiveStyles().filter((style) => style.isPublished);
 }
 
 /** Every style, published or not, with overrides applied — the office view. */
 export function allLiveStyles(): GarmentStyle[] {
-  return applyOverrides(styles, styleOverrides());
+  return assembleStyles(styles, addedStyles(), styleOverrides());
 }
 
 export function liveStyleBySlug(slug: string): GarmentStyle | undefined {

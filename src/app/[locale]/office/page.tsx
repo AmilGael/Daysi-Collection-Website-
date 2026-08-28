@@ -24,6 +24,7 @@ import { PriceManager } from "@/components/price-manager";
 import { FabricManager } from "@/components/fabric-manager";
 import { BooksExport } from "@/components/books-export";
 import { GalleryManager, type ManagedWork } from "@/components/gallery-manager";
+import { StyleComposer } from "@/components/style-composer";
 
 /**
  * Daysi's office.
@@ -81,6 +82,18 @@ export default async function OfficePage({
     coverSrc: overridesById.get(style.id)?.coverSrc,
   }));
   const notice = storedNotice();
+
+  const composerCategories = categories.map((category) => ({
+    id: category.id,
+    label: translate(category.name, language),
+  }));
+  const composerFabrics = liveFabrics().map((fabric) => ({
+    id: fabric.id,
+    label: translate(fabric.name, language),
+  }));
+  const pricedPairs = Object.fromEntries(
+    livePriceList().map((entry) => [entry.id, entry.fixedPrice]),
+  );
 
   const galleryWorksManaged: ManagedWork[] = manageableGallery().map((work) => ({
     id: work.id,
@@ -211,6 +224,21 @@ export default async function OfficePage({
             </p>
           </div>
           <CollectionManager styles={managedStyles} locale={language} />
+
+          <div className="flex flex-col gap-4 border-t border-line pt-8">
+            <div className="flex flex-col gap-2">
+              <h3 className="text-[0.9375rem] font-medium">{t("styleAddTitle")}</h3>
+              <p className="max-w-xl text-[0.875rem] leading-relaxed text-ink-faint">
+                {t("styleAddLead")}
+              </p>
+            </div>
+            <StyleComposer
+              categories={composerCategories}
+              fabrics={composerFabrics}
+              pricedPairs={pricedPairs}
+              locale={language}
+            />
+          </div>
         </section>
 
         <section className="flex flex-col gap-6">

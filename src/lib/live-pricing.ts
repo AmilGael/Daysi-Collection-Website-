@@ -58,6 +58,7 @@ const ENTRY_OVERRIDES = "price-overrides";
 const ALTERATION_OVERRIDES = "alteration-overrides";
 const APPOINTMENT_OVERRIDES = "appointment-overrides";
 const CUSTOM_FABRICS = "custom-fabrics";
+const CUSTOM_ENTRIES = "price-entries";
 
 /** The coded per-category customization charges, reused for custom fabrics. */
 const CUSTOMIZATION_EXTRA: Record<string, number> = {
@@ -142,6 +143,24 @@ export function entriesFromCustom(custom: CustomFabric): PriceListEntry[] {
   }));
 }
 
+/**
+ * The whole published list: what the site ships with, what her fabrics imply,
+ * and any entry she has written herself — with her edits applied over the lot.
+ */
+export function assemblePriceList(
+  coded: readonly PriceListEntry[],
+  fromFabrics: readonly PriceListEntry[],
+  custom: readonly PriceListEntry[],
+  overrides: readonly PriceEntryOverride[],
+): PriceListEntry[] {
+  // One row per garment-and-cloth pair. Where the same pair is priced twice,
+  // the later source wins: a price Daysi wrote is a decision she made after
+  // the one that shipped.
+  const byId = new Map<string, PriceListEntry>();
+  for (const entry of [...coded, ...fromFabrics, ...custom]) byId.set(entry.id, entry);
+  return applyEntryOverrides([...byId.values()], overrides);
+}
+
 /* ------------------------------------------------------------------ live -- */
 
 export function customFabrics(): CustomFabric[] {
@@ -152,12 +171,22 @@ export function liveFabrics(): Fabric[] {
   return [...fabrics, ...customFabrics().map(fabricFromCustom)];
 }
 
+/** Price rows Daysi wrote herself, usually when adding a garment. */
+export function customEntries(): PriceListEntry[] {
+  return latestBy(readRecords<PriceListEntry>(CUSTOM_ENTRIES), (entry) => entry.id);
+}
+
 export function livePriceList(): PriceListEntry[] {
-  const withCustom = [...priceList, ...customFabrics().flatMap(entriesFromCustom)];
-  return applyEntryOverrides(
-    withCustom,
+  return assemblePriceList(
+    priceList,
+    customFabrics().flatMap(entriesFromCustom),
+    customEntries(),
     latestBy(readRecords<PriceEntryOverride>(ENTRY_OVERRIDES), (record) => record.entryId),
   );
+}
+
+export async function saveCustomEntry(entry: PriceListEntry): Promise<void> {
+  await appendRecord(CUSTOM_ENTRIES, entry);
 }
 
 export function liveAlterations(): AlterationService[] {
