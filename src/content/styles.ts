@@ -36,26 +36,42 @@ export const styles: readonly GarmentStyle[] = [
     ],
     photos: [
       {
+        src: "/images/real/frutera-capri.jpg",
+        alt: {
+          en: "The Frutera two-piece worn on a terrace at golden hour.",
+          es: "El conjunto Frutera llevado en una terraza al atardecer.",
+        },
+        isPrimary: true,
+      },
+      {
+        src: "/images/gallery/35e49b87.jpg",
+        alt: {
+          en: "A client wearing the Frutera skirt with a white bodice.",
+          es: "Una clienta con la falda Frutera y un cuerpo blanco.",
+        },
+        isPrimary: false,
+      },
+      {
+        src: "/images/gallery/b1621c2a.jpg",
+        alt: {
+          en: "The Frutera skirt worn at home, photographed by its owner.",
+          es: "La falda Frutera en casa, fotografiada por su dueña.",
+        },
+        isPrimary: false,
+      },
+      {
         src: "/images/real/frutera-set.jpg",
         alt: {
           en: "The Frutera two-piece: an emerald bow blouse over the market-scene skirt, photographed in the atelier.",
           es: "El conjunto Frutera: blusa esmeralda con lazo sobre la falda de fruteras, fotografiado en el taller.",
         },
-        isPrimary: true,
+        isPrimary: false,
       },
       {
         src: "/images/real/frutera-set-full.jpg",
         alt: {
           en: "Full-length view of the Frutera two-piece.",
           es: "Vista completa del conjunto Frutera.",
-        },
-        isPrimary: false,
-      },
-      {
-        src: "/images/real/frutera-capri.jpg",
-        alt: {
-          en: "The Frutera two-piece worn on a terrace at golden hour.",
-          es: "El conjunto Frutera llevado en una terraza al atardecer.",
         },
         isPrimary: false,
       },

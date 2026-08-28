@@ -152,7 +152,9 @@
     "sendEstimate": "Enviarle esto a Daysi",
     "payDeposit": "Pagar lo que corresponde ahora",
     "paymentsOff": "Los pagos con tarjeta se activan al conectar la cuenta de cobros de Daysi. Mientras tanto, envíe la solicitud y pague en persona.",
-    "taxNote": "Nueva York no cobra impuesto sobre ropa de menos de $110 por pieza. El impuesto se muestra solo sobre lo que pasa de esa línea."
+    "taxNote": "Nueva York no cobra impuesto sobre ropa de menos de $110 por pieza. El impuesto se muestra solo sobre lo que pasa de esa línea.",
+    "alterationsLink": "La lista de precios de arreglos",
+    "sessionsLink": "Tarifas de consulta"
   },
   "studio": {
     "title": "Taller de diseño",
