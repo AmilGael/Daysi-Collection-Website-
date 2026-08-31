@@ -41,7 +41,9 @@ export const business: BusinessInfo = {
   // shows a label instead. There is no `phone` field on purpose — see the
   // note on BusinessInfo.
   whatsapp: "+19176887260",
-  email: "hola@daysicollection.com",
+  // A real, receiving address: Cloudflare Email Routing forwards it (and any
+  // guessed address at the domain, via the catch-all) into Gmail.
+  email: "hola@daysiscollectioninc.com",
   google: {
     profileUrl: "https://www.google.com/search?q=Daysi+Collection+Inc+Bronx",
     directionsUrl: "https://www.google.com/maps/dir/?api=1&destination=E+180th+St+Bronx+NY",
