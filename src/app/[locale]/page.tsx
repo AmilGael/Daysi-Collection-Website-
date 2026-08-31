@@ -28,6 +28,7 @@ export default async function HomePage({
     <>
       <Hero />
       <SiteNoticeBar />
+      <CoverPlates />
       <TrustStrip />
       <Story />
       <BrandPromise />
@@ -125,6 +126,60 @@ async function Hero() {
           sizes="(min-width: 1024px) 32vw, 100vw"
           className="object-cover"
         />
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Two more frames under the cover, asked for by name once the cover was
+ * approved. They are plates, not a grid: each is shown at its file's own
+ * proportions with nothing cropped and nothing painted over it, on the same
+ * ink the cover sits on, so the top of the page reads as one act — the cover,
+ * then the spread inside it.
+ *
+ * The right plate drops by a step. Directly above it is the hero's cover
+ * column, and two rectangles flush against each other on the same edge read
+ * as one broken column; the offset lets the cover finish before the next
+ * frame starts, and gives the pair the same stagger the rest of the site
+ * uses instead of a dead-even grid.
+ */
+async function CoverPlates() {
+  const t = await getTranslations("home");
+
+  return (
+    <section className="on-ink bg-ink pb-24 pt-4 text-paper lg:pb-32">
+      <div className="shell reveal grid gap-12 md:grid-cols-2 md:gap-10 lg:gap-14">
+        <figure className="flex flex-col gap-4">
+          <div className="relative overflow-hidden" style={{ aspectRatio: "848 / 1264" }}>
+            <Image
+              src="/images/real/frutera-basket.jpg"
+              alt={t("plateBasketAlt")}
+              fill
+              quality={PHOTO_QUALITY}
+              sizes="(min-width: 768px) 46vw, 92vw"
+              className="object-cover"
+            />
+          </div>
+          <figcaption className="text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-paper-soft">
+            {t("plateBasketCaption")}
+          </figcaption>
+        </figure>
+        <figure className="flex flex-col gap-4 md:mt-24">
+          <div className="relative overflow-hidden" style={{ aspectRatio: "896 / 1195" }}>
+            <Image
+              src="/images/real/medallon-set.jpg"
+              alt={t("plateMedallonAlt")}
+              fill
+              quality={PHOTO_QUALITY}
+              sizes="(min-width: 768px) 46vw, 92vw"
+              className="object-cover"
+            />
+          </div>
+          <figcaption className="text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-paper-soft">
+            {t("plateMedallonCaption")}
+          </figcaption>
+        </figure>
       </div>
     </section>
   );

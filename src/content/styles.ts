@@ -44,6 +44,14 @@ export const styles: readonly GarmentStyle[] = [
         isPrimary: true,
       },
       {
+        src: "/images/real/frutera-basket.jpg",
+        alt: {
+          en: "The Frutera set worn with a straw market basket beneath plaster arches.",
+          es: "El conjunto Frutera con una canasta de paja, bajo arcos de yeso.",
+        },
+        isPrimary: false,
+      },
+      {
         src: "/images/gallery/35e49b87.jpg",
         alt: {
           en: "A client wearing the Frutera skirt with a white bodice.",
@@ -140,6 +148,14 @@ export const styles: readonly GarmentStyle[] = [
         alt: {
           en: "Full-length front view of the Sirena shirt dress.",
           es: "Vista frontal completa del vestido camisero Sirena.",
+        },
+        isPrimary: false,
+      },
+      {
+        src: "/images/real/sirena-dress.jpg",
+        alt: {
+          en: "The Sirena dress on its own: high collar, dropped flounce, red fish over spiralling batik.",
+          es: "El vestido Sirena solo: cuello alto, volante bajo, peces rojos sobre batik en espiral.",
         },
         isPrimary: false,
       },
