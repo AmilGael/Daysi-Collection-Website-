@@ -161,6 +161,43 @@ for (const path of ["", "/collection", "/cart", "/sign-in"]) {
   });
 }
 
+/**
+ * Daysi's number reaches clients through a button and never as type.
+ *
+ * She asked for that in those words, and a convention alone would not hold it:
+ * the digits are one careless `{business.whatsapp}` away from being printed
+ * under her name forever. So the pages are read as a visitor gets them, every
+ * `wa.me` href is cut out — that is where the number belongs — and the digits
+ * must not survive anywhere in what is left, in any of the shapes a person
+ * writes a phone number.
+ */
+const WHATSAPP_SHAPES = [
+  "19176887260",
+  "9176887260",
+  "917 688 7260",
+  "917-688-7260",
+  "(917) 688-7260",
+  "+1 917 688 7260",
+];
+
+for (const path of ["/contact", "", "/terms", "/request"]) {
+  await check(`/es${path} shows her number to no one`, async () => {
+    const html = await (await fetch(`${BASE}/es${path}`)).text();
+    // The link is the one legitimate home for the digits; everything else is a leak.
+    const withoutLinks = html.replaceAll(/https:\/\/wa\.me\/[0-9]+/g, "");
+    const found = WHATSAPP_SHAPES.filter((shape) => withoutLinks.includes(shape));
+    return { ok: found.length === 0, detail: found.join(", ") || "not shown" };
+  });
+}
+
+await check("the contact page still opens WhatsApp", async () => {
+  const html = await (await fetch(`${BASE}/es/contact`)).text();
+  return {
+    ok: html.includes("https://wa.me/19176887260"),
+    detail: html.includes("wa.me") ? "link present" : "no wa.me link at all",
+  };
+});
+
 // A nonce in the policy that no script carries would block every script on the
 // page in production, where 'unsafe-eval' is not there to paper over it.
 await check("the CSP nonce matches the rendered scripts", async () => {

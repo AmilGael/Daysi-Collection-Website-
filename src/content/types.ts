@@ -167,7 +167,16 @@ export type BusinessInfo = {
   readonly neighborhood: string;
   readonly addressNote: Localized;
   readonly hours: readonly { readonly day: Localized; readonly opens: string; readonly closes: string | null }[];
-  readonly phone: string;
+  /**
+   * Daysi's number, and the only field that holds it.
+   *
+   * There is deliberately no `phone` beside this. The number is never printed
+   * on the site — it exists so `whatsappLink()` can build a `wa.me` href, and
+   * nothing else. A second field holding the same digits would sooner or later
+   * be rendered by someone reaching for "the phone number", so the field a
+   * person would reach for does not exist. See `lib/whatsapp.ts`, and the
+   * smoke check that fails if the digits ever appear outside a wa.me link.
+   */
   readonly whatsapp: string;
   readonly email: string;
   readonly google: {
