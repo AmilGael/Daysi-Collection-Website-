@@ -54,6 +54,14 @@ function bareHostRedirect(request: NextRequest): NextResponse | null {
   if (!host?.startsWith("www.")) return null;
 
   const url = request.nextUrl.clone();
+  // The port is cleared before the host is set, and that order is the whole
+  // trick: `nextUrl` carries the container's internal port (3000), and setting
+  // `host` to a value that names no port leaves the old one in place — which
+  // sent the browser to `https://daysiscollectioninc.com:3000`, a port nothing
+  // answers on. Cleared first, a bare host resolves to the scheme's own port,
+  // and a host that does name one (development on `www.localtest.me:3000`)
+  // still sets it.
+  url.port = "";
   url.host = host.slice(4);
   return NextResponse.redirect(url, 308);
 }
