@@ -34,6 +34,8 @@ export const styles: readonly GarmentStyle[] = [
       { sizeId: "m", inStock: true },
       { sizeId: "l", inStock: true },
     ],
+    // Two photographs, both worn: the catalogue shows a garment at most twice,
+    // and always on a body first. The rest of the shoot lives in the gallery.
     photos: [
       {
         src: "/images/real/frutera-capri.jpg",
@@ -44,58 +46,10 @@ export const styles: readonly GarmentStyle[] = [
         isPrimary: true,
       },
       {
-        src: "/images/real/frutera-basket.jpg",
-        alt: {
-          en: "The Frutera set worn with a straw market basket beneath plaster arches.",
-          es: "El conjunto Frutera con una canasta de paja, bajo arcos de yeso.",
-        },
-        isPrimary: false,
-      },
-      {
-        src: "/images/gallery/35e49b87.jpg",
-        alt: {
-          en: "A client wearing the Frutera skirt with a white bodice.",
-          es: "Una clienta con la falda Frutera y un cuerpo blanco.",
-        },
-        isPrimary: false,
-      },
-      {
-        src: "/images/gallery/b1621c2a.jpg",
-        alt: {
-          en: "The Frutera skirt worn at home, photographed by its owner.",
-          es: "La falda Frutera en casa, fotografiada por su dueña.",
-        },
-        isPrimary: false,
-      },
-      {
-        src: "/images/real/frutera-set.jpg",
-        alt: {
-          en: "The Frutera two-piece: an emerald bow blouse over the market-scene skirt, photographed in the atelier.",
-          es: "El conjunto Frutera: blusa esmeralda con lazo sobre la falda de fruteras, fotografiado en el taller.",
-        },
-        isPrimary: false,
-      },
-      {
-        src: "/images/real/frutera-set-full.jpg",
-        alt: {
-          en: "Full-length view of the Frutera two-piece.",
-          es: "Vista completa del conjunto Frutera.",
-        },
-        isPrimary: false,
-      },
-      {
         src: "/images/real/frutera-campaign.jpg",
         alt: {
           en: "Four Frutera skirts styled with green, blue and marigold tops.",
           es: "Cuatro faldas Frutera con blusas verde, azul y amarilla.",
-        },
-        isPrimary: false,
-      },
-      {
-        src: "/images/real/frutera-courtyard.jpg",
-        alt: {
-          en: "The Frutera skirt worn with a knotted marigold top in a courtyard.",
-          es: "La falda Frutera con una blusa amarilla anudada, en un patio.",
         },
         isPrimary: false,
       },
@@ -128,20 +82,12 @@ export const styles: readonly GarmentStyle[] = [
     ],
     photos: [
       {
-        src: "/images/real/fish-batik-dress.jpg",
-        alt: {
-          en: "The Sirena shirt dress in black fish batik with red fish, worn front-on.",
-          es: "El vestido camisero Sirena en batik negro con peces rojos, visto de frente.",
-        },
-        isPrimary: true,
-      },
-      {
         src: "/images/real/fish-batik-dress-model.jpg",
         alt: {
           en: "The Sirena shirt dress worn with arms crossed.",
           es: "El vestido camisero Sirena llevado con los brazos cruzados.",
         },
-        isPrimary: false,
+        isPrimary: true,
       },
       {
         src: "/images/real/sirena-model-front.jpg",
@@ -151,26 +97,43 @@ export const styles: readonly GarmentStyle[] = [
         },
         isPrimary: false,
       },
-      {
-        src: "/images/real/sirena-dress.jpg",
-        alt: {
-          en: "The Sirena dress on its own: high collar, dropped flounce, red fish over spiralling batik.",
-          es: "El vestido Sirena solo: cuello alto, volante bajo, peces rojos sobre batik en espiral.",
-        },
-        isPrimary: false,
-      },
-      {
-        src: "/images/real/sirena-subway.jpg",
-        alt: {
-          en: "The Sirena shirt dress worn seated on a subway platform bench.",
-          es: "El vestido Sirena llevado en una banca del metro.",
-        },
-        isPrimary: false,
-      },
     ],
     customizationAvailable: true,
     isPublished: true,
     premiereId: "otono-2026",
+  },
+  {
+    id: "medallon",
+    slug: "medallon",
+    name: { en: "Medallón two-piece", es: "Conjunto Medallón" },
+    categoryId: "dresses",
+    priceEntryId: "dresses--medallon-print",
+    color: { en: "Black and gold", es: "Negro y dorado" },
+    description: {
+      en: "A twisted bandeau and a full midi skirt in golden medallions, hemmed by hand in white ric-rac.",
+      es: "Bandeau torcido y falda midi amplia en medallones dorados, con ruedo de trensilla blanca cosido a mano.",
+    },
+    detail: {
+      en: "The skirt sits at the natural waist and turns when you do. The same ric-rac from the hem ties the waist. Worn as a set or apart.",
+      es: "La falda asienta en la cintura natural y gira cuando usted gira. La misma trensilla del ruedo amarra la cintura. Se lleva como conjunto o por separado.",
+    },
+    sizes: [
+      { sizeId: "s", inStock: true },
+      { sizeId: "m", inStock: true },
+      { sizeId: "l", inStock: true },
+    ],
+    photos: [
+      {
+        src: "/images/real/medallon-set.jpg",
+        alt: {
+          en: "The Medallón two-piece: bandeau and full midi skirt in black with golden medallions.",
+          es: "El conjunto Medallón: bandeau y falda midi amplia en negro con medallones dorados.",
+        },
+        isPrimary: true,
+      },
+    ],
+    customizationAvailable: true,
+    isPublished: true,
   },
   {
     id: "ocelote",
@@ -208,47 +171,6 @@ export const styles: readonly GarmentStyle[] = [
           es: "La camisa campera Ocelote abotonada, vista de frente.",
         },
         isPrimary: false,
-      },
-      {
-        src: "/images/real/ocelote-blouse-back.jpg",
-        alt: {
-          en: "Back view of the Ocelote camp shirt.",
-          es: "Vista trasera de la camisa campera Ocelote.",
-        },
-        isPrimary: false,
-      },
-    ],
-    customizationAvailable: true,
-    isPublished: true,
-  },
-  {
-    id: "medallon",
-    slug: "medallon",
-    name: { en: "Medallón two-piece", es: "Conjunto Medallón" },
-    categoryId: "dresses",
-    priceEntryId: "dresses--medallon-print",
-    color: { en: "Black and gold", es: "Negro y dorado" },
-    description: {
-      en: "A twisted bandeau and a full midi skirt in golden medallions, hemmed by hand in white ric-rac.",
-      es: "Bandeau torcido y falda midi amplia en medallones dorados, con ruedo de trensilla blanca cosido a mano.",
-    },
-    detail: {
-      en: "The skirt sits at the natural waist and turns when you do. The same ric-rac from the hem ties the waist. Worn as a set or apart.",
-      es: "La falda asienta en la cintura natural y gira cuando usted gira. La misma trensilla del ruedo amarra la cintura. Se lleva como conjunto o por separado.",
-    },
-    sizes: [
-      { sizeId: "s", inStock: true },
-      { sizeId: "m", inStock: true },
-      { sizeId: "l", inStock: true },
-    ],
-    photos: [
-      {
-        src: "/images/real/medallon-set.jpg",
-        alt: {
-          en: "The Medallón two-piece: bandeau and full midi skirt in black with golden medallions.",
-          es: "El conjunto Medallón: bandeau y falda midi amplia en negro con medallones dorados.",
-        },
-        isPrimary: true,
       },
     ],
     customizationAvailable: true,

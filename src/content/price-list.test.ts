@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import { alterationServices, appointmentTypes, priceList } from "./price-list";
 
 /**
- * The August 2026 reduction.
+ * The August 2026 reductions, in two passes.
  *
- * Daysi took twenty percent off what she charges for her own time and left the
- * cloth alone. That line matters: a garment price is mostly the material, and
- * discounting it discounts something she has already paid for. So every number
- * that is labour — an alteration, a rush, the made-to-measure supplement, a
- * booked session — comes down, and the eleven garment prices do not move.
+ * First Daysi took twenty percent off what she charges for her own time and
+ * left the cloth alone. Then, at the end of the month, she took a quarter off
+ * the garments themselves — each price is the original less 25%, settled DOWN
+ * to the nearest five dollars, so the discount is never less than promised.
+ * The labour prices did not move a second time.
  *
- * These are written as the numbers themselves rather than as `before * 0.8`,
+ * These are written as the numbers themselves rather than as `before * 0.75`,
  * because a test that recomputes the change from the code it is checking
  * agrees with any mistake the code makes.
  */
@@ -71,25 +71,47 @@ describe("the price of Daysi's time", () => {
   });
 });
 
-describe("the price of the cloth", () => {
-  it("does not move, because the reduction was never against the material", () => {
+describe("the price of the garments", () => {
+  it("is the original less a quarter, settled down to the nearest five dollars", () => {
     const published = Object.fromEntries(
       priceList.map((entry) => [entry.id, dollars(entry.fixedPrice)]),
     );
 
     expect(published).toEqual({
-      "dresses--daisy-cotton": 265,
-      "shirts--wax-print": 165,
-      "shirts--tropical-leaf": 175,
-      "shirts--daisy-cotton": 145,
-      "heritage--wax-print": 395,
-      "heritage--tropical-leaf": 375,
-      "heritage--fish-batik": 395,
-      "heritage--frutera-print": 425,
-      "pants--ocelote-print": 235,
-      "shirts--laguna-wax": 165,
-      "dresses--medallon-print": 325,
+      "dresses--daisy-cotton": 195, // was 265
+      "shirts--wax-print": 120, // was 165
+      "shirts--tropical-leaf": 130, // was 175
+      "shirts--daisy-cotton": 105, // was 145
+      "heritage--wax-print": 295, // was 395
+      "heritage--tropical-leaf": 280, // was 375
+      "heritage--fish-batik": 295, // was 395
+      "heritage--frutera-print": 315, // was 425
+      "pants--ocelote-print": 175, // was 235
+      "shirts--laguna-wax": 120, // was 165
+      "dresses--medallon-print": 240, // was 325
     });
+  });
+
+  it("never discounts by less than the quarter that was promised", () => {
+    const originals: Record<string, number> = {
+      "dresses--daisy-cotton": 26500,
+      "shirts--wax-print": 16500,
+      "shirts--tropical-leaf": 17500,
+      "shirts--daisy-cotton": 14500,
+      "heritage--wax-print": 39500,
+      "heritage--tropical-leaf": 37500,
+      "heritage--fish-batik": 39500,
+      "heritage--frutera-print": 42500,
+      "pants--ocelote-print": 23500,
+      "shirts--laguna-wax": 16500,
+      "dresses--medallon-print": 32500,
+    };
+
+    for (const entry of priceList) {
+      const original = originals[entry.id];
+      expect(original).toBeDefined();
+      expect(entry.fixedPrice).toBeLessThanOrEqual((original ?? 0) * 0.75);
+    }
   });
 });
 
@@ -112,7 +134,7 @@ describe("the prices quoted inside the copy", () => {
 
   it("still records when the list last changed", () => {
     for (const entry of priceList) {
-      expect(entry.effectiveDate).toBe("2026-08-28");
+      expect(entry.effectiveDate).toBe("2026-08-31");
     }
   });
 });

@@ -56,10 +56,11 @@
     "heroPrimary": "Reservar una cita",
     "heroSecondary": "Ver la colección",
     "heroImageAlt": "La portada de octubre de 2019 de Daysi Collection: Kalifa con un vestido de un solo hombro y falda a juego, en un estampado de galones rojos, dorados y negros, sobre el amarillo de Daysi.",
+    "plateYellowAlt": "Modelo sentada sobre el amarillo de Daysi, en un vestido azul marino estampado con hibiscos verdes y hojas naranjas.",
+    "plateYellowCaption": "La sesión amarilla",
+    "plateCoverCaption": "Octubre 2019, la portada",
     "plateBasketAlt": "Modelo con la blusa esmeralda de lazo y la falda Frutera de fruteras, con una canasta de paja bajo arcos de yeso.",
     "plateBasketCaption": "Frutera, con la canasta del mercado",
-    "plateMedallonAlt": "Modelo con el estampado Medallón en negro y amarillo: top bandeau y falda amplia sobre fondo azul claro.",
-    "plateMedallonCaption": "Medallón, en el estudio",
     "trust": {
       "one": "Trabajando desde 2008",
       "two": "Precios fijos, sin regateo",
@@ -101,7 +102,9 @@
     "showing": "{count, plural, =0 {Ninguna pieza coincide} =1 {Una pieza} other {# piezas}}",
     "clear": "Quitar filtros",
     "empty": "Todavía no hay nada con esos filtros. Quítelos, o pida que la pieza se haga en su talla.",
-    "emptyAction": "Pedir que la hagan"
+    "emptyAction": "Pedir que la hagan",
+    "nextPhoto": "Siguiente foto",
+    "previousPhoto": "Foto anterior"
   },
   "style": {
     "chooseSize": "Escoja una talla",
@@ -171,7 +174,8 @@
     "download": "Descargar este boceto",
     "sendToDaysi": "Enviarle esta idea a Daysi",
     "disclaimer": "El boceto es el punto de partida de la conversación, no una promesa de la pieza terminada. La colocación del estampado se decide en la mesa, con la tela en la mano.",
-    "estimateFor": "Una pieza así, en {fabric}, empieza en {price}."
+    "estimateFor": "Una pieza así, en {fabric}, empieza en {price}.",
+    "estimateFrom": "Una pieza así, en {fabric}, se estima desde {price}. El precio exacto se acuerda con Daysi antes de cortar nada."
   },
   "premieres": {
     "title": "Estrenos",
@@ -186,6 +190,8 @@
     "inspiration": "De dónde viene",
     "signupTitle": "Véalo primero",
     "signupLead": "Apúntese y verá el estreno el día de la revelación, con derecho a reservar un número de la edición antes de que se abra a todos.",
+    "signupEmail": "Su correo",
+    "signupName": "Su nombre",
     "signupCta": "Apúnteme a la lista",
     "signupDone": "Ya está en la lista. Esté pendiente de la revelación el {date}.",
     "included": "En este estreno"
@@ -194,10 +200,10 @@
     "title": "El taller",
     "lead": "Un taller de casa en la calle 180 Este, en su año dieciocho.",
     "sectionStory": "Su historia",
-    "sectionCraft": "El oficio",
-    "sectionHeritage": "La herencia",
-    "craftBody": "La investigación y la técnica cuidadosa gobiernan cómo se desarrolla y se diseña cada pieza, y el precio acordado al comienzo es el precio del final. Daysi cose para mujeres de toda talla y toda figura. “Toda mujer es hermosa”, dice. “Solo hace falta el diseño y los arreglos correctos para resaltarlo.”",
-    "heritageBody": "Daysi es hondureña de nacionalidad y garífuna de comunidad: un pueblo minoritario con una cultura propia y profunda en Honduras. De ahí vienen los estilos, los estampados y las telas. “Cuando había que salir, me acuerdo de lo elegantes que se vestían las mujeres de mi familia”, dice. “A veces me imagino lo que se habrían puesto mi mamá o una de mis tías en aquel tiempo.”",
+    "bio1": "Esta hondureña tomó aguja e hilo a los 12 años. Guarda recuerdos vivos del carrete de la rueca de su padre: “A veces me escapaba para verlo trabajar hasta la madrugada.”",
+    "bio2": "Daysi es hondureña de nacionalidad, y es parte de la comunidad garífuna: un pueblo minoritario con una cultura profunda en Honduras. A sus raíces garífunas atribuye muchos de los estilos, los estampados y las telas que inspiran su colección. “Cuando había que salir, me acuerdo de lo elegantes que se vestían las mujeres de mi familia”, dice Daysi. “A veces me imagino lo que se habrían puesto mi mamá o una de mis tías en aquel tiempo.”",
+    "bio3": "La investigación y la técnica cuidadosa gobiernan el desarrollo y el diseño de cada pieza. Está comprometida a hacer ropa para mujeres de toda talla y toda figura. “Toda mujer es hermosa, solo hace falta el diseño y los arreglos correctos para resaltarlo”, dice con orgullo. Daysi’s Collection trabaja con dedicación para crear piezas a medida que abracen a la clienta. “El vestido no hace a la mujer, la mujer hace al vestido. Ninguna mujer debería tener que cambiarse a sí misma para caber en su ropa.”",
+    "bio4": "Además de diseñadora, Daysi es esposa, madre, hija y hermana. Sus compromisos de familia son tan importantes como su trabajo. Con amor y paciencia, Daysi amplía su colección pieza por pieza.",
     "visitTitle": "Visitas",
     "visitBody": "El taller es privado y trabaja con cita, para que nunca se le tome medida a nadie mientras otra persona espera. La dirección completa se envía al confirmar su cita.",
     "portraitAlt": "Daysi Fernández de pie, con blusa esmeralda, los brazos cruzados y una mano en la sien."
@@ -213,6 +219,9 @@
     "noSlots": "No hay nada libre en las próximas semanas. Escriba por WhatsApp y Daysi le buscará un espacio.",
     "purpose": "¿En qué le gustaría trabajar?",
     "purposePlaceholder": "Un vestido para la graduación de mi hija en octubre, en lino amarillo si tiene.",
+    "reasonLabel": "Motivo de la visita",
+    "noteForDaysi": "Algo que quiera contarle a Daysi",
+    "alterationPrices": "Ver los precios de arreglos",
     "overtimeNotice": "Si la cita pasa del tiempo reservado, el tiempo extra se cobra a {rate} por cada media hora adicional. Daysi siempre se lo dirá antes de que se cumpla la hora.",
     "creditNotice": "El costo de la cita se descuenta de su pedido si lo hace dentro de {days} días.",
     "confirmTitle": "Confirme su cita",
@@ -259,15 +268,14 @@
   "contact": {
     "title": "Contacto",
     "lead": "WhatsApp es lo más rápido. Todo lo demás le llega el mismo día.",
-    "formTitle": "Enviar un mensaje",
+    "whatsappCta": "Escríbale a Daysi por WhatsApp",
+    "formTitle": "¿Tiene una pregunta?",
     "message": "Su mensaje",
     "hours": "Horario",
     "closed": "Cerrado",
     "serviceArea": "Zona de servicio",
     "byAppointment": "Con cita previa",
-    "sent": "Gracias. Daysi tiene su mensaje y le responderá en breve.",
-    "qrTitle": "Llévese el sitio",
-    "qrLead": "Escanee esto para abrir el sitio en el teléfono, o imprímalo para la pared del taller."
+    "sent": "Gracias. Daysi tiene su mensaje y le responderá en breve."
   },
   "google": {
     "title": "Encuéntrenos en Google",
@@ -391,6 +399,7 @@
     "signInHint": "El mismo correo que usa cuando le escribe a Daysi.",
     "signInBlurb": "Vea sus pedidos, sus citas y todo lo que ha pedido.",
     "sendLink": "Mándeme un enlace",
+    "continueWithGoogle": "Continuar con Google",
     "sending": "Enviando…",
     "signInError": "No se pudo enviar. Intente de nuevo, por favor.",
     "signInLinkError": "Ese enlace ya venció o ya se usó. Pida uno nuevo.",
@@ -442,6 +451,7 @@
     "payNow": "Confirmar y pagar",
     "placeOrder": "Hacer el pedido",
     "paymentsOff": "Los pagos con tarjeta se activan al conectar la cuenta de cobros de Daysi. Mientras tanto ella le confirma el pedido y usted paga en persona.",
+    "paymentMethods": "Tarjetas, Apple Pay y Google Pay, por el pago seguro de Stripe. Los datos de su tarjeta nunca tocan este sitio.",
     "placedTitle": "Pedido hecho.",
     "placedLead": "Su referencia es {reference}. Daysi ya la tiene y se lo confirmará.",
     "seeOrders": "Ver sus pedidos",
@@ -471,6 +481,8 @@
     "noticeLead": "Una línea que se muestra en la portada y en la página de citas: vacaciones, una semana con retraso, un recordatorio de estreno. Desmarque la casilla para quitarlo; el texto queda para la próxima.",
     "noticePlaceholder": "El taller cierra del 25 al 30 de agosto. Los pedidos de esta semana se cortan a mi regreso.",
     "noticeVisible": "Mostrarlo en el sitio",
+    "qrTitle": "Lleve el sitio con usted",
+    "qrLead": "Imprímalo y cuélguelo en el taller: al escanearlo, el sitio se abre en el teléfono.",
     "saveNotice": "Guardar aviso",
     "saving": "Guardando…",
     "saved": "Guardado",

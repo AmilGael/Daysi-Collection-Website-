@@ -38,8 +38,9 @@ export async function SiteFooter() {
             {t("footer.tagline")}
           </p>
           <div className="flex flex-col gap-1 text-sm text-paper-soft">
+            {/* The link opens WhatsApp; the number itself is not printed. */}
             <a href={whatsappLink("Hola Daysi,")} className="link-underline w-fit">
-              {business.phone}
+              {t("common.whatsapp")}
             </a>
             <a href={`mailto:${business.email}`} className="link-underline w-fit">
               {business.email}

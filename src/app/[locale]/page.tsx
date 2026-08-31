@@ -15,7 +15,7 @@ import { LookbookGrid, StyleCard } from "@/components/style-card";
 import { GoogleBusiness } from "@/components/google-business";
 import { formatMoney } from "@/lib/money";
 import { PHOTO_QUALITY } from "@/lib/images";
-import { HERO_ASPECT, HERO_IMAGE } from "@/content/photographs";
+import { HERO_PLATES } from "@/content/photographs";
 
 export default async function HomePage({
   params,
@@ -28,7 +28,6 @@ export default async function HomePage({
     <>
       <Hero />
       <SiteNoticeBar />
-      <CoverPlates />
       <TrustStrip />
       <Story />
       <BrandPromise />
@@ -43,43 +42,28 @@ export default async function HomePage({
 }
 
 /**
- * One photograph, one line of type, one thing to do. Stella Jean's hero is a
- * picture and a single line — no label above it, no paragraph beneath it, and
- * not two buttons competing for the same click.
+ * The type on ink, then the three pictures asked for by name, lined up in one
+ * row: the yellow studio sitting that opened the first version of this site,
+ * the Frutera set under the plaster arches, and the October 2019 cover — the
+ * two yellows on the outside, the creme between them.
  *
- * The picture and the type hold separate parts of the screen rather than one
- * sitting on the other. The first version of this page laid a dark gradient
- * across a full bleed portrait so the headline had something to sit on, which
- * cost the picture its colour, its shape and its subject at once.
- *
- * Split, none of that is needed. The type sits on ink, at ink's own contrast,
- * and the picture is shown at its own proportions with nothing painted over
- * it. That matters more here than it did with a photograph: this is the
- * October 2019 cover, and a cover is a thing somebody laid out.
- *
- * The two are not given a half each. The type takes the room it needs and the
- * cover takes what its height allows; an even split down the middle is the
- * layout you get when nobody chose one.
+ * Each plate keeps its file's own proportions and nothing is painted over any
+ * of them. Two of the three are things somebody composed — a cover with its
+ * masthead, a portrait with its ground — and cropping either cuts a picture
+ * that was already laid out. The tops align and the bottoms fall where each
+ * file's height puts them, which is what a row of prints on a wall does.
  */
 async function Hero() {
   const t = await getTranslations("home");
 
   return (
-    <section className="on-ink relative -mt-20 bg-ink text-paper">
+    <section className="on-ink relative -mt-20 bg-ink pb-24 text-paper lg:pb-32">
       {/*
         The type keeps `.shell`, so its first character lands under the logo
-        without arithmetic. The cover leaves the shell instead: a block in the
-        flow on a phone, where it follows the copy, and a column against the
-        right edge of the screen from lg up.
-
-        Centred rather than sat on the baseline, which is what it did when the
-        picture beside it was a photograph bled to the bottom of the frame. A
-        cover is a rectangle with a top and a bottom, and a two-line English
-        headline pinned to the floor beside one leaves a third of the ink
-        empty above it and nothing under it. Centred, the headline meets the
-        cover at Kalifa rather than at her hem.
+        without arithmetic. pt-32 clears the 80px transparent header and the
+        band it fades through.
       */}
-      <div className="shell relative z-10 flex flex-col justify-end gap-8 pb-16 pt-32 lg:min-h-[92svh] lg:justify-center lg:pb-24 lg:pt-28">
+      <div className="shell flex flex-col gap-8 pb-14 pt-32 lg:pt-36">
         <div className="flex flex-col gap-8 lg:max-w-[42rem]">
           <h1 className="max-w-[13ch] text-display text-paper">{t("heroTitle")}</h1>
           <p className="max-w-md text-[0.9375rem] leading-relaxed text-paper-soft">
@@ -96,90 +80,25 @@ async function Hero() {
         </div>
       </div>
 
-      {/*
-        The cover, whole.
-
-        Every other picture on this site is a photograph and takes a crop
-        without complaining. This one is a printed cover with a masthead, a
-        logo and a headline already laid out on it, so the frame is cut to the
-        file's own proportions and the height decides the width. Nothing of it
-        is lost at any viewport, which is the whole point of putting it here.
-
-        `top-20` rather than `inset-y-0`, and that 80px is the header's own
-        height. The chrome over this page is transparent light-on-dark, which
-        works on ink and fails on a yellow cover — the tabs and the account
-        glyphs would sit on it at roughly 1.5:1. Held below the bar, the
-        chrome stays on ink and the cover keeps a top edge, which is also what
-        makes it read as an object on the page rather than as a second set of
-        branding arguing with the header.
-      */}
-      <div
-        className="relative w-full lg:absolute lg:right-0 lg:top-20 lg:h-[calc(100%-5rem)] lg:w-auto"
-        style={{ aspectRatio: HERO_ASPECT }}
-      >
-        <Image
-          src={HERO_IMAGE}
-          alt={t("heroImageAlt")}
-          fill
-          priority
-          quality={PHOTO_QUALITY}
-          sizes="(min-width: 1024px) 32vw, 100vw"
-          className="object-cover"
-        />
-      </div>
-    </section>
-  );
-}
-
-/**
- * Two more frames under the cover, asked for by name once the cover was
- * approved. They are plates, not a grid: each is shown at its file's own
- * proportions with nothing cropped and nothing painted over it, on the same
- * ink the cover sits on, so the top of the page reads as one act — the cover,
- * then the spread inside it.
- *
- * The right plate drops by a step. Directly above it is the hero's cover
- * column, and two rectangles flush against each other on the same edge read
- * as one broken column; the offset lets the cover finish before the next
- * frame starts, and gives the pair the same stagger the rest of the site
- * uses instead of a dead-even grid.
- */
-async function CoverPlates() {
-  const t = await getTranslations("home");
-
-  return (
-    <section className="on-ink bg-ink pb-24 pt-4 text-paper lg:pb-32">
-      <div className="shell reveal grid gap-12 md:grid-cols-2 md:gap-10 lg:gap-14">
-        <figure className="flex flex-col gap-4">
-          <div className="relative overflow-hidden" style={{ aspectRatio: "848 / 1264" }}>
-            <Image
-              src="/images/real/frutera-basket.jpg"
-              alt={t("plateBasketAlt")}
-              fill
-              quality={PHOTO_QUALITY}
-              sizes="(min-width: 768px) 46vw, 92vw"
-              className="object-cover"
-            />
-          </div>
-          <figcaption className="text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-paper-soft">
-            {t("plateBasketCaption")}
-          </figcaption>
-        </figure>
-        <figure className="flex flex-col gap-4 md:mt-24">
-          <div className="relative overflow-hidden" style={{ aspectRatio: "896 / 1195" }}>
-            <Image
-              src="/images/real/medallon-set.jpg"
-              alt={t("plateMedallonAlt")}
-              fill
-              quality={PHOTO_QUALITY}
-              sizes="(min-width: 768px) 46vw, 92vw"
-              className="object-cover"
-            />
-          </div>
-          <figcaption className="text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-paper-soft">
-            {t("plateMedallonCaption")}
-          </figcaption>
-        </figure>
+      <div className="shell grid gap-10 sm:grid-cols-3 sm:items-start sm:gap-6 lg:gap-10">
+        {HERO_PLATES.map((plate, index) => (
+          <figure key={plate.src} className="flex flex-col gap-4">
+            <div className="relative overflow-hidden" style={{ aspectRatio: plate.aspect }}>
+              <Image
+                src={plate.src}
+                alt={t(plate.altKey)}
+                fill
+                priority={index === 0}
+                quality={PHOTO_QUALITY}
+                sizes="(min-width: 640px) 31vw, 92vw"
+                className="object-cover"
+              />
+            </div>
+            <figcaption className="text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-paper-soft">
+              {t(plate.captionKey)}
+            </figcaption>
+          </figure>
+        ))}
       </div>
     </section>
   );

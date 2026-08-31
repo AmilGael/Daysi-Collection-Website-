@@ -208,7 +208,7 @@ await check("the estimate endpoint prices a real garment", async () => {
   });
   const body = await response.json().catch(() => null);
   return {
-    ok: response.status === 200 && body?.estimate?.subtotal === 32500,
+    ok: response.status === 200 && body?.estimate?.subtotal === 24000,
     detail: `${response.status} subtotal=${body?.estimate?.subtotal ?? "none"}`,
   };
 });

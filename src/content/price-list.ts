@@ -11,25 +11,27 @@ import type { AlterationService, AppointmentType, PriceListEntry } from "./types
  * (PRD Section 14), which is what makes it honest to publish them as fixed and
  * refuse to negotiate them.
  *
- * August 2026: everything Daysi charges for her own time came down twenty
- * percent — alterations, the rush surcharge, the made-to-measure supplement
- * and the booked sessions. The eleven garment prices did not move, because a
- * garment price is mostly cloth she has already bought, and discounting it
- * discounts the material rather than the labour. price-list.test.ts holds both
- * halves of that: the new numbers, and the ones that stayed.
+ * August 2026, in two passes. First everything Daysi charges for her own time
+ * came down twenty percent — alterations, the rush surcharge, the
+ * made-to-measure supplement and the booked sessions — while the garments
+ * held. Then, at the end of the month, she took a quarter off the garments
+ * themselves: each figure below is the original less 25%, settled down to the
+ * nearest five dollars so no price crept back up in the rounding. The labour
+ * prices from the first pass did not move again. price-list.test.ts holds
+ * both halves.
  */
 export const priceList: readonly PriceListEntry[] = [
-  entry("dresses", "daisy-cotton", 26500, 7600),
-  entry("shirts", "wax-print", 16500, 4400),
-  entry("shirts", "tropical-leaf", 17500, 4400),
-  entry("shirts", "daisy-cotton", 14500, 4400),
-  entry("heritage", "wax-print", 39500, 9600),
-  entry("heritage", "tropical-leaf", 37500, 9600),
-  entry("heritage", "fish-batik", 39500, 9600),
-  entry("heritage", "frutera-print", 42500, 9600),
-  entry("pants", "ocelote-print", 23500, 5200),
-  entry("shirts", "laguna-wax", 16500, 4400),
-  entry("dresses", "medallon-print", 32500, 7600),
+  entry("dresses", "daisy-cotton", 19500, 7600), // was 26500
+  entry("shirts", "wax-print", 12000, 4400), // was 16500
+  entry("shirts", "tropical-leaf", 13000, 4400), // was 17500
+  entry("shirts", "daisy-cotton", 10500, 4400), // was 14500
+  entry("heritage", "wax-print", 29500, 9600), // was 39500
+  entry("heritage", "tropical-leaf", 28000, 9600), // was 37500
+  entry("heritage", "fish-batik", 29500, 9600), // was 39500
+  entry("heritage", "frutera-print", 31500, 9600), // was 42500
+  entry("pants", "ocelote-print", 17500, 5200), // was 23500
+  entry("shirts", "laguna-wax", 12000, 4400), // was 16500
+  entry("dresses", "medallon-print", 24000, 7600), // was 32500
 ];
 
 function entry(
@@ -48,7 +50,7 @@ function entry(
       en: "Made to your measurements, with your choice of neckline, sleeve and length.",
       es: "Hecho a su medida, con el escote, la manga y el largo que usted elija.",
     },
-    effectiveDate: "2026-08-28",
+    effectiveDate: "2026-08-31",
   };
 }
 

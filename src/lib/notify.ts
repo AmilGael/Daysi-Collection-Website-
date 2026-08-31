@@ -31,6 +31,12 @@ export function summarise(request: StoredRequest): string {
   if (request.client.preferredContact) {
     lines.push(`Reply via: ${request.client.preferredContact}`);
   }
+  // The reply, one tap away: a wa.me link with the client's number opens the
+  // conversation straight from the notification on Daysi's phone.
+  if (request.client.phone) {
+    const digits = request.client.phone.replace(/[^0-9]/g, "");
+    if (digits.length >= 7) lines.push(`WhatsApp:  https://wa.me/${digits}`);
+  }
   lines.push(`Language:  ${request.locale === "es" ? "Español" : "English"}`, "");
 
   for (const [key, value] of Object.entries(request.details)) {

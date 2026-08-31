@@ -2,7 +2,12 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { translate, type AppointmentType } from "@/content";
+import {
+  translate,
+  type AlterationService,
+  type AppointmentType,
+  type Service,
+} from "@/content";
 import { formatMoney } from "@/lib/money";
 import type { Estimate } from "@/lib/pricing";
 import type { DaySlots } from "@/lib/availability";
@@ -33,10 +38,16 @@ export function AppointmentBooking({
   appointmentTypes,
   paymentsEnabled,
   creditDays,
+  service = null,
+  alterations = [],
 }: {
   appointmentTypes: readonly AppointmentType[];
   paymentsEnabled: boolean;
   creditDays: number;
+  /** Set when the client arrived from a service page; it becomes the reason for the visit. */
+  service?: Service | null;
+  /** The published alteration prices, offered for a look right before booking. */
+  alterations?: readonly AlterationService[];
 }) {
   const t = useTranslations("appointments");
   const tr = useTranslations("request");
@@ -45,7 +56,13 @@ export function AppointmentBooking({
   const renderedAt = useRenderedAt();
   const { state, submit } = useSubmit("/api/appointments");
 
-  const [typeId, setTypeId] = useState(appointmentTypes[0]?.id ?? "");
+  // A custom piece needs the full sitting; everything else starts at thirty
+  // minutes. The client can still change it — this only sets where they start.
+  const suggestedTypeId =
+    service?.id === "custom"
+      ? appointmentTypes.find((type) => type.minutes >= 60)?.id
+      : undefined;
+  const [typeId, setTypeId] = useState(suggestedTypeId ?? appointmentTypes[0]?.id ?? "");
   const [days, setDays] = useState<readonly DaySlots[]>([]);
   const [date, setDate] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<string | null>(null);
@@ -85,13 +102,25 @@ export function AppointmentBooking({
     event.preventDefault();
     if (!date || !startTime) return;
 
+    // The reason on record leads with the chosen service, and whatever the
+    // client wrote for Daysi follows it. Coming straight to this page, the
+    // written purpose is the whole reason, as before. The label is part of
+    // the recorded line on purpose: it reads as a sentence in the office, and
+    // it keeps the shortest service name ("Arreglos") past the server's
+    // minimum-length check.
+    const reason = service
+      ? [`${t("reasonLabel")}: ${translate(service.name, locale)}`, purpose.trim()]
+          .filter(Boolean)
+          .join(". ")
+      : purpose;
+
     const result = await submit({
       website: "",
       renderedAt,
       appointmentTypeId: typeId,
       date,
       startTime,
-      purpose,
+      purpose: reason,
       acceptedTerms: true,
       client: { name, email, phone, preferredContact, locale },
     });
@@ -194,18 +223,72 @@ export function AppointmentBooking({
           </>
         )}
 
-        <Field label={t("purpose")}>
-          {({ id }) => (
-            <TextArea
-              id={id}
-              required
-              minLength={10}
-              value={purpose}
-              onChange={(event) => setPurpose(event.target.value)}
-              placeholder={t("purposePlaceholder")}
-            />
-          )}
-        </Field>
+        {service ? (
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-1.5 border-l-2 border-marigold pl-5">
+              <p className="text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-ink-faint">
+                {t("reasonLabel")}
+              </p>
+              <p className="text-[0.9375rem]">{translate(service.name, locale)}</p>
+            </div>
+            <Field label={t("noteForDaysi")} optional>
+              {({ id }) => (
+                <TextArea
+                  id={id}
+                  value={purpose}
+                  onChange={(event) => setPurpose(event.target.value)}
+                  placeholder={t("purposePlaceholder")}
+                />
+              )}
+            </Field>
+          </div>
+        ) : (
+          <Field label={t("purpose")}>
+            {({ id }) => (
+              <TextArea
+                id={id}
+                required
+                minLength={10}
+                value={purpose}
+                onChange={(event) => setPurpose(event.target.value)}
+                placeholder={t("purposePlaceholder")}
+              />
+            )}
+          </Field>
+        )}
+
+        {/* The published alteration prices, one open-and-closed look away at
+            the moment of booking rather than a page turn from it. */}
+        {alterations.length > 0 ? (
+          <details className="group border border-line">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-[0.8125rem] font-medium [&::-webkit-details-marker]:hidden">
+              {t("alterationPrices")}
+              <span
+                aria-hidden
+                className="text-ink-faint transition-transform duration-200 group-open:rotate-180"
+              >
+                <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M2 4.5 6 8l4-3.5" />
+                </svg>
+              </span>
+            </summary>
+            <dl className="flex flex-col border-t border-line px-5 pb-2">
+              {alterations.map((alteration) => (
+                <div
+                  key={alteration.id}
+                  className="flex items-baseline justify-between gap-6 border-b border-line py-2.5 last:border-b-0"
+                >
+                  <dt className="text-[0.875rem] text-ink-soft">
+                    {translate(alteration.name, locale)}
+                  </dt>
+                  <dd className="shrink-0 text-[0.875rem] tabular-nums">
+                    {formatMoney(alteration.fixedPrice, locale)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </details>
+        ) : null}
 
         <section className="flex flex-col gap-6 border-t border-line pt-10">
           <h2 className="text-heading">{tr("yourDetails")}</h2>

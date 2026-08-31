@@ -51,6 +51,12 @@ export function SiteHeader({
   const isOverPhotograph =
     DARK_HERO_ROUTES.includes(pathname) && !isScrolled && !isMenuOpen;
 
+  // The bar reads as three sections — the logo, the tabs, the controls — and
+  // a full-height hairline between each keeps the tabs from crowding the
+  // logo. The line takes the chrome's own colour at a whisper: `line` on
+  // paper, translucent paper over a photograph.
+  const dividerClass = isOverPhotograph ? "border-paper/30" : "border-line";
+
   return (
     <>
     <header
@@ -90,7 +96,10 @@ export function SiteHeader({
           <Logo tone={isOverPhotograph ? "paper" : "ink"} />
         </Link>
 
-        <nav aria-label={t("home")} className="hidden items-center gap-3 min-[75rem]:flex 2xl:gap-5">
+        <nav
+          aria-label={t("home")}
+          className={`hidden items-center gap-3 self-stretch min-[75rem]:flex min-[75rem]:border-l min-[75rem]:pl-6 2xl:gap-5 ${dividerClass}`}
+        >
           {BAR_TABS.map((tab) => {
             const isActive = pathname.startsWith(tab.href);
             return (
@@ -129,7 +138,7 @@ export function SiteHeader({
           filled shape in the corner and reads as the one action. That returned
           about 120px, which is what paid for the seventh tab in the bar.
         */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className={`flex items-center gap-2 self-stretch border-l pl-3 sm:gap-3 sm:pl-4 ${dividerClass}`}>
           <div className="hidden sm:block">
             <LanguageSwitch />
           </div>

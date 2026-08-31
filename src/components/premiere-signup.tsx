@@ -55,8 +55,11 @@ export function PremiereSignup({
   return (
     <form onSubmit={onSubmit} className="relative flex flex-col gap-5">
       <BotTrap renderedAt={renderedAt} />
+      {/* The fields say what they take. The button below is the one that says
+          "Put me on the list" — a field wearing the button's words read as a
+          second, senseless control. */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={t("signupTitle")}>
+        <Field label={t("signupEmail")}>
           {({ id }) => (
             <TextInput
               id={id}
@@ -69,7 +72,7 @@ export function PremiereSignup({
             />
           )}
         </Field>
-        <Field label={t("signupCta")} optional>
+        <Field label={t("signupName")} optional>
           {({ id }) => (
             <TextInput
               id={id}

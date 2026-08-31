@@ -1,10 +1,11 @@
 import { Children } from "react";
 import Image from "next/image";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { findPriceEntry, primaryPhoto, translate, type GarmentStyle } from "@/content";
 import { formatMoney } from "@/lib/money";
 import { Link, type Locale } from "@/i18n/routing";
 import { PHOTO_QUALITY } from "@/lib/images";
+import { StylePhotoSwiper } from "./style-photo-swiper";
 
 /**
  * One piece in the lookbook.
@@ -17,15 +18,57 @@ import { PHOTO_QUALITY } from "@/lib/images";
  */
 export function StyleCard({ style, priority = false }: { style: GarmentStyle; priority?: boolean }) {
   const locale = useLocale() as Locale;
+  const t = useTranslations("collection");
 
   const photo = primaryPhoto(style);
   const price = findPriceEntry(style.priceEntryId);
+  const href = `/collection/${style.slug}`;
+
+  // A second photograph makes the picture area a swipeable strip; the strip's
+  // slides are links of their own, so the card cannot wrap everything in one
+  // anchor the way the single-photograph card does.
+  const swipes = style.photos.length > 1;
+
+  const caption = (
+    <div className="flex flex-col gap-1 px-5 py-5 sm:px-6">
+      <div className="flex items-baseline justify-between gap-4">
+        <h3 className="font-display text-[1.0625rem] leading-tight">
+          {translate(style.name, locale)}
+        </h3>
+        <span className="shrink-0 text-[0.875rem] tabular-nums">
+          {price ? formatMoney(price.fixedPrice, locale) : null}
+        </span>
+      </div>
+      <p className="text-[0.6875rem] uppercase tracking-[0.14em] text-ink-faint">
+        {translate(style.color, locale)}
+        <span className="px-2 text-ink-faint">/</span>
+        {style.sizes.map((size) => size.sizeId.toUpperCase()).join(" ")}
+      </p>
+    </div>
+  );
+
+  if (swipes) {
+    return (
+      <div className="flex flex-col border-l border-t border-line bg-paper">
+        <StylePhotoSwiper
+          href={href}
+          priority={priority}
+          photos={style.photos.map((item) => ({
+            src: item.src,
+            alt: translate(item.alt, locale),
+          }))}
+          nextLabel={t("nextPhoto")}
+          previousLabel={t("previousPhoto")}
+        />
+        <Link href={href} className="group">
+          {caption}
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <Link
-      href={`/collection/${style.slug}`}
-      className="group flex flex-col border-l border-t border-line bg-paper"
-    >
+    <Link href={href} className="group flex flex-col border-l border-t border-line bg-paper">
       <div className="relative aspect-3/4 overflow-hidden bg-paper-warm">
         {photo ? (
           <Image
@@ -39,22 +82,7 @@ export function StyleCard({ style, priority = false }: { style: GarmentStyle; pr
           />
         ) : null}
       </div>
-
-      <div className="flex flex-col gap-1 px-5 py-5 sm:px-6">
-        <div className="flex items-baseline justify-between gap-4">
-          <h3 className="font-display text-[1.0625rem] leading-tight">
-            {translate(style.name, locale)}
-          </h3>
-          <span className="shrink-0 text-[0.875rem] tabular-nums">
-            {price ? formatMoney(price.fixedPrice, locale) : null}
-          </span>
-        </div>
-        <p className="text-[0.6875rem] uppercase tracking-[0.14em] text-ink-faint">
-          {translate(style.color, locale)}
-          <span className="px-2 text-ink-faint">/</span>
-          {style.sizes.map((size) => size.sizeId.toUpperCase()).join(" ")}
-        </p>
-      </div>
+      {caption}
     </Link>
   );
 }

@@ -5,7 +5,6 @@ import { whatsappLink } from "@/lib/whatsapp";
 import { PageHeader } from "@/components/page-header";
 import { ContactForm } from "@/components/contact-form";
 import { GoogleBusiness } from "@/components/google-business";
-import { SiteQrCode } from "@/components/site-qr-code";
 import { ExternalButtonLink } from "@/components/ui";
 
 export default async function ContactPage({
@@ -24,13 +23,15 @@ export default async function ContactPage({
 
       <section className="shell grid gap-14 pb-24 lg:grid-cols-[1fr_1.15fr] lg:gap-20">
         <div className="flex flex-col gap-10">
+          {/* The button opens the conversation; her number is not printed on
+              the page. Contact details stay hers to give out, not the site's. */}
           <div className="flex flex-col gap-4">
             <ExternalButtonLink
               href={whatsappLink(language === "es" ? "Hola Daysi," : "Hi Daysi,")}
               tone="marigold"
               className="w-fit"
             >
-              {business.phone} · WhatsApp
+              {t("whatsappCta")}
             </ExternalButtonLink>
             <a href={`mailto:${business.email}`} className="link-underline w-fit">
               {business.email}
@@ -69,13 +70,6 @@ export default async function ContactPage({
             </p>
           </div>
 
-          <div className="flex flex-col gap-4 border-t border-line pt-8">
-            <h2 className="text-heading">{t("qrTitle")}</h2>
-            <p className="max-w-sm text-[0.875rem] leading-relaxed text-ink-faint">
-              {t("qrLead")}
-            </p>
-            <SiteQrCode size={168} />
-          </div>
         </div>
 
         <div className="flex flex-col gap-6">

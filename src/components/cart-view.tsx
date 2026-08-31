@@ -287,11 +287,12 @@ export function CartView({
             {paymentsEnabled ? t("payNow") : t("placeOrder")}
           </button>
 
-          {!paymentsEnabled ? (
-            <p className="text-[0.8125rem] leading-relaxed text-ink-faint">
-              {t("paymentsOff")}
-            </p>
-          ) : null}
+          {/* Either way the client is told how the money part works before
+              pressing anything: what the checkout accepts, or that cards are
+              not on yet and settling happens in person. */}
+          <p className="text-[0.8125rem] leading-relaxed text-ink-faint">
+            {paymentsEnabled ? t("paymentMethods") : t("paymentsOff")}
+          </p>
         </form>
       </aside>
     </div>

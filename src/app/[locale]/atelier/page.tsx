@@ -47,39 +47,34 @@ export default async function AtelierPage({
         </div>
       </section>
 
+      {/*
+        Her story, whole. This is Daysi's bio as she gave it, word for word,
+        broken only at its natural sentence boundaries — the shortened version
+        it replaces read as a caption where she had written a life. The craft
+        and heritage panels that used to follow are gone for the same reason:
+        every line they carried is in these paragraphs now, and a page should
+        not quote her twice.
+      */}
       <section className="shell reveal grid gap-14 py-24 lg:grid-cols-2 lg:gap-24">
         <div className="flex flex-col gap-7">
           <SectionHeading index="01" title={th("storyTitle")} />
           <Prose>
-            <p>{th("storyLead")}</p>
-            <p>{th("storyBody")}</p>
+            <p>{t("bio1")}</p>
+            <p>{t("bio2")}</p>
+            <p>{t("bio3")}</p>
+            <p>{t("bio4")}</p>
           </Prose>
         </div>
-        <div className="relative aspect-4/5 overflow-hidden bg-paper-warm">
-          <Image
-            src="/images/real/daysi-portrait-standing.jpg"
-            alt={t("portraitAlt")}
-            fill
-            quality={PHOTO_QUALITY}
-            sizes="(min-width: 1024px) 45vw, 90vw"
-            className="object-cover"
-          />
-        </div>
-      </section>
-
-      <section className="on-ink reveal bg-ink py-24 text-paper">
-        <div className="shell grid gap-14 lg:grid-cols-2 lg:gap-24">
-          <div className="flex flex-col gap-6">
-            <SectionHeading index="02" title={t("sectionCraft")} tone="paper" />
-            <p className="max-w-[68ch] leading-[1.8] text-paper-soft">{t("craftBody")}</p>
-          </div>
-          <div className="flex flex-col gap-6">
-            <SectionHeading
-              index="03"
-              title={t("sectionHeritage")}
-              tone="paper"
+        <div className="flex flex-col gap-10">
+          <div className="relative aspect-4/5 overflow-hidden bg-paper-warm">
+            <Image
+              src="/images/real/daysi-portrait-standing.jpg"
+              alt={t("portraitAlt")}
+              fill
+              quality={PHOTO_QUALITY}
+              sizes="(min-width: 1024px) 45vw, 90vw"
+              className="object-cover"
             />
-            <p className="max-w-[68ch] leading-[1.8] text-paper-soft">{t("heritageBody")}</p>
           </div>
         </div>
       </section>
@@ -96,7 +91,7 @@ export default async function AtelierPage({
           />
         </div>
         <div className="flex flex-col gap-7">
-          <SectionHeading index="04" title={t("visitTitle")} />
+          <SectionHeading index="02" title={t("visitTitle")} />
           <Prose>
             <p>{t("visitBody")}</p>
             <p>{translate(business.addressNote, language)}</p>

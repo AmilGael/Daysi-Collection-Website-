@@ -32,3 +32,34 @@ export const HERO_IMAGE = "/images/real/hero-cover.jpg";
  * a tidy ratio like 41/75 and quietly shaving a few pixels off the masthead.
  */
 export const HERO_ASPECT = "2000 / 3645";
+
+/**
+ * The three plates lined up across the top of the home page, asked for by
+ * name: the yellow studio sitting that opened the site's first version, the
+ * Frutera set under the plaster arches between them, and the cover. Each is
+ * shown at its file's own proportions — two of the three are laid-out print
+ * and portraiture, and cropping either cuts a picture somebody composed.
+ *
+ * The aspect strings are the files' pixel dimensions, to the pixel, for the
+ * same reason HERO_ASPECT is.
+ */
+export const HERO_PLATES = [
+  {
+    src: "/images/real/hero-yellow.jpg",
+    aspect: "1461 / 1810",
+    altKey: "plateYellowAlt",
+    captionKey: "plateYellowCaption",
+  },
+  {
+    src: "/images/real/frutera-basket.jpg",
+    aspect: "848 / 1264",
+    altKey: "plateBasketAlt",
+    captionKey: "plateBasketCaption",
+  },
+  {
+    src: HERO_IMAGE,
+    aspect: HERO_ASPECT,
+    altKey: "heroImageAlt",
+    captionKey: "plateCoverCaption",
+  },
+] as const;

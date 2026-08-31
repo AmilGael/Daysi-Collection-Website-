@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { currentViewer } from "@/lib/auth/session";
+import { googleAuthEnabled } from "@/lib/env";
 import { PageHeader } from "@/components/page-header";
 import { SignInForm } from "@/components/sign-in-form";
 
@@ -35,7 +36,7 @@ export default async function SignInPage({
             {error === "rate" ? t("signInRateError") : t("signInLinkError")}
           </p>
         ) : null}
-        <SignInForm />
+        <SignInForm googleAuthEnabled={googleAuthEnabled} />
       </div>
     </>
   );
