@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { isProduction } from "../env";
-import { appendRecord, latestBy, readRecords } from "../records";
+import { appendSignedRecord, latestBy, readSignedRecords } from "../records";
 import {
   findAccountById,
   hashToken,
@@ -19,6 +19,12 @@ import {
  * server-side from the token's hash, so a forged or altered cookie resolves to
  * no session rather than to a session someone else's.
  *
+ * Every session line is signed under AUTH_SECRET and carries the account's
+ * email. Without the signature a line is ignored, so a copy of the volume,
+ * or an intruder appending to it, cannot mint a session; and the email pins
+ * which account the id meant at sign-in, so an appended account record cannot
+ * re-point a client's session at the owner's address.
+ *
  * SameSite=Lax is the deliberate choice: Strict would break the sign-in link,
  * because arriving from an email client counts as cross-site and the cookie
  * would not be sent. Lax still refuses to attach the cookie to any cross-site
@@ -32,6 +38,8 @@ const SESSION_DAYS = 30;
 type SessionRecord = {
   readonly tokenHash: string;
   readonly accountId: string;
+  /** Normalised address of the account at sign-in; must still match on read. */
+  readonly email: string;
   readonly createdAt: string;
   readonly expiresAt: string;
   readonly revoked: boolean;
@@ -47,10 +55,16 @@ function expiryFrom(now: Date): string {
 }
 
 async function liveSessions(): Promise<SessionRecord[]> {
-  const records = readRecords<SessionRecord>("sessions");
+  const records = readSignedRecords<SessionRecord>("sessions");
+  // A revocation is final. Without this, re-appending the original, validly
+  // signed line after a sign-out would bring the session back.
+  const revoked = new Set(records.filter((session) => session.revoked).map((s) => s.tokenHash));
   const now = Date.now();
   return latestBy(records, (session) => session.tokenHash).filter(
-    (session) => !session.revoked && new Date(session.expiresAt).getTime() > now,
+    (session) =>
+      !session.revoked &&
+      !revoked.has(session.tokenHash) &&
+      new Date(session.expiresAt).getTime() > now,
   );
 }
 
@@ -58,13 +72,14 @@ async function liveSessions(): Promise<SessionRecord[]> {
  * Issues a session for an account and writes the cookie. Called only after a
  * sign-in link has been proved; there is no other way to mint one.
  */
-export async function startSession(accountId: string): Promise<void> {
+export async function startSession(account: Account): Promise<void> {
   const token = newToken();
   const now = new Date();
 
-  await appendRecord("sessions", {
+  await appendSignedRecord("sessions", {
     tokenHash: hashToken(token),
-    accountId,
+    accountId: account.id,
+    email: account.email,
     createdAt: now.toISOString(),
     expiresAt: expiryFrom(now),
     revoked: false,
@@ -91,7 +106,7 @@ export async function endSession(): Promise<void> {
     );
     // Revoking server-side matters: deleting only the cookie would leave a
     // copied token working until it expired.
-    if (session) await appendRecord("sessions", { ...session, revoked: true });
+    if (session) await appendSignedRecord("sessions", { ...session, revoked: true });
   }
 
   jar.delete(COOKIE_NAME);
@@ -111,6 +126,7 @@ export async function currentViewer(): Promise<Viewer | null> {
 
   const account = await findAccountById(session.accountId);
   if (!account) return null;
+  if (account.email !== session.email) return null;
 
   return { account, role: roleFor(account) };
 }

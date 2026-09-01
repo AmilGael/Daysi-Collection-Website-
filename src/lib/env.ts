@@ -54,9 +54,10 @@ export const env = {
   notificationFrom: optional("NOTIFICATION_FROM"),
 
   /**
-   * Signs the cart cookie. Sessions do not need it — those are random tokens
-   * checked against a stored hash — but the cart travels entirely in the
-   * client's cookie, so it has to be tamper-evident.
+   * Signs the cart cookie, and the session and sign-in-link records on the
+   * volume. The cookie travels in the client's hands and the records sit on a
+   * disk an intruder could append to, so both have to be tamper-evident.
+   * Rotating it signs everyone out.
    */
   authSecret: optional("AUTH_SECRET"),
 } as const;

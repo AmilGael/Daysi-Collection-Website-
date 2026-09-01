@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     name: profile.name,
     locale,
   });
-  await startSession(account.id);
+  await startSession(account);
 
   const destination = roleFor(account) === "owner" ? "office" : "account";
   return NextResponse.redirect(new URL(`/${account.locale}/${destination}`, env.siteUrl));

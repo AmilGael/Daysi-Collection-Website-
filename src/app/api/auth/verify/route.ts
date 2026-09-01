@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL(`/${locale}/sign-in?error=link`, env.siteUrl));
   }
 
-  await startSession(account.id);
+  await startSession(account);
 
   // Daysi lands in her office; a client lands in their account.
   const destination = roleFor(account) === "owner" ? "office" : "account";

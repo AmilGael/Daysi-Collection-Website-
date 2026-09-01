@@ -1,14 +1,15 @@
 import { emailEnabled, env, isProduction } from "../env";
 import { sendEmail } from "../notify";
-import { appendRecord, latestBy, readRecords } from "../records";
+import { appendSignedRecord, latestBy, readSignedRecords } from "../records";
 import { findOrCreateAccount, hashToken, hashesMatch, newToken, normaliseEmail } from "./accounts";
 
 /**
  * The sign-in link.
  *
  * A link is a bearer credential that travels through email, so it is treated
- * like one: short-lived, single-use, stored only as a hash, and bound to the
- * address it was sent to. Clicking an old link, a link that has already been
+ * like one: short-lived, single-use, stored only as a hash, bound to the
+ * address it was sent to, and signed under AUTH_SECRET so a line appended to
+ * the volume by anyone but this server is not a link at all. Clicking an old link, a link that has already been
  * used, or a link someone typed by hand all fail the same way.
  */
 
@@ -60,7 +61,7 @@ export async function sendSignInLink(email: string, locale: "es" | "en"): Promis
   const token = newToken();
   const address = normaliseEmail(email);
 
-  await appendRecord("sign-in-links", {
+  await appendSignedRecord("sign-in-links", {
     tokenHash: hashToken(token),
     email: address,
     locale,
@@ -92,7 +93,7 @@ export async function sendSignInLink(email: string, locale: "es" | "en"): Promis
 export async function consumeSignInLink(token: string) {
   const hash = hashToken(token);
   const links = latestBy(
-    readRecords<LinkRecord>("sign-in-links"),
+    readSignedRecords<LinkRecord>("sign-in-links"),
     (link) => link.tokenHash,
   );
 
@@ -102,7 +103,7 @@ export async function consumeSignInLink(token: string) {
   if (new Date(link.expiresAt).getTime() <= Date.now()) return null;
 
   // Burn it before issuing the session, so a link raced twice can only win once.
-  await appendRecord("sign-in-links", { ...link, usedAt: new Date().toISOString() });
+  await appendSignedRecord("sign-in-links", { ...link, usedAt: new Date().toISOString() });
 
   return findOrCreateAccount({ email: link.email, locale: link.locale });
 }
