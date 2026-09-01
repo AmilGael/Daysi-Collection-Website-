@@ -9,6 +9,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { Reveal } from "@/components/reveal";
 import { currentViewer } from "@/lib/auth/session";
 import { cartCount, readCart } from "@/lib/cart";
+import { HERO_IMAGE } from "@/content/photographs";
 import "../globals.css";
 
 const display = Fraunces({
@@ -52,7 +53,7 @@ export async function generateMetadata({
     openGraph: {
       title: t("title"),
       description: t("description"),
-      images: ["/images/real/hero.jpg"],
+      images: [HERO_IMAGE],
       type: "website",
     },
   };

@@ -1,8 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { NextResponse } from "next/server";
-import { isSameOrigin, newReference } from "@/lib/security";
-import { currentViewer } from "@/lib/auth/session";
+import { invalid, ownerRequest } from "@/lib/api-guard";
+import { newReference } from "@/lib/security";
 import { uploadsDirectory } from "@/lib/uploads";
 
 /**
@@ -11,6 +11,9 @@ import { uploadsDirectory } from "@/lib/uploads";
  * beside her records under a server-chosen name — the browser's filename never
  * touches the disk — and the caller gets back the path to reference from an
  * override or a fabric record. They are served back by `app/uploads/[name]`.
+ *
+ * `ownerRequest` rather than `ownerRoute` because the body is a multipart form
+ * rather than JSON, so there is no schema for the guard to run.
  */
 
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -21,21 +24,10 @@ const EXTENSION_FOR: Record<string, string> = {
   "image/webp": "webp",
 };
 
-export async function POST(request: Request) {
-  if (!isSameOrigin(request)) {
-    return NextResponse.json({ error: "bad-origin" }, { status: 403 });
-  }
-
-  const viewer = await currentViewer();
-  if (!viewer || viewer.role !== "owner") {
-    return NextResponse.json({ error: "not-found" }, { status: 404 });
-  }
-
+export const POST = ownerRequest(async (request) => {
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
-  if (!(file instanceof File)) {
-    return NextResponse.json({ error: "invalid" }, { status: 400 });
-  }
+  if (!(file instanceof File)) return invalid();
 
   const extension = EXTENSION_FOR[file.type];
   if (!extension) {
@@ -48,10 +40,7 @@ export async function POST(request: Request) {
   const name = `${newReference("IMG").toLowerCase()}.${extension}`;
   const directory = uploadsDirectory();
   await mkdir(directory, { recursive: true });
-  await writeFile(
-    join(directory, name),
-    new Uint8Array(await file.arrayBuffer()),
-  );
+  await writeFile(join(directory, name), new Uint8Array(await file.arrayBuffer()));
 
   return NextResponse.json({ src: `/uploads/${name}` });
-}
+});

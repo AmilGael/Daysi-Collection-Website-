@@ -55,6 +55,12 @@
     "heroLine": "Dressmaking and alterations in the Bronx, since 2008.",
     "heroPrimary": "Book a session",
     "heroSecondary": "See the collection",
+    "heroImageAlt": "The October 2019 cover of Daysi Collection: Kalifa in a one-shoulder gown and matching skirt cut from a red, gold and black chevron print, against Daysi's yellow.",
+    "plateYellowAlt": "Model seated against Daysi's yellow, in a navy dress printed with green hibiscus and orange leaves.",
+    "plateYellowCaption": "The yellow sitting",
+    "plateCoverCaption": "October 2019, the cover",
+    "plateBasketAlt": "Model in the emerald bow blouse and the Frutera market-print skirt, carrying a straw basket beneath plaster arches.",
+    "plateBasketCaption": "Frutera, with the market basket",
     "trust": {
       "one": "In business since 2008",
       "two": "Fixed prices, never negotiated",
@@ -96,7 +102,9 @@
     "showing": "{count, plural, =0 {No pieces match} =1 {One piece} other {# pieces}}",
     "clear": "Clear filters",
     "empty": "Nothing matches those filters yet. Clear them, or ask for the piece to be made in your size.",
-    "emptyAction": "Ask for it to be made"
+    "emptyAction": "Ask for it to be made",
+    "nextPhoto": "Next photo",
+    "previousPhoto": "Previous photo"
   },
   "style": {
     "chooseSize": "Choose a size",
@@ -166,7 +174,8 @@
     "download": "Download this mockup",
     "sendToDaysi": "Send this idea to Daysi",
     "disclaimer": "A mockup is a starting point for the conversation, not a promise of the finished piece. Print placement is decided on the table, with the cloth in hand.",
-    "estimateFor": "A piece like this, in {fabric}, starts at {price}."
+    "estimateFor": "A piece like this, in {fabric}, starts at {price}.",
+    "estimateFrom": "A piece like this, in {fabric}, is estimated from {price}. The exact price is agreed with Daysi before anything is cut."
   },
   "premieres": {
     "title": "Premieres",
@@ -181,6 +190,8 @@
     "inspiration": "Where it comes from",
     "signupTitle": "See it first",
     "signupLead": "Sign up and you will see the premiere the day it is revealed, and be able to claim a number in the edition before it opens to everyone.",
+    "signupEmail": "Your email",
+    "signupName": "Your name",
     "signupCta": "Put me on the list",
     "signupDone": "You are on the list. Watch for the reveal on {date}.",
     "included": "In this premiere"
@@ -189,10 +200,10 @@
     "title": "The atelier",
     "lead": "A home workroom on East 180th Street, in its eighteenth year.",
     "sectionStory": "Her story",
-    "sectionCraft": "The craft",
-    "sectionHeritage": "The heritage",
-    "craftBody": "Extensive research and careful technique govern how each piece is developed and designed, and the price agreed at the start is the price at the end. Daysi makes for women of every shape and size. “Every woman is beautiful,” she says. “It just takes the right design and alterations to accentuate it.”",
-    "heritageBody": "Daysi is Honduran by nationality and Garífuna by community, a minority people with a deep culture of their own in Honduras. That is where the styles, the patterns and the textiles come from. “When it was time to go out, I remember how elegant the women in my family dressed,” she says. “Sometimes I just imagine what my mother or one of my aunts would have worn back then.”",
+    "bio1": "This Honduran native started putting needle to thread at 12 years old. She has bold memories of her father’s spinning wheel bobbin, “Sometimes I’d sneak to watch him work into the morning hours.”",
+    "bio2": "Daysi is Honduran by nationality, but she is part of the Garifuna community. Garifuna are a minority ethnicity with a robust culture in Honduras. Daysi attributes her Garifuna roots to many of the styles, patterns and textiles that inspire her collection. “When it was time to go out, I remember how elegant the women in my family dressed,” says Daysi. “Sometimes I just imagine what my mother or one of my aunts would have worn back then.”",
+    "bio3": "Extensive research and careful technique govern the development and design of each piece. She is committed to making clothes for women of all shapes and sizes. “Every woman is beautiful, it just takes the right design and alterations to accentuate it,” she proudly exclaims. Daysi’s Collection works diligently to create custom pieces that embrace the client. “The dress doesn’t make the woman, the woman makes the dress. A woman should not have to change herself to fit her clothes.”",
+    "bio4": "Besides being a designer, Daysi is a wife, mom, daughter and sister. Her family commitments are as important as her work. With love and patience Daysi expands her collection one piece at a time.",
     "visitTitle": "Visiting",
     "visitBody": "The atelier is private and works by appointment, so nobody is ever fitted while somebody else waits. The full address is sent when your session is confirmed.",
     "portraitAlt": "Daysi Fernández standing in an emerald blouse, arms folded and one hand raised to her temple."
@@ -208,6 +219,9 @@
     "noSlots": "There is nothing free in the next few weeks. Write on WhatsApp and Daysi will find you a time.",
     "purpose": "What would you like to work on?",
     "purposePlaceholder": "A dress I want made for my daughter's graduation in October, in a yellow linen if you have it.",
+    "reasonLabel": "Reason for the visit",
+    "noteForDaysi": "Anything you would like Daysi to know",
+    "alterationPrices": "See the alteration prices",
     "overtimeNotice": "If a session runs past its booked length, the extra time is billed at {rate} per additional half hour. Daysi will always tell you before the clock passes the line.",
     "creditNotice": "The session fee comes off your order if you place one within {days} days.",
     "confirmTitle": "Confirm your session",
@@ -254,15 +268,14 @@
   "contact": {
     "title": "Contact",
     "lead": "WhatsApp is fastest. Everything else reaches her the same day.",
-    "formTitle": "Send a message",
+    "whatsappCta": "Message Daysi on WhatsApp",
+    "formTitle": "Do you have a question?",
     "message": "Your message",
     "hours": "Hours",
     "closed": "Closed",
     "serviceArea": "Service area",
     "byAppointment": "By appointment",
-    "sent": "Thank you. Daysi has your message and will reply shortly.",
-    "qrTitle": "Take the site with you",
-    "qrLead": "Scan this to open the site on a phone, or print it for the workroom wall."
+    "sent": "Thank you. Daysi has your message and will reply shortly."
   },
   "google": {
     "title": "Find us on Google",
@@ -386,6 +399,7 @@
     "signInHint": "The same address you use when you write to Daysi.",
     "signInBlurb": "See your orders, your sessions and everything you have asked for.",
     "sendLink": "Send me a link",
+    "continueWithGoogle": "Continue with Google",
     "sending": "Sending…",
     "signInError": "That did not go through. Please try again.",
     "signInLinkError": "That link has expired or was already used. Ask for a fresh one.",
@@ -437,6 +451,7 @@
     "payNow": "Confirm and pay",
     "placeOrder": "Place the order",
     "paymentsOff": "Card payments switch on once Daysi's payment account is connected. Until then she confirms the order and you settle in person.",
+    "paymentMethods": "Cards, Apple Pay and Google Pay, through Stripe's secure checkout. Your card details never touch this site.",
     "placedTitle": "Order placed.",
     "placedLead": "Your reference is {reference}. Daysi has it and will confirm with you.",
     "seeOrders": "See your orders",
@@ -466,6 +481,8 @@
     "noticeLead": "One line shown on the home page and the booking page: vacation dates, a delayed week, a premiere reminder. Uncheck the box to take it down; the wording stays for next time.",
     "noticePlaceholder": "The atelier is closed August 25–30. Orders placed this week are cut on my return.",
     "noticeVisible": "Show it on the site",
+    "qrTitle": "Take the site with you",
+    "qrLead": "Print this and hang it in the workroom: scanning it opens the site on a phone.",
     "saveNotice": "Save notice",
     "saving": "Saving…",
     "saved": "Saved",

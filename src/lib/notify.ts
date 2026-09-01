@@ -31,6 +31,12 @@ export function summarise(request: StoredRequest): string {
   if (request.client.preferredContact) {
     lines.push(`Reply via: ${request.client.preferredContact}`);
   }
+  // The reply, one tap away: a wa.me link with the client's number opens the
+  // conversation straight from the notification on Daysi's phone.
+  if (request.client.phone) {
+    const digits = request.client.phone.replace(/[^0-9]/g, "");
+    if (digits.length >= 7) lines.push(`WhatsApp:  https://wa.me/${digits}`);
+  }
   lines.push(`Language:  ${request.locale === "es" ? "Español" : "English"}`, "");
 
   for (const [key, value] of Object.entries(request.details)) {
@@ -58,7 +64,7 @@ export function summarise(request: StoredRequest): string {
  * client in front of them.
  */
 export async function sendEmail(message: {
-  to: string;
+  to: string | readonly string[];
   subject: string;
   text: string;
   replyTo?: string;
@@ -74,7 +80,7 @@ export async function sendEmail(message: {
       },
       body: JSON.stringify({
         from: env.notificationFrom ?? `Daysi Collection <no-reply@${new URL(env.siteUrl).hostname}>`,
-        to: [message.to],
+        to: [message.to].flat(),
         ...(message.replyTo ? { reply_to: message.replyTo } : {}),
         subject: message.subject,
         text: message.text,
@@ -99,7 +105,7 @@ export async function notifyOwner(request: StoredRequest): Promise<void> {
   }
 
   await sendEmail({
-    to: env.ownerEmail!,
+    to: env.ownerEmails,
     replyTo: request.client.email,
     subject: `${KIND_LABELS[request.kind]} — ${request.client.name} (${request.reference})`,
     text: summarise(request),

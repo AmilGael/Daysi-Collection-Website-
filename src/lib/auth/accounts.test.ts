@@ -37,6 +37,19 @@ describe("who gets the office", () => {
     }
   });
 
+  it("gives it to every address on the list, and still nobody else", async () => {
+    process.env.OWNER_EMAIL = `${OWNER}, Gamaliel@Example.com `;
+    vi.resetModules();
+    const { roleFor } = await import("./accounts");
+    expect(roleFor({ id: "d", email: OWNER, name: "", locale: "es", createdAt: "" })).toBe("owner");
+    expect(
+      roleFor({ id: "e", email: "gamaliel@example.com", name: "", locale: "en", createdAt: "" }),
+    ).toBe("owner");
+    expect(roleFor({ id: "f", email: "client@example.com", name: "", locale: "es", createdAt: "" })).toBe(
+      "client",
+    );
+  });
+
   it("gives it to no one at all when no owner address is configured", async () => {
     delete process.env.OWNER_EMAIL;
     vi.resetModules();

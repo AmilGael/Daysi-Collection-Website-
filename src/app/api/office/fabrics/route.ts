@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { fabrics } from "@/content";
-import { isSameOrigin } from "@/lib/security";
-import { currentViewer } from "@/lib/auth/session";
+import { invalid, ownerRoute } from "@/lib/api-guard";
 import { customFabrics, saveCustomFabric } from "@/lib/live-pricing";
 
 /**
@@ -39,33 +38,18 @@ function slugify(name: string): string {
     .slice(0, 40);
 }
 
-export async function PUT(request: Request) {
-  if (!isSameOrigin(request)) {
-    return NextResponse.json({ error: "bad-origin" }, { status: 403 });
-  }
-
-  const viewer = await currentViewer();
-  if (!viewer || viewer.role !== "owner") {
-    return NextResponse.json({ error: "not-found" }, { status: 404 });
-  }
-
-  const parsed = fabricSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) {
-    return NextResponse.json({ error: "invalid" }, { status: 400 });
-  }
-
+export const PUT = ownerRoute(fabricSchema, async (draft) => {
   const taken = new Set([
     ...fabrics.map((fabric) => fabric.id),
     ...customFabrics().map((fabric) => fabric.id),
   ]);
-  let id = slugify(parsed.data.name);
-  if (id.length < 2) {
-    return NextResponse.json({ error: "invalid" }, { status: 400 });
-  }
+  let id = slugify(draft.name);
+  if (id.length < 2) return invalid();
   while (taken.has(id)) id = `${id}-2`;
 
-  await saveCustomFabric({ id, ...parsed.data });
+  await saveCustomFabric({ id, ...draft });
+  // Answering with the id means answering for itself: ownerRoute only drops
+  // the layout cache for a handler that returns nothing.
   revalidatePath("/", "layout");
-
   return NextResponse.json({ ok: true, id });
-}
+});

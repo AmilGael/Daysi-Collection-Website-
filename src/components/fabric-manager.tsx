@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { buttonClass } from "./ui";
+import { postOffice, uploadPhoto, type SaveState } from "./office-client";
 
 export type ManagedFabric = {
   readonly id: string;
@@ -37,7 +38,7 @@ export function FabricManager({
   const [name, setName] = useState("");
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState<string | null>(null);
-  const [state, setState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  const [state, setState] = useState<SaveState>("idle");
 
   async function averageColorOf(file: File): Promise<string> {
     const bitmap = await createImageBitmap(file);
@@ -70,11 +71,7 @@ export function FabricManager({
     if (!file || name.trim().length < 2) return;
     setState("saving");
     try {
-      const upload = new FormData();
-      upload.append("file", file);
-      const uploaded = await fetch("/api/office/uploads", { method: "POST", body: upload });
-      if (!uploaded.ok) throw new Error("upload-failed");
-      const { src } = (await uploaded.json()) as { src: string };
+      const src = await uploadPhoto(file);
 
       const priceBody: Record<string, number> = {};
       for (const category of CATEGORIES) {
@@ -85,17 +82,12 @@ export function FabricManager({
       }
       if (Object.keys(priceBody).length === 0) throw new Error("no-prices");
 
-      const saved = await fetch("/api/office/fabrics", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          swatchImage: src,
-          averageColor: await averageColorOf(file),
-          prices: priceBody,
-        }),
+      await postOffice("/api/office/fabrics", "PUT", {
+        name: name.trim(),
+        swatchImage: src,
+        averageColor: await averageColorOf(file),
+        prices: priceBody,
       });
-      if (!saved.ok) throw new Error("save-failed");
 
       setState("saved");
       setName("");

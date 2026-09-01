@@ -52,14 +52,14 @@ export function normaliseEmail(email: string): string {
 }
 
 /**
- * Daysi is whoever signs in with the address her notifications go to. The role
+ * Daysi is whoever signs in with an address her notifications go to. The role
  * is derived on every read rather than stored on the account, so there is no
- * field an attacker could ever flip to promote themselves — and no way to
- * grant the office to a second person by accident.
+ * field an attacker could ever flip to promote themselves — the office belongs
+ * to exactly the addresses OWNER_EMAIL lists, and granting it to a second
+ * person is an explicit edit to that variable, never an accident.
  */
 export function roleFor(account: Account): Role {
-  const owner = env.ownerEmail ? normaliseEmail(env.ownerEmail) : null;
-  return owner !== null && account.email === owner ? "owner" : "client";
+  return env.ownerEmails.includes(normaliseEmail(account.email)) ? "owner" : "client";
 }
 
 export async function findAccountByEmail(email: string): Promise<Account | null> {

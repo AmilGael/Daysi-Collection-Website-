@@ -85,7 +85,12 @@ export default async function ServicesPage({
                     ))}
                   </ul>
 
-                  <ButtonLink href="/appointments" className="mt-2 w-fit">
+                  {/* The service travels with the click: booking opens with
+                      this service already down as the reason for the visit. */}
+                  <ButtonLink
+                    href={`/appointments?service=${service.id}`}
+                    className="mt-2 w-fit"
+                  >
                     {t("cta")}
                   </ButtonLink>
                 </div>

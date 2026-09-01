@@ -15,6 +15,7 @@ import { LookbookGrid, StyleCard } from "@/components/style-card";
 import { GoogleBusiness } from "@/components/google-business";
 import { formatMoney } from "@/lib/money";
 import { PHOTO_QUALITY } from "@/lib/images";
+import { HERO_PLATES } from "@/content/photographs";
 
 export default async function HomePage({
   params,
@@ -41,30 +42,30 @@ export default async function HomePage({
 }
 
 /**
- * One photograph, one line of type, one thing to do. Stella Jean's hero is a
- * picture and a single line — no label above it, no paragraph beneath it, and
- * not two buttons competing for the same click.
+ * The type on ink, then the three pictures asked for by name, lined up in one
+ * row: the yellow studio sitting that opened the first version of this site,
+ * the Frutera set under the plaster arches, and the October 2019 cover — the
+ * two yellows on the outside, the creme between them.
+ *
+ * Each plate keeps its file's own proportions and nothing is painted over any
+ * of them. Two of the three are things somebody composed — a cover with its
+ * masthead, a portrait with its ground — and cropping either cuts a picture
+ * that was already laid out. The tops align and the bottoms fall where each
+ * file's height puts them, which is what a row of prints on a wall does.
  */
 async function Hero() {
   const t = await getTranslations("home");
 
   return (
-    <section className="on-ink relative isolate -mt-20 flex min-h-[94svh] items-end overflow-hidden bg-ink pt-20">
-      <Image
-        src="/images/real/hero.jpg"
-        alt=""
-        fill
-        priority
-        quality={PHOTO_QUALITY}
-        sizes="100vw"
-        className="object-cover object-[72%_18%]"
-      />
-      <div className="absolute inset-0 bg-gradient-to-r from-ink/90 via-ink/45 to-transparent" />
-      <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-ink/60 to-transparent" />
-
-      <div className="shell relative z-10 pb-24 pt-32">
-        <div className="flex max-w-2xl flex-col gap-8">
-          <h1 className="text-display text-paper">{t("heroTitle")}</h1>
+    <section className="on-ink relative -mt-20 bg-ink pb-24 text-paper lg:pb-32">
+      {/*
+        The type keeps `.shell`, so its first character lands under the logo
+        without arithmetic. pt-32 clears the 80px transparent header and the
+        band it fades through.
+      */}
+      <div className="shell flex flex-col gap-8 pb-14 pt-32 lg:pt-36">
+        <div className="flex flex-col gap-8 lg:max-w-[42rem]">
+          <h1 className="max-w-[13ch] text-display text-paper">{t("heroTitle")}</h1>
           <p className="max-w-md text-[0.9375rem] leading-relaxed text-paper-soft">
             {t("heroLine")}
           </p>
@@ -77,6 +78,27 @@ async function Hero() {
             </TextLink>
           </div>
         </div>
+      </div>
+
+      <div className="shell grid gap-10 sm:grid-cols-3 sm:items-start sm:gap-6 lg:gap-10">
+        {HERO_PLATES.map((plate, index) => (
+          <figure key={plate.src} className="flex flex-col gap-4">
+            <div className="relative overflow-hidden" style={{ aspectRatio: plate.aspect }}>
+              <Image
+                src={plate.src}
+                alt={t(plate.altKey)}
+                fill
+                priority={index === 0}
+                quality={PHOTO_QUALITY}
+                sizes="(min-width: 640px) 31vw, 92vw"
+                className="object-cover"
+              />
+            </div>
+            <figcaption className="text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-paper-soft">
+              {t(plate.captionKey)}
+            </figcaption>
+          </figure>
+        ))}
       </div>
     </section>
   );

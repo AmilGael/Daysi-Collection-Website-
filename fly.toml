@@ -3,7 +3,17 @@
 # and Render both work from the same Dockerfile if you prefer their console;
 # they start around $5 and $7 a month.
 
-app = "daysi-collection"
+# The app is missing the second s, and that is deliberate history rather than
+# a typo to fix: this is the app that holds the issued certificates for
+# daysiscollectioninc.com and the IPs the Cloudflare records point at
+# (66.241.124.59 / 2a09:8280:1::17e:d3f:0, added 2026-08-28). A second app
+# named `daysiscollectioninc` was created later and received several deploys
+# the domain never showed — the split-brain behind "I can't see the changes".
+# Fly apps cannot be renamed, and moving the domain means new DNS records and
+# a cert re-issue for nothing a visitor can see, so deploys target the app
+# with the domain. The orphan `daysiscollectioninc` can be destroyed once its
+# volume is confirmed disposable.
+app = "daysicollectioninc"
 primary_region = "ewr"  # Newark — the closest region to the Bronx.
 
 [build]

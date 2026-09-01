@@ -14,11 +14,9 @@ import { Link, usePathname, useRouter } from "@/i18n/routing";
 export function AccountMenu({
   viewer,
   cartCount,
-  tone = "ink",
 }: {
   viewer: { name: string; email: string; isOwner: boolean } | null;
   cartCount: number;
-  tone?: "ink" | "paper";
 }) {
   const t = useTranslations("account");
   const pathname = usePathname();
@@ -50,18 +48,26 @@ export function AccountMenu({
     router.refresh();
   }
 
-  const border = tone === "paper" ? "border-paper/40" : "border-line";
+  /*
+   * No border. These were two bordered squares in a row of four, and a box
+   * around a glyph says "press me" as loudly as the booking button does while
+   * doing a quarter of the work. They keep the 40px target a thumb needs and
+   * state themselves in opacity, like the tabs. The tone prop went with the
+   * boxes: `currentColor` already inverts with the header.
+   */
+  const glyph =
+    "flex h-10 w-10 items-center justify-center opacity-70 transition-opacity hover:opacity-100";
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center">
       <Link
         href="/cart"
         aria-label={t("cart")}
-        className={`relative flex h-10 w-10 items-center justify-center rounded-[2px] border transition-colors ${border} hover:border-current`}
+        className={`relative ${glyph}`}
       >
         <CartGlyph />
         {cartCount > 0 ? (
-          <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-[2px] bg-marigold px-1 text-[0.625rem] font-medium tabular-nums text-ink">
+          <span className="absolute right-0 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-[2px] bg-marigold px-1 text-[0.625rem] font-medium tabular-nums text-ink">
             {cartCount}
           </span>
         ) : null}
@@ -74,7 +80,7 @@ export function AccountMenu({
           aria-expanded={isOpen}
           aria-haspopup="menu"
           aria-label={viewer ? t("yourAccount") : t("signIn")}
-          className={`flex h-10 w-10 items-center justify-center rounded-[2px] border text-[0.75rem] font-medium uppercase transition-colors ${border} hover:border-current`}
+          className={`${glyph} text-[0.75rem] font-medium uppercase`}
         >
           {viewer ? initialOf(viewer) : <PersonGlyph />}
         </button>

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { styleCreateSchema, styleOverrideSchema } from "@/lib/office-validation";
-import { isSameOrigin, newReference } from "@/lib/security";
-import { currentViewer } from "@/lib/auth/session";
+import { ownerRoute } from "@/lib/api-guard";
+import { newReference } from "@/lib/security";
 import { allLiveStyles, saveAddedStyle, saveStyleOverride } from "@/lib/live-catalog";
 import { liveFabrics, livePriceList, saveCustomEntry } from "@/lib/live-pricing";
 
@@ -13,33 +13,16 @@ import { liveFabrics, livePriceList, saveCustomEntry } from "@/lib/live-pricing"
  */
 
 
-export async function PUT(request: Request) {
-  if (!isSameOrigin(request)) {
-    return NextResponse.json({ error: "bad-origin" }, { status: 403 });
-  }
-
-  const viewer = await currentViewer();
-  if (!viewer || viewer.role !== "owner") {
-    return NextResponse.json({ error: "not-found" }, { status: 404 });
-  }
-
-  const parsed = styleOverrideSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) {
-    return NextResponse.json({ error: "invalid" }, { status: 400 });
-  }
-
-  if (!allLiveStyles().some((style) => style.id === parsed.data.styleId)) {
+export const PUT = ownerRoute(styleOverrideSchema, async (override) => {
+  if (!allLiveStyles().some((style) => style.id === override.styleId)) {
     return NextResponse.json({ error: "unknown-style" }, { status: 404 });
   }
 
-  await saveStyleOverride(parsed.data);
-
-  // The gallery, the style's own page and the home lookbook all read the
-  // merged catalog; statically rendered copies are stale the moment this lands.
-  revalidatePath("/", "layout");
-
-  return NextResponse.json({ ok: true });
-}
+  // Returning nothing lets the guard drop the layout cache: the gallery, the
+  // style's own page and the home lookbook all read the merged catalog, and
+  // statically rendered copies are stale the moment this lands.
+  await saveStyleOverride(override);
+});
 
 
 /**
@@ -63,22 +46,7 @@ function slugify(name: string): string {
     .slice(0, 50);
 }
 
-export async function POST(request: Request) {
-  if (!isSameOrigin(request)) {
-    return NextResponse.json({ error: "bad-origin" }, { status: 403 });
-  }
-
-  const viewer = await currentViewer();
-  if (!viewer || viewer.role !== "owner") {
-    return NextResponse.json({ error: "not-found" }, { status: 404 });
-  }
-
-  const parsed = styleCreateSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) {
-    return NextResponse.json({ error: "invalid" }, { status: 400 });
-  }
-  const draft = parsed.data;
-
+export const POST = ownerRoute(styleCreateSchema, async (draft) => {
   if (!liveFabrics().some((fabric) => fabric.id === draft.fabricId)) {
     return NextResponse.json({ error: "unknown-fabric" }, { status: 400 });
   }
@@ -135,9 +103,10 @@ export async function POST(request: Request) {
     isPublished: true,
   });
 
+  // Answers with the slug rather than a bare ok, so it revalidates itself.
   revalidatePath("/", "layout");
   return NextResponse.json({ ok: true, slug });
-}
+});
 
 /** Matches the coded per-category charge so her pieces price like the rest. */
 const CUSTOMIZATION_EXTRA: Record<string, number> = {

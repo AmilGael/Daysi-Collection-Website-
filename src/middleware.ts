@@ -1,5 +1,5 @@
 import createMiddleware from "next-intl/middleware";
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "@/i18n/routing";
 
 const handleLocale = createMiddleware(routing);
@@ -35,7 +35,41 @@ function contentSecurityPolicy(nonce: string): string {
   return directives.join("; ");
 }
 
+/**
+ * One host, so there is one cookie jar.
+ *
+ * Both `daysiscollectioninc.com` and `www.daysiscollectioninc.com` resolve to
+ * this app, and a cookie set on one is not sent to the other. Left alone that
+ * is not a cosmetic split: a client who signs in on www and then follows the
+ * link from her email — which is built from SITE_URL, the bare domain — arrives
+ * signed out, and Google sign-in cannot work at all, because the state cookie
+ * is written on the host the flow started from and the callback always lands on
+ * the bare one.
+ *
+ * 308 rather than 301: it is the redirect that promises the method and body
+ * survive, so a form posted to www is not quietly turned into a GET.
+ */
+function bareHostRedirect(request: NextRequest): NextResponse | null {
+  const host = request.headers.get("host");
+  if (!host?.startsWith("www.")) return null;
+
+  const url = request.nextUrl.clone();
+  // The port is cleared before the host is set, and that order is the whole
+  // trick: `nextUrl` carries the container's internal port (3000), and setting
+  // `host` to a value that names no port leaves the old one in place — which
+  // sent the browser to `https://daysiscollectioninc.com:3000`, a port nothing
+  // answers on. Cleared first, a bare host resolves to the scheme's own port,
+  // and a host that does name one (development on `www.localtest.me:3000`)
+  // still sets it.
+  url.port = "";
+  url.host = host.slice(4);
+  return NextResponse.redirect(url, 308);
+}
+
 export default function middleware(request: NextRequest) {
+  const canonical = bareHostRedirect(request);
+  if (canonical) return canonical;
+
   const nonce = crypto.randomUUID().replaceAll("-", "");
   const policy = contentSecurityPolicy(nonce);
 

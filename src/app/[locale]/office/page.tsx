@@ -25,6 +25,7 @@ import { FabricManager } from "@/components/fabric-manager";
 import { BooksExport } from "@/components/books-export";
 import { GalleryManager, type ManagedWork } from "@/components/gallery-manager";
 import { StyleComposer } from "@/components/style-composer";
+import { SiteQrCode } from "@/components/site-qr-code";
 
 /**
  * Daysi's office.
@@ -309,6 +310,19 @@ export default async function OfficePage({
             initialMessage={notice?.message ?? ""}
             initialVisible={notice?.visible ?? false}
           />
+        </section>
+
+        {/* The workroom QR, moved off the public contact page: it is Daysi's
+            to print and hang, not a visitor's. It draws as a real SVG, so it
+            prints sharp at any size straight from this page. */}
+        <section className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-heading">{t("qrTitle")}</h2>
+            <p className="max-w-xl text-[0.875rem] leading-relaxed text-ink-faint">
+              {t("qrLead")}
+            </p>
+          </div>
+          <SiteQrCode size={192} />
         </section>
 
         <section className="flex flex-col gap-6">

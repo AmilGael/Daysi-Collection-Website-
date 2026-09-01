@@ -1,8 +1,6 @@
-import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { isSameOrigin, newReference } from "@/lib/security";
-import { currentViewer } from "@/lib/auth/session";
+import { ownerRoute } from "@/lib/api-guard";
+import { newReference } from "@/lib/security";
 import { addGalleryWork, setGalleryVisibility } from "@/lib/live-gallery";
 
 /**
@@ -27,25 +25,7 @@ const visibilitySchema = z.object({
   hidden: z.boolean(),
 });
 
-async function requireOwner() {
-  const viewer = await currentViewer();
-  return viewer && viewer.role === "owner" ? viewer : null;
-}
-
-export async function POST(request: Request) {
-  if (!isSameOrigin(request)) {
-    return NextResponse.json({ error: "bad-origin" }, { status: 403 });
-  }
-  if (!(await requireOwner())) {
-    return NextResponse.json({ error: "not-found" }, { status: 404 });
-  }
-
-  const parsed = addSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) {
-    return NextResponse.json({ error: "invalid" }, { status: 400 });
-  }
-
-  const { caption, ...rest } = parsed.data;
+export const POST = ownerRoute(addSchema, async ({ caption, ...rest }) => {
   await addGalleryWork({
     id: newReference("GAL").toLowerCase(),
     ...rest,
@@ -53,25 +33,8 @@ export async function POST(request: Request) {
     // write every line twice is how a gallery stops getting updated.
     caption: { en: caption, es: caption },
   });
+});
 
-  revalidatePath("/", "layout");
-  return NextResponse.json({ ok: true });
-}
-
-export async function PATCH(request: Request) {
-  if (!isSameOrigin(request)) {
-    return NextResponse.json({ error: "bad-origin" }, { status: 403 });
-  }
-  if (!(await requireOwner())) {
-    return NextResponse.json({ error: "not-found" }, { status: 404 });
-  }
-
-  const parsed = visibilitySchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) {
-    return NextResponse.json({ error: "invalid" }, { status: 400 });
-  }
-
-  await setGalleryVisibility(parsed.data.id, parsed.data.hidden);
-  revalidatePath("/", "layout");
-  return NextResponse.json({ ok: true });
-}
+export const PATCH = ownerRoute(visibilitySchema, async ({ id, hidden }) => {
+  await setGalleryVisibility(id, hidden);
+});

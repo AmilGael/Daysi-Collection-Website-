@@ -61,15 +61,12 @@ export async function GoogleBusiness() {
             </div>
           </dl>
 
+          {/* One button. Directions and reviews live inside the listing it
+              opens; the atelier's address is only shared with a confirmed
+              appointment, so a directions button here promised too much. */}
           <div className="flex flex-wrap gap-3">
             <ExternalButtonLink href={business.google.profileUrl} size="small">
               {t("view")}
-            </ExternalButtonLink>
-            <ExternalButtonLink href={business.google.directionsUrl} tone="outline" size="small">
-              {t("directions")}
-            </ExternalButtonLink>
-            <ExternalButtonLink href={business.google.reviewUrl} tone="outline" size="small">
-              {t("review")}
             </ExternalButtonLink>
           </div>
         </div>

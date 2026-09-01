@@ -47,6 +47,14 @@ export function DesignStudio({
     (entry) => entry.categoryId === silhouette?.categoryId && entry.fabricId === fabric?.id,
   );
 
+  // Not every cloth has a published price in every cut, but a person tailoring
+  // a design deserves a number either way: the cheapest published price for
+  // this garment shape stands in as a floor, said as "from".
+  const categoryPrices = priceList
+    .filter((entry) => entry.categoryId === silhouette?.categoryId)
+    .map((entry) => entry.fixedPrice);
+  const priceFloor = categoryPrices.length > 0 ? Math.min(...categoryPrices) : null;
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !silhouette || !fabric) return;
@@ -184,6 +192,13 @@ export function DesignStudio({
             {t("estimateFor", {
               fabric: translate(fabric.name, locale).toLowerCase(),
               price: formatMoney(price.fixedPrice, locale),
+            })}
+          </p>
+        ) : priceFloor !== null ? (
+          <p className="border-t border-line pt-6 text-[0.9375rem] text-ink-soft">
+            {t("estimateFrom", {
+              fabric: translate(fabric.name, locale).toLowerCase(),
+              price: formatMoney(priceFloor, locale),
             })}
           </p>
         ) : null}

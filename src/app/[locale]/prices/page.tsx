@@ -1,5 +1,6 @@
+import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { categories, translate } from "@/content";
+import { categories, primaryPhoto, translate } from "@/content";
 import {
   liveAlterations,
   liveAppointmentTypes,
@@ -13,6 +14,7 @@ import { paymentsEnabled } from "@/lib/env";
 import { PageHeader } from "@/components/page-header";
 import { EstimateBuilder } from "@/components/estimate-builder";
 import { Prose, SectionHeading, TextLink } from "@/components/ui";
+import { PHOTO_QUALITY } from "@/lib/images";
 
 /**
  * The price list, read the way a client reads it: by the garment they want.
@@ -35,20 +37,29 @@ export default async function PricesPage({
 
   const entries = livePriceList();
   const fabrics = liveFabrics();
+  const styles = liveStyles();
 
   const groups = categories
     .map((category) => ({
       category,
+      // The garment pictured beside the heading: the first published piece in
+      // this category, which is also the one the collection leads with.
+      photo: styles
+        .filter((style) => style.categoryId === category.id)
+        .map((style) => primaryPhoto(style))
+        .find((photo) => photo !== undefined),
       rows: entries
         .filter((entry) => entry.categoryId === category.id)
-        .map((entry) => ({
-          id: entry.id,
-          fabric:
-            fabrics.find((fabric) => fabric.id === entry.fabricId)?.name ??
-            { en: entry.fabricId, es: entry.fabricId },
-          price: entry.fixedPrice,
-          extra: entry.customizationExtra,
-        }))
+        .map((entry) => {
+          const fabric = fabrics.find((candidate) => candidate.id === entry.fabricId);
+          return {
+            id: entry.id,
+            fabric: fabric?.name ?? { en: entry.fabricId, es: entry.fabricId },
+            swatch: fabric?.swatchImage ?? null,
+            price: entry.fixedPrice,
+            extra: entry.customizationExtra,
+          };
+        })
         .sort((a, b) => a.price - b.price),
     }))
     .filter((group) => group.rows.length > 0);
@@ -60,22 +71,45 @@ export default async function PricesPage({
       <section className="shell grid gap-x-16 gap-y-14 pb-8 md:grid-cols-2">
         {groups.map((group) => (
           <div key={group.category.id} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <h2 className="font-display text-[1.5rem] leading-tight">
-                {translate(group.category.name, language)}
-              </h2>
-              <p className="text-[0.8125rem] leading-relaxed text-ink-faint">
-                {translate(group.category.blurb, language)}
-              </p>
+            {/* The garment beside its heading, and each cloth beside its
+                price: the list a client reads is the thing she is reading
+                about, not a table of nouns. */}
+            <div className="flex items-start gap-5">
+              {group.photo ? (
+                <div className="relative aspect-3/4 w-20 shrink-0 overflow-hidden bg-paper-warm">
+                  <Image
+                    src={group.photo.src}
+                    alt={translate(group.photo.alt, language)}
+                    fill
+                    quality={PHOTO_QUALITY}
+                    sizes="80px"
+                    className="object-cover"
+                  />
+                </div>
+              ) : null}
+              <div className="flex flex-col gap-1.5">
+                <h2 className="font-display text-[1.5rem] leading-tight">
+                  {translate(group.category.name, language)}
+                </h2>
+                <p className="text-[0.8125rem] leading-relaxed text-ink-faint">
+                  {translate(group.category.blurb, language)}
+                </p>
+              </div>
             </div>
 
             <dl className="flex flex-col border-t border-ink">
               {group.rows.map((row) => (
                 <div
                   key={row.id}
-                  className="flex items-baseline justify-between gap-6 border-b border-line py-3"
+                  className="flex items-center justify-between gap-6 border-b border-line py-2.5"
                 >
-                  <dt className="text-[0.9375rem] text-ink-soft">
+                  <dt className="flex items-center gap-3 text-[0.9375rem] text-ink-soft">
+                    {row.swatch ? (
+                      <span className="relative block h-9 w-9 shrink-0 overflow-hidden rounded-[2px]">
+                        {/* Decorative: the row already names the cloth. */}
+                        <Image src={row.swatch} alt="" fill sizes="36px" className="object-cover" />
+                      </span>
+                    ) : null}
                     {translate(row.fabric, language)}
                   </dt>
                   <dd className="shrink-0 text-[0.9375rem] tabular-nums">

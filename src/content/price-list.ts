@@ -10,19 +10,28 @@ import type { AlterationService, AppointmentType, PriceListEntry } from "./types
  * They are deliberately set with a cushion for normal swings in material cost
  * (PRD Section 14), which is what makes it honest to publish them as fixed and
  * refuse to negotiate them.
+ *
+ * August 2026, in two passes. First everything Daysi charges for her own time
+ * came down twenty percent — alterations, the rush surcharge, the
+ * made-to-measure supplement and the booked sessions — while the garments
+ * held. Then, at the end of the month, she took a quarter off the garments
+ * themselves: each figure below is the original less 25%, settled down to the
+ * nearest five dollars so no price crept back up in the rounding. The labour
+ * prices from the first pass did not move again. price-list.test.ts holds
+ * both halves.
  */
 export const priceList: readonly PriceListEntry[] = [
-  entry("dresses", "daisy-cotton", 26500, 9500),
-  entry("shirts", "wax-print", 16500, 5500),
-  entry("shirts", "tropical-leaf", 17500, 5500),
-  entry("shirts", "daisy-cotton", 14500, 5500),
-  entry("heritage", "wax-print", 39500, 12000),
-  entry("heritage", "tropical-leaf", 37500, 12000),
-  entry("heritage", "fish-batik", 39500, 12000),
-  entry("heritage", "frutera-print", 42500, 12000),
-  entry("pants", "ocelote-print", 23500, 6500),
-  entry("shirts", "laguna-wax", 16500, 5500),
-  entry("dresses", "medallon-print", 32500, 9500),
+  entry("dresses", "daisy-cotton", 19500, 7600), // was 26500
+  entry("shirts", "wax-print", 12000, 4400), // was 16500
+  entry("shirts", "tropical-leaf", 13000, 4400), // was 17500
+  entry("shirts", "daisy-cotton", 10500, 4400), // was 14500
+  entry("heritage", "wax-print", 29500, 9600), // was 39500
+  entry("heritage", "tropical-leaf", 28000, 9600), // was 37500
+  entry("heritage", "fish-batik", 29500, 9600), // was 39500
+  entry("heritage", "frutera-print", 31500, 9600), // was 42500
+  entry("pants", "ocelote-print", 17500, 5200), // was 23500
+  entry("shirts", "laguna-wax", 12000, 4400), // was 16500
+  entry("dresses", "medallon-print", 24000, 7600), // was 32500
 ];
 
 function entry(
@@ -41,7 +50,7 @@ function entry(
       en: "Made to your measurements, with your choice of neckline, sleeve and length.",
       es: "Hecho a su medida, con el escote, la manga y el largo que usted elija.",
     },
-    effectiveDate: "2026-08-01",
+    effectiveDate: "2026-08-31",
   };
 }
 
@@ -57,19 +66,19 @@ export const alterationServices: readonly AlterationService[] = [
       en: "Shortened and finished to match the original hem.",
       es: "Acortado y rematado igual que el ruedo original.",
     },
-    fixedPrice: 3500,
-    rushSurcharge: 2500,
+    fixedPrice: 2800,
+    rushSurcharge: 2000,
     turnaround: { en: "3–5 days", es: "3–5 días" },
   },
   {
     id: "hem-pants",
     name: { en: "Hem pants", es: "Ruedo de pantalón" },
     description: {
-      en: "Plain hem. Add a cuff or an original hem finish for $10 more.",
-      es: "Ruedo sencillo. Con dobladillo o remate original, $10 más.",
+      en: "Plain hem. Add a cuff or an original hem finish for $8 more.",
+      es: "Ruedo sencillo. Con dobladillo o remate original, $8 más.",
     },
-    fixedPrice: 2500,
-    rushSurcharge: 2500,
+    fixedPrice: 2000,
+    rushSurcharge: 2000,
     turnaround: { en: "3–5 days", es: "3–5 días" },
   },
   {
@@ -79,8 +88,8 @@ export const alterationServices: readonly AlterationService[] = [
       en: "Up to two inches either way, waistband reset.",
       es: "Hasta dos pulgadas en cualquier dirección, pretina reconstruida.",
     },
-    fixedPrice: 4500,
-    rushSurcharge: 2500,
+    fixedPrice: 3600,
+    rushSurcharge: 2000,
     turnaround: { en: "4–6 days", es: "4–6 días" },
   },
   {
@@ -90,19 +99,19 @@ export const alterationServices: readonly AlterationService[] = [
       en: "Reshaped through the body so the garment sits where it should.",
       es: "Reformado en el cuerpo para que la prenda caiga donde debe.",
     },
-    fixedPrice: 5500,
-    rushSurcharge: 2500,
+    fixedPrice: 4400,
+    rushSurcharge: 2000,
     turnaround: { en: "5–7 days", es: "5–7 días" },
   },
   {
     id: "sleeves",
     name: { en: "Shorten sleeves", es: "Acortar mangas" },
     description: {
-      en: "Plain sleeves. Cuffed or buttoned sleeves are $20 more.",
-      es: "Mangas sencillas. Con puño o botones, $20 más.",
+      en: "Plain sleeves. Cuffed or buttoned sleeves are $16 more.",
+      es: "Mangas sencillas. Con puño o botones, $16 más.",
     },
-    fixedPrice: 3500,
-    rushSurcharge: 2500,
+    fixedPrice: 2800,
+    rushSurcharge: 2000,
     turnaround: { en: "4–6 days", es: "4–6 días" },
   },
   {
@@ -112,8 +121,8 @@ export const alterationServices: readonly AlterationService[] = [
       en: "Matched in colour and weight, invisible or exposed.",
       es: "Igualado en color y peso, invisible o expuesto.",
     },
-    fixedPrice: 4500,
-    rushSurcharge: 2500,
+    fixedPrice: 3600,
+    rushSurcharge: 2000,
     turnaround: { en: "4–6 days", es: "4–6 días" },
   },
   {
@@ -123,8 +132,8 @@ export const alterationServices: readonly AlterationService[] = [
       en: "Mended so the repair does not read as a repair.",
       es: "Reparado para que no se note que fue reparado.",
     },
-    fixedPrice: 2500,
-    rushSurcharge: 2500,
+    fixedPrice: 2000,
+    rushSurcharge: 2000,
     turnaround: { en: "3–5 days", es: "3–5 días" },
   },
   {
@@ -134,8 +143,8 @@ export const alterationServices: readonly AlterationService[] = [
       en: "Rebuilt through the shoulders, body and length together.",
       es: "Reconstruido en hombros, cuerpo y largo a la vez.",
     },
-    fixedPrice: 9500,
-    rushSurcharge: 3500,
+    fixedPrice: 7600,
+    rushSurcharge: 2800,
     turnaround: { en: "1–2 weeks", es: "1–2 semanas" },
   },
   {
@@ -145,8 +154,8 @@ export const alterationServices: readonly AlterationService[] = [
       en: "A new life for a piece you love. Priced from, after we look at it together.",
       es: "Una nueva vida para una prenda que quiere. Precio desde, tras verla juntas.",
     },
-    fixedPrice: 15000,
-    rushSurcharge: 5000,
+    fixedPrice: 12000,
+    rushSurcharge: 4000,
     turnaround: { en: "2–3 weeks", es: "2–3 semanas" },
   },
 ];
@@ -165,9 +174,9 @@ export const appointmentTypes: readonly AppointmentType[] = [
       en: "Enough time to look at one garment, take the measurements it needs and agree a price.",
       es: "Tiempo suficiente para ver una prenda, tomar las medidas necesarias y acordar un precio.",
     },
-    fee: 10000,
-    depositDue: 10000,
-    overtimeRatePerHalfHour: 5000,
+    fee: 8000,
+    depositDue: 8000,
+    overtimeRatePerHalfHour: 4000,
     suitedFor: [
       { en: "An alteration on a garment you already own", es: "Un arreglo de una prenda que ya tiene" },
       { en: "A fitting for a piece already in progress", es: "Una prueba de una pieza en proceso" },
@@ -182,9 +191,9 @@ export const appointmentTypes: readonly AppointmentType[] = [
       en: "A full sitting: your idea, fabric in hand, a sketch, full measurements and a written estimate.",
       es: "Una sesión completa: su idea, tela en mano, un boceto, medidas completas y un estimado por escrito.",
     },
-    fee: 17500,
-    depositDue: 17500,
-    overtimeRatePerHalfHour: 5000,
+    fee: 14000,
+    depositDue: 14000,
+    overtimeRatePerHalfHour: 4000,
     suitedFor: [
       { en: "A custom piece made from scratch", es: "Una pieza a medida desde cero" },
       { en: "Wedding, quinceañera and occasion wear", es: "Boda, quinceañera y ropa de ocasión" },

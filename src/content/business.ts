@@ -4,12 +4,11 @@ import type { BusinessInfo } from "./types";
  * ERD: BUSINESS_INFO. One record, read by the header, footer, contact page and
  * Google Business section.
  *
- * The phone, address and Google Profile figures below use the reserved 555-01xx
- * range and a neighbourhood-level location on purpose: Daysi's real number,
- * street address and Google Business admin access were still outstanding when
- * this was built (PRD 15.1). `googleProfileVerified` stays false until her real
- * listing is connected, and the UI says so rather than implying a rating she
- * has not earned yet.
+ * The address stays at neighbourhood level by choice: this is a private home
+ * atelier, and the street is given to a client when her appointment is
+ * confirmed, not to the internet. `googleProfileVerified` stays false until
+ * her real listing is connected, and the UI says so rather than implying a
+ * rating she has not earned yet.
  */
 export const business: BusinessInfo = {
   legalName: "Daysi Collection Inc.",
@@ -37,9 +36,14 @@ export const business: BusinessInfo = {
     { day: { en: "Saturday", es: "Sábado" }, opens: "11:00", closes: "15:00" },
     { day: { en: "Sunday", es: "Domingo" }, opens: "", closes: null },
   ],
-  phone: "+1 718 555 0142",
-  whatsapp: "+17185550142",
-  email: "hola@daysicollection.com",
+  // Her real number, and it is never printed. It is here so the WhatsApp
+  // buttons have somewhere to point; every place that used to show it now
+  // shows a label instead. There is no `phone` field on purpose — see the
+  // note on BusinessInfo.
+  whatsapp: "+19176887260",
+  // A real, receiving address: Cloudflare Email Routing forwards it (and any
+  // guessed address at the domain, via the catch-all) into Gmail.
+  email: "hola@daysiscollectioninc.com",
   google: {
     profileUrl: "https://www.google.com/search?q=Daysi+Collection+Inc+Bronx",
     directionsUrl: "https://www.google.com/maps/dir/?api=1&destination=E+180th+St+Bronx+NY",
