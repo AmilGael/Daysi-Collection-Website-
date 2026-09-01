@@ -1,6 +1,7 @@
 import { mkdir, writeFile, readdir } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { env } from "./env";
 import type { Estimate } from "./pricing";
 
 /**
@@ -15,7 +16,19 @@ import type { Estimate } from "./pricing";
  * index stays small and an image can be deleted on its own.
  */
 
-const DATA_DIRECTORY = path.join(process.cwd(), ".data");
+/**
+ * `env.dataDirectory`, never `process.cwd()`. In production the working
+ * directory is inside the container image and the persistent disk is mounted
+ * somewhere else entirely, so a path built from the former is thrown away by
+ * the next deploy. This file holds every order, booking, commission, message
+ * and sign-up a client has ever sent; it also feeds the earnings figures, the
+ * books export, and the calendar's idea of which times are already taken.
+ * It went to the wrong one of those two places until 2026-09-01.
+ *
+ * `store-paths.test.ts` fails if this line, or any sibling store, reaches for
+ * the working directory again.
+ */
+const DATA_DIRECTORY = env.dataDirectory;
 const OWNER_ONLY_DIRECTORY = 0o700;
 const OWNER_ONLY_FILE = 0o600;
 
