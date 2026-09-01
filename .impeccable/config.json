@@ -14,6 +14,16 @@
         "value": "fraunces",
         "createdAt": "2026-08-28T11:21:03.232Z",
         "reason": "Site display face; SOFT/WONK axes driven deliberately in globals.css for a hand-made-clothing brand"
+      },
+      {
+        "rule": "overused-font",
+        "value": "*",
+        "files": [
+          "**/office-plan.html",
+          "**/stripe-setup.html"
+        ],
+        "createdAt": "2026-09-01T10:22:50.678Z",
+        "reason": "Deliberate brand match: these two client-facing documents wear the Daysi Collection site's own faces, declared in src/app/globals.css. Scoped to the two files, so the rule still fires everywhere else. It has to be a wildcard rather than a named face: the finding for the Google Fonts <link> carries its text only in `snippet`, from which no value is extractable, so a value-specific entry can never match it."
       }
     ]
   }
