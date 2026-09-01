@@ -11,11 +11,19 @@ import { Link } from "@/i18n/routing";
  * looking mispriced.
  */
 
+/* `translate` and `scale` are in the transition list by name: Tailwind v4
+   compiles -translate-y-* and scale-* to those standalone properties, not to
+   `transform`, so a list that only names transform animates neither. */
 const buttonBase =
-  "inline-flex items-center justify-center gap-2 rounded-[2px] text-[0.6875rem] font-medium uppercase tracking-[0.16em] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100";
+  "inline-flex items-center justify-center gap-2 rounded-[2px] font-medium uppercase transition-[background-color,border-color,color,transform,translate,scale,box-shadow] duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100";
 
+/* Each size owns its type — font-size and tracking live here, never in the
+   base, so no size ever loses its text to a same-specificity cascade race. */
 const buttonSizes = {
-  medium: "px-8 py-4",
+  medium: "px-8 py-4 text-[0.6875rem] tracking-[0.16em]",
+  /* The hero pair only. A step up in every dimension at once — anything less
+     reads as the medium button with a rendering problem. */
+  large: "px-10 py-[1.15rem] text-[0.75rem] tracking-[0.18em]",
   small: "px-5 py-3 text-[0.625rem] tracking-[0.14em]",
 } as const;
 

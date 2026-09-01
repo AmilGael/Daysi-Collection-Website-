@@ -15,7 +15,7 @@ import { LookbookGrid, StyleCard } from "@/components/style-card";
 import { GoogleBusiness } from "@/components/google-business";
 import { formatMoney } from "@/lib/money";
 import { PHOTO_QUALITY } from "@/lib/images";
-import { HERO_PLATES } from "@/content/photographs";
+import { HERO_BACKDROP, HERO_PLATES } from "@/content/photographs";
 
 export default async function HomePage({
   params,
@@ -57,30 +57,66 @@ async function Hero() {
   const t = await getTranslations("home");
 
   return (
-    <section className="on-ink relative -mt-20 bg-ink pb-24 text-paper lg:pb-32">
+    <section className="on-ink relative -mt-20 overflow-hidden bg-ink pb-24 text-paper lg:pb-32">
       {/*
-        The type keeps `.shell`, so its first character lands under the logo
-        without arithmetic. pt-32 clears the 80px transparent header and the
-        band it fades through.
+        A woven ground behind the ink, asked for by the owner: near-black cloth
+        with a few marigold threads, dark enough that the type never fights it.
+        The gradient pins the top and bottom back to flat ink, so the header
+        fade-in and the plates row both land on a quiet ground.
       */}
-      <div className="shell flex flex-col gap-8 pb-14 pt-32 lg:pt-36">
-        <div className="flex flex-col gap-8 lg:max-w-[42rem]">
-          <h1 className="max-w-[13ch] text-display text-paper">{t("heroTitle")}</h1>
-          <p className="max-w-md text-[0.9375rem] leading-relaxed text-paper-soft">
+      <div aria-hidden className="absolute inset-0">
+        <Image
+          src={HERO_BACKDROP}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          quality={70}
+          className="object-cover opacity-55"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/15 to-ink/85" />
+      </div>
+
+      {/*
+        The type is centred — headline, its line, and the two buttons on one
+        axis — with pt-32 clearing the 80px transparent header and the band it
+        fades through.
+      */}
+      <div className="shell relative flex flex-col gap-8 pb-14 pt-32 lg:pt-36">
+        <div className="mx-auto flex w-full max-w-[50rem] flex-col items-center gap-8 text-center">
+          {/* 17ch, not tighter: at the ramp's top the Spanish headline needs
+              the width to hold two lines, and English stays at two anyway. */}
+          <h1 className="hero-display max-w-[17ch] text-display text-paper">{t("heroTitle")}</h1>
+          {/* paper-soft over the texture is measured, not assumed: the
+              brightest pixel in the whole weave at the gradient's lightest
+              stop composites to 4.63:1 against it, and the line actually sits
+              where the veil is heavier (~7.5:1). Lighten the texture or
+              gradient and this measurement is void — redo it. */}
+          <p className="max-w-lg text-[1.125rem] leading-relaxed text-paper-soft">
             {t("heroLine")}
           </p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-10 gap-y-5">
-            <ButtonLink href="/appointments" tone="marigold">
+          <div className="mt-2 flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row sm:justify-center sm:gap-5">
+            <ButtonLink
+              href="/appointments"
+              tone="marigold"
+              size="large"
+              className="glow-marigold w-full hover:-translate-y-[1.5px] sm:w-auto"
+            >
               {t("heroPrimary")}
             </ButtonLink>
-            <TextLink href="/collection" tone="paper">
+            <ButtonLink
+              href="/collection"
+              tone="ghost"
+              size="large"
+              className="w-full hover:-translate-y-[1.5px] sm:w-auto"
+            >
               {t("heroSecondary")}
-            </TextLink>
+            </ButtonLink>
           </div>
         </div>
       </div>
 
-      <div className="shell grid gap-10 sm:grid-cols-3 sm:items-start sm:gap-6 lg:gap-10">
+      <div className="shell relative grid gap-10 sm:grid-cols-3 sm:items-start sm:gap-6 lg:gap-10">
         {HERO_PLATES.map((plate, index) => (
           <figure key={plate.src} className="flex flex-col gap-4">
             <div className="relative overflow-hidden" style={{ aspectRatio: plate.aspect }}>

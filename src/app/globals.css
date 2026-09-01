@@ -5,8 +5,10 @@
  *
  * The palette is the one Daysi chose — yellow, white and black — read as warm
  * rather than primary: a warm near-black, a paper white with cream in it, and
- * marigold used only as a fill or a rule. Yellow is never used for text on a
- * light background, which is the one contrast trap this palette has.
+ * marigold used only as a fill or a rule — plus one recorded exception, the
+ * `.glow-marigold` bloom under the hero's primary button. Yellow is never used
+ * for text on a light background, which is the one contrast trap this palette
+ * has.
  */
 @theme {
   --color-ink: #14110d;
@@ -310,4 +312,41 @@
     --text-display--line-height: 1;
     --text-display--letter-spacing: -0.02em;
   }
+}
+
+/**
+ * The home hero's headline runs 3px over the display ramp at every stop — the
+ * owner asked for the landing page's type a step larger, and only the landing
+ * page's. Set on the element, this custom property would beat the mobile
+ * `:root` override above at every width (an own property always wins over an
+ * inherited one), so the phone stop is restated here at its own +3.
+ */
+.hero-display {
+  /* The preferred term carries the +3 too — with a bare 7vw the floors and
+     ceiling are the only things that moved, and the bump is a no-op on every
+     width where the clamp is fluid (700px to ~1371px, i.e. most laptops). */
+  --text-display: clamp(2.9375rem, calc(7vw + 3px), 6.1875rem);
+}
+
+@media (max-width: 699px) {
+  .hero-display {
+    /* Restated +3 for the phone stop. At 39px the Spanish headline sets in
+       three centred lines rather than two — measured, looked at, and kept:
+       the centred block holds the buttons above the fold on a 390x844. */
+    --text-display: 2.4375rem;
+  }
+}
+
+/**
+ * The one lit thing on the site: the marigold bloom under the hero's primary
+ * button. It is a recorded exception to the palette rule that marigold is
+ * only a fill or a rule — it lives here, derived from the token, so a palette
+ * retune cannot strand it on the old yellow.
+ */
+.glow-marigold {
+  box-shadow: 0 14px 40px -14px rgb(from var(--color-marigold) r g b / 0.55);
+}
+
+.glow-marigold:hover {
+  box-shadow: 0 18px 44px -14px rgb(from var(--color-marigold) r g b / 0.7);
 }
