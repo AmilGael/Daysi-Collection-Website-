@@ -233,15 +233,30 @@ fly secrets set AUTH_SECRET="$(openssl rand -base64 32)" \
                 SITE_URL="https://daysicollection.com" \
                 RESEND_API_KEY="re_..." \
                 NOTIFICATION_FROM="Daysi Collection <no-reply@daysicollection.com>"
-fly deploy
+npm run deploy                  # audit gate, type check and tests, then fly deploy
 fly scale count 1
 ```
+
+### Every later deploy
+
+```
+npm run deploy
+SMOKE_URL=https://daysiscollectioninc.com npm run smoke
+```
+
+`npm run deploy` runs `predeploy` first: `npm audit --omit=dev
+--audit-level=high`, the type check and the tests. A known high or critical
+advisory in a production dependency stops the deploy. The gate exists because
+the site once ran for four days on a Next.js release with a public,
+unauthenticated remote-code-execution bug (CVE-2025-55182), and a crypto miner
+found it within hours. Do not run `fly deploy` directly. Dependabot and the
+workflow in `.github/` apply the same check weekly even when nobody commits.
 
 ### What has to be set, and what happens if it is not
 
 | Variable | Required? | If it is missing |
 |---|---|---|
-| `AUTH_SECRET` | **Yes** | The app refuses to start signing. A key everyone can read is not a key. |
+| `AUTH_SECRET` | **Yes** | The app refuses to start signing. A key everyone can read is not a key. It also signs the session and sign-in-link records on the volume, so rotating it signs everyone out. |
 | `OWNER_EMAIL` | **Yes** | Nobody gets the office. Set to the wrong address and somebody else does. |
 | `RESEND_API_KEY` | **Yes** | Sign-in links are generated and never delivered. Production refuses to print them rather than log a live credential — so nobody can sign in, Daysi included. |
 | `SITE_URL` | **Yes** | Sign-in links, the QR code and Stripe's return URL all point at localhost. |

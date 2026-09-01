@@ -10,14 +10,17 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "audit": "npm audit --omit=dev --audit-level=high",
+    "predeploy": "npm run audit && npm run typecheck && npm test",
+    "deploy": "fly deploy -a daysicollectioninc"
   },
   "dependencies": {
-    "next": "15.5.4",
+    "next": "15.5.25",
     "next-intl": "3.26.5",
     "qrcode": "^1.5.4",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "19.1.9",
+    "react-dom": "19.1.9",
     "stripe": "18.5.0",
     "zod": "3.25.76"
   },
@@ -25,13 +28,16 @@
     "@tailwindcss/postcss": "4.1.13",
     "@types/node": "22.15.3",
     "@types/qrcode": "^1.5.5",
-    "@types/react": "19.1.9",
-    "@types/react-dom": "19.1.7",
+    "@types/react": "19.1.17",
+    "@types/react-dom": "19.1.11",
     "tailwindcss": "4.1.13",
     "typescript": "5.8.3",
     "vitest": "3.2.4"
   },
   "engines": {
     "node": ">=20.9"
+  },
+  "overrides": {
+    "postcss": "^8.5.25"
   }
 }
