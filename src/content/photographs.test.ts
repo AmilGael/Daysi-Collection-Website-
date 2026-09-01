@@ -6,7 +6,7 @@ import { galleryWorks } from "./gallery";
 import { premieres } from "./premieres";
 import { services } from "./index";
 import { styles } from "./styles";
-import { HERO_IMAGE } from "./photographs";
+import { HERO_BACKDROP, HERO_IMAGE } from "./photographs";
 
 /**
  * Every photograph on this site is one Daysi owns. Nothing here is generated,
@@ -87,5 +87,23 @@ describe("the photograph on the first screen", () => {
   it("is taller than it is wide, because the layout gives it a portrait frame", () => {
     const { width, height } = jpegSize(path.join(publicRoot, HERO_IMAGE.replace(/^\//, "")));
     expect(height).toBeGreaterThan(width);
+  });
+});
+
+describe("the woven ground behind the hero", () => {
+  /**
+   * The backdrop opts out of the catalogue rules above on purpose — it is an
+   * abstract texture, not a photograph of anything — but opting out of the
+   * whitelist must not mean opting out of existing. It sits in an aria-hidden
+   * frame at low opacity under a gradient, so a missing file renders as
+   * nothing at all: no 404 a reader would see, no test that would notice.
+   * This is that test.
+   */
+  it("is on disk", () => {
+    expect(onDisk(HERO_BACKDROP)).toBe(true);
+  });
+
+  it("lives outside the real-photograph directories, so the rule above stays honest", () => {
+    expect(HERO_BACKDROP.startsWith("/images/texture/")).toBe(true);
   });
 });

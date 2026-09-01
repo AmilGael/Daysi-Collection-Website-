@@ -43,6 +43,16 @@ export const HERO_ASPECT = "2000 / 3645";
  * The aspect strings are the files' pixel dimensions, to the pixel, for the
  * same reason HERO_ASPECT is.
  */
+/**
+ * The woven ground behind the hero's ink. This one is NOT a photograph and is
+ * not treated as one: it is an abstract texture — near-black cloth with a few
+ * marigold threads — generated to order (Higgsfield, 2026-09-01) at the
+ * owner's request, and it pictures nothing: no garment, no person, no work of
+ * Daysi's. The no-generated-imagery rule in photographs.test.ts is about her
+ * catalogue, and this sits outside it the way a paint colour would.
+ */
+export const HERO_BACKDROP = "/images/texture/hero-weave.jpg";
+
 export const HERO_PLATES = [
   {
     src: "/images/real/hero-yellow.jpg",
