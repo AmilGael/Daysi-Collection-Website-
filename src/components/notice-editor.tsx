@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { buttonClass } from "./ui";
-import { postOffice, type SaveState } from "./office-client";
+import type { ShopfrontChange } from "@/lib/office-validation";
+import { Pending } from "./office/confirm-bar";
+import { useOfficeDraft } from "./office/use-office-draft";
 
 /**
  * The one line Daysi can pin to the site herself — vacation dates, a delayed
@@ -19,30 +19,37 @@ export function NoticeEditor({
   initialVisible: boolean;
 }) {
   const t = useTranslations("office");
-  const router = useRouter();
+  const draft = useOfficeDraft<ShopfrontChange>();
   const [message, setMessage] = useState(initialMessage);
   const [visible, setVisible] = useState(initialVisible);
-  const [state, setState] = useState<SaveState>("idle");
+  const key = "notice:site";
+  const pending = draft.pending(key);
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setState("saving");
-    try {
-      await postOffice("/api/office/notice", "PUT", { message, visible });
-      setState("saved");
-      router.refresh();
-    } catch {
-      setState("failed");
+  useEffect(() => {
+    if (draft.count === 0) {
+      setMessage(initialMessage);
+      setVisible(initialVisible);
     }
+  }, [draft.count, initialMessage, initialVisible]);
+
+  function stage(nextMessage: string, nextVisible: boolean) {
+    if (nextMessage === initialMessage && nextVisible === initialVisible) {
+      draft.unstage(key);
+      return;
+    }
+    draft.stage(key, {
+      wire: { type: "notice", key, message: nextMessage, visible: nextVisible },
+    });
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex max-w-xl flex-col gap-4">
+    <div className="flex max-w-xl flex-col gap-4">
       <textarea
         value={message}
         onChange={(event) => {
-          setMessage(event.target.value);
-          setState("idle");
+          const nextMessage = event.target.value;
+          setMessage(nextMessage);
+          stage(nextMessage, visible);
         }}
         rows={2}
         maxLength={200}
@@ -55,27 +62,16 @@ export function NoticeEditor({
             type="checkbox"
             checked={visible}
             onChange={(event) => {
-              setVisible(event.target.checked);
-              setState("idle");
+              const nextVisible = event.target.checked;
+              setVisible(nextVisible);
+              stage(message, nextVisible);
             }}
             className="h-4 w-4 accent-ink"
           />
           {t("noticeVisible")}
         </label>
-        <button
-          type="submit"
-          disabled={state === "saving"}
-          className={buttonClass({ size: "small", tone: "solid" })}
-        >
-          {state === "saving" ? t("saving") : t("saveNotice")}
-        </button>
-        {state === "saved" ? (
-          <span className="text-[0.8125rem] text-ink-faint">{t("saved")}</span>
-        ) : null}
-        {state === "failed" ? (
-          <span className="text-[0.8125rem] text-ink">{t("updateFailed")}</span>
-        ) : null}
+        {pending ? <Pending confirming={pending.confirming} error={pending.error} /> : null}
       </div>
-    </form>
+    </div>
   );
 }
