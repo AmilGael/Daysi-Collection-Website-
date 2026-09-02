@@ -45,9 +45,21 @@ describe("retired records", () => {
     expect(retiredSet("style")).toEqual(new Set());
   });
 
+  it.each(["fabric", "price-entry", "request"] as const)(
+    "retires and restores a %s",
+    async (kind) => {
+      const { retiredSet, setRetired } = await import("./retired");
+      await setRetired(kind, "x", true);
+      expect(retiredSet(kind)).toEqual(new Set(["x"]));
+      await setRetired(kind, "x", false);
+      expect(retiredSet(kind)).toEqual(new Set());
+    },
+  );
+
   it("keeps kinds separate", async () => {
     const { retiredSet, setRetired } = await import("./retired");
-    await setRetired("style", "x", true);
+    await setRetired("price-entry", "x", true);
+    expect(retiredSet("request")).toEqual(new Set());
     expect(retiredSet("gallery")).toEqual(new Set());
   });
 

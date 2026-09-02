@@ -1,6 +1,6 @@
 import { appendRecord, latestBy, readRecords } from "./records";
 
-export type RetiredKind = "style" | "gallery";
+export type RetiredKind = "style" | "gallery" | "fabric" | "price-entry" | "request";
 export type RetiredRecord = {
   readonly kind: RetiredKind;
   readonly id: string;
