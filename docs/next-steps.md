@@ -2,7 +2,7 @@
 
 Short words. No jargon. Read top to bottom.
 
-## What is done (as of 2 September 2026, night)
+## What is done (as of 3 September 2026)
 
 - **Site is live** at daysiscollectioninc.com on Fly. Email works (sign-in links arrive). Google sign-in works.
 - **Miner attack fixed.** A bot got in through an old Next.js bug. We patched Next, rotated the three leaked keys, and proved the disk was clean. A guard now stops any deploy that has a known bad package. Dependabot watches for new ones.
@@ -11,20 +11,25 @@ Short words. No jargon. Read top to bottom.
 - **Account button is a ring** so it does not look like the cart.
 - **Manual for Daysi** (`docs/manual-del-taller.html`) names the tab for each task.
 
-## What is being built now: step 2 of the office
+## Step 2 of the office: done, waiting to ship
 
-Goal: Daysi changes things, sees them marked as "pendiente", then presses **Confirmar cambios**. Nothing saves before that. **Descartar** throws the changes away.
+Daysi changes things, sees them marked "pendiente", then presses **Confirmar cambios**. Nothing saves before that. **Descartar** throws the changes away. Leaving a tab with pending changes asks once.
 
-Order of work (each one is a small commit):
+What is in it:
 
-1. The door for saves: a helper that checks it is Daysi, from this site, with a valid body. One place, reused by every tab.
-2. The draft: a small piece of code that holds pending changes and a bar at the bottom with Confirmar / Descartar. Tests for it.
-3. Retire and restore for garments and gallery photos (nothing is ever deleted; a line says "retired", a later line can say "back").
-4. Colección tab: full list, add a garment, tick sizes, publish or hide, retire, restore. All through the draft and the confirm bar.
-5. Galería tab: same idea for photos.
-6. Precios, Telas, Vitrina, Trabajo tabs: same confirm bar.
-7. Old save routes removed; tests updated; manual gets a short "cómo confirmar" note.
-8. Push, review, merge, `npm run deploy`, click through once as Daysi.
+- Every office tab (Colección, Galería, Telas, Precios, Vitrina, Trabajo) has one bar at the bottom for confirming or discarding.
+- Garments and gallery photos can be added, **retired** and **restored**. A retired piece leaves the site at once; it sits under "Retirados" until she restores it. Nothing is ever deleted.
+- Photos upload only when she confirms, so a discarded draft uploads nothing.
+- The old save routes are gone; one guarded action per tab does all the saving.
+- The manual explains the bar under "Cómo entrar" and the Retirar/Restaurar steps.
+
+To ship it: merge the pull request "Office: nothing saves until she confirms", then from `main`:
+
+```bash
+npm run deploy
+```
+
+Then sign in as Daysi once, change a size, confirm, and check the garment page shows it.
 
 ## Step 3 after that
 
