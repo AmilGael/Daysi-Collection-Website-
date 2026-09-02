@@ -74,3 +74,9 @@ describe("the today tab", () => {
     expectGuarded("page.tsx");
   });
 });
+
+describe("the work tab", () => {
+  it("is guarded", () => {
+    expectGuarded("work/page.tsx");
+  });
+});
