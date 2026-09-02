@@ -1,7 +1,7 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { sign, verify } from "./signing";
 import { z } from "zod";
-import { isProduction, signingSecret } from "./env";
+import { isProduction } from "./env";
 
 /**
  * The cart.
@@ -38,16 +38,6 @@ export type Cart = z.infer<typeof cartSchema>;
 export type CartLine = Cart["lines"][number];
 
 export const emptyCart: Cart = { lines: [] };
-
-function sign(payload: string): string {
-  return createHmac("sha256", signingSecret()).update(payload).digest("base64url");
-}
-
-function verify(payload: string, signature: string): boolean {
-  const expected = sign(payload);
-  if (expected.length !== signature.length) return false;
-  return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
-}
 
 function encode(cart: Cart): string {
   const payload = Buffer.from(JSON.stringify(cart)).toString("base64url");

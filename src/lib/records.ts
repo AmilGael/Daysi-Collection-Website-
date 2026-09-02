@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { env } from "./env";
+import { sign, verify } from "./signing";
 
 /**
  * The append-only, newline-delimited JSON store everything on this site is
@@ -66,6 +67,48 @@ export function latestBy<T>(records: readonly T[], key: (record: T) => string): 
   const latest = new Map<string, T>();
   for (const record of records) latest.set(key(record), record);
   return [...latest.values()];
+}
+
+/**
+ * Signed records.
+ *
+ * A line on the volume proves nothing on its own: anyone who can write to the
+ * disk can append one, and code execution as the server's user is enough to
+ * write to the disk. Sessions and sign-in links therefore carry an HMAC over
+ * their own contents under AUTH_SECRET, which exists only in the process
+ * environment. A planted line has no valid signature and is ignored, so a
+ * foothold on the machine cannot be turned into a login that survives it.
+ */
+const warnedCollections = new Set<string>();
+
+function canonical(record: Record<string, unknown>): string {
+  const keys = Object.keys(record)
+    .filter((key) => key !== "sig")
+    .sort();
+  return JSON.stringify(Object.fromEntries(keys.map((key) => [key, record[key]])));
+}
+
+export async function appendSignedRecord(
+  collection: string,
+  record: Record<string, unknown>,
+): Promise<void> {
+  const { sig: _previous, ...body } = record;
+  await appendRecord(collection, { ...body, sig: sign(canonical(body)) });
+}
+
+export function readSignedRecords<T extends Record<string, unknown>>(collection: string): T[] {
+  const kept: T[] = [];
+  let dropped = 0;
+  for (const line of readRecords<Record<string, unknown>>(collection)) {
+    const { sig, ...body } = line;
+    if (typeof sig === "string" && verify(canonical(body), sig)) kept.push(body as T);
+    else dropped += 1;
+  }
+  if (dropped > 0 && !warnedCollections.has(collection)) {
+    warnedCollections.add(collection);
+    console.warn(`[records] ${collection}: ignoring ${dropped} unsigned or tampered line(s).`);
+  }
+  return kept;
 }
 
 export const dataDirectory = DATA_DIRECTORY;

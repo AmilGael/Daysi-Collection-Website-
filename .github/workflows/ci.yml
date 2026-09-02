@@ -1,0 +1,23 @@
+# The same gate `npm run deploy` applies locally, run on every push and once a
+# week with no push at all, so a newly published advisory turns the badge red
+# even when nobody has touched the code.
+name: CI
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 9 * * 1"
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run audit
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

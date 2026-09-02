@@ -1,0 +1,17 @@
+# Opens a pull request the day an advisory lands against a dependency, and a
+# weekly one for ordinary updates. Next and React move together or not at all.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      next-react:
+        patterns:
+          - next
+          - react
+          - react-dom
+          - "@types/react"
+          - "@types/react-dom"
