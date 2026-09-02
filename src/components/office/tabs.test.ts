@@ -11,7 +11,7 @@ import { OFFICE_TABS } from "./tabs";
  * here against one list rather than trusted to stay in step by hand.
  */
 
-const officeMessages = (bundle: { office: Record<string, string> }) => bundle.office;
+const officeMessages = (bundle: { office: object }) => bundle.office as Record<string, string>;
 
 describe("the office tabs", () => {
   it("are eight, in the agreed order, each under /office", () => {
