@@ -13,9 +13,11 @@ import {
 import {
   CUSTOMIZATION_EXTRA,
   liveFabrics,
+  livePriceList,
   manageablePriceList,
   saveCustomEntry,
 } from "@/lib/live-pricing";
+import { restoreRefusal } from "@/lib/in-use";
 import { setRetired } from "@/lib/retired";
 import { newReference } from "@/lib/security";
 import { slugify } from "@/lib/slugify";
@@ -98,8 +100,13 @@ export const applyCollectionChanges = ownerAction(
           }
           await setRetired("style", change.id, true);
           return;
-        case "restore":
+        case "restore": {
+          const style = manageableStyles().find((candidate) => candidate.id === change.id);
+          if (!style) throw new ChangeRefused("unknown-style");
+          const refusal = restoreRefusal(style, livePriceList());
+          if (refusal) throw new ChangeRefused(refusal);
           await setRetired("style", change.id, false);
+        }
       }
     }),
   {

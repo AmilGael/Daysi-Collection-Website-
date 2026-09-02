@@ -28,6 +28,16 @@ export function stylesUsingFabric(
   }).length;
 }
 
+/** Pure: why restoring this style would leave it without a live price. */
+export function restoreRefusal(
+  style: GarmentStyle,
+  priceList: readonly PriceListEntry[],
+): "entry-retired" | undefined {
+  return priceList.some((entry) => entry.id === style.priceEntryId)
+    ? undefined
+    : "entry-retired";
+}
+
 /** Live, active styles only. */
 export function liveStylesUsingEntry(entryId: string): number {
   const styles = manageableStyles().filter((style) => !style.retired);

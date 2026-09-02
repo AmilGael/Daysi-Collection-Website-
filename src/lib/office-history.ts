@@ -231,7 +231,9 @@ export function undoableIds(kind: UndoKind): Set<string> {
   const stream = streamFor(kind);
   const counts = new Map<string, number>();
   for (const record of stream.all()) {
-    const id = stream.key(record);
+    const id = kind.startsWith("retired:")
+      ? (record as RetiredRecord).id
+      : stream.key(record);
     counts.set(id, (counts.get(id) ?? 0) + 1);
   }
   return new Set(

@@ -23,6 +23,7 @@ export const applyWorkChanges = ownerAction(
           await setRetired("request", change.id, true);
           return;
         case "restore":
+          if (!findRequest(change.id)) throw new ChangeRefused("unknown-reference");
           await setRetired("request", change.id, false);
       }
     }),

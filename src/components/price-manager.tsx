@@ -27,7 +27,7 @@ export function PriceManager({ entries, retiredEntries, alterations, appointment
       rows={entries.map((entry) => ({ id: entry.id, label: entry.garment, sublabel: entry.fabric, amounts: [entry.fixedPrice, entry.customizationExtra], undoable: entry.undoable }))}
       undoKind="price-entry"
       toChange={(id, amounts) => ({ type: "entry", key: `entry:${id}`, id, fixedPrice: amounts[0] ?? 0, customizationExtra: amounts[1] ?? 0 })}
-      retire={{ kind: "price-entry" }}
+      retirable
     />
     <PriceTable
       caption={t("pricesAlterations")}
@@ -70,13 +70,13 @@ function displayAmounts(amounts: readonly number[]): string[] {
   return amounts.map((amount) => (amount / 100).toFixed(2));
 }
 
-function PriceTable({ caption, columns, rows, toChange, undoKind, retire }: {
+function PriceTable({ caption, columns, rows, toChange, undoKind, retirable }: {
   caption: string;
   columns: readonly string[];
   rows: readonly Row[];
   toChange(id: string, cents: number[]): PriceChange;
   undoKind: UndoKind;
-  retire?: { kind: "price-entry" };
+  retirable?: boolean;
 }) {
   const t = useTranslations("office");
   const draft = useOfficeDraft<PriceChange>();
@@ -135,7 +135,7 @@ function PriceTable({ caption, columns, rows, toChange, undoKind, retire }: {
               </>
             ) : (
               <>
-                {retire ? (
+                {retirable ? (
                   <RetireButton
                     name={`${row.label} · ${row.sublabel}`}
                     onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: row.id } })}

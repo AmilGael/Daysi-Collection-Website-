@@ -125,6 +125,7 @@ describe("office undo history", () => {
     expect(undoableIds("retired:style")).not.toContain("frutera");
 
     await setRetired("style", "frutera", true);
+    expect(undoableIds("retired:style")).toContain("frutera");
     expect(previousChangeFor("retired:style", "frutera")).toEqual({
       type: "restore",
       key: "style:frutera",

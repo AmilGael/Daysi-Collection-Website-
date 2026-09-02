@@ -37,6 +37,7 @@ export const applyPriceChanges = ownerAction(
         return;
       }
       case "restore":
+        if (!manageablePriceList().some((entry) => entry.id === change.id)) throw new ChangeRefused("unknown-entry");
         await setRetired("price-entry", change.id, false);
     }
   }),
