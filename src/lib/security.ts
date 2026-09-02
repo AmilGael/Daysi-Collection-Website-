@@ -12,9 +12,11 @@ import { env } from "./env";
  * refuses every form on the site with a 403 — and browsers are the audience of
  * this check, so the request's own Host header is the honest reference point.
  */
-export function isSameOrigin(request: Request): boolean {
+export type HeaderReader = { get(name: string): string | null };
+
+export function isSameOriginHeaders(headers: HeaderReader): boolean {
   // Same-origin form posts from older browsers omit Origin but send Referer.
-  const claimed = request.headers.get("origin") ?? request.headers.get("referer");
+  const claimed = headers.get("origin") ?? headers.get("referer");
   if (!claimed) return false;
 
   let claimedHost: string;
@@ -25,7 +27,7 @@ export function isSameOrigin(request: Request): boolean {
   }
 
   const ownHost =
-    request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+    headers.get("x-forwarded-host") ?? headers.get("host");
 
   let configuredHost: string | null = null;
   try {
@@ -35,6 +37,10 @@ export function isSameOrigin(request: Request): boolean {
   }
 
   return claimedHost === ownHost || claimedHost === configuredHost;
+}
+
+export function isSameOrigin(request: Request): boolean {
+  return isSameOriginHeaders(request.headers);
 }
 
 /**
