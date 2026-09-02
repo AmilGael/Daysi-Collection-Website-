@@ -49,14 +49,21 @@ export function AccountMenu({
   }
 
   /*
-   * No border. These were two bordered squares in a row of four, and a box
+   * No boxes. These were two bordered squares in a row of four, and a box
    * around a glyph says "press me" as loudly as the booking button does while
    * doing a quarter of the work. They keep the 40px target a thumb needs and
-   * state themselves in opacity, like the tabs. The tone prop went with the
-   * boxes: `currentColor` already inverts with the header.
+   * state themselves in opacity, like the tabs. `currentColor` already
+   * inverts with the header.
+   *
+   * The account is the one exception, and it is a circle rather than a box:
+   * the owner asked for it to read at a glance as a different kind of thing
+   * from the cart beside it and the booking button after it. A thin ring in
+   * the chrome's own colour does that without competing with the button.
    */
   const glyph =
     "flex h-10 w-10 items-center justify-center opacity-70 transition-opacity hover:opacity-100";
+  const ring =
+    "flex h-8 w-8 items-center justify-center rounded-full border border-current/60";
 
   return (
     <div className="flex items-center">
@@ -82,7 +89,7 @@ export function AccountMenu({
           aria-label={viewer ? t("yourAccount") : t("signIn")}
           className={`${glyph} text-[0.75rem] font-medium uppercase`}
         >
-          {viewer ? initialOf(viewer) : <PersonGlyph />}
+          <span className={ring}>{viewer ? initialOf(viewer) : <PersonGlyph />}</span>
         </button>
 
         {isOpen ? (
