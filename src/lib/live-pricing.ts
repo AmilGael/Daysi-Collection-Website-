@@ -9,6 +9,7 @@ import {
   type PriceListEntry,
 } from "@/content";
 import { appendRecord, latestBy, readRecords } from "./records";
+import { retiredSet } from "./retired";
 
 /**
  * The live layer over the published prices — the same idea as lib/live-catalog:
@@ -152,19 +153,31 @@ export function assemblePriceList(
   fromFabrics: readonly PriceListEntry[],
   custom: readonly PriceListEntry[],
   overrides: readonly PriceEntryOverride[],
+  retired: ReadonlySet<string> = new Set(),
 ): PriceListEntry[] {
   // One row per garment-and-cloth pair. Where the same pair is priced twice,
   // the later source wins: a price Daysi wrote is a decision she made after
   // the one that shipped.
   const byId = new Map<string, PriceListEntry>();
   for (const entry of [...coded, ...fromFabrics, ...custom]) byId.set(entry.id, entry);
-  return applyEntryOverrides([...byId.values()], overrides);
+  return applyEntryOverrides([...byId.values()], overrides).filter(
+    (entry) => !retired.has(entry.id),
+  );
 }
 
 /* ------------------------------------------------------------------ live -- */
 
+export function manageableCustomFabrics(): (CustomFabric & { retired: boolean })[] {
+  const retired = retiredSet("fabric");
+  return latestBy(readRecords<CustomFabric>(CUSTOM_FABRICS), (record) => record.id).map(
+    (fabric) => ({ ...fabric, retired: retired.has(fabric.id) }),
+  );
+}
+
 export function customFabrics(): CustomFabric[] {
-  return latestBy(readRecords<CustomFabric>(CUSTOM_FABRICS), (record) => record.id);
+  return manageableCustomFabrics()
+    .filter((fabric) => !fabric.retired)
+    .map(({ retired: _retired, ...fabric }) => fabric);
 }
 
 export function liveFabrics(): Fabric[] {
@@ -182,7 +195,18 @@ export function livePriceList(): PriceListEntry[] {
     customFabrics().flatMap(entriesFromCustom),
     customEntries(),
     latestBy(readRecords<PriceEntryOverride>(ENTRY_OVERRIDES), (record) => record.entryId),
+    retiredSet("price-entry"),
   );
+}
+
+export function manageablePriceList(): (PriceListEntry & { retired: boolean })[] {
+  const retired = retiredSet("price-entry");
+  return assemblePriceList(
+    priceList,
+    customFabrics().flatMap(entriesFromCustom),
+    customEntries(),
+    latestBy(readRecords<PriceEntryOverride>(ENTRY_OVERRIDES), (record) => record.entryId),
+  ).map((entry) => ({ ...entry, retired: retired.has(entry.id) }));
 }
 
 export async function saveCustomEntry(entry: PriceListEntry): Promise<void> {
