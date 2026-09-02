@@ -512,7 +512,8 @@
       "unknown-work": "No se encontró esa pieza.",
       "unknown-entry": "No se encontró ese precio de prenda.",
       "unknown-alteration": "No se encontró ese arreglo.",
-      "unknown-appointment": "No se encontró esa cita."
+      "unknown-appointment": "No se encontró esa cita.",
+      "unknown-reference": "No se encontró esa solicitud."
     },
     "retire": "Retirar",
     "retireConfirm": "¿Retirar {name}? Sale del sitio. Puede restaurarla desde Retirados.",

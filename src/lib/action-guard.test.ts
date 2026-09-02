@@ -96,29 +96,44 @@ describe("applyEach", () => {
 });
 
 describe("office action structure", () => {
-  it("keeps every per-tab action behind ownerAction", () => {
+  it("keeps exactly one ownerAction in every editable tab", () => {
     const officeRoot = path.join(process.cwd(), "src/app/[locale]/office");
     const files = fs.existsSync(officeRoot)
       ? fs.readdirSync(officeRoot, { recursive: true, encoding: "utf8" })
           .filter((name) => name.endsWith("actions.ts"))
-          .map((name) => path.join(officeRoot, name))
+          .map((name) => ({ name, path: path.join(officeRoot, name) }))
       : [];
 
+    expect(files.map(({ name }) => path.dirname(name)).sort()).toEqual([
+      "collection",
+      "fabrics",
+      "gallery",
+      "prices",
+      "shopfront",
+      "work",
+    ]);
+
+    const expectedExports: Record<string, string> = {
+      collection: "applyCollectionChanges",
+      fabrics: "applyFabricChanges",
+      gallery: "applyGalleryChanges",
+      prices: "applyPriceChanges",
+      shopfront: "applyShopfrontChanges",
+      work: "applyWorkChanges",
+    };
+
     for (const file of files) {
-      const source = fs.readFileSync(file, "utf8");
+      const source = fs.readFileSync(file.path, "utf8");
       const firstCodeLine = source
         .split("\n")
         .map((line) => line.trim())
         .find((line) => line && !line.startsWith("//") && !line.startsWith("/*"));
-      expect(firstCodeLine, file).toBe('"use server";');
-      expect(source, file).toContain("@/lib/action-guard");
-      expect(source.match(/^export .*$/gm) ?? [], file).toEqual(
-        expect.arrayContaining([expect.stringMatching(/^export const /)]),
-      );
-      expect(source, file).not.toMatch(/export async function|isSameOrigin|bad-origin|currentViewer\(|role !==/);
-      for (const line of source.match(/^export .*$/gm) ?? []) {
-        expect(line, file).toMatch(/^export const \w+ = ownerAction\($/);
-      }
+      expect(firstCodeLine, file.path).toBe('"use server";');
+      expect(source, file.path).toContain("@/lib/action-guard");
+      expect(source.match(/^export .*$/gm) ?? [], file.path).toEqual([
+        `export const ${expectedExports[path.dirname(file.name)]} = ownerAction(`,
+      ]);
+      expect(source, file.path).not.toMatch(/export async function|isSameOrigin|bad-origin|currentViewer\(|role !==/);
     }
   });
 });
