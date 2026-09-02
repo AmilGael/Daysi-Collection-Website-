@@ -109,3 +109,13 @@ Step 1 is on `main` and deployed (PRs #17 and #18: tabs, and the office tabs in 
 **2. Add and remove listings for the collection and the gallery come into step 2.** Each of those two tabs shows the full listing with add, edit and "Retirar", and a collapsed "Retirados" group with "Restaurar". This brings forward from step 3, for kinds `style` and `gallery` only: `src/lib/retired.ts` (`retiredSet`, `setRetired`), the `retired` parameter on `assembleStyles` and `assembleGallery`, and `manageableStyles` / the `retired` flag on `manageableGallery`. Fabrics, price entries and requests keep their remove for step 3, together with undo and the in-use check.
 
 Everything else in section 2 holds: `ownerAction` over `officeDenial`, per-tab `actions.ts`, the six JSON routes deleted, uploads and the CSV kept as routes, one `SaveStatus` vocabulary, the actions scan in the guard test.
+
+## Amendment 2, 2026-09-03 (decided with the user before step 3)
+
+Step 2 is on `main` and deployed (PR #20). Step 3 keeps Design section 3 with these adjustments:
+
+**1. Undo stages a reversal; it never writes on its own.** After a confirmed change, the row keeps a small "Deshacer" link. Pressing it reads the previous version of that record off the append-only store (`versionsOf` / `previousVersion` in `records.ts`, with a per-kind baseline when no earlier line exists) and stages it as an ordinary pending change of the same kind; Daysi still presses "Confirmar cambios". Undo of an undo is therefore just another staged reversal. The link is offered for the rest of the session on rows the office itself changed, and for any row whose store history holds more than one version.
+
+**2. Retire and restore reach fabrics, price entries, and everything in Trabajo.** Kinds become `style | gallery | fabric | price-entry | request`; requests are keyed by reference and cover orders, alteration requests, commissions, appointments, contact messages and premiere sign-ups. One `activeRequests(kind)` in `request-store.ts` is the single seam: the ledger, the books, `availability` (a retired appointment frees its slot), the client's account pages and the Work tab all read through it; the Stripe webhook keeps reading raw records. Custom fabrics only (seeded fabrics are referenced by seeded styles); a price entry or fabric that a live garment points at is refused with `in-use` and a count. Restore is always available from the tab's "Retirados" group.
+
+**3. Everything goes through the confirm bar**, including retire, restore and undo, exactly as in step 2.
