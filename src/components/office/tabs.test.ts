@@ -104,3 +104,24 @@ describe("the prices tab", () => {
     expectGuarded("prices/page.tsx");
   });
 });
+
+describe("the shopfront tab", () => {
+  it("is guarded", () => {
+    expectGuarded("shopfront/page.tsx");
+  });
+});
+
+describe("the books tab", () => {
+  it("is guarded", () => {
+    expectGuarded("books/page.tsx");
+  });
+});
+
+describe("every tab in the list", () => {
+  it("has a page, and the page is guarded", () => {
+    for (const tab of OFFICE_TABS) {
+      const relative = tab.href === "/office" ? "page.tsx" : `${tab.href.slice("/office/".length)}/page.tsx`;
+      expectGuarded(relative);
+    }
+  });
+});
