@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { FabricChange } from "@/lib/office-validation";
 import { Pending } from "./office/confirm-bar";
+import { RetireButton, RetiredGroup } from "./office/retired-group";
 import { useOfficeDraft } from "./office/use-office-draft";
 import { buttonClass } from "./ui";
 
@@ -12,7 +13,7 @@ export type ManagedFabric = {
   readonly id: string;
   readonly name: string;
   readonly swatchImage: string;
-  readonly custom: boolean;
+  readonly custom?: boolean;
 };
 
 const CATEGORIES = ["dresses", "pants", "shirts", "heritage"] as const;
@@ -27,9 +28,11 @@ const CATEGORIES = ["dresses", "pants", "shirts", "heritage"] as const;
  */
 export function FabricManager({
   fabrics,
+  retired,
   categories,
 }: {
   fabrics: readonly ManagedFabric[];
+  retired: readonly ManagedFabric[];
   categories: readonly { readonly id: (typeof CATEGORIES)[number]; readonly label: string }[];
 }) {
   const t = useTranslations("office");
@@ -139,8 +142,12 @@ export function FabricManager({
   return (
     <div className="flex flex-col gap-8">
       <ul className="flex flex-wrap gap-4">
-        {fabrics.map((fabric) => (
-          <li key={fabric.id} className="flex w-24 flex-col gap-2">
+        {fabrics.map((fabric) => {
+          const key = `fabric:${fabric.id}`;
+          const pending = draft.pending(key);
+          const retiring = pending?.change.wire.type === "retire";
+          return (
+          <li key={fabric.id} className={`flex w-24 flex-col gap-2 ${retiring ? "opacity-50" : ""}`}>
             <span className="relative block aspect-square overflow-hidden border border-line">
               <Image src={fabric.swatchImage} alt="" fill sizes="6rem" className="object-cover" />
             </span>
@@ -150,8 +157,22 @@ export function FabricManager({
                 <span className="block text-ink-faint">{t("fabricYours")}</span>
               ) : null}
             </span>
+            {pending ? (
+              <>
+                <Pending confirming={pending.confirming} error={pending.error} count={pending.count} />
+                <button type="button" onClick={() => draft.unstage(key)} className="text-left text-xs underline underline-offset-4">
+                  {t("removePending")}
+                </button>
+              </>
+            ) : fabric.custom ? (
+              <RetireButton
+                name={fabric.name}
+                onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: fabric.id } })}
+              />
+            ) : null}
           </li>
-        ))}
+          );
+        })}
         {pendingAdds.map((entry) => {
           const wire = entry.change.wire;
           if (wire.type !== "fabric-add") return null;
@@ -170,6 +191,15 @@ export function FabricManager({
           );
         })}
       </ul>
+
+      <RetiredGroup
+        items={retired.map((fabric) => ({ id: fabric.id, name: fabric.name, photo: fabric.swatchImage }))}
+        restoreKey={(id) => `fabric:${id}`}
+        onRestore={(id) => {
+          const key = `fabric:${id}`;
+          draft.stage(key, { wire: { type: "restore", key, id } });
+        }}
+      />
 
       <form onSubmit={onSubmit} className="flex max-w-xl flex-col gap-5 border-t border-line pt-6">
         <p className="text-[0.9375rem] font-medium">{t("fabricAdd")}</p>
