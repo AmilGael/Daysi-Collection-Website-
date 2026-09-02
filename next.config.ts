@@ -30,8 +30,27 @@ const config: NextConfig = {
    * redeploy quickly. Required by the Dockerfile, which copies `server.js`.
    */
   output: "standalone",
+  /**
+   * The photographs are the merchandise, and they are resized on demand by
+   * the smallest machine Fly sells: one shared CPU, half a gigabyte. That
+   * machine decides these numbers, not taste. Measured on the live site on
+   * 2026-09-02 against a 2000px hero: a cold AVIF encode took 3 to 5 seconds,
+   * a cold WebP 0.7 seconds, a warm hit 70 milliseconds. The default cache
+   * expires after sixty seconds and the encoded files sit on the container's
+   * own disk, so every deploy and every minute started the clock again.
+   *
+   * WebP only: AVIF would save roughly half the bytes and cost seven times
+   * the wait, and the wait is what a visitor notices. A month of cache, on
+   * the server and in the browser; a photograph that changes should be given
+   * a new file name, which is how the uploads already work. And no output
+   * width past 1920: the largest source is 2000px wide, so the 2048 and
+   * 3840 rungs produced the same bytes as 1920 and were encoded separately.
+   * The cache directory itself is moved onto the volume by the entrypoint.
+   */
   images: {
-    formats: ["image/avif", "image/webp"],
+    formats: ["image/webp"],
+    minimumCacheTTL: 30 * 24 * 60 * 60,
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
