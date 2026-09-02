@@ -35,7 +35,18 @@ const PAGES = [
 ];
 
 /** Pages that must never render to somebody who is not signed in. */
-const PRIVATE = ["/account", "/account/orders", "/office"];
+const PRIVATE = [
+  "/account",
+  "/account/orders",
+  "/office",
+  "/office/work",
+  "/office/collection",
+  "/office/gallery",
+  "/office/fabrics",
+  "/office/prices",
+  "/office/shopfront",
+  "/office/books",
+];
 
 const results = [];
 

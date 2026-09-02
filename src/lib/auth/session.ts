@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { isProduction } from "../env";
 import { appendSignedRecord, latestBy, readSignedRecords } from "../records";
@@ -112,8 +113,13 @@ export async function endSession(): Promise<void> {
   jar.delete(COOKIE_NAME);
 }
 
-/** The signed-in account, or null. Safe to call from any server component. */
-export async function currentViewer(): Promise<Viewer | null> {
+/**
+ * The signed-in account, or null. Safe to call from any server component.
+ *
+ * Memoised per request: the site layout, the office layout and the office
+ * page each ask, and the answer cannot change between them.
+ */
+export const currentViewer = cache(async (): Promise<Viewer | null> => {
   const jar = await cookies();
   const token = jar.get(COOKIE_NAME)?.value;
   if (!token) return null;
@@ -129,7 +135,7 @@ export async function currentViewer(): Promise<Viewer | null> {
   if (account.email !== session.email) return null;
 
   return { account, role: roleFor(account) };
-}
+});
 
 /**
  * The viewer, or a thrown redirect to sign in. Every private page starts with
