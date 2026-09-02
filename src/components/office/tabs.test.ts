@@ -98,3 +98,9 @@ describe("the fabrics tab", () => {
     expectGuarded("fabrics/page.tsx");
   });
 });
+
+describe("the prices tab", () => {
+  it("is guarded", () => {
+    expectGuarded("prices/page.tsx");
+  });
+});
