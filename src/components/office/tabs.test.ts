@@ -147,3 +147,15 @@ describe("the smoke script", () => {
     }
   });
 });
+
+describe("where the office tabs live", () => {
+  it("is the site header, which swaps the store links for them inside the office", () => {
+    const header = fs.readFileSync(path.join(process.cwd(), "src/components/site-header.tsx"), "utf8");
+    expect(header).toContain("OFFICE_TABS");
+    expect(header).toContain("<OfficeTabs");
+  });
+
+  it("is not the office layout, so there is one row of tabs and not two", () => {
+    expect(read("layout.tsx")).not.toContain("OfficeTabs");
+  });
+});
