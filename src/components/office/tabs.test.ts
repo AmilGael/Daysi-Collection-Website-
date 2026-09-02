@@ -86,3 +86,9 @@ describe("the collection tab", () => {
     expectGuarded("collection/page.tsx");
   });
 });
+
+describe("the gallery tab", () => {
+  it("is guarded", () => {
+    expectGuarded("gallery/page.tsx");
+  });
+});
