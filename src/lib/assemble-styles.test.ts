@@ -71,4 +71,16 @@ describe("assembling the catalog from seed and what Daysi added", () => {
     const result = assembleStyles([style("a")], [], [override({ styleId: "a", isPublished: false })]);
     expect(result[0]?.isPublished).toBe(false);
   });
+
+  it("drops a retired seeded garment", () => {
+    expect(assembleStyles([style("a"), style("b")], [], [], new Set(["a"])).map((s) => s.id)).toEqual(["b"]);
+  });
+
+  it("drops a retired added garment", () => {
+    expect(assembleStyles([], [style("new")], [], new Set(["new"]))).toEqual([]);
+  });
+
+  it("behaves unchanged with an empty retired set", () => {
+    expect(assembleStyles([style("a")], [style("new")], [], new Set()).map((s) => s.id)).toEqual(["a", "new"]);
+  });
 });

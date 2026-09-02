@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import type { FabricChange } from "@/lib/office-validation";
+import { Pending } from "./office/confirm-bar";
+import { useOfficeDraft } from "./office/use-office-draft";
 import { buttonClass } from "./ui";
-import { postOffice, uploadPhoto, type SaveState } from "./office-client";
 
 export type ManagedFabric = {
   readonly id: string;
@@ -32,13 +33,37 @@ export function FabricManager({
   categories: readonly { readonly id: (typeof CATEGORIES)[number]; readonly label: string }[];
 }) {
   const t = useTranslations("office");
-  const router = useRouter();
+  const draft = useOfficeDraft<FabricChange>();
   const fileRef = useRef<HTMLInputElement>(null);
+  const previewsRef = useRef<Record<string, string>>({});
+  const selectedPreviewRef = useRef<string | null>(null);
 
   const [name, setName] = useState("");
   const [prices, setPrices] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
-  const [state, setState] = useState<SaveState>("idle");
+  const [pendingPreviews, setPendingPreviews] = useState<Record<string, string>>({});
+
+  useEffect(() => { previewsRef.current = pendingPreviews; }, [pendingPreviews]);
+  useEffect(() => {
+    const liveKeys = new Set(draft.entries.map((entry) => entry.key));
+    setPendingPreviews((current) => {
+      const next = { ...current };
+      let changed = false;
+      for (const [key, url] of Object.entries(current)) {
+        if (!liveKeys.has(key)) {
+          URL.revokeObjectURL(url);
+          delete next[key];
+          changed = true;
+        }
+      }
+      return changed ? next : current;
+    });
+  }, [draft.entries]);
+  useEffect(() => () => {
+    for (const url of Object.values(previewsRef.current)) URL.revokeObjectURL(url);
+    if (selectedPreviewRef.current) URL.revokeObjectURL(selectedPreviewRef.current);
+  }, []);
 
   async function averageColorOf(file: File): Promise<string> {
     const bitmap = await createImageBitmap(file);
@@ -69,36 +94,47 @@ export function FabricManager({
     event.preventDefault();
     const file = fileRef.current?.files?.[0];
     if (!file || name.trim().length < 2) return;
-    setState("saving");
-    try {
-      const src = await uploadPhoto(file);
-
-      const priceBody: Record<string, number> = {};
-      for (const category of CATEGORIES) {
-        const value = parseFloat(prices[category] ?? "");
-        if (Number.isFinite(value) && value > 0) {
-          priceBody[category] = Math.round(value * 100);
-        }
+    const priceBody: Record<string, number> = {};
+    for (const category of CATEGORIES) {
+      const entered = prices[category]?.trim() ?? "";
+      if (!entered) continue;
+      const value = parseFloat(entered);
+      if (!Number.isFinite(value) || value < 1 || value > 5000) {
+        setFormError(true);
+        return;
       }
-      if (Object.keys(priceBody).length === 0) throw new Error("no-prices");
-
-      await postOffice("/api/office/fabrics", "PUT", {
-        name: name.trim(),
-        swatchImage: src,
-        averageColor: await averageColorOf(file),
-        prices: priceBody,
-      });
-
-      setState("saved");
-      setName("");
-      setPrices({});
-      setPreview(null);
-      if (fileRef.current) fileRef.current.value = "";
-      router.refresh();
-    } catch {
-      setState("failed");
+      priceBody[category] = Math.round(value * 100);
     }
+    if (Object.keys(priceBody).length === 0) {
+      setFormError(true);
+      return;
+    }
+    setFormError(false);
+
+    const key = `fabric-add:${crypto.randomUUID()}`;
+    const wire: FabricChange = {
+      type: "fabric-add",
+      key,
+      name: name.trim(),
+      swatchImage: "",
+      averageColor: await averageColorOf(file),
+      prices: priceBody,
+    };
+    const objectUrl = preview ?? URL.createObjectURL(file);
+    selectedPreviewRef.current = null;
+    setPendingPreviews((current) => ({ ...current, [key]: objectUrl }));
+    draft.stage(key, {
+      wire,
+      files: [file],
+      withUploads: ([src]) => ({ ...wire, swatchImage: src ?? "" }),
+    });
+    setName("");
+    setPrices({});
+    setPreview(null);
+    if (fileRef.current) fileRef.current.value = "";
   }
+
+  const pendingAdds = draft.entries.filter((entry) => entry.change.wire.type === "fabric-add");
 
   return (
     <div className="flex flex-col gap-8">
@@ -116,6 +152,23 @@ export function FabricManager({
             </span>
           </li>
         ))}
+        {pendingAdds.map((entry) => {
+          const wire = entry.change.wire;
+          if (wire.type !== "fabric-add") return null;
+          const src = pendingPreviews[entry.key];
+          return (
+            <li key={entry.key} className="flex w-24 flex-col gap-2">
+              <span className="relative block aspect-square overflow-hidden border border-line">
+                {src ? <Image src={src} alt="" fill unoptimized sizes="6rem" className="object-cover" /> : null}
+              </span>
+              <span className="text-[0.6875rem] leading-snug text-ink-soft">{wire.name}</span>
+              <Pending confirming={draft.pending(entry.key)?.confirming} error={entry.error} />
+              <button type="button" onClick={() => draft.unstage(entry.key)} className="text-left text-xs underline underline-offset-4">
+                {t("removePending")}
+              </button>
+            </li>
+          );
+        })}
       </ul>
 
       <form onSubmit={onSubmit} className="flex max-w-xl flex-col gap-5 border-t border-line pt-6">
@@ -143,9 +196,11 @@ export function FabricManager({
                 accept="image/jpeg,image/png,image/webp"
                 required
                 onChange={(event) => {
+                  if (selectedPreviewRef.current) URL.revokeObjectURL(selectedPreviewRef.current);
                   const file = event.target.files?.[0];
-                  setPreview(file ? URL.createObjectURL(file) : null);
-                  setState("idle");
+                  const nextPreview = file ? URL.createObjectURL(file) : null;
+                  selectedPreviewRef.current = nextPreview;
+                  setPreview(nextPreview);
                 }}
                 className="text-[0.8125rem] file:mr-3 file:cursor-pointer file:border file:border-line file:bg-paper file:px-3 file:py-1.5 file:text-[0.8125rem]"
               />
@@ -166,7 +221,8 @@ export function FabricManager({
                 <span className="text-[0.8125rem] text-ink-faint">$</span>
                 <input
                   type="number"
-                  min="0"
+                  min="1"
+                  max="5000"
                   step="0.01"
                   value={prices[category] ?? ""}
                   onChange={(event) =>
@@ -183,18 +239,16 @@ export function FabricManager({
         <div className="flex items-center gap-4">
           <button
             type="submit"
-            disabled={state === "saving"}
             className={buttonClass({ size: "small", tone: "solid" })}
           >
-            {state === "saving" ? t("saving") : t("fabricSave")}
+            {t("fabricSave")}
           </button>
-          {state === "saved" ? (
-            <span className="text-[0.8125rem] text-marigold-deep">{t("fabricSaved")}</span>
-          ) : null}
-          {state === "failed" ? (
-            <span className="text-[0.8125rem] text-ink">{t("updateFailed")}</span>
-          ) : null}
         </div>
+        {formError ? (
+          <p role="alert" className="text-[0.8125rem] text-ink">
+            {t.has("error.invalid") ? t("error.invalid") : t("updateFailed")}
+          </p>
+        ) : null}
         <p className="text-[0.8125rem] leading-relaxed text-ink-faint">{t("fabricNote")}</p>
       </form>
     </div>

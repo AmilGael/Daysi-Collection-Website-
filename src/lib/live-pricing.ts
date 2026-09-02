@@ -61,7 +61,7 @@ const CUSTOM_FABRICS = "custom-fabrics";
 const CUSTOM_ENTRIES = "price-entries";
 
 /** The coded per-category customization charges, reused for custom fabrics. */
-const CUSTOMIZATION_EXTRA: Record<string, number> = {
+export const CUSTOMIZATION_EXTRA: Record<string, number> = {
   dresses: 9500,
   pants: 6500,
   shirts: 5500,

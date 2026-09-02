@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { Locale } from "@/i18n/routing";
-import { postOffice, uploadPhoto } from "./office-client";
+import type { CollectionChange } from "@/lib/office-validation";
+import { Pending } from "./office/confirm-bar";
+import { RetiredGroup, RetireButton } from "./office/retired-group";
+import { useOfficeDraft, type DraftChange } from "./office/use-office-draft";
 
-/** What the office needs to know about a style to manage it — nothing more. */
 export type ManagedStyle = {
   readonly id: string;
   readonly name: string;
@@ -18,156 +18,233 @@ export type ManagedStyle = {
   readonly sizes: readonly { readonly sizeId: "s" | "m" | "l"; readonly inStock: boolean }[];
   readonly addedPhotos: readonly string[];
   readonly coverSrc?: string;
+  readonly retired: boolean;
 };
 
-/**
- * Daysi's rack, as a table: one row per piece, a switch for whether it shows
- * on the site at all, and a box per size for what is in stock today. Every
- * change saves itself; there is no separate publish step to forget.
- */
+type StyleOverrideChange = Extract<CollectionChange, { type: "style-override" }>;
+
+function overrideWire(row: ManagedStyle): StyleOverrideChange {
+  return {
+    type: "style-override",
+    key: `style:${row.id}`,
+    styleId: row.id,
+    isPublished: row.isPublished,
+    stock: Object.fromEntries(row.sizes.map((size) => [size.sizeId, size.inStock])),
+    addedPhotos: [...row.addedPhotos],
+    ...(row.coverSrc ? { coverSrc: row.coverSrc } : {}),
+  };
+}
+
+function applied(row: ManagedStyle, wire: StyleOverrideChange): ManagedStyle {
+  return {
+    ...row,
+    isPublished: wire.isPublished,
+    sizes: row.sizes.map((size) => ({
+      ...size,
+      inStock: wire.stock[size.sizeId] ?? size.inStock,
+    })),
+    addedPhotos: wire.addedPhotos ?? [],
+    coverSrc: wire.coverSrc,
+    photo: wire.coverSrc ?? row.photo,
+  };
+}
+
+function sameOverride(left: StyleOverrideChange, right: StyleOverrideChange): boolean {
+  return left.isPublished === right.isPublished
+    && left.stock.s === right.stock.s
+    && left.stock.m === right.stock.m
+    && left.stock.l === right.stock.l
+    && JSON.stringify(left.addedPhotos ?? []) === JSON.stringify(right.addedPhotos ?? [])
+    && left.coverSrc === right.coverSrc;
+}
+
 export function CollectionManager({
   styles,
-  locale,
+  retired,
+  locale: _locale,
 }: {
   styles: readonly ManagedStyle[];
+  retired: readonly ManagedStyle[];
   locale: Locale;
 }) {
   const t = useTranslations("office");
-  const router = useRouter();
-  const [rows, setRows] = useState(styles);
-  const [savedId, setSavedId] = useState<string | null>(null);
-  const [failedId, setFailedId] = useState<string | null>(null);
+  const draft = useOfficeDraft<CollectionChange>();
 
-  async function addPhoto(row: ManagedStyle, file: File, asCover: boolean) {
-    setFailedId(null);
-    try {
-      const src = await uploadPhoto(file);
-      await save({
-        ...row,
-        photoCount: row.photoCount + 1,
-        addedPhotos: [...row.addedPhotos, src],
-        ...(asCover ? { coverSrc: src, photo: src } : {}),
-      });
-    } catch {
-      setFailedId(row.id);
+  function stageOverride(
+    row: ManagedStyle,
+    patch: Partial<Pick<ManagedStyle, "isPublished" | "sizes">>,
+    extra?: { file: File; asCover: boolean },
+  ) {
+    const key = `style:${row.id}`;
+    const entry = draft.pending(key);
+    const existingWire = entry?.change.wire.type === "style-override" ? entry.change.wire : undefined;
+    const view = existingWire ? applied(row, existingWire) : row;
+    const wire = overrideWire({ ...view, ...patch });
+    const priorFiles = entry?.change.files ?? [];
+    const priorUploads = entry?.change.withUploads;
+
+    if (!extra && priorFiles.length === 0 && sameOverride(wire, overrideWire(row))) {
+      draft.unstage(key);
+      return;
     }
+
+    let change: DraftChange<CollectionChange> = { wire };
+    if (priorFiles.length > 0 && priorUploads) {
+      change = {
+        wire,
+        files: priorFiles,
+        withUploads: (srcs) => {
+          const uploaded = priorUploads(srcs);
+          return uploaded.type === "style-override"
+            ? { ...uploaded, isPublished: wire.isPublished, stock: wire.stock }
+            : wire;
+        },
+      };
+    }
+    if (extra) {
+      const priorCount = priorFiles.length;
+      change = {
+        wire,
+        files: [...priorFiles, extra.file],
+        withUploads: (srcs) => {
+          const previous = priorUploads?.(srcs.slice(0, priorCount));
+          const uploaded = previous?.type === "style-override"
+            ? { ...previous, isPublished: wire.isPublished, stock: wire.stock }
+            : wire;
+          const src = srcs[priorCount];
+          if (!src) return uploaded;
+          return {
+            ...uploaded,
+            addedPhotos: [...(uploaded.addedPhotos ?? []), src],
+            ...(extra.asCover ? { coverSrc: src } : {}),
+          };
+        },
+      };
+    }
+    draft.stage(key, change);
   }
 
-  async function save(next: ManagedStyle) {
-    setRows((current) => current.map((row) => (row.id === next.id ? next : row)));
-    setFailedId(null);
-    try {
-      await postOffice("/api/office/styles", "PUT", {
-        styleId: next.id,
-        isPublished: next.isPublished,
-        stock: Object.fromEntries(next.sizes.map((size) => [size.sizeId, size.inStock])),
-        addedPhotos: next.addedPhotos,
-        ...(next.coverSrc ? { coverSrc: next.coverSrc } : {}),
-      });
-      setSavedId(next.id);
-      setTimeout(() => setSavedId((id) => (id === next.id ? null : id)), 2000);
-      router.refresh();
-    } catch {
-      setFailedId(next.id);
-      setRows((current) =>
-        current.map((row) =>
-          row.id === next.id ? styles.find((style) => style.id === next.id) ?? row : row,
-        ),
-      );
-    }
-  }
+  const visibleRows = styles.map((row) => {
+    const entry = draft.pending(`style:${row.id}`);
+    return entry?.change.wire.type === "style-override" ? applied(row, entry.change.wire) : row;
+  });
+  const pendingCreates = draft.entries.filter((entry) => entry.change.wire.type === "style-create");
 
   return (
     <div className="flex flex-col border-t border-line">
-      {rows.map((row) => (
-        <div
-          key={row.id}
-          className="grid grid-cols-[3rem_1fr] items-center gap-4 border-b border-line py-4 sm:grid-cols-[3rem_1fr_auto_auto] sm:gap-6"
-        >
-          <div className="relative aspect-3/4 overflow-hidden bg-paper-warm">
-            <Image src={row.photo} alt="" fill sizes="3rem" className="object-cover" />
-          </div>
+      {styles.map((row) => {
+        const key = `style:${row.id}`;
+        const entry = draft.pending(key);
+        const view = entry?.change.wire.type === "style-override" ? applied(row, entry.change.wire) : row;
+        const retiring = entry?.change.wire.type === "retire";
 
-          <div className="flex flex-col gap-1">
-            <p className="text-[0.9375rem]">{row.name}</p>
-            <p className="text-[0.75rem] uppercase tracking-[0.14em] text-ink-faint">
-              {row.category}
-              <span className="ml-3 normal-case tracking-normal">
-                {t("photoCount", { count: row.photoCount })}
-              </span>
-              {savedId === row.id ? (
-                <span className="ml-3 normal-case tracking-normal text-marigold-deep">
-                  {t("saved")}
+        return (
+          <div
+            key={row.id}
+            className={`grid grid-cols-[3rem_1fr] items-center gap-4 border-b border-line py-4 sm:grid-cols-[3rem_1fr_auto_auto] sm:gap-6 ${retiring ? "opacity-50" : ""}`}
+          >
+            <div className="relative aspect-3/4 overflow-hidden bg-paper-warm">
+              <Image src={view.photo} alt="" fill sizes="3rem" className="object-cover" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <p className="text-[0.9375rem]">{view.name}</p>
+              <p className="text-[0.75rem] uppercase tracking-[0.14em] text-ink-faint">
+                {view.category}
+                <span className="ml-3 normal-case tracking-normal">
+                  {t("photoCount", { count: view.photoCount + (entry?.change.files?.length ?? 0) })}
+                </span>
+              </p>
+              {entry ? (
+                <span className="flex items-center gap-3">
+                  <Pending confirming={entry.confirming} error={entry.error} />
+                  <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">
+                    {t("removePending")}
+                  </button>
                 </span>
               ) : null}
-              {failedId === row.id ? (
-                <span className="ml-3 normal-case tracking-normal text-ink">
-                  {t("updateFailed")}
-                </span>
+              <label className="mt-1 w-fit cursor-pointer text-[0.75rem] underline underline-offset-4 hover:text-marigold-deep">
+                {t("addPhoto")}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="sr-only"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) stageOverride(row, {}, { file, asCover: window.confirm(t("photoCoverAsk")) });
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+              {!retiring ? (
+                <RetireButton
+                  name={view.name}
+                  onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: row.id } })}
+                />
               ) : null}
-            </p>
-            <label className="mt-1 w-fit cursor-pointer text-[0.75rem] underline underline-offset-4 hover:text-marigold-deep">
-              {t("addPhoto")}
+            </div>
+
+            <fieldset className="col-start-2 flex items-center gap-4 sm:col-start-3">
+              <legend className="sr-only">{t("stockLegend", { name: view.name })}</legend>
+              {view.sizes.map((size) => (
+                <label key={size.sizeId} className="flex cursor-pointer items-center gap-1.5 text-[0.8125rem] uppercase">
+                  <input
+                    type="checkbox"
+                    checked={size.inStock}
+                    disabled={retiring}
+                    onChange={(event) => stageOverride(row, {
+                      sizes: view.sizes.map((candidate) => candidate.sizeId === size.sizeId
+                        ? { ...candidate, inStock: event.target.checked }
+                        : candidate),
+                    })}
+                    className="h-4 w-4 accent-ink"
+                  />
+                  {size.sizeId}
+                </label>
+              ))}
+            </fieldset>
+
+            <label className="col-start-2 flex w-fit cursor-pointer items-center gap-2 text-[0.8125rem] sm:col-start-4">
               <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="sr-only"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) {
-                    void addPhoto(
-                      row,
-                      file,
-                      window.confirm(t("photoCoverAsk")),
-                    );
-                  }
-                  event.target.value = "";
-                }}
+                type="checkbox"
+                checked={view.isPublished}
+                disabled={retiring}
+                onChange={(event) => stageOverride(row, { isPublished: event.target.checked })}
+                className="h-4 w-4 accent-ink"
               />
+              {view.isPublished ? t("shown") : t("hidden")}
             </label>
           </div>
+        );
+      })}
 
-          <fieldset className="col-start-2 flex items-center gap-4 sm:col-start-3">
-            <legend className="sr-only">{t("stockLegend", { name: row.name })}</legend>
-            {row.sizes.map((size) => (
-              <label
-                key={size.sizeId}
-                className="flex cursor-pointer items-center gap-1.5 text-[0.8125rem] uppercase"
-              >
-                <input
-                  type="checkbox"
-                  checked={size.inStock}
-                  onChange={(event) =>
-                    save({
-                      ...row,
-                      sizes: row.sizes.map((candidate) =>
-                        candidate.sizeId === size.sizeId
-                          ? { ...candidate, inStock: event.target.checked }
-                          : candidate,
-                      ),
-                    })
-                  }
-                  className="h-4 w-4 accent-ink"
-                />
-                {size.sizeId}
-              </label>
-            ))}
-          </fieldset>
+      {pendingCreates.map((entry) => {
+        const wire = entry.change.wire;
+        if (wire.type !== "style-create") return null;
+        return (
+          <div key={entry.key} className="flex items-center gap-4 border-b border-line py-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-[0.9375rem]">{wire.name}</p>
+              <p className="text-[0.75rem] uppercase tracking-[0.14em] text-ink-faint">{wire.categoryId}</p>
+            </div>
+            <Pending confirming={draft.pending(entry.key)?.confirming} error={entry.error} />
+            <button type="button" onClick={() => draft.unstage(entry.key)} className="text-xs underline underline-offset-4">
+              {t("removePending")}
+            </button>
+          </div>
+        );
+      })}
 
-          <label className="col-start-2 flex w-fit cursor-pointer items-center gap-2 text-[0.8125rem] sm:col-start-4">
-            <input
-              type="checkbox"
-              checked={row.isPublished}
-              onChange={(event) => save({ ...row, isPublished: event.target.checked })}
-              className="h-4 w-4 accent-ink"
-            />
-            {row.isPublished ? t("shown") : t("hidden")}
-          </label>
-        </div>
-      ))}
       <p className="pt-4 text-[0.8125rem] leading-relaxed text-ink-faint">
-        {t("collectionNote", { count: rows.filter((row) => row.isPublished).length })}
+        {t("collectionNote", { count: visibleRows.filter((row) => row.isPublished).length })}
       </p>
+      <RetiredGroup
+        items={retired.map((row) => ({ id: row.id, name: row.name, photo: row.photo }))}
+        restoreKey={(id) => `style:${id}`}
+        onRestore={(id) => {
+          const key = `style:${id}`;
+          draft.stage(key, { wire: { type: "restore", key, id } });
+        }}
+      />
     </div>
   );
 }

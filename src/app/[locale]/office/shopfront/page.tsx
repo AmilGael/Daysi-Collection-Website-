@@ -1,8 +1,10 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { storedNotice } from "@/lib/live-catalog";
 import { NoticeEditor } from "@/components/notice-editor";
+import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { SiteQrCode } from "@/components/site-qr-code";
 import { officeViewer } from "../_lib/viewer";
+import { applyShopfrontChanges } from "./actions";
 
 /**
  * Shopfront: what the shop says about itself. Today that is the notice at
@@ -30,10 +32,12 @@ export default async function OfficeShopfrontPage({
             {t("noticeLead")}
           </p>
         </div>
-        <NoticeEditor
-          initialMessage={notice?.message ?? ""}
-          initialVisible={notice?.visible ?? false}
-        />
+        <OfficeDraftProvider apply={applyShopfrontChanges}>
+          <NoticeEditor
+            initialMessage={notice?.message ?? ""}
+            initialVisible={notice?.visible ?? false}
+          />
+        </OfficeDraftProvider>
       </section>
 
       {/* The workroom QR, moved off the public contact page: it is Daysi's

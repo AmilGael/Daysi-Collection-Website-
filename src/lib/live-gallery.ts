@@ -1,6 +1,7 @@
 import { galleryWorks } from "@/content/gallery";
 import type { GalleryCategoryId, GalleryWork } from "@/content/types";
 import { appendRecord, readRecords } from "./records";
+import { retiredSet } from "./retired";
 
 /**
  * The live layer over the gallery, same shape as lib/live-catalog: the works
@@ -27,6 +28,7 @@ export function assembleGallery(
   seed: readonly GalleryWork[],
   added: readonly GalleryWork[],
   visibility: readonly GalleryVisibility[],
+  retired: ReadonlySet<string> = new Set(),
 ): GalleryWork[] {
   const hidden = new Map(visibility.map((record) => [record.id, record.hidden]));
   const newest = new Map(added.map((work) => [work.id, work]));
@@ -35,7 +37,7 @@ export function assembleGallery(
   return [
     ...seed.map((work) => newest.get(work.id) ?? work),
     ...[...newest.values()].filter((work) => !seeded.has(work.id)),
-  ].filter((work) => hidden.get(work.id) !== true);
+  ].filter((work) => hidden.get(work.id) !== true && !retired.has(work.id));
 }
 
 /** The gallery as a visitor sees it. */
@@ -44,16 +46,22 @@ export function liveGallery(): GalleryWork[] {
     galleryWorks,
     readRecords<GalleryWork>(ADDED),
     readRecords<GalleryVisibility>(VISIBILITY),
+    retiredSet("gallery"),
   );
 }
 
 /** Every work including the hidden ones, each flagged — the office view. */
-export function manageableGallery(): (GalleryWork & { hidden: boolean })[] {
+export function manageableGallery(): (GalleryWork & { hidden: boolean; retired: boolean })[] {
   const hidden = new Map(
     readRecords<GalleryVisibility>(VISIBILITY).map((record) => [record.id, record.hidden]),
   );
+  const retired = retiredSet("gallery");
   const all = assembleGallery(galleryWorks, readRecords<GalleryWork>(ADDED), []);
-  return all.map((work) => ({ ...work, hidden: hidden.get(work.id) === true }));
+  return all.map((work) => ({
+    ...work,
+    hidden: hidden.get(work.id) === true,
+    retired: retired.has(work.id),
+  }));
 }
 
 /** The categories that actually have something in them, in display order. */

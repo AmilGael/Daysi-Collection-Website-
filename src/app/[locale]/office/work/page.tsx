@@ -3,7 +3,9 @@ import type { Locale } from "@/i18n/routing";
 import { loadLedger } from "@/lib/earnings";
 import { currentRecords, listRequests } from "@/lib/request-store";
 import { OfficeRequestList } from "@/components/office-request-list";
+import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { officeViewer } from "../_lib/viewer";
+import { applyWorkChanges } from "./actions";
 
 /** Work: orders and alterations, sessions, messages, and the premiere list. */
 export default async function OfficeWorkPage({
@@ -25,7 +27,7 @@ export default async function OfficeWorkPage({
   const work = ledger.filter((record) => record.kind !== "appointment");
 
   return (
-    <>
+    <OfficeDraftProvider apply={applyWorkChanges}>
       <section className="flex flex-col gap-6">
         <h2 className="text-heading">{t("work")}</h2>
         <OfficeRequestList records={work} locale={language} emptyMessage={t("noWork")} />
@@ -72,6 +74,6 @@ export default async function OfficeWorkPage({
           )}
         </div>
       </section>
-    </>
+    </OfficeDraftProvider>
   );
 }

@@ -3,7 +3,9 @@ import type { Locale } from "@/i18n/routing";
 import { categories, translate } from "@/content";
 import { customFabrics, liveFabrics } from "@/lib/live-pricing";
 import { FabricManager } from "@/components/fabric-manager";
+import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { officeViewer } from "../_lib/viewer";
+import { applyFabricChanges } from "./actions";
 
 /** Fabrics: the wall, and a place to hang a new roll. */
 export default async function OfficeFabricsPage({
@@ -41,7 +43,9 @@ export default async function OfficeFabricsPage({
           {t("fabricsLead")}
         </p>
       </div>
-      <FabricManager fabrics={fabricWall} categories={fabricCategories} />
+      <OfficeDraftProvider apply={applyFabricChanges}>
+        <FabricManager fabrics={fabricWall} categories={fabricCategories} />
+      </OfficeDraftProvider>
     </section>
   );
 }

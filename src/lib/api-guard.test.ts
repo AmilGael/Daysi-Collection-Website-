@@ -95,7 +95,7 @@ describe("the office routes", () => {
     }));
 
   it("has routes to check", () => {
-    expect(routes.length).toBeGreaterThan(4);
+    expect(routes.map((route) => route.name).sort()).toEqual(["books", "uploads"]);
   });
 
   /**

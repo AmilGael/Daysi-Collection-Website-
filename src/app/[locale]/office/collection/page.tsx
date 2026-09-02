@@ -1,11 +1,13 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { categories, translate } from "@/content";
-import { allLiveStyles, styleOverrides } from "@/lib/live-catalog";
+import { manageableStyles, styleOverrides } from "@/lib/live-catalog";
 import { liveFabrics, livePriceList } from "@/lib/live-pricing";
 import { CollectionManager, type ManagedStyle } from "@/components/collection-manager";
 import { StyleComposer } from "@/components/style-composer";
+import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { officeViewer } from "../_lib/viewer";
+import { applyCollectionChanges } from "./actions";
 
 /** Collection: the rack, and the form that puts a new garment on it. */
 export default async function OfficeCollectionPage({
@@ -21,7 +23,7 @@ export default async function OfficeCollectionPage({
   const t = await getTranslations("office");
 
   const overridesById = new Map(styleOverrides().map((override) => [override.styleId, override]));
-  const managedStyles: ManagedStyle[] = allLiveStyles().map((style) => ({
+  const managedStyles: ManagedStyle[] = manageableStyles().map((style) => ({
     id: style.id,
     name: translate(style.name, language),
     category: translate(
@@ -40,7 +42,10 @@ export default async function OfficeCollectionPage({
     })),
     addedPhotos: overridesById.get(style.id)?.addedPhotos ?? [],
     coverSrc: overridesById.get(style.id)?.coverSrc,
+    retired: style.retired,
   }));
+  const active = managedStyles.filter((style) => !style.retired);
+  const retired = managedStyles.filter((style) => style.retired);
 
   const composerCategories = categories.map((category) => ({
     id: category.id,
@@ -62,22 +67,24 @@ export default async function OfficeCollectionPage({
           {t("collectionLead")}
         </p>
       </div>
-      <CollectionManager styles={managedStyles} locale={language} />
+      <OfficeDraftProvider apply={applyCollectionChanges}>
+        <CollectionManager styles={active} retired={retired} locale={language} />
 
-      <div className="flex flex-col gap-4 border-t border-line pt-8">
-        <div className="flex flex-col gap-2">
-          <h3 className="text-[0.9375rem] font-medium">{t("styleAddTitle")}</h3>
-          <p className="max-w-xl text-[0.875rem] leading-relaxed text-ink-faint">
-            {t("styleAddLead")}
-          </p>
+        <div className="flex flex-col gap-4 border-t border-line pt-8">
+          <div className="flex flex-col gap-2">
+            <h3 className="text-[0.9375rem] font-medium">{t("styleAddTitle")}</h3>
+            <p className="max-w-xl text-[0.875rem] leading-relaxed text-ink-faint">
+              {t("styleAddLead")}
+            </p>
+          </div>
+          <StyleComposer
+            categories={composerCategories}
+            fabrics={composerFabrics}
+            pricedPairs={pricedPairs}
+            locale={language}
+          />
         </div>
-        <StyleComposer
-          categories={composerCategories}
-          fabrics={composerFabrics}
-          pricedPairs={pricedPairs}
-          locale={language}
-        />
-      </div>
+      </OfficeDraftProvider>
     </section>
   );
 }

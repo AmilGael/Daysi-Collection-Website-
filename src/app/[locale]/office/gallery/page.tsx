@@ -3,7 +3,9 @@ import type { Locale } from "@/i18n/routing";
 import { translate } from "@/content";
 import { GALLERY_ORDER, manageableGallery } from "@/lib/live-gallery";
 import { GalleryManager, type ManagedWork } from "@/components/gallery-manager";
+import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { officeViewer } from "../_lib/viewer";
+import { applyGalleryChanges } from "./actions";
 
 /** Gallery: the portfolio photographs, and a place to add one. */
 export default async function OfficeGalleryPage({
@@ -27,7 +29,10 @@ export default async function OfficeGalleryPage({
     category: work.category,
     caption: translate(work.caption, language),
     hidden: work.hidden,
+    retired: work.retired,
   }));
+  const active = galleryWorksManaged.filter((work) => !work.retired);
+  const retired = galleryWorksManaged.filter((work) => work.retired);
   const galleryCategories = GALLERY_ORDER.map((id) => ({ id, label: tg(`category.${id}`) }));
 
   return (
@@ -38,7 +43,9 @@ export default async function OfficeGalleryPage({
           {t("galleryLead")}
         </p>
       </div>
-      <GalleryManager works={galleryWorksManaged} categories={galleryCategories} />
+      <OfficeDraftProvider apply={applyGalleryChanges}>
+        <GalleryManager works={active} retired={retired} categories={galleryCategories} />
+      </OfficeDraftProvider>
     </section>
   );
 }

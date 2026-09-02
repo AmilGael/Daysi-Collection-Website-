@@ -1,18 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { Locale } from "@/i18n/routing";
 import { formatMoney } from "@/lib/money";
 import type { StoredRequest } from "@/lib/request-store";
+import type { WorkChange } from "@/lib/office-validation";
+import { Pending } from "@/components/office/confirm-bar";
+import { useOfficeDraft } from "@/components/office/use-office-draft";
 
 const STATUSES = ["new", "answered", "scheduled", "paid", "closed"] as const;
 
 /**
  * The office's working copy of the request table: the same columns a client
- * sees in their own history, plus the one control that makes it an office —
- * the status, editable. Each change appends a fresh record server-side.
+ * sees in their own history, plus the editable status. Changes stay in the
+ * tab draft until Daysi confirms them together.
  */
 export function OfficeRequestList({
   records,
@@ -25,9 +26,7 @@ export function OfficeRequestList({
 }) {
   const t = useTranslations("account");
   const to = useTranslations("office");
-  const router = useRouter();
-  const [busyReference, setBusyReference] = useState<string | null>(null);
-  const [failedReference, setFailedReference] = useState<string | null>(null);
+  const draft = useOfficeDraft<WorkChange>();
 
   if (records.length === 0) {
     return (
@@ -37,27 +36,29 @@ export function OfficeRequestList({
     );
   }
 
-  async function setStatus(record: StoredRequest, status: StoredRequest["status"]) {
-    setBusyReference(record.reference);
-    setFailedReference(null);
-    try {
-      const response = await fetch("/api/office/requests", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: record.kind, reference: record.reference, status }),
-      });
-      if (!response.ok) throw new Error("update-failed");
-      router.refresh();
-    } catch {
-      setFailedReference(record.reference);
-    } finally {
-      setBusyReference(null);
+  function setStatus(record: StoredRequest, status: StoredRequest["status"]) {
+    const key = `request:${record.reference}`;
+    if (status === record.status) {
+      draft.unstage(key);
+      return;
     }
+    draft.stage(key, {
+      wire: {
+        type: "request-status",
+        key,
+        kind: record.kind,
+        reference: record.reference,
+        status,
+      },
+    });
   }
 
   return (
     <div className="flex flex-col border-t border-line">
-      {records.map((record) => (
+      {records.map((record) => {
+        const pending = draft.pending(`request:${record.reference}`);
+        const status = pending?.change.wire.status ?? record.status;
+        return (
         <article
           key={record.reference}
           className="grid gap-3 border-b border-line py-5 sm:grid-cols-[8rem_1fr_auto] sm:items-center sm:gap-6"
@@ -80,9 +81,7 @@ export function OfficeRequestList({
             <p className="text-[0.8125rem] leading-relaxed text-ink-faint">
               {summarise(record)}
             </p>
-            {failedReference === record.reference ? (
-              <p className="text-[0.75rem] text-ink">{to("updateFailed")}</p>
-            ) : null}
+            {pending ? <Pending confirming={pending.confirming} error={pending.error} /> : null}
           </div>
 
           <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-2">
@@ -94,8 +93,7 @@ export function OfficeRequestList({
             <label className="flex items-center gap-2">
               <span className="sr-only">{to("statusLabel")}</span>
               <select
-                value={record.status}
-                disabled={busyReference === record.reference}
+                value={status}
                 onChange={(event) =>
                   setStatus(record, event.target.value as StoredRequest["status"])
                 }
@@ -110,7 +108,8 @@ export function OfficeRequestList({
             </label>
           </div>
         </article>
-      ))}
+        );
+      })}
     </div>
   );
 }

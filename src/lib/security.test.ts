@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { newReference, parseImageDataUrl } from "./security";
+import { isSameOriginHeaders, newReference, parseImageDataUrl } from "./security";
 import { isLikelyBot } from "./validation";
 import { checkRateLimit } from "./rate-limit";
 
@@ -8,6 +8,44 @@ const PNG_HEADER = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 function dataUrl(mime: string, bytes: number[]): string {
   return `data:${mime};base64,${Buffer.from(bytes).toString("base64")}`;
 }
+
+describe("same-origin, from headers alone", () => {
+  it("accepts an origin with the request host", () => {
+    expect(
+      isSameOriginHeaders(new Headers({ origin: "http://shop.test", host: "shop.test" })),
+    ).toBe(true);
+  });
+
+  it("refuses an origin with a different host", () => {
+    expect(
+      isSameOriginHeaders(new Headers({ origin: "http://evil.test", host: "shop.test" })),
+    ).toBe(false);
+  });
+
+  it("refuses headers with neither origin nor referer", () => {
+    expect(isSameOriginHeaders(new Headers({ host: "shop.test" }))).toBe(false);
+  });
+
+  it("accepts a referer with the request host", () => {
+    expect(
+      isSameOriginHeaders(
+        new Headers({ referer: "http://shop.test/office", host: "shop.test" }),
+      ),
+    ).toBe(true);
+  });
+
+  it("prefers the forwarded host over the host", () => {
+    expect(
+      isSameOriginHeaders(
+        new Headers({
+          origin: "https://shop.test",
+          host: "internal.test",
+          "x-forwarded-host": "shop.test",
+        }),
+      ),
+    ).toBe(true);
+  });
+});
 
 describe("client photo uploads", () => {
   it("accepts a real PNG", () => {
