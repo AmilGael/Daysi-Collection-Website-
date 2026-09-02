@@ -1,5 +1,5 @@
 import { business, findAppointmentType } from "@/content";
-import { listRequests, type StoredRequest } from "./request-store";
+import { activeRequests } from "./request-store";
 
 /**
  * When Daysi can be booked. Slots are generated from the opening hours in
@@ -90,19 +90,8 @@ function hoursForWeekday(weekday: number) {
   return business.hours[index];
 }
 
-/**
- * The store is append-only, so a reference can appear several times as its
- * status changes. Only the newest record speaks for the booking — that is what
- * lets a cancellation (appended as "closed") actually free its slot.
- */
-function latestPerReference(records: readonly StoredRequest[]): StoredRequest[] {
-  const latest = new Map<string, StoredRequest>();
-  for (const record of records) latest.set(record.reference, record);
-  return [...latest.values()];
-}
-
 async function bookedSlots(): Promise<Set<string>> {
-  const appointments = latestPerReference(listRequests("appointment"));
+  const appointments = activeRequests("appointment");
   const taken = new Set<string>();
 
   for (const appointment of appointments) {

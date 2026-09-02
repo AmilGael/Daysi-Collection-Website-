@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { loadLedger } from "@/lib/earnings";
-import { currentRecords, listRequests } from "@/lib/request-store";
+import { activeRequests } from "@/lib/request-store";
 import { OfficeRequestList } from "@/components/office-request-list";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { officeViewer } from "../_lib/viewer";
@@ -21,8 +21,8 @@ export default async function OfficeWorkPage({
   const t = await getTranslations("office");
 
   const ledger = loadLedger();
-  const messages = currentRecords(listRequests("contact"));
-  const signups = currentRecords(listRequests("premiere-signup"));
+  const messages = activeRequests("contact");
+  const signups = activeRequests("premiere-signup");
   const appointments = ledger.filter((record) => record.kind === "appointment");
   const work = ledger.filter((record) => record.kind !== "appointment");
 

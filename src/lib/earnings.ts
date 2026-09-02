@@ -1,5 +1,5 @@
 import type { Cents } from "@/content";
-import { currentRecords, listRequests, type StoredRequest } from "./request-store";
+import { activeRequests, type StoredRequest } from "./request-store";
 
 /**
  * What Daysi has actually earned, and what is still owed to her.
@@ -21,8 +21,9 @@ export type Earnings = {
 const BILLABLE = ["order", "alteration", "commission", "appointment"] as const;
 
 export function loadLedger(): StoredRequest[] {
-  const all = BILLABLE.flatMap(listRequests);
-  return currentRecords(all).sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+  return BILLABLE.flatMap(activeRequests).sort((a, b) =>
+    b.submittedAt.localeCompare(a.submittedAt),
+  );
 }
 
 export function earningsFrom(records: readonly StoredRequest[]): Earnings {
