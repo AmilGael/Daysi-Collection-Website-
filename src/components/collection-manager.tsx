@@ -6,6 +6,7 @@ import type { Locale } from "@/i18n/routing";
 import type { CollectionChange } from "@/lib/office-validation";
 import { Pending } from "./office/confirm-bar";
 import { RetiredGroup, RetireButton } from "./office/retired-group";
+import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft, type DraftChange } from "./office/use-office-draft";
 
 export type ManagedStyle = {
@@ -19,6 +20,7 @@ export type ManagedStyle = {
   readonly addedPhotos: readonly string[];
   readonly coverSrc?: string;
   readonly retired: boolean;
+  readonly undoable: boolean;
 };
 
 type StyleOverrideChange = Extract<CollectionChange, { type: "style-override" }>;
@@ -176,10 +178,13 @@ export function CollectionManager({
                 />
               </label>
               {!retiring ? (
-                <RetireButton
-                  name={view.name}
-                  onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: row.id } })}
-                />
+                <span className="flex items-center gap-3">
+                  <RetireButton
+                    name={view.name}
+                    onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: row.id } })}
+                  />
+                  {row.undoable && !entry ? <UndoLink kind="style-override" id={row.id} /> : null}
+                </span>
               ) : null}
             </div>
 

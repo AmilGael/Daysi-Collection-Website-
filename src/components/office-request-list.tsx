@@ -7,6 +7,7 @@ import type { StoredRequest } from "@/lib/request-store";
 import type { WorkChange } from "@/lib/office-validation";
 import { Pending } from "@/components/office/confirm-bar";
 import { RetireButton } from "@/components/office/retired-group";
+import { UndoLink } from "@/components/office/undo-link";
 import { useOfficeDraft } from "@/components/office/use-office-draft";
 
 const STATUSES = ["new", "answered", "scheduled", "paid", "closed"] as const;
@@ -21,7 +22,7 @@ export function OfficeRequestList({
   locale,
   emptyMessage,
 }: {
-  records: readonly StoredRequest[];
+  records: readonly (StoredRequest & { undoable: boolean })[];
   locale: Locale;
   emptyMessage: string;
 }) {
@@ -125,6 +126,7 @@ export function OfficeRequestList({
                 ))}
               </select>
             </label>
+            {record.undoable && !pending ? <UndoLink kind="request-status" id={record.reference} /> : null}
           </div>
         </article>
         );

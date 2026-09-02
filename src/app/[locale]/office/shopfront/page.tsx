@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { storedNotice } from "@/lib/live-catalog";
+import { undoableIds } from "@/lib/office-history";
 import { NoticeEditor } from "@/components/notice-editor";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { SiteQrCode } from "@/components/site-qr-code";
@@ -22,6 +23,7 @@ export default async function OfficeShopfrontPage({
 
   const t = await getTranslations("office");
   const notice = storedNotice();
+  const undoable = undoableIds("notice").has("site");
 
   return (
     <>
@@ -36,6 +38,7 @@ export default async function OfficeShopfrontPage({
           <NoticeEditor
             initialMessage={notice?.message ?? ""}
             initialVisible={notice?.visible ?? false}
+            undoable={undoable}
           />
         </OfficeDraftProvider>
       </section>

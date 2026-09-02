@@ -3,6 +3,7 @@ import type { Locale } from "@/i18n/routing";
 import { categories, translate } from "@/content";
 import { manageableStyles, styleOverrides } from "@/lib/live-catalog";
 import { liveFabrics, livePriceList } from "@/lib/live-pricing";
+import { undoableIds } from "@/lib/office-history";
 import { CollectionManager, type ManagedStyle } from "@/components/collection-manager";
 import { StyleComposer } from "@/components/style-composer";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
@@ -22,6 +23,7 @@ export default async function OfficeCollectionPage({
 
   const t = await getTranslations("office");
 
+  const undoable = undoableIds("style-override");
   const overridesById = new Map(styleOverrides().map((override) => [override.styleId, override]));
   const managedStyles: ManagedStyle[] = manageableStyles().map((style) => ({
     id: style.id,
@@ -43,6 +45,7 @@ export default async function OfficeCollectionPage({
     addedPhotos: overridesById.get(style.id)?.addedPhotos ?? [],
     coverSrc: overridesById.get(style.id)?.coverSrc,
     retired: style.retired,
+    undoable: undoable.has(style.id),
   }));
   const active = managedStyles.filter((style) => !style.retired);
   const retired = managedStyles.filter((style) => style.retired);

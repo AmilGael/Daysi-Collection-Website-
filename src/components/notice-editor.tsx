@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ShopfrontChange } from "@/lib/office-validation";
 import { Pending } from "./office/confirm-bar";
+import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft } from "./office/use-office-draft";
 
 /**
@@ -14,9 +15,11 @@ import { useOfficeDraft } from "./office/use-office-draft";
 export function NoticeEditor({
   initialMessage,
   initialVisible,
+  undoable,
 }: {
   initialMessage: string;
   initialVisible: boolean;
+  undoable: boolean;
 }) {
   const t = useTranslations("office");
   const draft = useOfficeDraft<ShopfrontChange>();
@@ -31,6 +34,14 @@ export function NoticeEditor({
       setVisible(initialVisible);
     }
   }, [draft.count, initialMessage, initialVisible]);
+
+  useEffect(() => {
+    const wire = pending?.change.wire;
+    if (wire?.type === "notice" && (wire.message !== message || wire.visible !== visible)) {
+      setMessage(wire.message);
+      setVisible(wire.visible);
+    }
+  }, [pending?.change.wire, message, visible]);
 
   function stage(nextMessage: string, nextVisible: boolean) {
     if (nextMessage === initialMessage && nextVisible === initialVisible) {
@@ -70,7 +81,8 @@ export function NoticeEditor({
           />
           {t("noticeVisible")}
         </label>
-        {pending ? <Pending confirming={pending.confirming} error={pending.error} /> : null}
+        {pending ? <Pending confirming={pending.confirming} error={pending.error} count={pending.count} /> : null}
+        {undoable && !pending ? <UndoLink kind="notice" id="site" /> : null}
       </div>
     </div>
   );

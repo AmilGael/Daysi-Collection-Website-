@@ -7,6 +7,7 @@ import type { GalleryCategoryId } from "@/content/types";
 import type { GalleryChange } from "@/lib/office-validation";
 import { Pending } from "./office/confirm-bar";
 import { RetiredGroup, RetireButton } from "./office/retired-group";
+import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft } from "./office/use-office-draft";
 import { buttonClass } from "./ui";
 
@@ -19,6 +20,7 @@ export type ManagedWork = {
   readonly caption: string;
   readonly hidden: boolean;
   readonly retired: boolean;
+  readonly undoable: boolean;
 };
 
 export function GalleryManager({ works, retired, categories }: {
@@ -106,7 +108,10 @@ export function GalleryManager({ works, retired, categories }: {
                 <input type="checkbox" checked={!hidden} disabled={retiring} onChange={(event) => stageVisibility(work, !event.target.checked)} className="h-3.5 w-3.5 accent-ink" />
                 {hidden ? t("hidden") : t("shown")}
               </label>
-              {!retiring ? <RetireButton name={work.caption || work.id} onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: work.id } })} /> : null}
+              {!retiring ? <span className="flex items-center gap-2">
+                <RetireButton name={work.caption || work.id} onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: work.id } })} />
+                {work.undoable && !entry ? <UndoLink kind="work-visibility" id={work.id} /> : null}
+              </span> : null}
             </li>
           );
         })}

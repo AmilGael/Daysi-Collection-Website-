@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { loadLedger } from "@/lib/earnings";
 import { activeRequests, manageableRequests, REQUEST_KINDS } from "@/lib/request-store";
+import { undoableIds } from "@/lib/office-history";
 import { OfficeRequestList } from "@/components/office-request-list";
 import { PremiereSignupList, WorkRetiredGroup } from "@/components/office/premiere-signup-list";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
@@ -27,18 +28,23 @@ export default async function OfficeWorkPage({
   const appointments = ledger.filter((record) => record.kind === "appointment");
   const work = ledger.filter((record) => record.kind !== "appointment");
   const retired = REQUEST_KINDS.flatMap(manageableRequests).filter((record) => record.retired);
+  const undoable = undoableIds("request-status");
+  const withUndoable = (records: typeof work) => records.map((record) => ({
+    ...record,
+    undoable: undoable.has(record.reference),
+  }));
 
   return (
     <OfficeDraftProvider apply={applyWorkChanges}>
       <section className="flex flex-col gap-6">
         <h2 className="text-heading">{t("work")}</h2>
-        <OfficeRequestList records={work} locale={language} emptyMessage={t("noWork")} />
+        <OfficeRequestList records={withUndoable(work)} locale={language} emptyMessage={t("noWork")} />
       </section>
 
       <section className="flex flex-col gap-6">
         <h2 className="text-heading">{t("sessions")}</h2>
         <OfficeRequestList
-          records={appointments}
+          records={withUndoable(appointments)}
           locale={language}
           emptyMessage={t("noSessions")}
         />
@@ -48,7 +54,7 @@ export default async function OfficeWorkPage({
         <div className="flex flex-col gap-6">
           <h2 className="text-heading">{t("messages")}</h2>
           <OfficeRequestList
-            records={messages}
+            records={withUndoable(messages)}
             locale={language}
             emptyMessage={t("noMessages")}
           />

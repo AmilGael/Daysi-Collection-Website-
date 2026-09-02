@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { PriceChange } from "@/lib/office-validation";
+import type { PriceChange, UndoKind } from "@/lib/office-validation";
 import { Pending } from "./office/confirm-bar";
 import { RetireButton, RetiredGroup } from "./office/retired-group";
+import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft } from "./office/use-office-draft";
 
-export type ManagedEntry = { readonly id: string; readonly garment: string; readonly fabric: string; readonly fixedPrice: number; readonly customizationExtra: number; readonly retired: boolean };
-export type ManagedAlteration = { readonly id: string; readonly name: string; readonly fixedPrice: number; readonly rushSurcharge: number };
-export type ManagedAppointment = { readonly id: string; readonly name: string; readonly fee: number };
+export type ManagedEntry = { readonly id: string; readonly garment: string; readonly fabric: string; readonly fixedPrice: number; readonly customizationExtra: number; readonly retired: boolean; readonly undoable: boolean };
+export type ManagedAlteration = { readonly id: string; readonly name: string; readonly fixedPrice: number; readonly rushSurcharge: number; readonly undoable: boolean };
+export type ManagedAppointment = { readonly id: string; readonly name: string; readonly fee: number; readonly undoable: boolean };
 
 export function PriceManager({ entries, retiredEntries, alterations, appointments }: {
   entries: readonly ManagedEntry[];
@@ -23,20 +24,23 @@ export function PriceManager({ entries, retiredEntries, alterations, appointment
     <PriceTable
       caption={t("pricesGarments")}
       columns={[t("pricesPrice"), t("pricesExtra")]}
-      rows={entries.map((entry) => ({ id: entry.id, label: entry.garment, sublabel: entry.fabric, amounts: [entry.fixedPrice, entry.customizationExtra] }))}
+      rows={entries.map((entry) => ({ id: entry.id, label: entry.garment, sublabel: entry.fabric, amounts: [entry.fixedPrice, entry.customizationExtra], undoable: entry.undoable }))}
+      undoKind="price-entry"
       toChange={(id, amounts) => ({ type: "entry", key: `entry:${id}`, id, fixedPrice: amounts[0] ?? 0, customizationExtra: amounts[1] ?? 0 })}
       retire={{ kind: "price-entry" }}
     />
     <PriceTable
       caption={t("pricesAlterations")}
       columns={[t("pricesPrice"), t("pricesRush")]}
-      rows={alterations.map((alteration) => ({ id: alteration.id, label: alteration.name, sublabel: "", amounts: [alteration.fixedPrice, alteration.rushSurcharge] }))}
+      rows={alterations.map((alteration) => ({ id: alteration.id, label: alteration.name, sublabel: "", amounts: [alteration.fixedPrice, alteration.rushSurcharge], undoable: alteration.undoable }))}
+      undoKind="alteration"
       toChange={(id, amounts) => ({ type: "alteration", key: `alteration:${id}`, id, fixedPrice: amounts[0] ?? 0, rushSurcharge: amounts[1] ?? 0 })}
     />
     <PriceTable
       caption={t("pricesSessions")}
       columns={[t("pricesFee")]}
-      rows={appointments.map((appointment) => ({ id: appointment.id, label: appointment.name, sublabel: "", amounts: [appointment.fee] }))}
+      rows={appointments.map((appointment) => ({ id: appointment.id, label: appointment.name, sublabel: "", amounts: [appointment.fee], undoable: appointment.undoable }))}
+      undoKind="appointment"
       toChange={(id, amounts) => ({ type: "appointment", key: `appointment:${id}`, id, fee: amounts[0] ?? 0 })}
     />
     <RetiredGroup
@@ -50,7 +54,7 @@ export function PriceManager({ entries, retiredEntries, alterations, appointment
   </div>;
 }
 
-type Row = { readonly id: string; readonly label: string; readonly sublabel: string; readonly amounts: readonly number[] };
+type Row = { readonly id: string; readonly label: string; readonly sublabel: string; readonly amounts: readonly number[]; readonly undoable: boolean };
 
 function amountsFrom(change: PriceChange, row: Row): readonly number[] {
   switch (change.type) {
@@ -66,11 +70,12 @@ function displayAmounts(amounts: readonly number[]): string[] {
   return amounts.map((amount) => (amount / 100).toFixed(2));
 }
 
-function PriceTable({ caption, columns, rows, toChange, retire }: {
+function PriceTable({ caption, columns, rows, toChange, undoKind, retire }: {
   caption: string;
   columns: readonly string[];
   rows: readonly Row[];
   toChange(id: string, cents: number[]): PriceChange;
+  undoKind: UndoKind;
   retire?: { kind: "price-entry" };
 }) {
   const t = useTranslations("office");
@@ -128,12 +133,17 @@ function PriceTable({ caption, columns, rows, toChange, retire }: {
                   {t("removePending")}
                 </button>
               </>
-            ) : retire ? (
-              <RetireButton
-                name={`${row.label} · ${row.sublabel}`}
-                onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: row.id } })}
-              />
-            ) : null}
+            ) : (
+              <>
+                {retire ? (
+                  <RetireButton
+                    name={`${row.label} · ${row.sublabel}`}
+                    onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: row.id } })}
+                  />
+                ) : null}
+                {row.undoable ? <UndoLink kind={undoKind} id={row.id} /> : null}
+              </>
+            )}
           </div>
         </div>;
       })}
