@@ -13,7 +13,7 @@ import {
 import {
   CUSTOMIZATION_EXTRA,
   liveFabrics,
-  livePriceList,
+  manageablePriceList,
   saveCustomEntry,
 } from "@/lib/live-pricing";
 import { setRetired } from "@/lib/retired";
@@ -43,7 +43,8 @@ export const applyCollectionChanges = ownerAction(
           }
 
           const priceEntryId = `${draft.categoryId}--${draft.fabricId}`;
-          const existing = livePriceList().find((entry) => entry.id === priceEntryId);
+          const existing = manageablePriceList().find((entry) => entry.id === priceEntryId);
+          if (existing?.retired) throw new ChangeRefused("entry-retired");
           if (!existing) {
             if (draft.fixedPrice === undefined || draft.fixedPrice <= 0) {
               throw new ChangeRefused("price-required");

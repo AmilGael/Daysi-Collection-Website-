@@ -5,7 +5,7 @@ import {
   liveAlterations,
   liveAppointmentTypes,
   liveFabrics,
-  livePriceList,
+  manageablePriceList,
 } from "@/lib/live-pricing";
 import { PriceManager } from "@/components/price-manager";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
@@ -25,7 +25,7 @@ export default async function OfficePricesPage({
 
   const t = await getTranslations("office");
 
-  const priceEntries = livePriceList().map((entry) => ({
+  const priceEntries = manageablePriceList().map((entry) => ({
     id: entry.id,
     garment: translate(
       categories.find((category) => category.id === entry.categoryId)?.name ?? {
@@ -43,6 +43,7 @@ export default async function OfficePricesPage({
     ),
     fixedPrice: entry.fixedPrice,
     customizationExtra: entry.customizationExtra,
+    retired: entry.retired,
   }));
   const priceAlterations = liveAlterations().map((alteration) => ({
     id: alteration.id,
@@ -66,7 +67,8 @@ export default async function OfficePricesPage({
       </div>
       <OfficeDraftProvider apply={applyPriceChanges}>
         <PriceManager
-          entries={priceEntries}
+          entries={priceEntries.filter((entry) => !entry.retired)}
+          retiredEntries={priceEntries.filter((entry) => entry.retired)}
           alterations={priceAlterations}
           appointments={priceAppointments}
         />
