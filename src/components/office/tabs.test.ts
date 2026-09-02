@@ -35,6 +35,7 @@ describe("the office tabs", () => {
     for (const bundle of [es, en]) {
       const office = officeMessages(bundle);
       expect(office.tabsLabel).toBeTruthy();
+      expect(office.tabsLabel).not.toContain("—");
       for (const tab of OFFICE_TABS) {
         expect(office[tab.labelKey], `${tab.id} label`).toBeTruthy();
         expect(office[tab.labelKey]).not.toContain("—");
@@ -49,10 +50,10 @@ function read(relative: string): string {
   return fs.readFileSync(path.join(officeDir, relative), "utf8");
 }
 
-/** A page is guarded when it calls the shared helper and nothing else. */
+/** A page is guarded when it awaits the shared helper and nothing else. */
 function expectGuarded(relative: string) {
   const source = read(relative);
-  expect(source, `${relative} calls officeViewer`).toContain("officeViewer(");
+  expect(source, `${relative} awaits officeViewer`).toContain("await officeViewer(");
   expect(source, `${relative} does not call currentViewer itself`).not.toContain("currentViewer(");
   expect(source, `${relative} does not compare roles itself`).not.toMatch(/role !== "owner"/);
 }
@@ -118,9 +119,21 @@ describe("the books tab", () => {
 });
 
 describe("every tab in the list", () => {
-  it("has a page, and the page is guarded", () => {
-    for (const tab of OFFICE_TABS) {
-      const relative = tab.href === "/office" ? "page.tsx" : `${tab.href.slice("/office/".length)}/page.tsx`;
+  it("matches the pages on disk exactly, and every one of them is guarded", () => {
+    const onDisk = fs
+      .readdirSync(officeDir, { recursive: true })
+      .map((entry) => entry.toString())
+      .filter((entry) => entry.endsWith("page.tsx"))
+      .map((entry) => entry.split(path.sep).join("/"))
+      .sort();
+
+    const listed = OFFICE_TABS.map((tab) =>
+      tab.href === "/office" ? "page.tsx" : `${tab.href.slice("/office/".length)}/page.tsx`,
+    ).sort();
+
+    expect(onDisk, "an unlisted page.tsx under office/ would show up here").toEqual(listed);
+
+    for (const relative of listed) {
       expectGuarded(relative);
     }
   });

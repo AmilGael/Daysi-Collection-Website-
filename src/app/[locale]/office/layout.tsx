@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { PageHeader } from "@/components/page-header";
 import { OfficeTabs } from "@/components/office/office-tabs";
-import { OFFICE_TABS, type OfficeTabId } from "@/components/office/tabs";
 import { officeViewer } from "./_lib/viewer";
 
 /**
@@ -23,14 +22,10 @@ export default async function OfficeLayout({
   const viewer = await officeViewer(locale);
   const t = await getTranslations("office");
 
-  const labels = Object.fromEntries(
-    OFFICE_TABS.map((tab) => [tab.id, t(tab.labelKey)]),
-  ) as Record<OfficeTabId, string>;
-
   return (
     <>
       <PageHeader title={t("title", { name: viewer.account.name || "Daysi" })} lead={t("lead")}>
-        <OfficeTabs labels={labels} ariaLabel={t("tabsLabel")} />
+        <OfficeTabs />
       </PageHeader>
 
       <div className="shell flex flex-col gap-16 pb-28">{children}</div>

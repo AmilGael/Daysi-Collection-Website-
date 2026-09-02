@@ -1383,7 +1383,7 @@ Then confirm nothing still tells her to scroll: `grep -n "baje hasta" docs/manua
 - [ ] **Step 6: Full verification**
 
 Run: `npm run typecheck && npm test && npm run build`
-Expected: all exit 0; the build lists `ƒ /[locale]/office/work` and the other six new routes.
+Expected: all exit 0; the build lists `/[locale]/office/work` and the other six new routes (Next 15.5 marks them `●` because the locale layout has `generateStaticParams`; `force-dynamic` still renders them per request, and `.next/prerender-manifest.json` contains no office route).
 
 Start the dev server through the preview pane and run the smoke against it (the user runs `npm run smoke`; the agent replicates its checks with `curl` against `http://localhost:3000` if the script is blocked). Expected: the ten PRIVATE checks all 307 to `/es/sign-in`; every existing check still passes.
 

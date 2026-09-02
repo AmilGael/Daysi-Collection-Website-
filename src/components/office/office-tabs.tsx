@@ -1,7 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/routing";
-import { OFFICE_TABS, type OfficeTabId } from "./tabs";
+import { OFFICE_TABS } from "./tabs";
 
 /**
  * The row of tabs under the office heading.
@@ -16,18 +17,13 @@ import { OFFICE_TABS, type OfficeTabId } from "./tabs";
  * On a phone the strip scrolls sideways rather than wrapping: eight labels
  * on three lines stop reading as tabs.
  */
-export function OfficeTabs({
-  labels,
-  ariaLabel,
-}: {
-  labels: Record<OfficeTabId, string>;
-  ariaLabel: string;
-}) {
+export function OfficeTabs() {
   const pathname = usePathname();
+  const t = useTranslations("office");
 
   return (
-    <nav aria-label={ariaLabel} className="mt-10 overflow-x-auto">
-      <ul className="flex min-w-max border-b border-line">
+    <nav aria-label={t("tabsLabel")} className="mt-10 overflow-x-auto border-b border-line">
+      <ul className="flex min-w-max">
         {OFFICE_TABS.map((tab) => {
           const active = pathname === tab.href;
           return (
@@ -41,7 +37,7 @@ export function OfficeTabs({
                     : "border-transparent text-ink-soft hover:border-line hover:text-ink"
                 }`}
               >
-                {labels[tab.id]}
+                {t(tab.labelKey)}
               </Link>
             </li>
           );
