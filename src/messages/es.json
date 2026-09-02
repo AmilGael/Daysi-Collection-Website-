@@ -86,6 +86,7 @@
     "premiereTitle": "Próximo estreno",
     "premiereLead": "Cinco o seis piezas, cada tres meses, mostradas antes de hacerse.",
     "premiereLink": "Ver el estreno",
+    "premiereLinkBetween": "Ver los estrenos pasados",
     "findUs": "Encuéntrenos en Google",
     "storyLabel": "La costurera",
     "alterationsLabel": "Arreglos",
@@ -195,8 +196,10 @@
     "signupCta": "Apúnteme a la lista",
     "signupDone": "Ya está en la lista. Esté pendiente de la revelación el {date}.",
     "included": "En este estreno",
-    "betweenTitle": "El próximo estreno viene en camino",
-    "betweenLead": "La próxima temporada ya está en la mesa de corte. La fecha de revelación se publicará aquí, y la lista se abre ese mismo día."
+    "betweenTitle": "El próximo estreno ya está en camino",
+    "betweenLead": "La próxima temporada ya está en la mesa de corte. La fecha de revelación se publicará aquí, y la lista se abre con ella.",
+    "leadBetween": "Cinco o seis piezas cada tres meses. Abajo están las últimas temporadas, y la próxima ya viene.",
+    "betweenContact": "Escriba al taller para enterarse primero"
   },
   "atelier": {
     "title": "El taller",

@@ -86,6 +86,7 @@
     "premiereTitle": "Next premiere",
     "premiereLead": "Five or six pieces, every three months, shown before they are made.",
     "premiereLink": "See the premiere",
+    "premiereLinkBetween": "See past premieres",
     "findUs": "Find us on Google",
     "storyLabel": "The seamstress",
     "alterationsLabel": "Alterations",
@@ -196,7 +197,9 @@
     "signupDone": "You are on the list. Watch for the reveal on {date}.",
     "included": "In this premiere",
     "betweenTitle": "The next premiere is coming",
-    "betweenLead": "The next season is on the cutting table. The reveal date will be published here, and the list opens the same day."
+    "betweenLead": "The next season is on the cutting table. The reveal date will be published here, and the list opens with it.",
+    "leadBetween": "Five or six pieces every three months. The last seasons are below, and the next one is on its way.",
+    "betweenContact": "Write to the atelier to hear about it first"
   },
   "atelier": {
     "title": "The atelier",

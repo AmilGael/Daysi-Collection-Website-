@@ -351,17 +351,16 @@ async function NextPremiere() {
   const tp = await getTranslations("premieres");
   const locale = (await getLocale()) as Locale;
   // Between seasons there is no next premiere written down yet; the section
-  // keeps the latest season's photograph and says the next one is coming.
-  const { next, latest } = premiereListing(new Date());
-  const premiere = next ?? latest;
-  if (!premiere) return null;
+  // keeps the newest season's photograph and says the next one is coming.
+  const { next, featured } = premiereListing(new Date());
+  if (!featured) return null;
 
   return (
     <section className="reveal py-24 lg:py-32">
       <div className="shell grid gap-12 lg:grid-cols-12 lg:items-center lg:gap-16">
         <div className="relative aspect-16/10 overflow-hidden bg-paper-warm lg:col-span-7">
           <Image
-            src={premiere.coverImage}
+            src={featured.coverImage}
             alt=""
             fill
             quality={PHOTO_QUALITY}
@@ -387,7 +386,9 @@ async function NextPremiere() {
               <Tag>{tp("edition", { count: next.editionSize })}</Tag>
             </div>
           ) : null}
-          <TextLink href="/premieres">{t("premiereLink")}</TextLink>
+          <TextLink href="/premieres">
+            {next ? t("premiereLink") : t("premiereLinkBetween")}
+          </TextLink>
         </div>
       </div>
     </section>

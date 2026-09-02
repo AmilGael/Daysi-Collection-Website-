@@ -113,29 +113,51 @@ export function sizeLabel(id: SizeId): string {
   return sizes.find((size) => size.id === id)?.label ?? id.toUpperCase();
 }
 
-/** The premiere that is currently open for sign-ups, if there is one. */
+const newYorkDay = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/New_York",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/**
+ * The calendar day at the atelier, written the way release dates are
+ * (YYYY-MM-DD), so the two compare as days and not as instants. Parsing
+ * "2026-10-06" gives midnight UTC, which is 8 PM the evening before in the
+ * Bronx; compared as instants the season stopped being "next" a night early.
+ */
+function shopDay(now: Date): string {
+  return newYorkDay.format(now);
+}
+
+/**
+ * The premiere that is currently open for sign-ups, if there is one. A season
+ * stays next through the whole of its release day; the list is newest first,
+ * so the first entry still to be released is the nearest one.
+ */
 export function upcomingPremiere(today: Date): Premiere | undefined {
-  return premieres.find((premiere) => new Date(premiere.releaseDate) > today);
+  const day = shopDay(today);
+  return premieres.find((premiere) => premiere.releaseDate >= day);
 }
 
 /**
  * What the premiere pages have to show on a given day. `next` is the season
- * still to be released, if one is written down; `latest` is the most recent
- * season either way, so a page has a photograph as long as any season has
- * ever been written down; `past` is every
- * season except the next one, most recent first. The day after a release
- * there may be no next season yet, and that gap is Daysi's to fill, not a
- * fault in the code, so both pages read from here and stand on their own.
+ * still to be released, if one is written down; `featured` is the newest
+ * season either way, the one whose photograph the pages show, defined as long
+ * as any season has ever been written down; `past` is every season except
+ * the next one, newest first. The day after a release there may be no next
+ * season yet, and that gap is Daysi's to fill, not a fault in the code, so
+ * both pages read from here and stand on their own.
  */
 export function premiereListing(today: Date): {
   next: Premiere | undefined;
-  latest: Premiere | undefined;
+  featured: Premiere | undefined;
   past: readonly Premiere[];
 } {
   const next = upcomingPremiere(today);
   return {
     next,
-    latest: next ?? premieres[0],
+    featured: premieres[0],
     past: premieres.filter((premiere) => premiere.id !== next?.id),
   };
 }
