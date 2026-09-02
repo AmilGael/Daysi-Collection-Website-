@@ -117,6 +117,7 @@ describe("office action structure", () => {
       : [];
 
     expect(serverFiles.map(({ name }) => name).sort()).toEqual([
+      "actions.ts",
       "collection/actions.ts",
       "fabrics/actions.ts",
       "gallery/actions.ts",
@@ -126,6 +127,7 @@ describe("office action structure", () => {
     ]);
 
     const expectedExports: Record<string, string> = {
+      ".": "readPreviousChange",
       collection: "applyCollectionChanges",
       fabrics: "applyFabricChanges",
       gallery: "applyGalleryChanges",

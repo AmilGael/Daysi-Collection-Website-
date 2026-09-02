@@ -113,6 +113,12 @@ describe("office draft messages", () => {
       "discardChanges",
       "leaveUnconfirmed",
       "removePending",
+      "undo",
+      "undoPending",
+      "retire",
+      "restore",
+      "retiredGroup",
+      "retireRequestConfirm",
     ] as const;
 
     for (const bundle of [es, en]) {

@@ -500,6 +500,8 @@
     "discardChanges": "Descartar",
     "leaveUnconfirmed": "Tiene cambios sin confirmar. ¿Salir de todos modos?",
     "removePending": "Quitar",
+    "undo": "Deshacer",
+    "undoPending": "Buscando la versión anterior…",
     "error": {
       "bad-origin": "No se pudo verificar esta solicitud.",
       "not-found": "Su sesión terminó. Entre otra vez y vuelva a intentarlo.",
@@ -511,10 +513,15 @@
       "unknown-entry": "No se encontró ese precio de prenda.",
       "unknown-alteration": "No se encontró ese arreglo.",
       "unknown-appointment": "No se encontró esa cita.",
-      "unknown-reference": "No se encontró esa solicitud."
+      "unknown-reference": "No se encontró esa solicitud.",
+      "nothing-to-undo": "No hay una versión anterior que recuperar.",
+      "in-use": "{count, plural, one {# prenda del sitio todavía usa esto} other {# prendas del sitio todavía usan esto}}. Retire la prenda primero.",
+      "unknown-fabric": "No se encontró esa tela.",
+      "entry-retired": "Ese precio está retirado. Restáurelo en Precios antes de usarlo."
     },
     "retire": "Retirar",
     "retireConfirm": "¿Retirar {name}? Sale del sitio. Puede restaurarla desde Retirados.",
+    "retireRequestConfirm": "¿Retirar {name}? Sale de Trabajo, de los libros y de la cuenta de la clienta. Puede restaurarla desde Retirados.",
     "retireYes": "Sí, retirar",
     "retireNo": "No",
     "restore": "Restaurar",

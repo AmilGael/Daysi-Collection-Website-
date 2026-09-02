@@ -500,6 +500,8 @@
     "discardChanges": "Discard",
     "leaveUnconfirmed": "You have unconfirmed changes. Leave anyway?",
     "removePending": "Remove",
+    "undo": "Undo",
+    "undoPending": "Finding the previous version…",
     "error": {
       "bad-origin": "This request could not be verified.",
       "not-found": "Your session ended. Sign in again and retry.",
@@ -511,10 +513,15 @@
       "unknown-entry": "That garment price could not be found.",
       "unknown-alteration": "That alteration could not be found.",
       "unknown-appointment": "That appointment could not be found.",
-      "unknown-reference": "That request could not be found."
+      "unknown-reference": "That request could not be found.",
+      "nothing-to-undo": "There is no earlier version to go back to.",
+      "in-use": "{count, plural, one {# garment on the site still uses this} other {# garments on the site still use this}}. Retire the garment first.",
+      "unknown-fabric": "That fabric could not be found.",
+      "entry-retired": "That price is retired. Restore it under Prices before using it."
     },
     "retire": "Retire",
     "retireConfirm": "Retire {name}? It leaves the site. You can restore it from Retired.",
+    "retireRequestConfirm": "Retire {name}? It leaves Work, the books and the client's account. You can restore it from Retired.",
     "retireYes": "Yes, retire",
     "retireNo": "No",
     "restore": "Restore",
