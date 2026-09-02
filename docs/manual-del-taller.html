@@ -164,7 +164,7 @@
 
   .contents li:last-child a { border-bottom: 1px solid var(--line-soft); }
 
-  /* The number is a locator, not an ornament: the text says "mire el punto 10"
+  /* The number is a locator, not an ornament: the text says "mire el punto 11"
      and this is how she finds it. Quiet, tabular, aligned. */
   .contents a::before {
     content: counter(toc, decimal-leading-zero);
@@ -339,6 +339,7 @@
       <li><a href="#trabajo">Agregar una pieza terminada a su trabajo</a></li>
       <li><a href="#aviso">Poner un aviso en el sitio</a></li>
       <li><a href="#pedidos">Los pedidos, los arreglos y las citas</a></li>
+      <li><a href="#deshacer">Deshacer un cambio</a></li>
       <li><a href="#libros">Bajar sus libros para la contadora</a></li>
       <li><a href="#fotos">Qué foto sirve y qué foto no</a></li>
       <li><a href="#problemas">Si algo no sale como esperaba</a></li>
@@ -391,6 +392,7 @@
     <p>
       Todo lo que cobra está en un solo lugar, y lo que escriba ahí es lo que el
       sitio le cobra al cliente. No hay dos listas que cuadrar.
+      Si no puede restaurar una prenda porque su precio está retirado, restaure primero el precio.
     </p>
     <ol class="steps">
       <li>En la oficina, toque la pestaña <span class="label">Precios</span> (o vaya directo a <span class="path">/es/office/prices</span>).</li>
@@ -400,6 +402,13 @@
         Busque la línea que quiere cambiar.
       </li>
       <li>Escriba el número nuevo encima del viejo y toque <span class="btn">Confirmar cambios</span>.</li>
+      <li>
+        Para sacar un precio de prenda, toque <span class="btn">Retirar</span>.
+        Puede devolverlo desde <span class="label">Retirados</span> con
+        <span class="btn">Restaurar</span>. Si una prenda del sitio todavía usa
+        ese precio, el sitio le dice cuántas son y no lo retira: retire primero
+        esas prendas.
+      </li>
     </ol>
     <div class="note">
       <p>
@@ -500,6 +509,7 @@
     <p>
       La tela que agregue aquí aparece en dos sitios a la vez: en el taller de
       diseño, donde la clienta juega con ella, y en la lista de precios.
+      Si no puede restaurar una prenda porque su precio está retirado, restaure primero el precio.
     </p>
     <ol class="steps">
       <li>En la oficina, toque la pestaña <span class="label">Telas</span> (<span class="path">/es/office/fabrics</span>).</li>
@@ -508,7 +518,7 @@
       </li>
       <li>
         <span class="label">Foto de la muestra</span>: un pedazo de la tela,
-        de cerca y bien plano. Mire el punto 10.
+        de cerca y bien plano. Mire el punto 11.
       </li>
       <li>
         <span class="label">Precio de una pieza, por prenda</span>: cuánto
@@ -516,7 +526,17 @@
         menos uno.
       </li>
       <li>Toque <span class="btn">Agregarla a los cambios</span> y luego <span class="btn">Confirmar cambios</span>.</li>
+      <li>
+        Para sacar uno de los rollos que usted agregó, toque
+        <span class="btn">Retirar</span>. Si una prenda todavía usa esa tela, el
+        sitio le dice cuántas son y le pide que retire primero esas prendas.
+        El rollo vuelve desde <span class="label">Retirados</span> con
+        <span class="btn">Restaurar</span>.
+      </li>
     </ol>
+    <p>
+      Cuando restaura una tela, también vuelven los precios de esa tela.
+    </p>
   </section>
 
   <!-- 06 ------------------------------------------------------------- -->
@@ -601,15 +621,37 @@
         cómo va.
       </p>
       <p>
-        Una cita que se cancela libera su hora sola: ese espacio vuelve a
-        aparecer disponible para otra clienta.
+        Una cita retirada libera su hora, sale de los libros y de la cuenta de
+        la clienta. <span class="btn">Restaurar</span> vuelve a poner las tres
+        cosas como estaban.
       </p>
     </div>
   </section>
 
   <!-- 09 ------------------------------------------------------------- -->
+  <section class="task" id="deshacer">
+    <h2><span class="n">09</span>Deshacer un cambio</h2>
+    <ol class="steps">
+      <li>Después de confirmar un cambio, esa línea conserva <span class="btn">Deshacer</span>.</li>
+      <li>Al tocarlo, la versión anterior entra en la lista como <span class="label">pendiente</span>.</li>
+      <li><span class="btn">Confirmar cambios</span> la hace real; <span class="btn">Descartar</span> olvida el cambio pendiente.</li>
+    </ol>
+    <div class="note">
+      <p><strong>Deshacer dos veces vuelve a donde estaba.</strong></p>
+      <p>
+        <strong>Retirar y restaurar.</strong> En Telas solo puede retirar los
+        rollos que usted agregó. Si una prenda usa una tela o un precio, el
+        sitio se niega y le dice cuántas prendas son; retire primero esas
+        prendas. En Trabajo también puede retirar pedidos, arreglos, citas,
+        mensajes y personas de la lista de estreno, y restaurarlos desde
+        <span class="label">Retirados</span>.
+      </p>
+    </div>
+  </section>
+
+  <!-- 10 ------------------------------------------------------------- -->
   <section class="task" id="libros">
-    <h2><span class="n">09</span>Bajar sus libros para la contadora</h2>
+    <h2><span class="n">10</span>Bajar sus libros para la contadora</h2>
     <p>
       El sitio no le lleva la contabilidad, pero sí le entrega todo lo que
       facturó en un archivo que la contadora abre en Excel o mete en QuickBooks
@@ -635,9 +677,9 @@
     </div>
   </section>
 
-  <!-- 10 ------------------------------------------------------------- -->
+  <!-- 11 ------------------------------------------------------------- -->
   <section class="task" id="fotos">
-    <h2><span class="n">10</span>Qué foto sirve y qué foto no</h2>
+    <h2><span class="n">11</span>Qué foto sirve y qué foto no</h2>
     <p>
       Las fotos son lo que vende la pieza. Con estas cuatro cosas ya salen bien
       desde el teléfono.
@@ -670,9 +712,9 @@
     </div>
   </section>
 
-  <!-- 11 ------------------------------------------------------------- -->
+  <!-- 12 ------------------------------------------------------------- -->
   <section class="task" id="problemas">
-    <h2><span class="n">11</span>Si algo no sale como esperaba</h2>
+    <h2><span class="n">12</span>Si algo no sale como esperaba</h2>
     <ol class="steps">
       <li>
         <strong>«Ese cambio no se guardó».</strong> Casi siempre es el internet.
@@ -688,9 +730,8 @@
         <span class="label">Visible</span> y que tenga al menos una talla marcada.
       </li>
       <li>
-        <strong>Se equivocó en algo.</strong> Escríbalo bien encima y guarde. El
-        sitio guarda cada cambio en orden, así que siempre se puede ver qué decía
-        antes.
+        <strong>Se equivocó en algo.</strong> Toque <a href="#deshacer"><span class="btn">Deshacer</span></a>
+        en esa línea y siga el punto 09, <a href="#deshacer">Deshacer un cambio</a>.
       </li>
     </ol>
   </section>

@@ -47,4 +47,48 @@ describe("assembling the published price list", () => {
     // Hers is the newer decision, so hers is the published price.
     expect(result[0]?.fixedPrice).toBe(19000);
   });
+
+  it("drops a retired coded entry", () => {
+    const result = assemblePriceList(
+      [entry("shirts--wax-print")],
+      [],
+      [],
+      [],
+      new Set(["shirts--wax-print"]),
+    );
+    expect(result).toEqual([]);
+  });
+
+  it("drops a retired custom entry", () => {
+    const result = assemblePriceList(
+      [],
+      [],
+      [entry("dresses--fish-batik")],
+      [],
+      new Set(["dresses--fish-batik"]),
+    );
+    expect(result).toEqual([]);
+  });
+
+  it("changes nothing with an empty retired set", () => {
+    const entries = [entry("shirts--wax-print")];
+    expect(assemblePriceList(entries, [], [], [], new Set())).toEqual(entries);
+  });
+
+  it("does not let an override resurrect a retired entry", () => {
+    const override: PriceEntryOverride = {
+      entryId: "shirts--wax-print",
+      fixedPrice: 20000,
+      customizationExtra: 5000,
+      updatedAt: "2026-08-28T00:00:00.000Z",
+    };
+    const result = assemblePriceList(
+      [entry("shirts--wax-print")],
+      [],
+      [],
+      [override],
+      new Set(["shirts--wax-print"]),
+    );
+    expect(result).toEqual([]);
+  });
 });

@@ -11,30 +11,31 @@ Short words. No jargon. Read top to bottom.
 - **Account button is a ring** so it does not look like the cart.
 - **Manual for Daysi** (`docs/manual-del-taller.html`) names the tab for each task.
 
-## Step 2 of the office: done, waiting to ship
+## Office steps 2 and 3: done
 
-Daysi changes things, sees them marked "pendiente", then presses **Confirmar cambios**. Nothing saves before that. **Descartar** throws the changes away. Leaving a tab with pending changes asks once.
+Daysi changes things, sees them marked "pendiente", then presses **Confirmar cambios**. Nothing saves before that. **Descartar** throws the changes away.
 
-What is in it:
+What she can do now:
 
-- Every office tab (Colección, Galería, Telas, Precios, Vitrina, Trabajo) has one bar at the bottom for confirming or discarding.
-- Garments and gallery photos can be added, **retired** and **restored**. A retired piece leaves the site at once; it sits under "Retirados" until she restores it. Nothing is ever deleted.
-- Photos upload only when she confirms, so a discarded draft uploads nothing.
-- The old save routes are gone; one guarded action per tab does all the saving.
-- The manual explains the bar under "Cómo entrar" and the Retirar/Restaurar steps.
+- Every office tab has one bar at the bottom for confirming or discarding.
+- **Retirar / Restaurar** on garments, gallery photos, her own fabric rolls, prices, and everything in Trabajo (orders, alterations, commissions, appointments, messages, sign-ups). A retired piece leaves the site at once and sits under "Retirados" until she restores it. Nothing is ever deleted.
+- A fabric or price that a garment on the site still uses cannot be retired; the row says how many garments use it. Retire the garment first.
+- A retired appointment frees its hour and leaves the books and the client's account. Restore puts all three back.
+- **Deshacer** on any row she has changed. It puts the earlier version in the list as "pendiente"; she still presses Confirmar. Deshacer twice is a redo.
+- The manual has a "Deshacer un cambio" section and the Retirar notes.
 
-To ship it: merge the pull request "Office: nothing saves until she confirms", then from `main`:
+Step 3 is on the pull request "Office: retire anything, and undo that waits for her yes". Once it is merged, from `main`:
 
 ```bash
 npm run deploy
 ```
 
-Then sign in as Daysi once, change a size, confirm, and check the garment page shows it.
+## What could come next (not started)
 
-## Step 3 after that
-
-- Retire and restore for fabrics, prices and orders. A retired appointment frees its time slot.
-- Undo: put back the last change (the disk already keeps every old version).
+- The office tab strip should scroll the active tab into view on a phone.
+- The gallery's save button labels still say "Agregar al trabajo".
+- Shopfront: hours, holidays and the premiere season as forms instead of code.
+- Text overrides: fix a garment's description from the office instead of a deploy.
 
 ## Stripe: what has to happen for card payments
 

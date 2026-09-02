@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { env } from "./env";
 import type { Estimate } from "./pricing";
+import { retiredSet } from "./retired";
 
 /**
  * ERD: REQUEST. Where a submitted request lives once it has been validated.
@@ -33,6 +34,15 @@ const OWNER_ONLY_DIRECTORY = 0o700;
 const OWNER_ONLY_FILE = 0o600;
 
 export type StoredRequestKind = "alteration" | "order" | "commission" | "appointment" | "contact" | "premiere-signup";
+
+export const REQUEST_KINDS = [
+  "alteration",
+  "order",
+  "commission",
+  "appointment",
+  "contact",
+  "premiere-signup",
+] as const satisfies readonly StoredRequestKind[];
 
 export type StoredRequest = {
   readonly reference: string;
@@ -100,6 +110,35 @@ export function listRequests(kind: StoredRequestKind): StoredRequest[] {
   }
 }
 
+export function activeRequests(kind: StoredRequestKind): StoredRequest[] {
+  const retired = retiredSet("request");
+  return currentRecords(listRequests(kind)).filter(
+    (record) => !retired.has(record.reference),
+  );
+}
+
+export function manageableRequests(
+  kind: StoredRequestKind,
+): (StoredRequest & { retired: boolean })[] {
+  const retired = retiredSet("request");
+  return currentRecords(listRequests(kind)).map((record) => ({
+    ...record,
+    retired: retired.has(record.reference),
+  }));
+}
+
+export function requestVersions(reference: string): StoredRequest[] {
+  for (const kind of REQUEST_KINDS) {
+    const versions = listRequests(kind).filter((record) => record.reference === reference);
+    if (versions.length > 0) return versions;
+  }
+  return [];
+}
+
+export function findRequest(reference: string): StoredRequest | undefined {
+  return requestVersions(reference).at(-1);
+}
+
 /**
  * Everything a given account may see: their own records, and nobody else's.
  *
@@ -113,7 +152,7 @@ export function requestsForAccount(
   account: { id: string; email: string },
   kinds: readonly StoredRequestKind[],
 ): StoredRequest[] {
-  const all = kinds.flatMap(listRequests);
+  const all = kinds.flatMap(activeRequests);
   const mine = all.filter(
     (record) =>
       record.accountId === account.id ||
@@ -121,7 +160,7 @@ export function requestsForAccount(
         record.client.email.trim().toLowerCase() === account.email),
   );
 
-  return currentRecords(mine).sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+  return mine.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
 }
 
 /**

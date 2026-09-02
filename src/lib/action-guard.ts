@@ -14,6 +14,7 @@ export type ChangeResult = {
   readonly key: string;
   readonly ok: boolean;
   readonly error?: string;
+  readonly count?: number;
 };
 
 export function ownerAction<Schema extends ZodTypeAny, T extends object>(
@@ -50,7 +51,7 @@ export function ownerAction<Schema extends ZodTypeAny, T extends object>(
 
 /** Thrown inside a per-change handler to refuse one change with a code the row can show. */
 export class ChangeRefused extends Error {
-  constructor(readonly code: string) {
+  constructor(readonly code: string, readonly count?: number) {
     super(code);
   }
 }
@@ -66,10 +67,12 @@ export async function applyEach<C extends { readonly key: string }>(
       await apply(change);
       results.push({ key: change.key, ok: true });
     } catch (error) {
+      const refusal = error instanceof ChangeRefused ? error : undefined;
       results.push({
         key: change.key,
         ok: false,
-        error: error instanceof ChangeRefused ? error.code : "failed",
+        error: refusal?.code ?? "failed",
+        ...(refusal?.count !== undefined ? { count: refusal.count } : {}),
       });
     }
   }

@@ -49,7 +49,7 @@ export function RetiredGroup({
                 ) : null}
                 <span className="min-w-0 flex-1 text-sm">{item.name}</span>
                 {pending ? (
-                  <Pending confirming={pending.confirming} error={pending.error} />
+                  <Pending confirming={pending.confirming} error={pending.error} count={pending.count} />
                 ) : (
                   <button
                     type="button"
@@ -70,9 +70,11 @@ export function RetiredGroup({
 
 export function RetireButton({
   name,
+  prompt,
   onConfirm,
 }: {
   name: string;
+  prompt?: string;
   onConfirm(): void;
 }): JSX.Element {
   const t = useTranslations("office");
@@ -101,7 +103,7 @@ export function RetireButton({
 
   return (
     <span className="flex flex-wrap items-center gap-2 text-xs">
-      <span>{t("retireConfirm", { name })}</span>
+      <span>{prompt ?? t("retireConfirm", { name })}</span>
       <button
         type="button"
         onClick={() => {

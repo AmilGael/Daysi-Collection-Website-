@@ -7,6 +7,7 @@ import type { GalleryCategoryId } from "@/content/types";
 import type { GalleryChange } from "@/lib/office-validation";
 import { Pending } from "./office/confirm-bar";
 import { RetiredGroup, RetireButton } from "./office/retired-group";
+import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft } from "./office/use-office-draft";
 import { buttonClass } from "./ui";
 
@@ -19,6 +20,7 @@ export type ManagedWork = {
   readonly caption: string;
   readonly hidden: boolean;
   readonly retired: boolean;
+  readonly undoable: boolean;
 };
 
 export function GalleryManager({ works, retired, categories }: {
@@ -99,14 +101,17 @@ export function GalleryManager({ works, retired, categories }: {
                 <Image src={work.src} alt="" fill sizes="10rem" className="object-cover" />
               </span>
               {entry ? <span className="flex flex-wrap items-center gap-2">
-                <Pending confirming={entry.confirming} error={entry.error} />
+                <Pending confirming={entry.confirming} error={entry.error} count={entry.count} />
                 {retiring ? <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">{t("removePending")}</button> : null}
               </span> : null}
               <label className="flex cursor-pointer items-center gap-1.5 text-[0.6875rem] text-ink-faint">
                 <input type="checkbox" checked={!hidden} disabled={retiring} onChange={(event) => stageVisibility(work, !event.target.checked)} className="h-3.5 w-3.5 accent-ink" />
                 {hidden ? t("hidden") : t("shown")}
               </label>
-              {!retiring ? <RetireButton name={work.caption || work.id} onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: work.id } })} /> : null}
+              {!retiring ? <span className="flex items-center gap-2">
+                <RetireButton name={work.caption || work.id} onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: work.id } })} />
+                {work.undoable && !entry ? <UndoLink kind="work-visibility" id={work.id} /> : null}
+              </span> : null}
             </li>
           );
         })}
@@ -119,7 +124,7 @@ export function GalleryManager({ works, retired, categories }: {
               {src ? <Image src={src} alt="" fill unoptimized sizes="10rem" className="object-cover" /> : null}
             </span>
             <p className="truncate text-[0.6875rem] text-ink-faint">{wire.caption}</p>
-            <Pending confirming={draft.pending(entry.key)?.confirming} error={entry.error} />
+            <Pending confirming={draft.pending(entry.key)?.confirming} error={entry.error} count={entry.count} />
             <button type="button" onClick={() => draft.unstage(entry.key)} className="text-left text-xs underline underline-offset-4">{t("removePending")}</button>
           </li>;
         })}

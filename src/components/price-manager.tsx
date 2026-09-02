@@ -2,49 +2,67 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { PriceChange } from "@/lib/office-validation";
+import type { PriceChange, UndoKind } from "@/lib/office-validation";
 import { Pending } from "./office/confirm-bar";
+import { RetireButton, RetiredGroup } from "./office/retired-group";
+import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft } from "./office/use-office-draft";
 
-export type ManagedEntry = { readonly id: string; readonly garment: string; readonly fabric: string; readonly fixedPrice: number; readonly customizationExtra: number };
-export type ManagedAlteration = { readonly id: string; readonly name: string; readonly fixedPrice: number; readonly rushSurcharge: number };
-export type ManagedAppointment = { readonly id: string; readonly name: string; readonly fee: number };
+export type ManagedEntry = { readonly id: string; readonly garment: string; readonly fabric: string; readonly fixedPrice: number; readonly customizationExtra: number; readonly retired: boolean; readonly undoable: boolean };
+export type ManagedAlteration = { readonly id: string; readonly name: string; readonly fixedPrice: number; readonly rushSurcharge: number; readonly undoable: boolean };
+export type ManagedAppointment = { readonly id: string; readonly name: string; readonly fee: number; readonly undoable: boolean };
 
-export function PriceManager({ entries, alterations, appointments }: {
+export function PriceManager({ entries, retiredEntries, alterations, appointments }: {
   entries: readonly ManagedEntry[];
+  retiredEntries: readonly ManagedEntry[];
   alterations: readonly ManagedAlteration[];
   appointments: readonly ManagedAppointment[];
 }) {
   const t = useTranslations("office");
+  const draft = useOfficeDraft<PriceChange>();
   return <div className="flex flex-col gap-10">
     <PriceTable
       caption={t("pricesGarments")}
       columns={[t("pricesPrice"), t("pricesExtra")]}
-      rows={entries.map((entry) => ({ id: entry.id, label: entry.garment, sublabel: entry.fabric, amounts: [entry.fixedPrice, entry.customizationExtra] }))}
+      rows={entries.map((entry) => ({ id: entry.id, label: entry.garment, sublabel: entry.fabric, amounts: [entry.fixedPrice, entry.customizationExtra], undoable: entry.undoable }))}
+      undoKind="price-entry"
       toChange={(id, amounts) => ({ type: "entry", key: `entry:${id}`, id, fixedPrice: amounts[0] ?? 0, customizationExtra: amounts[1] ?? 0 })}
+      retirable
     />
     <PriceTable
       caption={t("pricesAlterations")}
       columns={[t("pricesPrice"), t("pricesRush")]}
-      rows={alterations.map((alteration) => ({ id: alteration.id, label: alteration.name, sublabel: "", amounts: [alteration.fixedPrice, alteration.rushSurcharge] }))}
+      rows={alterations.map((alteration) => ({ id: alteration.id, label: alteration.name, sublabel: "", amounts: [alteration.fixedPrice, alteration.rushSurcharge], undoable: alteration.undoable }))}
+      undoKind="alteration"
       toChange={(id, amounts) => ({ type: "alteration", key: `alteration:${id}`, id, fixedPrice: amounts[0] ?? 0, rushSurcharge: amounts[1] ?? 0 })}
     />
     <PriceTable
       caption={t("pricesSessions")}
       columns={[t("pricesFee")]}
-      rows={appointments.map((appointment) => ({ id: appointment.id, label: appointment.name, sublabel: "", amounts: [appointment.fee] }))}
+      rows={appointments.map((appointment) => ({ id: appointment.id, label: appointment.name, sublabel: "", amounts: [appointment.fee], undoable: appointment.undoable }))}
+      undoKind="appointment"
       toChange={(id, amounts) => ({ type: "appointment", key: `appointment:${id}`, id, fee: amounts[0] ?? 0 })}
+    />
+    <RetiredGroup
+      items={retiredEntries.map((entry) => ({ id: entry.id, name: `${entry.garment} · ${entry.fabric}` }))}
+      restoreKey={(id) => `entry:${id}`}
+      onRestore={(id) => {
+        const key = `entry:${id}`;
+        draft.stage(key, { wire: { type: "restore", key, id } });
+      }}
     />
   </div>;
 }
 
-type Row = { readonly id: string; readonly label: string; readonly sublabel: string; readonly amounts: readonly number[] };
+type Row = { readonly id: string; readonly label: string; readonly sublabel: string; readonly amounts: readonly number[]; readonly undoable: boolean };
 
-function amountsFrom(change: PriceChange): readonly number[] {
+function amountsFrom(change: PriceChange, row: Row): readonly number[] {
   switch (change.type) {
     case "entry": return [change.fixedPrice, change.customizationExtra];
     case "alteration": return [change.fixedPrice, change.rushSurcharge];
     case "appointment": return [change.fee];
+    case "retire":
+    case "restore": return row.amounts;
   }
 }
 
@@ -52,12 +70,15 @@ function displayAmounts(amounts: readonly number[]): string[] {
   return amounts.map((amount) => (amount / 100).toFixed(2));
 }
 
-function PriceTable({ caption, columns, rows, toChange }: {
+function PriceTable({ caption, columns, rows, toChange, undoKind, retirable }: {
   caption: string;
   columns: readonly string[];
   rows: readonly Row[];
   toChange(id: string, cents: number[]): PriceChange;
+  undoKind: UndoKind;
+  retirable?: boolean;
 }) {
+  const t = useTranslations("office");
   const draft = useOfficeDraft<PriceChange>();
   const [typing, setTyping] = useState<Record<string, string[]>>({});
 
@@ -72,9 +93,10 @@ function PriceTable({ caption, columns, rows, toChange }: {
         const probe = toChange(row.id, [...row.amounts]);
         const key = probe.key;
         const pending = draft.pending(key);
-        const pendingAmounts = pending ? amountsFrom(pending.change.wire) : row.amounts;
+        const pendingAmounts = pending ? amountsFrom(pending.change.wire, row) : row.amounts;
         const shown = typing[row.id] ?? displayAmounts(pendingAmounts);
-        return <div key={row.id} className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-line py-3">
+        const retiring = pending?.change.wire.type === "retire";
+        return <div key={row.id} className={`flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-line py-3 ${retiring ? "opacity-50" : ""}`}>
           <div className="min-w-48 flex-1">
             <p className="text-[0.875rem]">{row.label}</p>
             {row.sublabel ? <p className="text-[0.75rem] text-ink-faint">{row.sublabel}</p> : null}
@@ -85,6 +107,7 @@ function PriceTable({ caption, columns, rows, toChange }: {
               <span className="text-[0.8125rem] text-ink-faint">$</span>
               <input
                 type="number" min="0" max="5000" step="0.01" value={value}
+                disabled={retiring}
                 onChange={(event) => {
                   const next = [...shown];
                   next[index] = event.target.value;
@@ -102,8 +125,25 @@ function PriceTable({ caption, columns, rows, toChange }: {
               />
             </span>
           </label>)}
-          <div className="flex w-24 items-center justify-end">
-            {pending ? <Pending confirming={pending.confirming} error={pending.error} /> : null}
+          <div className="flex min-w-24 items-center justify-end gap-3">
+            {pending ? (
+              <>
+                <Pending confirming={pending.confirming} error={pending.error} count={pending.count} />
+                <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">
+                  {t("removePending")}
+                </button>
+              </>
+            ) : (
+              <>
+                {retirable ? (
+                  <RetireButton
+                    name={`${row.label} · ${row.sublabel}`}
+                    onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: row.id } })}
+                  />
+                ) : null}
+                {row.undoable ? <UndoLink kind={undoKind} id={row.id} /> : null}
+              </>
+            )}
           </div>
         </div>;
       })}

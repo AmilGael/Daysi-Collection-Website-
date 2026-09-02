@@ -53,12 +53,12 @@ describe("office draft reducer", () => {
       type: "settled",
       results: [
         { key: "style:one", ok: true },
-        { key: "style:two", ok: false, error: "unknown-style" },
+        { key: "style:two", ok: false, error: "in-use", count: 3 },
       ],
     });
 
     expect(settled).toEqual({
-      entries: [{ key: "style:two", change: { value: "second" }, error: "unknown-style" }],
+      entries: [{ key: "style:two", change: { value: "second" }, error: "in-use", count: 3 }],
       status: "failed",
     });
   });
@@ -113,6 +113,12 @@ describe("office draft messages", () => {
       "discardChanges",
       "leaveUnconfirmed",
       "removePending",
+      "undo",
+      "undoPending",
+      "retire",
+      "restore",
+      "retiredGroup",
+      "retireRequestConfirm",
     ] as const;
 
     for (const bundle of [es, en]) {

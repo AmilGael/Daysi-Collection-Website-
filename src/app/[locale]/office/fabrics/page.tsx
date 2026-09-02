@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { categories, translate } from "@/content";
-import { customFabrics, liveFabrics } from "@/lib/live-pricing";
+import { liveFabrics, manageableCustomFabrics } from "@/lib/live-pricing";
 import { FabricManager } from "@/components/fabric-manager";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { officeViewer } from "../_lib/viewer";
@@ -20,12 +20,18 @@ export default async function OfficeFabricsPage({
 
   const t = await getTranslations("office");
 
-  const customIds = new Set(customFabrics().map((fabric) => fabric.id));
+  const custom = manageableCustomFabrics();
+  const customIds = new Set(custom.map((fabric) => fabric.id));
   const fabricWall = liveFabrics().map((fabric) => ({
     id: fabric.id,
     name: translate(fabric.name, language),
     swatchImage: fabric.swatchImage,
     custom: customIds.has(fabric.id),
+  }));
+  const retired = custom.filter((fabric) => fabric.retired).map((fabric) => ({
+    id: fabric.id,
+    name: fabric.name,
+    swatchImage: fabric.swatchImage,
   }));
   const fabricCategories = (["dresses", "pants", "shirts", "heritage"] as const).map((id) => ({
     id,
@@ -44,7 +50,7 @@ export default async function OfficeFabricsPage({
         </p>
       </div>
       <OfficeDraftProvider apply={applyFabricChanges}>
-        <FabricManager fabrics={fabricWall} categories={fabricCategories} />
+        <FabricManager fabrics={fabricWall} retired={retired} categories={fabricCategories} />
       </OfficeDraftProvider>
     </section>
   );

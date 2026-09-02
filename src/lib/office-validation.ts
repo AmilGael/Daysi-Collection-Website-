@@ -96,6 +96,8 @@ export const fabricSchema = z.object({
 });
 export const fabricChangeSchema = z.discriminatedUnion("type", [
   fabricSchema.extend({ type: z.literal("fabric-add"), key: changeKey }),
+  retireChangeSchema,
+  restoreChangeSchema,
 ]);
 
 export const priceChangeSchema = z.discriminatedUnion("type", [
@@ -119,6 +121,8 @@ export const priceChangeSchema = z.discriminatedUnion("type", [
     id: z.string().max(80),
     fee: cents,
   }),
+  retireChangeSchema,
+  restoreChangeSchema,
 ]);
 
 export const shopfrontChangeSchema = z.discriminatedUnion("type", [
@@ -145,7 +149,30 @@ export const workChangeSchema = z.discriminatedUnion("type", [
     reference: z.string().trim().min(1).max(40),
     status: z.enum(["new", "answered", "scheduled", "paid", "closed"]),
   }),
+  retireChangeSchema,
+  restoreChangeSchema,
 ]);
+
+export const UNDO_KINDS = [
+  "style-override",
+  "work-visibility",
+  "price-entry",
+  "alteration",
+  "appointment",
+  "notice",
+  "request-status",
+  "retired:style",
+  "retired:gallery",
+  "retired:fabric",
+  "retired:price-entry",
+  "retired:request",
+] as const;
+export type UndoKind = (typeof UNDO_KINDS)[number];
+export const undoQuerySchema = z.object({
+  kind: z.enum(UNDO_KINDS),
+  id: z.string().trim().min(1).max(80),
+});
+export type UndoQuery = z.infer<typeof undoQuerySchema>;
 
 export const changesOf = <S extends ZodTypeAny>(schema: S) => z.array(schema).min(1).max(50);
 
@@ -155,3 +182,10 @@ export type FabricChange = z.infer<typeof fabricChangeSchema>;
 export type PriceChange = z.infer<typeof priceChangeSchema>;
 export type ShopfrontChange = z.infer<typeof shopfrontChangeSchema>;
 export type WorkChange = z.infer<typeof workChangeSchema>;
+export type OfficeChange =
+  | CollectionChange
+  | GalleryChange
+  | FabricChange
+  | PriceChange
+  | ShopfrontChange
+  | WorkChange;

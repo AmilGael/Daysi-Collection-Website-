@@ -62,3 +62,36 @@ describe("signed records", () => {
     expect(second.readSignedRecords("things")).toEqual([]);
   });
 });
+
+describe("a record's history", () => {
+  it("returns one key's versions in file order and its previous version", async () => {
+    const { appendRecord, previousVersion, versionsOf } = await import("./records");
+    await appendRecord("things", { id: "a", value: 1 });
+    await appendRecord("things", { id: "b", value: 20 });
+    await appendRecord("things", { id: "a", value: 2 });
+    await appendRecord("things", { id: "a", value: 3 });
+
+    const key = (record: { id: string }) => record.id;
+    expect(versionsOf("things", key, "a")).toEqual([
+      { id: "a", value: 1 },
+      { id: "a", value: 2 },
+      { id: "a", value: 3 },
+    ]);
+    expect(previousVersion("things", key, "a")).toEqual({ id: "a", value: 2 });
+  });
+
+  it("has no previous version with only one line", async () => {
+    const { appendRecord, previousVersion } = await import("./records");
+    await appendRecord("things", { id: "a", value: 1 });
+    expect(
+      previousVersion<{ id: string; value: number }>("things", (record) => record.id, "a"),
+    ).toBeUndefined();
+  });
+
+  it("has no previous version when the key has no lines", async () => {
+    const { previousVersion } = await import("./records");
+    expect(
+      previousVersion<{ id: string }>("things", (record) => record.id, "missing"),
+    ).toBeUndefined();
+  });
+});

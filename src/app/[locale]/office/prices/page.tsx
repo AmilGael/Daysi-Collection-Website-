@@ -5,10 +5,11 @@ import {
   liveAlterations,
   liveAppointmentTypes,
   liveFabrics,
-  livePriceList,
+  manageablePriceList,
 } from "@/lib/live-pricing";
 import { PriceManager } from "@/components/price-manager";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
+import { undoableIds } from "@/lib/office-history";
 import { officeViewer } from "../_lib/viewer";
 import { applyPriceChanges } from "./actions";
 
@@ -25,7 +26,10 @@ export default async function OfficePricesPage({
 
   const t = await getTranslations("office");
 
-  const priceEntries = livePriceList().map((entry) => ({
+  const undoableEntries = undoableIds("price-entry");
+  const undoableAlterations = undoableIds("alteration");
+  const undoableAppointments = undoableIds("appointment");
+  const priceEntries = manageablePriceList().map((entry) => ({
     id: entry.id,
     garment: translate(
       categories.find((category) => category.id === entry.categoryId)?.name ?? {
@@ -43,17 +47,21 @@ export default async function OfficePricesPage({
     ),
     fixedPrice: entry.fixedPrice,
     customizationExtra: entry.customizationExtra,
+    retired: entry.retired,
+    undoable: undoableEntries.has(entry.id),
   }));
   const priceAlterations = liveAlterations().map((alteration) => ({
     id: alteration.id,
     name: translate(alteration.name, language),
     fixedPrice: alteration.fixedPrice,
     rushSurcharge: alteration.rushSurcharge,
+    undoable: undoableAlterations.has(alteration.id),
   }));
   const priceAppointments = liveAppointmentTypes().map((type) => ({
     id: type.id,
     name: translate(type.name, language),
     fee: type.fee,
+    undoable: undoableAppointments.has(type.id),
   }));
 
   return (
@@ -66,7 +74,8 @@ export default async function OfficePricesPage({
       </div>
       <OfficeDraftProvider apply={applyPriceChanges}>
         <PriceManager
-          entries={priceEntries}
+          entries={priceEntries.filter((entry) => !entry.retired)}
+          retiredEntries={priceEntries.filter((entry) => entry.retired)}
           alterations={priceAlterations}
           appointments={priceAppointments}
         />

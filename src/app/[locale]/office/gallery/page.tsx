@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { translate } from "@/content";
 import { GALLERY_ORDER, manageableGallery } from "@/lib/live-gallery";
+import { undoableIds } from "@/lib/office-history";
 import { GalleryManager, type ManagedWork } from "@/components/gallery-manager";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { officeViewer } from "../_lib/viewer";
@@ -21,6 +22,7 @@ export default async function OfficeGalleryPage({
   const t = await getTranslations("office");
   const tg = await getTranslations("gallery");
 
+  const undoable = undoableIds("work-visibility");
   const galleryWorksManaged: ManagedWork[] = manageableGallery().map((work) => ({
     id: work.id,
     src: work.src,
@@ -30,6 +32,7 @@ export default async function OfficeGalleryPage({
     caption: translate(work.caption, language),
     hidden: work.hidden,
     retired: work.retired,
+    undoable: undoable.has(work.id),
   }));
   const active = galleryWorksManaged.filter((work) => !work.retired);
   const retired = galleryWorksManaged.filter((work) => work.retired);
