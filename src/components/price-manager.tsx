@@ -45,6 +45,8 @@ function amountsFrom(change: PriceChange): readonly number[] {
     case "entry": return [change.fixedPrice, change.customizationExtra];
     case "alteration": return [change.fixedPrice, change.rushSurcharge];
     case "appointment": return [change.fee];
+    case "retire":
+    case "restore": return [];
   }
 }
 

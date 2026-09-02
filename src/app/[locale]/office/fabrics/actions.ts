@@ -10,6 +10,7 @@ export const applyFabricChanges = ownerAction(
   changesOf(fabricChangeSchema),
   async (changes) =>
     applyEach(changes, async (change) => {
+      if (change.type !== "fabric-add") throw new ChangeRefused("invalid");
       const { type: _type, key: _key, ...draft } = change;
       const taken = new Set([
         ...fabrics.map((fabric) => fabric.id),

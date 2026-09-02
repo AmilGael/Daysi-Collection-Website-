@@ -8,6 +8,7 @@ import {
   shopfrontChangeSchema,
   styleCreateSchema,
   styleOverrideSchema,
+  undoQuerySchema,
   workChangeSchema,
 } from "./office-validation";
 
@@ -113,11 +114,17 @@ describe.each([
   ["gallery retire", galleryChangeSchema, { type: "retire", key: "gallery:x", id: "x" }],
   ["gallery restore", galleryChangeSchema, { type: "restore", key: "gallery:x", id: "x" }],
   ["fabric add", fabricChangeSchema, fabricAdd],
+  ["fabric retire", fabricChangeSchema, { type: "retire", key: "fabric:x", id: "x" }],
+  ["fabric restore", fabricChangeSchema, { type: "restore", key: "fabric:x", id: "x" }],
   ["price entry", priceChangeSchema, { type: "entry", key: "entry:x", id: "x", fixedPrice: 100, customizationExtra: 0 }],
   ["price alteration", priceChangeSchema, { type: "alteration", key: "alteration:x", id: "x", fixedPrice: 100, rushSurcharge: 0 }],
   ["price appointment", priceChangeSchema, { type: "appointment", key: "appointment:x", id: "x", fee: 100 }],
+  ["price retire", priceChangeSchema, { type: "retire", key: "entry:x", id: "x" }],
+  ["price restore", priceChangeSchema, { type: "restore", key: "entry:x", id: "x" }],
   ["shopfront notice", shopfrontChangeSchema, { type: "notice", key: "notice:site", message: "Open", visible: true }],
   ["work request status", workChangeSchema, { type: "request-status", key: "request:ALT-1", kind: "alteration", reference: "ALT-1", status: "answered" }],
+  ["work retire", workChangeSchema, { type: "retire", key: "request:CIT-1", id: "CIT-1" }],
+  ["work restore", workChangeSchema, { type: "restore", key: "request:CIT-1", id: "CIT-1" }],
 ] as const)("%s change", (_name, schema, valid) => {
   it("accepts its member", () => {
     expect(schema.safeParse(valid).success).toBe(true);
@@ -125,6 +132,17 @@ describe.each([
 
   it("refuses an invalid member", () => {
     expect(schema.safeParse({ ...valid, key: "missing-colon" }).success).toBe(false);
+  });
+});
+
+describe("undo query", () => {
+  it("accepts a named stream and non-empty id", () => {
+    expect(undoQuerySchema.safeParse({ kind: "notice", id: "site" }).success).toBe(true);
+  });
+
+  it("refuses an unknown stream and an empty id", () => {
+    expect(undoQuerySchema.safeParse({ kind: "everything", id: "site" }).success).toBe(false);
+    expect(undoQuerySchema.safeParse({ kind: "notice", id: "" }).success).toBe(false);
   });
 });
 

@@ -8,6 +8,7 @@ export const applyWorkChanges = ownerAction(
   changesOf(workChangeSchema),
   async (changes) =>
     applyEach(changes, async (change) => {
+      if (change.type !== "request-status") throw new ChangeRefused("invalid");
       const record = currentRecords(listRequests(change.kind)).find(
         (candidate) => candidate.reference === change.reference,
       );

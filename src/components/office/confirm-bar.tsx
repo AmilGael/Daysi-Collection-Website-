@@ -4,10 +4,10 @@ import { useTranslations } from "next-intl";
 import type { JSX } from "react";
 import type { DraftStatus } from "./draft-reducer";
 
-function ErrorText({ code }: { code: string }) {
+export function ErrorText({ code, count }: { code: string; count?: number }) {
   const t = useTranslations("office");
   const key = `error.${code}` as Parameters<typeof t.has>[0];
-  return <>{t.has(key) ? t(key) : t("updateFailed")}</>;
+  return <>{t.has(key) ? t(key, { count: count ?? 0 }) : t("updateFailed")}</>;
 }
 
 export function ConfirmBar({
@@ -59,12 +59,20 @@ export function ConfirmBar({
   );
 }
 
-export function Pending({ confirming, error }: { confirming?: boolean; error?: string }): JSX.Element {
+export function Pending({
+  confirming,
+  error,
+  count,
+}: {
+  confirming?: boolean;
+  error?: string;
+  count?: number;
+}): JSX.Element {
   const t = useTranslations("office");
   return (
     <span className={`text-[0.6875rem] font-semibold uppercase tracking-wider ${error ? "text-ink" : "text-marigold"}`}>
       {confirming ? t("confirming") : t("pendingMark")}
-      {error ? <> · <ErrorText code={error} /></> : null}
+      {error ? <> · <ErrorText code={error} count={count} /></> : null}
     </span>
   );
 }

@@ -4,6 +4,7 @@ export type DraftEntry<Change> = {
   readonly key: string;
   readonly change: Change;
   readonly error?: string;
+  readonly count?: number;
 };
 export type DraftStatus = "idle" | "confirming" | "failed";
 export type DraftState<Change> = {
@@ -46,7 +47,7 @@ export function draftReducer<Change>(
       const entries = state.entries.flatMap((entry) => {
         const result = results.get(entry.key);
         if (result?.ok) return [];
-        return [{ ...entry, error: result?.error ?? "failed" }];
+        return [{ ...entry, error: result?.error ?? "failed", count: result?.count }];
       });
       return entries.length === 0 ? emptyDraft : { entries, status: "failed" };
     }

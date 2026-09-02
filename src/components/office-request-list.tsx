@@ -57,7 +57,9 @@ export function OfficeRequestList({
     <div className="flex flex-col border-t border-line">
       {records.map((record) => {
         const pending = draft.pending(`request:${record.reference}`);
-        const status = pending?.change.wire.status ?? record.status;
+        const status = pending?.change.wire.type === "request-status"
+          ? pending.change.wire.status
+          : record.status;
         return (
         <article
           key={record.reference}

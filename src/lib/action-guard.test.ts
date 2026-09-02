@@ -82,16 +82,27 @@ describe("applyEach", () => {
     const changes = [{ key: "first" }, { key: "second" }, { key: "third" }];
     const result = await applyEach(changes, async ({ key }) => {
       visited.push(key);
-      if (key === "first") throw new ChangeRefused("unknown-style");
+      if (key === "first") throw new ChangeRefused("in-use", 3);
       if (key === "second") throw new Error("disk");
     });
 
     expect(visited).toEqual(["first", "second", "third"]);
     expect(result.results).toEqual([
-      { key: "first", ok: false, error: "unknown-style" },
+      { key: "first", ok: false, error: "in-use", count: 3 },
       { key: "second", ok: false, error: "failed" },
       { key: "third", ok: true },
     ]);
+  });
+
+  it("omits count when a refusal does not carry one", async () => {
+    const result = await applyEach([{ key: "first" }], async () => {
+      throw new ChangeRefused("unknown-style");
+    });
+
+    expect(result.results).toEqual([
+      { key: "first", ok: false, error: "unknown-style" },
+    ]);
+    expect(result.results[0]).not.toHaveProperty("count");
   });
 });
 
