@@ -125,3 +125,12 @@ describe("every tab in the list", () => {
     }
   });
 });
+
+describe("the smoke script", () => {
+  it("checks that every tab is private", () => {
+    const smoke = fs.readFileSync(path.join(process.cwd(), "scripts/smoke.mjs"), "utf8");
+    for (const tab of OFFICE_TABS) {
+      expect(smoke, `${tab.href} in PRIVATE`).toContain(`"${tab.href}"`);
+    }
+  });
+});
