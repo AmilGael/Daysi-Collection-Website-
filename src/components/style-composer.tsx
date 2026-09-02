@@ -1,12 +1,12 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { formatMoney } from "@/lib/money";
 import type { Locale } from "@/i18n/routing";
+import type { CollectionChange } from "@/lib/office-validation";
+import { useOfficeDraft } from "./office/use-office-draft";
 import { buttonClass } from "./ui";
-import { postOffice, uploadPhoto, type SaveState } from "./office-client";
 
 export type ComposerCategory = { readonly id: string; readonly label: string };
 export type ComposerFabric = { readonly id: string; readonly label: string };
@@ -39,7 +39,7 @@ export function StyleComposer({
   locale: Locale;
 }) {
   const t = useTranslations("office");
-  const router = useRouter();
+  const draft = useOfficeDraft<CollectionChange>();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
@@ -50,13 +50,12 @@ export function StyleComposer({
   const [fabricId, setFabricId] = useState(fabrics[0]?.id ?? "");
   const [price, setPrice] = useState("");
   const [sizes, setSizes] = useState({ s: true, m: true, l: true });
-  const [state, setState] = useState<SaveState>("idle");
   const [problem, setProblem] = useState<string | null>(null);
 
   const existingPrice = pricedPairs[`${categoryId}--${fabricId}`];
   const needsPrice = existingPrice === undefined;
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const files = [...(fileRef.current?.files ?? [])];
     setProblem(null);
@@ -65,36 +64,32 @@ export function StyleComposer({
     if (!SIZES.some((size) => sizes[size])) return setProblem(t("styleSizeRequired"));
     if (needsPrice && !(parseFloat(price) > 0)) return setProblem(t("stylePriceRequired"));
 
-    setState("saving");
-    try {
-      const uploaded: string[] = [];
-      for (const file of files.slice(0, 8)) {
-        uploaded.push(await uploadPhoto(file));
-      }
+    const key = `style-create:${crypto.randomUUID()}`;
+    const wire: CollectionChange = {
+      type: "style-create",
+      key,
+      name: name.trim(),
+      description: description.trim(),
+      detail: detail.trim(),
+      color: color.trim(),
+      categoryId,
+      fabricId,
+      sizes,
+      photos: [],
+      ...(needsPrice ? { fixedPrice: Math.round(parseFloat(price) * 100) } : {}),
+    };
+    draft.stage(key, {
+      wire,
+      files: files.slice(0, 8),
+      withUploads: (srcs) => ({ ...wire, photos: [...srcs] }),
+    });
 
-      await postOffice("/api/office/styles", "POST", {
-        name: name.trim(),
-        description: description.trim(),
-        detail: detail.trim(),
-        color: color.trim(),
-        categoryId,
-        fabricId,
-        sizes,
-        photos: uploaded,
-        ...(needsPrice ? { fixedPrice: Math.round(parseFloat(price) * 100) } : {}),
-      });
-
-      setState("saved");
-      setName("");
-      setDescription("");
-      setDetail("");
-      setColor("");
-      setPrice("");
-      if (fileRef.current) fileRef.current.value = "";
-      router.refresh();
-    } catch {
-      setState("failed");
-    }
+    setName("");
+    setDescription("");
+    setDetail("");
+    setColor("");
+    setPrice("");
+    if (fileRef.current) fileRef.current.value = "";
   }
 
   return (
@@ -223,18 +218,11 @@ export function StyleComposer({
       <div className="flex flex-wrap items-center gap-4">
         <button
           type="submit"
-          disabled={state === "saving"}
           className={buttonClass({ size: "small", tone: "solid" })}
         >
-          {state === "saving" ? t("saving") : t("styleSave")}
+          {t("styleSave")}
         </button>
         {problem ? <span className="text-[0.8125rem] text-ink">{problem}</span> : null}
-        {state === "saved" ? (
-          <span className="text-[0.8125rem] text-marigold-deep">{t("styleSaved")}</span>
-        ) : null}
-        {state === "failed" ? (
-          <span className="text-[0.8125rem] text-ink">{t("updateFailed")}</span>
-        ) : null}
       </div>
       <p className="text-[0.8125rem] leading-relaxed text-ink-faint">{t("styleNote")}</p>
     </form>

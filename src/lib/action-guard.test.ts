@@ -112,7 +112,7 @@ describe("office action structure", () => {
         .find((line) => line && !line.startsWith("//") && !line.startsWith("/*"));
       expect(firstCodeLine, file).toBe('"use server";');
       expect(source, file).toContain("@/lib/action-guard");
-      expect(source.match(/^export /gm) ?? [], file).toEqual(
+      expect(source.match(/^export .*$/gm) ?? [], file).toEqual(
         expect.arrayContaining([expect.stringMatching(/^export const /)]),
       );
       expect(source, file).not.toMatch(/export async function|isSameOrigin|bad-origin|currentViewer\(|role !==/);
