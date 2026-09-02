@@ -92,3 +92,9 @@ describe("the gallery tab", () => {
     expectGuarded("gallery/page.tsx");
   });
 });
+
+describe("the fabrics tab", () => {
+  it("is guarded", () => {
+    expectGuarded("fabrics/page.tsx");
+  });
+});
