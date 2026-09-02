@@ -6,6 +6,7 @@ import { formatMoney } from "@/lib/money";
 import type { StoredRequest } from "@/lib/request-store";
 import type { WorkChange } from "@/lib/office-validation";
 import { Pending } from "@/components/office/confirm-bar";
+import { RetireButton } from "@/components/office/retired-group";
 import { useOfficeDraft } from "@/components/office/use-office-draft";
 
 const STATUSES = ["new", "answered", "scheduled", "paid", "closed"] as const;
@@ -60,10 +61,12 @@ export function OfficeRequestList({
         const status = pending?.change.wire.type === "request-status"
           ? pending.change.wire.status
           : record.status;
+        const retiring = pending?.change.wire.type === "retire";
+        const key = `request:${record.reference}`;
         return (
         <article
           key={record.reference}
-          className="grid gap-3 border-b border-line py-5 sm:grid-cols-[8rem_1fr_auto] sm:items-center sm:gap-6"
+          className={`grid gap-3 border-b border-line py-5 sm:grid-cols-[8rem_1fr_auto] sm:items-center sm:gap-6 ${retiring ? "opacity-50" : ""}`}
         >
           <div className="flex flex-col gap-1.5">
             <span className="font-mono text-[0.75rem]">{record.reference}</span>
@@ -83,7 +86,20 @@ export function OfficeRequestList({
             <p className="text-[0.8125rem] leading-relaxed text-ink-faint">
               {summarise(record)}
             </p>
-            {pending ? <Pending confirming={pending.confirming} error={pending.error} /> : null}
+            {pending ? (
+              <span className="flex flex-wrap items-center gap-3">
+                <Pending confirming={pending.confirming} error={pending.error} count={pending.count} />
+                <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">
+                  {to("removePending")}
+                </button>
+              </span>
+            ) : (
+              <RetireButton
+                name={record.reference}
+                prompt={to("retireRequestConfirm", { name: record.reference })}
+                onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: record.reference } })}
+              />
+            )}
           </div>
 
           <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-2">
@@ -96,6 +112,7 @@ export function OfficeRequestList({
               <span className="sr-only">{to("statusLabel")}</span>
               <select
                 value={status}
+                disabled={retiring}
                 onChange={(event) =>
                   setStatus(record, event.target.value as StoredRequest["status"])
                 }
