@@ -157,11 +157,9 @@ export function CollectionManager({
               {entry ? (
                 <span className="flex items-center gap-3">
                   <Pending confirming={entry.confirming} error={entry.error} />
-                  {retiring ? (
-                    <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">
-                      {t("removePending")}
-                    </button>
-                  ) : null}
+                  <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">
+                    {t("removePending")}
+                  </button>
                 </span>
               ) : null}
               <label className="mt-1 w-fit cursor-pointer text-[0.75rem] underline underline-offset-4 hover:text-marigold-deep">
@@ -192,6 +190,7 @@ export function CollectionManager({
                   <input
                     type="checkbox"
                     checked={size.inStock}
+                    disabled={retiring}
                     onChange={(event) => stageOverride(row, {
                       sizes: view.sizes.map((candidate) => candidate.sizeId === size.sizeId
                         ? { ...candidate, inStock: event.target.checked }
@@ -208,6 +207,7 @@ export function CollectionManager({
               <input
                 type="checkbox"
                 checked={view.isPublished}
+                disabled={retiring}
                 onChange={(event) => stageOverride(row, { isPublished: event.target.checked })}
                 className="h-4 w-4 accent-ink"
               />

@@ -84,13 +84,13 @@ function PriceTable({ caption, columns, rows, toChange }: {
             <span className="flex items-center border border-line bg-paper px-2 focus-within:border-ink">
               <span className="text-[0.8125rem] text-ink-faint">$</span>
               <input
-                type="number" min="0" step="0.01" value={value}
+                type="number" min="0" max="5000" step="0.01" value={value}
                 onChange={(event) => {
                   const next = [...shown];
                   next[index] = event.target.value;
                   setTyping((current) => ({ ...current, [row.id]: next }));
                   const cents = next.map((amount) => Math.round(parseFloat(amount) * 100));
-                  if (cents.some((amount) => !Number.isFinite(amount) || amount < 0)) return;
+                  if (cents.some((amount) => !Number.isFinite(amount) || amount < 0 || amount > 500_000)) return;
                   if (cents.every((amount, amountIndex) => amount === row.amounts[amountIndex])) draft.unstage(key);
                   else draft.stage(key, { wire: toChange(row.id, cents) });
                 }}

@@ -40,6 +40,7 @@ export function FabricManager({
 
   const [name, setName] = useState("");
   const [prices, setPrices] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [pendingPreviews, setPendingPreviews] = useState<Record<string, string>>({});
 
@@ -95,12 +96,20 @@ export function FabricManager({
     if (!file || name.trim().length < 2) return;
     const priceBody: Record<string, number> = {};
     for (const category of CATEGORIES) {
-      const value = parseFloat(prices[category] ?? "");
-      if (Number.isFinite(value) && value > 0) {
-        priceBody[category] = Math.round(value * 100);
+      const entered = prices[category]?.trim() ?? "";
+      if (!entered) continue;
+      const value = parseFloat(entered);
+      if (!Number.isFinite(value) || value < 1 || value > 5000) {
+        setFormError(true);
+        return;
       }
+      priceBody[category] = Math.round(value * 100);
     }
-    if (Object.keys(priceBody).length === 0) return;
+    if (Object.keys(priceBody).length === 0) {
+      setFormError(true);
+      return;
+    }
+    setFormError(false);
 
     const key = `fabric-add:${crypto.randomUUID()}`;
     const wire: FabricChange = {
@@ -212,7 +221,8 @@ export function FabricManager({
                 <span className="text-[0.8125rem] text-ink-faint">$</span>
                 <input
                   type="number"
-                  min="0"
+                  min="1"
+                  max="5000"
                   step="0.01"
                   value={prices[category] ?? ""}
                   onChange={(event) =>
@@ -234,6 +244,11 @@ export function FabricManager({
             {t("fabricSave")}
           </button>
         </div>
+        {formError ? (
+          <p role="alert" className="text-[0.8125rem] text-ink">
+            {t.has("error.invalid") ? t("error.invalid") : t("updateFailed")}
+          </p>
+        ) : null}
         <p className="text-[0.8125rem] leading-relaxed text-ink-faint">{t("fabricNote")}</p>
       </form>
     </div>

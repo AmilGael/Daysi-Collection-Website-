@@ -2,7 +2,6 @@
 
 import { ChangeRefused, applyEach, ownerAction } from "@/lib/action-guard";
 import {
-  allLiveStyles,
   manageableStyles,
   saveAddedStyle,
   saveStyleOverride,
@@ -63,7 +62,8 @@ export const applyCollectionChanges = ownerAction(
             });
           }
 
-          const taken = new Set(allLiveStyles().map((style) => style.slug));
+          // Retired styles keep their slugs so restoring one cannot create a collision.
+          const taken = new Set(manageableStyles().map((style) => style.slug));
           const base = slugify(draft.name, 50) || newReference("STY").toLowerCase();
           let slug = base;
           for (let n = 2; taken.has(slug); n += 1) slug = `${base}-${n}`;

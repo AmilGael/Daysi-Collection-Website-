@@ -149,3 +149,15 @@ describe("change batch boundaries", () => {
     expect(workChangeSchema.safeParse({ type: "request-status", key: "request:x", kind: "order", reference: "x", status: "done" }).success).toBe(false);
   });
 });
+
+describe("office price boundaries", () => {
+  const entry = { type: "entry", key: "entry:x", id: "x", customizationExtra: 0 };
+
+  it("accepts a price of exactly 5000 dollars", () => {
+    expect(priceChangeSchema.safeParse({ ...entry, fixedPrice: 500_000 }).success).toBe(true);
+  });
+
+  it("refuses a price one cent above 5000 dollars", () => {
+    expect(priceChangeSchema.safeParse({ ...entry, fixedPrice: 500_001 }).success).toBe(false);
+  });
+});

@@ -98,19 +98,20 @@ describe("applyEach", () => {
 describe("office action structure", () => {
   it("keeps exactly one ownerAction in every editable tab", () => {
     const officeRoot = path.join(process.cwd(), "src/app/[locale]/office");
-    const files = fs.existsSync(officeRoot)
+    const serverFiles = fs.existsSync(officeRoot)
       ? fs.readdirSync(officeRoot, { recursive: true, encoding: "utf8" })
-          .filter((name) => name.endsWith("actions.ts"))
           .map((name) => ({ name, path: path.join(officeRoot, name) }))
+          .filter(({ path: filePath }) => fs.statSync(filePath).isFile())
+          .filter(({ path: filePath }) => fs.readFileSync(filePath, "utf8").includes('"use server"'))
       : [];
 
-    expect(files.map(({ name }) => path.dirname(name)).sort()).toEqual([
-      "collection",
-      "fabrics",
-      "gallery",
-      "prices",
-      "shopfront",
-      "work",
+    expect(serverFiles.map(({ name }) => name).sort()).toEqual([
+      "collection/actions.ts",
+      "fabrics/actions.ts",
+      "gallery/actions.ts",
+      "prices/actions.ts",
+      "shopfront/actions.ts",
+      "work/actions.ts",
     ]);
 
     const expectedExports: Record<string, string> = {
@@ -122,7 +123,7 @@ describe("office action structure", () => {
       work: "applyWorkChanges",
     };
 
-    for (const file of files) {
+    for (const file of serverFiles) {
       const source = fs.readFileSync(file.path, "utf8");
       const firstCodeLine = source
         .split("\n")

@@ -41,7 +41,8 @@ export function ConfirmBar({
         <button
           type="button"
           onClick={onDiscard}
-          className="border border-ink px-4 py-2 text-sm font-semibold"
+          disabled={status === "confirming"}
+          className="border border-ink px-4 py-2 text-sm font-semibold disabled:opacity-60"
         >
           {t("discardChanges")}
         </button>
