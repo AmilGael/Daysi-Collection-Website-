@@ -508,8 +508,17 @@
       "not-found": "Your session ended. Sign in again and retry.",
       "invalid": "Check the information and try again.",
       "failed": "That change did not save. Try once more.",
-      "upload-failed": "The photo could not be uploaded. Try once more."
+      "upload-failed": "The photo could not be uploaded. Try once more.",
+      "unknown-style": "That garment could not be found.",
+      "unknown-work": "That work could not be found."
     },
+    "retire": "Retire",
+    "retireConfirm": "Retire {name}? It leaves the site. You can restore it from Retired.",
+    "retireYes": "Yes, retire",
+    "retireNo": "No",
+    "restore": "Restore",
+    "retiredGroup": "{count, plural, =0 {Retired} other {Retired (#)}}",
+    "retiredEmpty": "Nothing is retired.",
     "statusLabel": "Status",
     "shown": "Shown",
     "hidden": "Hidden",

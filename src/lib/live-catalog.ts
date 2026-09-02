@@ -1,6 +1,7 @@
 import { appendRecord, latestBy, readRecords } from "./records";
 import { styles } from "@/content";
 import type { GarmentStyle } from "@/content/types";
+import { retiredSet } from "./retired";
 
 /**
  * The live layer over the static catalog.
@@ -96,6 +97,7 @@ export function assembleStyles(
   seed: readonly GarmentStyle[],
   added: readonly GarmentStyle[],
   overrides: readonly StyleOverride[],
+  retired: ReadonlySet<string> = new Set(),
 ): GarmentStyle[] {
   const newest = new Map(added.map((style) => [style.id, style]));
   const seeded = new Set(seed.map((style) => style.id));
@@ -103,7 +105,7 @@ export function assembleStyles(
     ...seed.map((style) => newest.get(style.id) ?? style),
     ...[...newest.values()].filter((style) => !seeded.has(style.id)),
   ];
-  return applyOverrides(catalog, overrides);
+  return applyOverrides(catalog, overrides).filter((style) => !retired.has(style.id));
 }
 
 const ADDED_STYLES = "added-styles";
@@ -124,7 +126,16 @@ export function liveStyles(): GarmentStyle[] {
 
 /** Every style, published or not, with overrides applied — the office view. */
 export function allLiveStyles(): GarmentStyle[] {
-  return assembleStyles(styles, addedStyles(), styleOverrides());
+  return assembleStyles(styles, addedStyles(), styleOverrides(), retiredSet("style"));
+}
+
+/** Every style including retired ones, each flagged for the office view. */
+export function manageableStyles(): (GarmentStyle & { retired: boolean })[] {
+  const retired = retiredSet("style");
+  return assembleStyles(styles, addedStyles(), styleOverrides()).map((style) => ({
+    ...style,
+    retired: retired.has(style.id),
+  }));
 }
 
 export function liveStyleBySlug(slug: string): GarmentStyle | undefined {

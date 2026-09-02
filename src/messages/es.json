@@ -508,8 +508,17 @@
       "not-found": "Su sesión terminó. Entre otra vez y vuelva a intentarlo.",
       "invalid": "Revise los datos e inténtelo otra vez.",
       "failed": "Ese cambio no se guardó. Intente una vez más.",
-      "upload-failed": "La foto no se pudo subir. Intente una vez más."
+      "upload-failed": "La foto no se pudo subir. Intente una vez más.",
+      "unknown-style": "No se encontró esa prenda.",
+      "unknown-work": "No se encontró esa pieza."
     },
+    "retire": "Retirar",
+    "retireConfirm": "¿Retirar {name}? Sale del sitio. Puede restaurarla desde Retirados.",
+    "retireYes": "Sí, retirar",
+    "retireNo": "No",
+    "restore": "Restaurar",
+    "retiredGroup": "{count, plural, =0 {Retirados} other {Retirados (#)}}",
+    "retiredEmpty": "No hay nada retirado.",
     "statusLabel": "Estado",
     "shown": "Visible",
     "hidden": "Oculto",

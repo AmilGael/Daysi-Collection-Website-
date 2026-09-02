@@ -55,4 +55,16 @@ describe("assembling the gallery", () => {
     expect(result).toHaveLength(1);
     expect(result[0]?.caption.en).toBe("second");
   });
+
+  it("drops a retired seeded work", () => {
+    expect(assembleGallery([work("a"), work("b")], [], [], new Set(["a"])).map((w) => w.id)).toEqual(["b"]);
+  });
+
+  it("drops a retired added work", () => {
+    expect(assembleGallery([], [work("new")], [], new Set(["new"]))).toEqual([]);
+  });
+
+  it("drops a hidden and retired work once without crashing", () => {
+    expect(assembleGallery([work("a")], [], [hide("a")], new Set(["a"]))).toEqual([]);
+  });
 });
