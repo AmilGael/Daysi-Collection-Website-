@@ -69,6 +69,24 @@ export function latestBy<T>(records: readonly T[], key: (record: T) => string): 
   return [...latest.values()];
 }
 
+/** Every line for one key, in file order: the record's own history. */
+export function versionsOf<T>(
+  collection: string,
+  key: (record: T) => string,
+  id: string,
+): T[] {
+  return readRecords<T>(collection).filter((record) => key(record) === id);
+}
+
+/** The line before the newest one, or undefined when there is none. */
+export function previousVersion<T>(
+  collection: string,
+  key: (record: T) => string,
+  id: string,
+): T | undefined {
+  return versionsOf(collection, key, id).at(-2);
+}
+
 /**
  * Signed records.
  *
