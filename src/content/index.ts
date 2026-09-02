@@ -117,3 +117,25 @@ export function sizeLabel(id: SizeId): string {
 export function upcomingPremiere(today: Date): Premiere | undefined {
   return premieres.find((premiere) => new Date(premiere.releaseDate) > today);
 }
+
+/**
+ * What the premiere pages have to show on a given day. `next` is the season
+ * still to be released, if one is written down; `latest` is the most recent
+ * season either way, so a page has a photograph as long as any season has
+ * ever been written down; `past` is every
+ * season except the next one, most recent first. The day after a release
+ * there may be no next season yet, and that gap is Daysi's to fill, not a
+ * fault in the code, so both pages read from here and stand on their own.
+ */
+export function premiereListing(today: Date): {
+  next: Premiere | undefined;
+  latest: Premiere | undefined;
+  past: readonly Premiere[];
+} {
+  const next = upcomingPremiere(today);
+  return {
+    next,
+    latest: next ?? premieres[0],
+    past: premieres.filter((premiere) => premiere.id !== next?.id),
+  };
+}

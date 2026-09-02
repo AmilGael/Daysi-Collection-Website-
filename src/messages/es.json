@@ -194,7 +194,9 @@
     "signupName": "Su nombre",
     "signupCta": "Apúnteme a la lista",
     "signupDone": "Ya está en la lista. Esté pendiente de la revelación el {date}.",
-    "included": "En este estreno"
+    "included": "En este estreno",
+    "betweenTitle": "El próximo estreno viene en camino",
+    "betweenLead": "La próxima temporada ya está en la mesa de corte. La fecha de revelación se publicará aquí, y la lista se abre ese mismo día."
   },
   "atelier": {
     "title": "El taller",

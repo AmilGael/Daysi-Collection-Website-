@@ -194,7 +194,9 @@
     "signupName": "Your name",
     "signupCta": "Put me on the list",
     "signupDone": "You are on the list. Watch for the reveal on {date}.",
-    "included": "In this premiere"
+    "included": "In this premiere",
+    "betweenTitle": "The next premiere is coming",
+    "betweenLead": "The next season is on the cutting table. The reveal date will be published here, and the list opens the same day."
   },
   "atelier": {
     "title": "The atelier",

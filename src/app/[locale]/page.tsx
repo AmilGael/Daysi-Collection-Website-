@@ -1,11 +1,6 @@
 import Image from "next/image";
 import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
-import {
-  premieres,
-  services,
-  translate,
-  upcomingPremiere,
-} from "@/content";
+import { premiereListing, services, translate } from "@/content";
 import { liveStyles } from "@/lib/live-catalog";
 import { liveAlterations } from "@/lib/live-pricing";
 import { SiteNoticeBar } from "@/components/site-notice";
@@ -355,7 +350,10 @@ async function NextPremiere() {
   const t = await getTranslations("home");
   const tp = await getTranslations("premieres");
   const locale = (await getLocale()) as Locale;
-  const premiere = upcomingPremiere(new Date()) ?? premieres[0];
+  // Between seasons there is no next premiere written down yet; the section
+  // keeps the latest season's photograph and says the next one is coming.
+  const { next, latest } = premiereListing(new Date());
+  const premiere = next ?? latest;
   if (!premiere) return null;
 
   return (
@@ -377,14 +375,18 @@ async function NextPremiere() {
             <span>{t("premiereTitle")}</span>
           </p>
           <h2 className="text-title">
-            {translate(premiere.title, locale)}
+            {next ? translate(next.title, locale) : tp("betweenTitle")}
           </h2>
-          <p className="eyebrow">{translate(premiere.season, locale)}</p>
-          <p className="leading-[1.8] text-ink-soft">{translate(premiere.story, locale)}</p>
-          <div className="flex flex-wrap gap-2">
-            <Tag tone="marigold">{tp("pieces", { count: premiere.piecesPlanned })}</Tag>
-            <Tag>{tp("edition", { count: premiere.editionSize })}</Tag>
-          </div>
+          {next ? <p className="eyebrow">{translate(next.season, locale)}</p> : null}
+          <p className="leading-[1.8] text-ink-soft">
+            {next ? translate(next.story, locale) : tp("betweenLead")}
+          </p>
+          {next ? (
+            <div className="flex flex-wrap gap-2">
+              <Tag tone="marigold">{tp("pieces", { count: next.piecesPlanned })}</Tag>
+              <Tag>{tp("edition", { count: next.editionSize })}</Tag>
+            </div>
+          ) : null}
           <TextLink href="/premieres">{t("premiereLink")}</TextLink>
         </div>
       </div>

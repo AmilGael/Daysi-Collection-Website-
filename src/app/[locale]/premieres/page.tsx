@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { premieres, stylesInPremiere, translate, upcomingPremiere } from "@/content";
+import { premiereListing, stylesInPremiere, translate } from "@/content";
 import type { Locale } from "@/i18n/routing";
 import { SectionHeading, Tag } from "@/components/ui";
 import { LookbookGrid, StyleCard } from "@/components/style-card";
@@ -17,9 +17,7 @@ export default async function PremieresPage({
   const language = locale as Locale;
   const t = await getTranslations("premieres");
 
-  const now = new Date();
-  const next = upcomingPremiere(now);
-  const past = premieres.filter((premiere) => premiere.id !== next?.id);
+  const { next, latest, past } = premiereListing(new Date());
 
   const formatDate = (value: string) =>
     new Intl.DateTimeFormat(language === "es" ? "es-US" : "en-US", {
@@ -94,6 +92,29 @@ export default async function PremieresPage({
                 <dd className="mt-1">{formatDate(next.releaseDate)}</dd>
               </div>
             </dl>
+          </div>
+        </section>
+      ) : latest ? (
+        // Between seasons: the day after a release there is no next premiere
+        // written down yet. The page keeps a dark hero, because the header
+        // starts light on this route and only inverts on scroll, and it says
+        // plainly that the next one is coming over the latest season's photograph.
+        <section className="relative isolate -mt-20 flex min-h-[60svh] items-end overflow-hidden bg-ink pt-20">
+          <Image
+            src={latest.coverImage}
+            alt=""
+            fill
+            priority
+            quality={PHOTO_QUALITY}
+            sizes="100vw"
+            className="object-cover object-[65%_center]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-ink/80 via-ink/70 via-[74%] to-transparent" />
+          <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-ink/60 to-transparent" />
+          <div className="shell relative z-10 flex max-w-2xl flex-col gap-7 pb-20 pt-28">
+            <p className="eyebrow text-paper">{t("title")}</p>
+            <h1 className="text-display text-paper">{t("betweenTitle")}</h1>
+            <p className="max-w-xl text-lead text-paper">{t("betweenLead")}</p>
           </div>
         </section>
       ) : null}
