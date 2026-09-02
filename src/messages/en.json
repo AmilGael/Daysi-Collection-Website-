@@ -510,7 +510,10 @@
       "failed": "That change did not save. Try once more.",
       "upload-failed": "The photo could not be uploaded. Try once more.",
       "unknown-style": "That garment could not be found.",
-      "unknown-work": "That work could not be found."
+      "unknown-work": "That work could not be found.",
+      "unknown-entry": "That garment price could not be found.",
+      "unknown-alteration": "That alteration could not be found.",
+      "unknown-appointment": "That appointment could not be found."
     },
     "retire": "Retire",
     "retireConfirm": "Retire {name}? It leaves the site. You can restore it from Retired.",

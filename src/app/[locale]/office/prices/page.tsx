@@ -8,7 +8,9 @@ import {
   livePriceList,
 } from "@/lib/live-pricing";
 import { PriceManager } from "@/components/price-manager";
+import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { officeViewer } from "../_lib/viewer";
+import { applyPriceChanges } from "./actions";
 
 /** Prices: garments, alterations and sessions, each a number she can change. */
 export default async function OfficePricesPage({
@@ -62,11 +64,13 @@ export default async function OfficePricesPage({
           {t("pricesLead")}
         </p>
       </div>
-      <PriceManager
-        entries={priceEntries}
-        alterations={priceAlterations}
-        appointments={priceAppointments}
-      />
+      <OfficeDraftProvider apply={applyPriceChanges}>
+        <PriceManager
+          entries={priceEntries}
+          alterations={priceAlterations}
+          appointments={priceAppointments}
+        />
+      </OfficeDraftProvider>
     </section>
   );
 }
