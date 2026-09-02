@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import es from "@/messages/es.json";
 import en from "@/messages/en.json";
@@ -38,5 +40,37 @@ describe("the office tabs", () => {
         expect(office[tab.labelKey]).not.toContain("—");
       }
     }
+  });
+});
+
+const officeDir = path.join(process.cwd(), "src/app/[locale]/office");
+
+function read(relative: string): string {
+  return fs.readFileSync(path.join(officeDir, relative), "utf8");
+}
+
+/** A page is guarded when it calls the shared helper and nothing else. */
+function expectGuarded(relative: string) {
+  const source = read(relative);
+  expect(source, `${relative} calls officeViewer`).toContain("officeViewer(");
+  expect(source, `${relative} does not call currentViewer itself`).not.toContain("currentViewer(");
+  expect(source, `${relative} does not compare roles itself`).not.toMatch(/role !== "owner"/);
+}
+
+describe("the office layout", () => {
+  it("checks the owner once, through the helper", () => {
+    expectGuarded("layout.tsx");
+  });
+
+  it("has a helper that redirects the signed-out and hides from the rest", () => {
+    const source = read("_lib/viewer.ts");
+    expect(source).toContain("redirect(`/${locale}/sign-in`)");
+    expect(source).toContain("notFound()");
+  });
+});
+
+describe("the today tab", () => {
+  it("is guarded", () => {
+    expectGuarded("page.tsx");
   });
 });
