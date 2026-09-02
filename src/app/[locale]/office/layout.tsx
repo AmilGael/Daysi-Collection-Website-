@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { PageHeader } from "@/components/page-header";
-import { OfficeTabs } from "@/components/office/office-tabs";
 import { officeViewer } from "./_lib/viewer";
 
 /**
- * Daysi's office: the heading, the tabs, and the guard on the door.
+ * Daysi's office: the heading and the guard on the door. The tabs are the
+ * site header's: inside the office it shows them where the store links go.
  *
  * Every tab under here shares this shell. The guard runs here for the shell
  * and again in each page; see `_lib/viewer.ts` for why both.
@@ -24,9 +24,7 @@ export default async function OfficeLayout({
 
   return (
     <>
-      <PageHeader title={t("title", { name: viewer.account.name || "Daysi" })} lead={t("lead")}>
-        <OfficeTabs />
-      </PageHeader>
+      <PageHeader title={t("title", { name: viewer.account.name || "Daysi" })} lead={t("lead")} />
 
       <div className="shell flex flex-col gap-16 pb-28">{children}</div>
     </>

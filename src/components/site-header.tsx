@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/routing";
 import { BAR_TABS, NAV_TABS } from "@/content/navigation";
+import { OFFICE_TABS } from "./office/tabs";
+import { OfficeTabs } from "./office/office-tabs";
 import { Logo } from "./logo";
 import { LanguageSwitch } from "./language-switch";
 import { AccountMenu } from "./account-menu";
@@ -26,7 +28,19 @@ export function SiteHeader({
   cartCount: number;
 }) {
   const t = useTranslations("nav");
+  const to = useTranslations("office");
   const pathname = usePathname();
+
+  // Inside the office the bar belongs to the office: its eight tabs take the
+  // place of the store links, and the store is one tap away through the
+  // menu. Office tabs match exactly, because `/office` prefixes every other
+  // one; store links match by prefix, because a garment page is still the
+  // collection.
+  const inOffice =
+    Boolean(viewer?.isOwner) && (pathname === "/office" || pathname.startsWith("/office/"));
+  const barTabs = inOffice
+    ? OFFICE_TABS.map((tab) => ({ href: tab.href, label: to(tab.labelKey), exact: true }))
+    : BAR_TABS.map((tab) => ({ href: tab.href, label: t(tab.label), exact: false }));
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -100,8 +114,8 @@ export function SiteHeader({
           aria-label={t("home")}
           className={`hidden items-center gap-3 self-stretch min-[75rem]:flex min-[75rem]:border-l min-[75rem]:pl-6 2xl:gap-5 ${dividerClass}`}
         >
-          {BAR_TABS.map((tab) => {
-            const isActive = pathname.startsWith(tab.href);
+          {barTabs.map((tab) => {
+            const isActive = tab.exact ? pathname === tab.href : pathname.startsWith(tab.href);
             return (
               <Link
                 key={tab.href}
@@ -111,7 +125,7 @@ export function SiteHeader({
                   isActive ? "opacity-100" : "opacity-70 hover:opacity-100"
                 }`}
               >
-                {t(tab.label)}
+                {tab.label}
                 <span
                   aria-hidden
                   /* Scales rather than grows: width is a layout property and
@@ -184,6 +198,14 @@ export function SiteHeader({
         </div>
       </div>
 
+      {inOffice ? (
+        // Below the bar's breakpoint the office tabs get a row of their own,
+        // scrolling sideways, where the store links would have been hidden in
+        // the menu. One row of tabs, either way.
+        <div className="shell min-[75rem]:hidden">
+          <OfficeTabs />
+        </div>
+      ) : null}
     </header>
 
     {/*

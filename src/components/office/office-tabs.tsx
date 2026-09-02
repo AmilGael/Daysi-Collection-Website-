@@ -15,14 +15,15 @@ import { OFFICE_TABS } from "./tabs";
  * as written in the list.
  *
  * On a phone the strip scrolls sideways rather than wrapping: eight labels
- * on three lines stop reading as tabs.
+ * on three lines stop reading as tabs. The site header places it: under the
+ * bar on narrow screens, where the store links would not fit either.
  */
 export function OfficeTabs() {
   const pathname = usePathname();
   const t = useTranslations("office");
 
   return (
-    <nav aria-label={t("tabsLabel")} className="mt-10 overflow-x-auto border-b border-line">
+    <nav aria-label={t("tabsLabel")} className="overflow-x-auto">
       <ul className="flex min-w-max">
         {OFFICE_TABS.map((tab) => {
           const active = pathname === tab.href;
