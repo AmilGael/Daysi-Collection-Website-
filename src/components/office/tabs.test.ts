@@ -80,3 +80,9 @@ describe("the work tab", () => {
     expectGuarded("work/page.tsx");
   });
 });
+
+describe("the collection tab", () => {
+  it("is guarded", () => {
+    expectGuarded("collection/page.tsx");
+  });
+});
