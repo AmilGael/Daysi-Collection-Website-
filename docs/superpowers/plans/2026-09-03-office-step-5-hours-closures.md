@@ -516,7 +516,10 @@ Expected: PASS. If it fails it names the file still reading the coded hours; mov
 > than weakening the test: the array is still Monday first, it is simply no longer
 > the coded one being read. The module doc at the top of `availability.ts` needs the
 > same treatment, since it says slots come from `business.ts`, which this task makes
-> untrue.
+> untrue. **Task 6 then needs a second exemption:** the undo baseline for a day is by
+> definition the shipped value, so `src/lib/office-history.ts` reads the coded hours
+> legitimately. Write the allow-list with both files in it here, rather than
+> discovering it two tasks later.
 
 - [ ] **Step 5: Run the tests**
 
