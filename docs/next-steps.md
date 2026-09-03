@@ -24,16 +24,12 @@ What she can do now:
 - **Deshacer** on any row she has changed. It puts the earlier version in the list as "pendiente"; she still presses Confirmar. Deshacer twice is a redo.
 - The manual has a "Deshacer un cambio" section and the Retirar notes.
 
-Step 3 is on the pull request "Office: retire anything, and undo that waits for her yes". Once it is merged, from `main`:
+Steps 2 and 3 are deployed and live (2 September 2026).
 
-```bash
-npm run deploy
-```
+- **Polish (branch office-polish):** the tab strip follows the active tab on a phone; a photo the browser cannot read says so instead of hanging; the Vitrina bar pins like the others; a change she makes while confirming is not marked failed; Deshacer keeps added photos, and never offers a payment that Stripe wrote (older status lines offer it again only after she changes them).
 
 ## What could come next (not started)
 
-- The office tab strip should scroll the active tab into view on a phone.
-- The gallery's save button labels still say "Agregar al trabajo".
 - Shopfront: hours, holidays and the premiere season as forms instead of code.
 - Text overrides: fix a garment's description from the office instead of a deploy.
 
@@ -57,7 +53,8 @@ fly secrets set -a daysicollectioninc STRIPE_SECRET_KEY="sk_test_..." STRIPE_WEB
 ## Small things still owed
 
 - Delete the old Google secret and the old Resend key in their dashboards (new ones are already live).
-- The autumn premiere ends on 6 October 2026. After that day the premieres page goes empty. Add the next season or make the page say "coming soon" before then.
+- The autumn premiere ends on 6 October 2026. The pages now say the next premiere is coming after that day (live since 2 September 2026); adding the next season is still Daysi's call.
+- Pictures load faster since 2 September 2026: they are WebP now and stay cached across deploys.
 - Email forwarding to Daysi's own inbox waits on her clicking the Cloudflare verification email.
 - DMARC can go from quarantine to reject after a clean month.
 
