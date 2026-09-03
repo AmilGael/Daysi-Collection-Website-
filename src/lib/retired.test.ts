@@ -68,3 +68,35 @@ describe("retired records", () => {
     expect(retiredKey("gallery", "work-1")).toBe("gallery:work-1");
   });
 });
+
+describe("the per-request memo on retiredSet", () => {
+  afterEach(() => vi.doUnmock("react"));
+
+  it("is a passthrough in this test build, so a write is visible on the next read", async () => {
+    const { cache } = await import("react");
+    let calls = 0;
+    const counted = cache(() => { calls += 1; return calls; });
+    counted();
+    counted();
+    expect(calls).toBe(2);
+  });
+
+  it("is wrapped in React cache, so a memoising build reads the file once per kind", async () => {
+    vi.doMock("react", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("react")>();
+      const memo = <A, R>(fn: (arg: A) => R) => {
+        const seen = new Map<A, R>();
+        return (arg: A) => {
+          if (!seen.has(arg)) seen.set(arg, fn(arg));
+          return seen.get(arg) as R;
+        };
+      };
+      return { ...actual, cache: memo };
+    });
+    const { retiredSet, setRetired } = await import("./retired");
+    expect(retiredSet("style")).toEqual(new Set());
+    await setRetired("style", "x", true);
+    expect(retiredSet("style"), "memoised within the scope").toEqual(new Set());
+    expect(retiredSet("gallery"), "a different kind is a different entry").toEqual(new Set());
+  });
+});
