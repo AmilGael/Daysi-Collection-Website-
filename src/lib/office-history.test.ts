@@ -162,3 +162,66 @@ describe("office undo history", () => {
   });
 
 });
+
+describe("text undo", () => {
+  it("stages the previous words", async () => {
+    const { saveTextOverride } = await import("./live-text");
+    const { previousChangeFor } = await import("./office-history");
+    await saveTextOverride({
+      subject: "style",
+      id: "s1",
+      field: "description",
+      locale: "es",
+      value: "Primera",
+    });
+    await saveTextOverride({
+      subject: "style",
+      id: "s1",
+      field: "description",
+      locale: "es",
+      value: "Segunda",
+    });
+
+    const change = previousChangeFor("style-text", "s1:description:es");
+    expect(change).toMatchObject({
+      type: "style-text",
+      id: "s1",
+      field: "description",
+      locale: "es",
+      value: "Primera",
+    });
+  });
+
+  it("stages a return to the coded words when there is only one version", async () => {
+    const { saveTextOverride } = await import("./live-text");
+    const { previousChangeFor } = await import("./office-history");
+    await saveTextOverride({
+      subject: "gallery",
+      id: "g1",
+      field: "caption",
+      locale: "en",
+      value: "Only",
+    });
+
+    expect(previousChangeFor("work-text", "g1:caption:en")).toMatchObject({
+      type: "work-text",
+      id: "g1",
+      field: "caption",
+      locale: "en",
+      value: "",
+    });
+  });
+
+  it("offers undo on a field that has been edited once", async () => {
+    const { saveTextOverride } = await import("./live-text");
+    const { undoableIds } = await import("./office-history");
+    await saveTextOverride({
+      subject: "style",
+      id: "s1",
+      field: "name",
+      locale: "es",
+      value: "Nombre",
+    });
+    expect(undoableIds("style-text").has("s1:name:es")).toBe(true);
+  });
+});

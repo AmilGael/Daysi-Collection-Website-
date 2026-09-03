@@ -813,6 +813,11 @@ git commit -m "Persist a confirmed text change from the collection and gallery a
 
 ### Task 5: Undo for the two text streams
 
+> **Order note, found during execution:** run this task BEFORE Task 4. Task 3
+> adds two names to `UNDO_KINDS`, which makes the `switch` in `streamFor`
+> non-exhaustive, so `npm run typecheck` stays red from the end of Task 3 until
+> this task adds the two streams. Task 4's green typecheck depends on it.
+
 **Files:**
 - Modify: `src/lib/office-history.ts`
 - Modify: `src/lib/office-history.test.ts`
