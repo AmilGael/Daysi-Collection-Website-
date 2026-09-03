@@ -68,3 +68,29 @@ describe("assembling the gallery", () => {
     expect(assembleGallery([work("a")], [], [hide("a")], new Set(["a"]))).toEqual([]);
   });
 });
+
+describe("assembleGallery with text overrides", () => {
+  it("applies a caption override", () => {
+    const seed = [
+      {
+        id: "g1",
+        src: "/g.jpg",
+        width: 10,
+        height: 10,
+        category: "runway",
+        caption: { es: "Viejo", en: "Old" },
+      },
+    ] as const;
+    const merged = assembleGallery(seed, [], [], new Set(), [
+      {
+        subject: "gallery",
+        id: "g1",
+        field: "caption",
+        locale: "en",
+        value: "New caption",
+        updatedAt: "2026-09-03T00:00:00.000Z",
+      },
+    ]);
+    expect(merged[0]!.caption).toEqual({ es: "Viejo", en: "New caption" });
+  });
+});
