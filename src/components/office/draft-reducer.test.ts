@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import en from "@/messages/en.json";
 import es from "@/messages/es.json";
@@ -122,6 +124,11 @@ describe("office draft reducer", () => {
       { key: "style:one", change: { value: "first" }, error: "in-use", count: 2 },
       { key: "style:two", change: { value: "second" } },
     ]);
+  });
+
+  it("is told which keys the provider sent, not just their results", () => {
+    const provider = readFileSync(path.join(process.cwd(), "src/components/office/use-office-draft.tsx"), "utf8");
+    expect(provider).toContain('{ type: "settled", keys, results:');
   });
 
   it("finds a pending entry by key", () => {

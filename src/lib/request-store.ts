@@ -66,8 +66,8 @@ export type StoredRequest = {
   readonly photoFile?: string;
   /**
    * Who appended this line when it was not the client: the office changing a
-   * status, or Stripe marking a payment. Lines before September 2026 carry
-   * nothing. Undo is offered only on a line the office wrote.
+   * status, or Stripe marking a payment. Lines written before this shipped
+   * carry nothing. Undo is offered only on a line the office wrote.
    */
   readonly source?: "office" | "stripe";
   status: "new" | "answered" | "scheduled" | "paid" | "closed";

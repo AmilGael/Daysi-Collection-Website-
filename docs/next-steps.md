@@ -21,7 +21,7 @@ What she can do now:
 - **Retirar / Restaurar** on garments, gallery photos, her own fabric rolls, prices, and everything in Trabajo (orders, alterations, commissions, appointments, messages, sign-ups). A retired piece leaves the site at once and sits under "Retirados" until she restores it. Nothing is ever deleted.
 - A fabric or price that a garment on the site still uses cannot be retired; the row says how many garments use it. Retire the garment first.
 - A retired appointment frees its hour and leaves the books and the client's account. Restore puts all three back.
-- **Deshacer** on any row she has changed. It puts the earlier version in the list as "pendiente"; she still presses Confirmar. Deshacer twice is a redo.
+- **Deshacer** on any row she has changed (except a card payment Stripe wrote). It puts the earlier version in the list as "pendiente"; she still presses Confirmar. Deshacer twice is a redo.
 - The manual has a "Deshacer un cambio" section and the Retirar notes.
 
 Steps 2 and 3 are deployed and live (2 September 2026).

@@ -76,6 +76,6 @@ describe("who marks a status line", () => {
   it("is the office on the work action and Stripe on the webhook, and nobody on a client submission", () => {
     expect(source("src/app/[locale]/office/work/actions.ts")).toContain('source: "office"');
     expect(source("src/app/api/stripe/webhook/route.ts")).toContain('status: "paid", source: "stripe"');
-    expect(source("src/lib/notify.ts")).not.toContain("source:");
+    expect(source("src/lib/notify.ts")).not.toMatch(/\bsource:/);
   });
 });
