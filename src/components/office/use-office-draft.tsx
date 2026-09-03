@@ -100,7 +100,7 @@ export function OfficeDraftProvider<Wire>({
       startTransition(() =>
         dispatch(
           result.ok
-            ? { type: "settled", results: [...result.results, ...uploadFailures] }
+            ? { type: "settled", keys, results: [...result.results, ...uploadFailures] }
             : { type: "refused", error: result.error },
         ),
       );
