@@ -610,7 +610,7 @@
     "stylePhotoRequired": "Agregue al menos una fotografía.",
     "styleSizeRequired": "Escoja al menos una talla.",
     "stylePriceRequired": "Esta prenda y esta tela todavía no tienen precio. Póngale uno.",
-    "styleNote": "Usted lo escribe una vez, en sus palabras, y se muestra en los dos idiomas. Las piezas que ya estaban en el sitio conservan sus versiones en inglés y español."
+    "styleNote": "Escriba en español y el inglés se copia solo mientras escribe. Si toca la casilla de inglés y escribe ahí, se queda con lo suyo. Después puede corregir las palabras de cualquier pieza con Editar textos."
   },
   "gallery": {
     "title": "El trabajo",
