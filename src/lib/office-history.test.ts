@@ -117,26 +117,4 @@ describe("office undo history", () => {
     });
   });
 
-  it("reverses retirement records and keeps retirement kinds separate", async () => {
-    const { previousChangeFor, undoableIds } = await import("./office-history");
-    const { setRetired } = await import("./retired");
-
-    await setRetired("gallery", "frutera", true);
-    expect(undoableIds("retired:style")).not.toContain("frutera");
-
-    await setRetired("style", "frutera", true);
-    expect(undoableIds("retired:style")).toContain("frutera");
-    expect(previousChangeFor("retired:style", "frutera")).toEqual({
-      type: "restore",
-      key: "style:frutera",
-      id: "frutera",
-    });
-
-    await setRetired("style", "frutera", false);
-    expect(previousChangeFor("retired:style", "frutera")).toEqual({
-      type: "retire",
-      key: "style:frutera",
-      id: "frutera",
-    });
-  });
 });

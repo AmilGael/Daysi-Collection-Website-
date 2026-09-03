@@ -161,11 +161,6 @@ export const UNDO_KINDS = [
   "appointment",
   "notice",
   "request-status",
-  "retired:style",
-  "retired:gallery",
-  "retired:fabric",
-  "retired:price-entry",
-  "retired:request",
 ] as const;
 export type UndoKind = (typeof UNDO_KINDS)[number];
 export const undoQuerySchema = z.object({

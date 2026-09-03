@@ -19,7 +19,6 @@ import {
 } from "./live-pricing";
 import { readRecords, versionsOf } from "./records";
 import { REQUEST_KINDS, listRequests, requestVersions, type StoredRequest } from "./request-store";
-import { retiredKey, type RetiredKind, type RetiredRecord } from "./retired";
 
 type Stream<R> = {
   readonly all: () => R[];
@@ -180,29 +179,6 @@ const requestStatus: Stream<StoredRequest> = {
   }),
 };
 
-const retiredPrefix: Record<RetiredKind, string> = {
-  style: "style:",
-  gallery: "gallery:",
-  fabric: "fabric:",
-  "price-entry": "entry:",
-  request: "request:",
-};
-
-function retiredStream(kind: RetiredKind): Stream<RetiredRecord> {
-  const key = (record: RetiredRecord) => retiredKey(record.kind, record.id);
-  return {
-    all: () => readRecords<RetiredRecord>("retired").filter((record) => record.kind === kind),
-    key,
-    versions: (id) => versionsOf("retired", key, retiredKey(kind, id)),
-    baseline: (id) => ({ type: "restore", key: `${retiredPrefix[kind]}${id}`, id }),
-    toChange: (record, id) => ({
-      type: record.retired ? "retire" : "restore",
-      key: `${retiredPrefix[kind]}${id}`,
-      id,
-    }),
-  };
-}
-
 function streamFor(kind: UndoKind): Stream<unknown> {
   switch (kind) {
     case "style-override": return erased(styleOverride);
@@ -212,11 +188,6 @@ function streamFor(kind: UndoKind): Stream<unknown> {
     case "appointment": return erased(appointment);
     case "notice": return erased(notice);
     case "request-status": return erased(requestStatus);
-    case "retired:style": return erased(retiredStream("style"));
-    case "retired:gallery": return erased(retiredStream("gallery"));
-    case "retired:fabric": return erased(retiredStream("fabric"));
-    case "retired:price-entry": return erased(retiredStream("price-entry"));
-    case "retired:request": return erased(retiredStream("request"));
   }
 }
 
@@ -231,9 +202,7 @@ export function undoableIds(kind: UndoKind): Set<string> {
   const stream = streamFor(kind);
   const counts = new Map<string, number>();
   for (const record of stream.all()) {
-    const id = kind.startsWith("retired:")
-      ? (record as RetiredRecord).id
-      : stream.key(record);
+    const id = stream.key(record);
     counts.set(id, (counts.get(id) ?? 0) + 1);
   }
   return new Set(
