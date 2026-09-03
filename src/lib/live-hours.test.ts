@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { DAY_IDS, applyHours, type HoursOverride } from "./live-hours";
 import type { BusinessInfo } from "@/content/types";
@@ -65,5 +67,27 @@ describe("applyHours", () => {
 
   it("ignores an override naming a day that is not there", () => {
     expect(applyHours(coded, [override({ day: "xxx" as never })])).toEqual([...coded]);
+  });
+});
+
+describe("who reads the hours", () => {
+  it("is nobody but live-hours itself", () => {
+    const roots = ["src/app", "src/components", "src/lib"];
+    const offenders: string[] = [];
+
+    const walk = (directory: string) => {
+      for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+        const full = path.join(directory, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+        } else if (/\.tsx?$/.test(entry.name) && !entry.name.endsWith(".test.ts")) {
+          if (full.endsWith(path.join("src", "lib", "live-hours.ts"))) continue;
+          if (/business\.hours/.test(fs.readFileSync(full, "utf8"))) offenders.push(full);
+        }
+      }
+    };
+
+    for (const root of roots) walk(path.join(process.cwd(), root));
+    expect(offenders).toEqual([]);
   });
 });

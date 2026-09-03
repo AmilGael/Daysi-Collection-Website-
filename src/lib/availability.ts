@@ -1,9 +1,11 @@
-import { business, findAppointmentType } from "@/content";
+import { findAppointmentType } from "@/content";
+import { activeClosures, closedOn } from "./closures";
+import { liveHours } from "./live-hours";
 import { activeRequests } from "./request-store";
 
 /**
- * When Daysi can be booked. Slots are generated from the opening hours in
- * `business.ts`, then anything already taken is removed. The same function runs
+ * When Daysi can be booked. Slots are generated from the opening hours she has
+ * set in the office, then anything already taken is removed. The same function runs
  * on the page that shows the calendar and in the route handler that accepts a
  * booking, so a slot cannot be shown as free and then double booked.
  *
@@ -83,11 +85,13 @@ function businessInstant(date: string, time: string): Date {
 }
 
 /**
- * `business.hours` is indexed Monday first; JavaScript counts Sunday as zero.
+ * The hours array is indexed Monday first; JavaScript counts Sunday as zero.
+ * The hours themselves are whatever Daysi has set in the office, falling back
+ * to the coded ones.
  */
 function hoursForWeekday(weekday: number) {
   const index = weekday === 0 ? 6 : weekday - 1;
-  return business.hours[index];
+  return liveHours()[index];
 }
 
 async function bookedSlots(): Promise<Set<string>> {
@@ -121,6 +125,7 @@ export async function availableDays(
   if (!type) return [];
 
   const taken = await bookedSlots();
+  const closures = activeClosures();
   const earliest = now.getTime() + MINIMUM_LEAD_HOURS * 60 * 60 * 1000;
   const days: DaySlots[] = [];
   const seenDates = new Set<string>();
@@ -133,6 +138,7 @@ export async function availableDays(
     // clock change; the calendar should still list each day once.
     if (seenDates.has(date)) continue;
     seenDates.add(date);
+    if (closedOn(closures, date)) continue;
 
     const opening = hoursForWeekday(weekday);
     if (!opening || opening.closes === null) continue;

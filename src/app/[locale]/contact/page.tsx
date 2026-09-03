@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { business, translate } from "@/content";
 import type { Locale } from "@/i18n/routing";
+import { liveHours } from "@/lib/live-hours";
 import { whatsappLink } from "@/lib/whatsapp";
 import { PageHeader } from "@/components/page-header";
 import { ContactForm } from "@/components/contact-form";
@@ -43,7 +44,7 @@ export default async function ContactPage({
               {t("hours")}
             </h2>
             <dl className="flex flex-col">
-              {business.hours.map((day) => (
+              {liveHours().map((day) => (
                 <div
                   key={day.day.en}
                   className="flex items-baseline justify-between gap-6 border-b border-line py-2.5 text-[0.9375rem]"
