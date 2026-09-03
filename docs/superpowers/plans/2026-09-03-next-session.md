@@ -62,6 +62,10 @@ Seen on 2026-09-03 when pushing `office-polish`. Both are on `next-intl`, pinned
 
 What closes them: the next-intl 4.x migration that was deferred (breaking changes in `next-intl/middleware`, the navigation helpers and `getRequestConfig`; read the 4.0 upgrade notes first). Own PR, after item 2 and before or alongside item 3, because step 4's text overrides touch the same message plumbing and should not be written twice. Verification: typecheck, tests, build, the smoke run, and a browser pass of both locales including the `/` to `/es` redirect and a bad-locale 404. Until then, Dependabot will keep the two alerts open and its weekly PR will propose the major bump; close that PR rather than merging it blind.
 
+## 8. The readers that still bypass the live catalog (small, found reviewing step 4)
+
+Both reviews of step 4 found the same seam. `generateMetadata` on a garment page, the cart page, the Stripe checkout route, the cart and request API routes, and the premieres page all read the static `styles` array rather than `liveStyles()`. So a name Daysi corrects, or a garment she added, is right in the body of the page and wrong in the browser tab, the cart line, the Stripe line item and the request email. It predates step 4 and was not introduced by it. One PR: route those six reads through the live catalog, with a test per reader, and check nothing depended on the seed being static.
+
 ## Process notes for whoever picks this up
 
 - Never run `fly deploy` directly; `npm run deploy` is the gate. The auto-mode classifier blocks `fly deploy`, `fly secrets set` and `npm run smoke` for the agent; the user runs those.
