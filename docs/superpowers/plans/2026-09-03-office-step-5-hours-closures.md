@@ -510,6 +510,14 @@ describe("who reads the hours", () => {
 Run: `npx vitest run src/lib/live-hours.test.ts`
 Expected: PASS. If it fails it names the file still reading the coded hours; move that file to `liveHours()` too.
 
+> **Found during execution:** the test greps raw file text, so it also matches the
+> phrase in a comment. Step 3 above asks you to keep the Monday-first comment that
+> names the coded array, which this test then rejects. Reword that comment rather
+> than weakening the test: the array is still Monday first, it is simply no longer
+> the coded one being read. The module doc at the top of `availability.ts` needs the
+> same treatment, since it says slots come from `business.ts`, which this task makes
+> untrue.
+
 - [ ] **Step 5: Run the tests**
 
 Run: `npm test && npm run typecheck`
