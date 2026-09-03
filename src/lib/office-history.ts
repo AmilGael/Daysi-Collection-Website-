@@ -201,17 +201,18 @@ const requestStatus: Stream<StoredRequest> = {
 function textStream(subject: TextSubject, type: "style-text" | "work-text"): Stream<TextOverride> {
   const composite = (record: TextOverride) => `${record.id}:${record.field}:${record.locale}`;
   const split = (id: string) => {
-    const [itemId, field, locale] = id.split(":");
-    return { itemId: itemId ?? "", field: (field ?? "") as TextField, locale: (locale ?? "es") as "es" | "en" };
+    const parts = id.split(":");
+    const locale = parts.pop() ?? "es";
+    const field = parts.pop() ?? "";
+    return { itemId: parts.join(":"), field: field as TextField, locale: locale as "es" | "en" };
   };
-  const toChange = (record: TextOverride, id: string): OfficeChange => {
-    const { itemId, field, locale } = split(id);
+  const toChange = (record: TextOverride, _id: string): OfficeChange => {
     return {
       type,
-      key: `text:${textKey(subject, itemId, field, locale)}`,
-      id: itemId,
-      field,
-      locale,
+      key: `text:${textKey(subject, record.id, record.field, record.locale)}`,
+      id: record.id,
+      field: record.field,
+      locale: record.locale,
       value: record.value,
     } as OfficeChange;
   };

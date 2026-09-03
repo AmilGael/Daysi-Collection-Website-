@@ -23,6 +23,7 @@ export type ManagedWork = {
   readonly texts: {
     readonly caption: { readonly es: string; readonly en: string };
   };
+  readonly codedTexts: ManagedWork["texts"];
   readonly hidden: boolean;
   readonly retired: boolean;
   readonly undoable: boolean;
@@ -109,29 +110,31 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
 
   return (
     <div className="flex flex-col gap-8">
-      <ul className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-8">
+      <ul className="flex flex-col gap-4">
         {works.map((work) => {
           const key = `gallery:${work.id}`;
           const entry = draft.pending(key);
           const hidden = entry?.change.wire.type === "work-visibility" ? entry.change.wire.hidden : work.hidden;
           const retiring = entry?.change.wire.type === "retire";
           return (
-            <li key={work.id} className={`flex flex-col gap-1.5 ${retiring ? "opacity-50" : ""}`}>
-              <span className={`relative block aspect-3/4 overflow-hidden border border-line transition-opacity ${hidden ? "opacity-30" : ""}`}>
-                <Image src={work.src} alt="" fill sizes="10rem" className="object-cover" />
-              </span>
-              {entry ? <span className="flex flex-wrap items-center gap-2">
-                <Pending confirming={entry.confirming} error={entry.error} count={entry.count} />
-                {retiring ? <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">{t("removePending")}</button> : null}
-              </span> : null}
-              <label className="flex cursor-pointer items-center gap-1.5 text-[0.6875rem] text-ink-faint">
-                <input type="checkbox" checked={!hidden} disabled={retiring} onChange={(event) => stageVisibility(work, !event.target.checked)} className="h-3.5 w-3.5 accent-ink" />
-                {hidden ? t("hidden") : t("shown")}
-              </label>
-              {!retiring ? <span className="flex items-center gap-2">
-                <RetireButton name={work.caption || work.id} onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: work.id } })} />
-                {work.undoable && !entry ? <UndoLink kind="work-visibility" id={work.id} /> : null}
-              </span> : null}
+            <li key={work.id} className={`grid gap-4 border-b border-line pb-4 sm:grid-cols-[10rem_minmax(0,1fr)] ${retiring ? "opacity-50" : ""}`}>
+              <div className="flex flex-col gap-1.5">
+                <span className={`relative block aspect-3/4 overflow-hidden border border-line transition-opacity ${hidden ? "opacity-30" : ""}`}>
+                  <Image src={work.src} alt="" fill sizes="10rem" className="object-cover" />
+                </span>
+                {entry ? <span className="flex flex-wrap items-center gap-2">
+                  <Pending confirming={entry.confirming} error={entry.error} count={entry.count} />
+                  {retiring ? <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">{t("removePending")}</button> : null}
+                </span> : null}
+                <label className="flex cursor-pointer items-center gap-1.5 text-[0.6875rem] text-ink-faint">
+                  <input type="checkbox" checked={!hidden} disabled={retiring} onChange={(event) => stageVisibility(work, !event.target.checked)} className="h-3.5 w-3.5 accent-ink" />
+                  {hidden ? t("hidden") : t("shown")}
+                </label>
+                {!retiring ? <span className="flex items-center gap-2">
+                  <RetireButton name={work.caption || work.id} onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: work.id } })} />
+                  {work.undoable && !entry ? <UndoLink kind="work-visibility" id={work.id} /> : null}
+                </span> : null}
+              </div>
               <TextFields
                 subject="gallery"
                 id={work.id}
@@ -141,6 +144,8 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
                   label: t("textsCaption"),
                   es: work.texts.caption.es,
                   en: work.texts.caption.en,
+                  codedEs: work.codedTexts.caption.es,
+                  codedEn: work.codedTexts.caption.en,
                   multiline: true,
                 }]}
               />
@@ -151,7 +156,7 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
           const wire = entry.change.wire;
           if (wire.type !== "work-add") return null;
           const src = pendingPreviews[entry.key];
-          return <li key={entry.key} className="flex flex-col gap-1.5">
+          return <li key={entry.key} className="flex w-40 flex-col gap-1.5">
             <span className="relative block aspect-3/4 overflow-hidden border border-line">
               {src ? <Image src={src} alt="" fill unoptimized sizes="10rem" className="object-cover" /> : null}
             </span>

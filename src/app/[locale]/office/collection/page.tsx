@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
-import { categories, translate } from "@/content";
-import { manageableStyles, styleOverrides } from "@/lib/live-catalog";
+import { categories, styles, translate } from "@/content";
+import { addedStyles, assembleStyles, manageableStyles, styleOverrides } from "@/lib/live-catalog";
 import { liveFabrics, livePriceList } from "@/lib/live-pricing";
 import { undoableIds } from "@/lib/office-history";
 import { CollectionManager, type ManagedStyle } from "@/components/collection-manager";
@@ -26,6 +26,9 @@ export default async function OfficeCollectionPage({
   const undoable = undoableIds("style-override");
   const undoableTexts = undoableIds("style-text");
   const overridesById = new Map(styleOverrides().map((override) => [override.styleId, override]));
+  const codedStyles = new Map(
+    assembleStyles(styles, addedStyles(), styleOverrides(), new Set()).map((style) => [style.id, style]),
+  );
   const managedStyles: ManagedStyle[] = manageableStyles().map((style) => ({
     id: style.id,
     name: translate(style.name, language),
@@ -52,6 +55,12 @@ export default async function OfficeCollectionPage({
       color: style.color,
       description: style.description,
       detail: style.detail,
+    },
+    codedTexts: {
+      name: codedStyles.get(style.id)?.name ?? style.name,
+      color: codedStyles.get(style.id)?.color ?? style.color,
+      description: codedStyles.get(style.id)?.description ?? style.description,
+      detail: codedStyles.get(style.id)?.detail ?? style.detail,
     },
   }));
   const active = managedStyles.filter((style) => !style.retired);

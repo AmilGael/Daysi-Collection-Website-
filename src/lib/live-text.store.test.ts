@@ -51,4 +51,38 @@ describe("saveTextOverride", () => {
     expect(overrides.find((record) => record.locale === "es")!.value).toBe("Segunda");
     expect(overrides.find((record) => record.locale === "en")!.value).toBe("English");
   });
+
+  it("feeds overrides through every live and office catalog reader", async () => {
+    const { styles } = await import("@/content");
+    const { galleryWorks } = await import("@/content/gallery");
+    const { saveTextOverride } = await import("./live-text");
+    const style = styles.find((candidate) => candidate.isPublished)!;
+    const work = galleryWorks[0]!;
+
+    await saveTextOverride({
+      subject: "style",
+      id: style.id,
+      field: "name",
+      locale: "en",
+      value: "Wired garment name",
+    });
+    await saveTextOverride({
+      subject: "gallery",
+      id: work.id,
+      field: "caption",
+      locale: "es",
+      value: "Pie de foto conectado",
+    });
+
+    const { liveStyles, manageableStyles } = await import("./live-catalog");
+    const { liveGallery, manageableGallery } = await import("./live-gallery");
+    expect(liveStyles().find((candidate) => candidate.id === style.id)?.name.en)
+      .toBe("Wired garment name");
+    expect(manageableStyles().find((candidate) => candidate.id === style.id)?.name.en)
+      .toBe("Wired garment name");
+    expect(liveGallery().find((candidate) => candidate.id === work.id)?.caption.es)
+      .toBe("Pie de foto conectado");
+    expect(manageableGallery().find((candidate) => candidate.id === work.id)?.caption.es)
+      .toBe("Pie de foto conectado");
+  });
 });

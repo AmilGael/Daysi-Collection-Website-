@@ -28,6 +28,7 @@ export type ManagedStyle = {
     readonly description: { readonly es: string; readonly en: string };
     readonly detail: { readonly es: string; readonly en: string };
   };
+  readonly codedTexts: ManagedStyle["texts"];
 };
 
 type StyleOverrideChange = Extract<CollectionChange, { type: "style-override" }>;
@@ -200,13 +201,15 @@ export function CollectionManager({
                 id={row.id}
                 undoable={undoableTexts}
                 fields={[
-                  { field: "name", label: t("textsName"), es: row.texts.name.es, en: row.texts.name.en },
-                  { field: "color", label: t("textsColor"), es: row.texts.color.es, en: row.texts.color.en },
+                  { field: "name", label: t("textsName"), es: row.texts.name.es, en: row.texts.name.en, codedEs: row.codedTexts.name.es, codedEn: row.codedTexts.name.en },
+                  { field: "color", label: t("textsColor"), es: row.texts.color.es, en: row.texts.color.en, codedEs: row.codedTexts.color.es, codedEn: row.codedTexts.color.en },
                   {
                     field: "description",
                     label: t("textsDescription"),
                     es: row.texts.description.es,
                     en: row.texts.description.en,
+                    codedEs: row.codedTexts.description.es,
+                    codedEn: row.codedTexts.description.en,
                     multiline: true,
                   },
                   {
@@ -214,6 +217,8 @@ export function CollectionManager({
                     label: t("textsDetail"),
                     es: row.texts.detail.es,
                     en: row.texts.detail.en,
+                    codedEs: row.codedTexts.detail.es,
+                    codedEn: row.codedTexts.detail.en,
                     multiline: true,
                   },
                 ]}

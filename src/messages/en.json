@@ -503,6 +503,8 @@
     "textsHide": "Close the words",
     "textsSpanish": "Spanish",
     "textsEnglish": "English",
+    "textsStaged": "{count, plural, one {# unconfirmed text} other {# unconfirmed texts}}",
+    "textsUndoBox": "Remove this change",
     "textsName": "Name",
     "textsColor": "Colour",
     "textsDescription": "Description",

@@ -12,6 +12,8 @@ type Field = {
   readonly label: string;
   readonly es: string;
   readonly en: string;
+  readonly codedEs: string;
+  readonly codedEn: string;
   readonly multiline?: boolean;
 };
 
@@ -37,17 +39,33 @@ export function TextFields({
   const t = useTranslations("office");
   const draft = useOfficeDraft<OfficeChange>();
   const [open, setOpen] = useState(false);
+  const textPrefix = `text:${subject}:${id}:`;
+  const stagedTexts = draft.entries.filter((entry) => entry.key.startsWith(textPrefix));
+  const stagedStatuses = stagedTexts
+    .map((entry) => draft.pending(entry.key))
+    .filter((entry) => entry !== undefined);
+  const stagedError = stagedStatuses.find((entry) => entry.error)?.error;
 
   return (
     <div className="mt-2">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="text-xs underline underline-offset-4"
-        aria-expanded={open}
-      >
-        {open ? t("textsHide") : t("textsEdit")}
-      </button>
+      <span className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="text-xs underline underline-offset-4"
+          aria-expanded={open}
+        >
+          {open ? t("textsHide") : t("textsEdit")}
+        </button>
+        {stagedTexts.length > 0 ? (
+          <Pending
+            confirming={stagedStatuses.some((entry) => entry.confirming)}
+            error={stagedError}
+            count={stagedTexts.length}
+            label={t("textsStaged", { count: stagedTexts.length })}
+          />
+        ) : null}
+      </span>
       {open ? (
         <div className="mt-3 grid gap-3">
           {fields.map((entry) => (
@@ -65,12 +83,13 @@ export function TextFields({
                 const common = {
                   defaultValue: current,
                   maxLength: TEXT_LIMITS[entry.field],
-                  "aria-label": `${entry.label}, ${locale === "es" ? "español" : "English"}`,
+                  "aria-label": `${entry.label}, ${locale === "es" ? t("textsSpanish") : t("textsEnglish")}`,
                   className: "w-full border border-line bg-paper px-3 py-2 text-[0.875rem] text-ink focus:border-ink",
                   onBlur: (event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
                     const value = event.target.value.trim();
-                    const coded = locale === "es" ? entry.es : entry.en;
-                    if (value === coded) {
+                    const merged = locale === "es" ? entry.es : entry.en;
+                    const coded = locale === "es" ? entry.codedEs : entry.codedEn;
+                    if (value === merged || (value === "" && merged === coded)) {
                       draft.unstage(key);
                       return;
                     }
@@ -99,10 +118,19 @@ export function TextFields({
                       ) : null}
                     </span>
                     {entry.multiline ? (
-                      <textarea rows={3} {...common} />
+                      <textarea key={`${key}:${current}`} rows={3} {...common} />
                     ) : (
-                      <input type="text" {...common} />
+                      <input key={`${key}:${current}`} type="text" {...common} />
                     )}
+                    {pending ? (
+                      <button
+                        type="button"
+                        onClick={() => draft.unstage(key)}
+                        className="w-fit text-xs underline underline-offset-4"
+                      >
+                        {t("textsUndoBox")}
+                      </button>
+                    ) : null}
                     {undoable.has(`${id}:${entry.field}:${locale}`) && !pending ? (
                       <UndoLink
                         kind={subject === "style" ? "style-text" : "work-text"}

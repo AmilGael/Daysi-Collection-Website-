@@ -106,6 +106,26 @@ describe("applyEach", () => {
   });
 });
 
+describe("collection action text limits", () => {
+  it("refuses a 100-character garment name with too-long", async () => {
+    viewer.mockResolvedValue({ role: "owner" } as Awaited<ReturnType<typeof currentViewer>>);
+    const { applyCollectionChanges } = await import("@/app/[locale]/office/collection/actions");
+    const key = "text:style:frutera:name:en";
+
+    await expect(applyCollectionChanges([{
+      type: "style-text",
+      key,
+      id: "frutera",
+      field: "name",
+      locale: "en",
+      value: "x".repeat(100),
+    }])).resolves.toEqual({
+      ok: true,
+      results: [{ key, ok: false, error: "too-long" }],
+    });
+  });
+});
+
 describe("office action structure", () => {
   it("keeps exactly one ownerAction in every editable tab", () => {
     const officeRoot = path.join(process.cwd(), "src/app/[locale]/office");

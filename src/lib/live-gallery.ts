@@ -20,6 +20,14 @@ export type GalleryVisibility = { readonly id: string; readonly hidden: boolean 
 const ADDED = "gallery-works";
 const VISIBILITY = "gallery-visibility";
 
+export function addedGalleryWorks(): GalleryWork[] {
+  return readRecords<GalleryWork>(ADDED);
+}
+
+export function galleryVisibility(): GalleryVisibility[] {
+  return readRecords<GalleryVisibility>(VISIBILITY);
+}
+
 /**
  * Pure, so the merge can be tested without touching the filesystem. Later
  * records win over earlier ones, and a work Daysi re-adds under an existing id
@@ -49,8 +57,8 @@ export function assembleGallery(
 export function liveGallery(): GalleryWork[] {
   return assembleGallery(
     galleryWorks,
-    readRecords<GalleryWork>(ADDED),
-    readRecords<GalleryVisibility>(VISIBILITY),
+    addedGalleryWorks(),
+    galleryVisibility(),
     retiredSet("gallery"),
     textOverrides(),
   );
@@ -59,12 +67,12 @@ export function liveGallery(): GalleryWork[] {
 /** Every work including the hidden ones, each flagged — the office view. */
 export function manageableGallery(): (GalleryWork & { hidden: boolean; retired: boolean })[] {
   const hidden = new Map(
-    readRecords<GalleryVisibility>(VISIBILITY).map((record) => [record.id, record.hidden]),
+    galleryVisibility().map((record) => [record.id, record.hidden]),
   );
   const retired = retiredSet("gallery");
   const all = assembleGallery(
     galleryWorks,
-    readRecords<GalleryWork>(ADDED),
+    addedGalleryWorks(),
     [],
     new Set(),
     textOverrides(),
