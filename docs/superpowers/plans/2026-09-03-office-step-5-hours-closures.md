@@ -851,7 +851,11 @@ export const closureAddSchema = z
   .refine((change) => change.from <= change.to, { message: "range ends before it starts" });
 ```
 
-Import `DAY_IDS` at the top: `import { DAY_IDS } from "./live-hours";`
+**Do NOT import `DAY_IDS` from `./live-hours` here.** This module is reachable from
+client components, and `live-hours` pulls in the filesystem-backed record store, which
+fails the production build. Write the seven ids again in this file, with a comment
+saying why, and add a test in `src/lib/live-hours.test.ts` that reads both copies and
+fails if they drift. Found the hard way at Task 7's build step.
 
 Both carry a `.refine`, so they are `ZodEffects` and `z.discriminatedUnion` will not take them. The shopfront union therefore becomes a plain `z.union`. This is safe here and NOT the situation from step 4: the shopfront tab's changes are matched by an explicit `switch (change.type)` in its action, not by discriminated error reporting, and no other union changes.
 
