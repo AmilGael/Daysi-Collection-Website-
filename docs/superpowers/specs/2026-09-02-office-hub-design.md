@@ -162,3 +162,64 @@ The layer above lets Daysi correct words after the fact; this half stops them be
 ### Testing
 
 A pure merge test for field and locale precision and for blank clearing, over seeded and added items; schema tests for the two change types and the paired create schemas; history tests for the baseline and the previous version; and the existing structural scans, which stay green because no new `use server` file appears. Browser pass: correct a Spanish description on a seeded garment and confirm the English is unchanged on the English page, clear a box and see the coded words return, add a garment with both languages filled.
+
+## Amendment 4, 2026-09-03 (decided with the user before step 5)
+
+Step 4 is on `main` and deployed (PR #29, Fly v22; copy fix PR #30, v25). Step 5 gives Daysi her opening hours and her closed days. Unlike every step before it, this one changes what a client can book, so the whole design turns on never stranding a booked client.
+
+**1. Scope is hours and closures only.** The seven weekly rows of opening and closing times, and closed spells for a holiday or a trip. Contact facts, the email address, the WhatsApp number, the social links, the tagline and the Google fields stay in code. They change once a year, they carry no booking consequence, and the tagline wants the step 4 words treatment rather than a plain box.
+
+**2. A closure is a range.** A first day, a last day, and a note only she reads. One entry covers a two week trip; a single closed day is the same date twice, which the form fills in for her. The alternative, one record per day, makes a holiday fourteen confirmations and is the version she would stop using.
+
+**3. A change that would strand a booked client is refused, with the count.** Exactly the vocabulary the fabric and price rows already use. This applies in two places, not one:
+- Closing a day that has appointments on it.
+- **Narrowing a day's hours so an existing appointment falls outside them.** Friday closing at 18:00 moved to 14:00 strands a 16:00 booking on every future Friday, with nothing on screen to warn her. The plan did not name this case; it is the same promise and gets the same rule.
+
+Her way through both is the same and already exists: move or retire those appointments in Trabajo, which frees their slots.
+
+### Records and merge
+
+Two append-only collections. Hours, one record per weekday, keyed by a stable day id rather than an index so a reordering of the coded list cannot silently shift her Tuesday:
+
+```ts
+type HoursOverride = {
+  day: "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+  opens: string;            // "10:00"; "" means closed
+  closes: string;           // "18:00"; "" means closed
+  updatedAt: string;
+};
+```
+
+Closures, with removal through the existing tombstones (`RetiredKind` gains `closure`), so undo and restore come free:
+
+```ts
+type Closure = {
+  id: string;               // generated
+  from: string;             // "2026-12-24", inclusive
+  to: string;               // "2027-01-02", inclusive
+  note: string;             // hers, never public
+  updatedAt: string;
+};
+```
+
+A new pure module `src/lib/live-hours.ts` merges the overrides onto `business.hours`, keeping the bilingual day names from code because she is never going to rename Monday. The coded convention for a closed day, `opens: ""` with `closes: null`, is preserved on the way out so `BusinessInfo` is unchanged.
+
+### Readers
+
+Only two places read hours today: `src/app/[locale]/contact/page.tsx:46` and `hoursForWeekday` in `src/lib/availability.ts:87`. Both move to the live reader, and a structural test asserts no page reads `business.hours` directly, which is the mistake that would let the printed hours and the bookable hours drift apart.
+
+`availableDays` walks 45 days ahead; it now skips any date inside an active closure. The same function already runs on the booking page and in the route that accepts a booking, so a closed day cannot be shown free and then booked.
+
+### The tab and the refusals
+
+Two sections join the notice and the QR already on Shopfront: seven rows of times, and the list of closed spells with a form to add one. Both stage into the existing shopfront draft and confirm bar; Deshacer works on an hours row like anywhere else. Three change types join `shopfrontChangeSchema`: `hours`, `closure-add`, and the shared retire and restore for kind `closure`.
+
+The refusal is a new code, not the garment-shaped `in-use`: `day-booked`, carrying the count, with copy in both bundles naming Trabajo as the way through.
+
+### Testing
+
+Pure merge tests for the hours overlay including the closed-day convention; a closure range test covering first day, last day and a day inside; `availableDays` offering nothing on a closed date; the two refusals, one for a closure over a booked day and one for hours narrowed past an existing appointment, each asserting the count; and the structural test on direct `business.hours` reads. Browser pass: close a range with no bookings and watch those days leave the calendar, try to close a day that has one and read the refusal, shorten a day past a booking and read the same refusal.
+
+### Deliberately out
+
+No public "closed for the holidays" banner. The calendar stops offering the days, and the notice editor she already has is the right tool if she wants to say something.
