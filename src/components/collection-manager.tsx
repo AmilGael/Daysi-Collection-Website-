@@ -71,10 +71,12 @@ export function CollectionManager({
   styles,
   retired,
   locale: _locale,
+  undoableTexts,
 }: {
   styles: readonly ManagedStyle[];
   retired: readonly ManagedStyle[];
   locale: Locale;
+  undoableTexts: ReadonlySet<string>;
 }) {
   const t = useTranslations("office");
   const draft = useOfficeDraft<CollectionChange>();
@@ -196,6 +198,7 @@ export function CollectionManager({
               <TextFields
                 subject="style"
                 id={row.id}
+                undoable={undoableTexts}
                 fields={[
                   { field: "name", label: t("textsName"), es: row.texts.name.es, en: row.texts.name.en },
                   { field: "color", label: t("textsColor"), es: row.texts.color.es, en: row.texts.color.en },

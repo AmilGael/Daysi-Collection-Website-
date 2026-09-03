@@ -4,6 +4,7 @@ import { useState, type FocusEvent, type JSX } from "react";
 import { useTranslations } from "next-intl";
 import { TEXT_LIMITS, type OfficeChange } from "@/lib/office-validation";
 import { Pending } from "./confirm-bar";
+import { UndoLink } from "./undo-link";
 import { useOfficeDraft } from "./use-office-draft";
 
 type Field = {
@@ -26,10 +27,12 @@ export function TextFields({
   subject,
   id,
   fields,
+  undoable,
 }: {
   subject: "style" | "gallery";
   id: string;
   fields: readonly Field[];
+  undoable: ReadonlySet<string>;
 }): JSX.Element {
   const t = useTranslations("office");
   const draft = useOfficeDraft<OfficeChange>();
@@ -100,6 +103,12 @@ export function TextFields({
                     ) : (
                       <input type="text" {...common} />
                     )}
+                    {undoable.has(`${id}:${entry.field}:${locale}`) && !pending ? (
+                      <UndoLink
+                        kind={subject === "style" ? "style-text" : "work-text"}
+                        id={`${id}:${entry.field}:${locale}`}
+                      />
+                    ) : null}
                   </label>
                 );
               })}

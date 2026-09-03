@@ -24,6 +24,7 @@ export default async function OfficeCollectionPage({
   const t = await getTranslations("office");
 
   const undoable = undoableIds("style-override");
+  const undoableTexts = undoableIds("style-text");
   const overridesById = new Map(styleOverrides().map((override) => [override.styleId, override]));
   const managedStyles: ManagedStyle[] = manageableStyles().map((style) => ({
     id: style.id,
@@ -77,7 +78,12 @@ export default async function OfficeCollectionPage({
         </p>
       </div>
       <OfficeDraftProvider apply={applyCollectionChanges}>
-        <CollectionManager styles={active} retired={retired} locale={language} />
+        <CollectionManager
+          styles={active}
+          retired={retired}
+          locale={language}
+          undoableTexts={undoableTexts}
+        />
 
         <div className="flex flex-col gap-4 border-t border-line pt-8">
           <div className="flex flex-col gap-2">

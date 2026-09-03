@@ -28,10 +28,11 @@ export type ManagedWork = {
   readonly undoable: boolean;
 };
 
-export function GalleryManager({ works, retired, categories }: {
+export function GalleryManager({ works, retired, categories, undoableTexts }: {
   works: readonly ManagedWork[];
   retired: readonly ManagedWork[];
   categories: readonly { readonly id: GalleryCategoryId; readonly label: string }[];
+  undoableTexts: ReadonlySet<string>;
 }) {
   const t = useTranslations("office");
   const draft = useOfficeDraft<GalleryChange>();
@@ -125,6 +126,7 @@ export function GalleryManager({ works, retired, categories }: {
               <TextFields
                 subject="gallery"
                 id={work.id}
+                undoable={undoableTexts}
                 fields={[{
                   field: "caption",
                   label: t("textsCaption"),

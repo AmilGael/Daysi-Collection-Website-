@@ -23,6 +23,7 @@ export default async function OfficeGalleryPage({
   const tg = await getTranslations("gallery");
 
   const undoable = undoableIds("work-visibility");
+  const undoableTexts = undoableIds("work-text");
   const galleryWorksManaged: ManagedWork[] = manageableGallery().map((work) => ({
     id: work.id,
     src: work.src,
@@ -48,7 +49,12 @@ export default async function OfficeGalleryPage({
         </p>
       </div>
       <OfficeDraftProvider apply={applyGalleryChanges}>
-        <GalleryManager works={active} retired={retired} categories={galleryCategories} />
+        <GalleryManager
+          works={active}
+          retired={retired}
+          categories={galleryCategories}
+          undoableTexts={undoableTexts}
+        />
       </OfficeDraftProvider>
     </section>
   );
