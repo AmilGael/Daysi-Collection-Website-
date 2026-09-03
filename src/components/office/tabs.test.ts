@@ -159,3 +159,27 @@ describe("where the office tabs live", () => {
     expect(read("layout.tsx")).not.toContain("OfficeTabs");
   });
 });
+
+function officeKeys(bundle: { office: object }): string[] {
+  const flatten = (value: object, prefix: string): string[] =>
+    Object.entries(value).flatMap(([key, child]) =>
+      child !== null && typeof child === "object" ? flatten(child, `${prefix}${key}.`) : [`${prefix}${key}`],
+    );
+  return flatten(bundle.office, "").sort();
+}
+
+describe("the office copy", () => {
+  it("has the same keys in both languages", () => {
+    expect(officeKeys(es)).toEqual(officeKeys(en));
+  });
+
+  it("names the gallery button after the draft, not the old tab name", () => {
+    for (const bundle of [es, en]) {
+      const office = officeMessages(bundle);
+      expect(office.gallerySave).toBeTruthy();
+      expect(office.gallerySave).not.toMatch(/Agregar al trabajo|Add to the work/);
+      expect(office.gallerySave).not.toContain("—");
+      expect("gallerySaved" in office, "gallerySaved was removed in step 2").toBe(false);
+    }
+  });
+});
