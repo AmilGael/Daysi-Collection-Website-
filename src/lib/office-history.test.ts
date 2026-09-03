@@ -225,3 +225,33 @@ describe("text undo", () => {
     expect(undoableIds("style-text").has("s1:name:es")).toBe(true);
   });
 });
+
+describe("hours undo", () => {
+  it("stages the previous times", async () => {
+    const { saveHoursOverride } = await import("./live-hours");
+    const { previousChangeFor } = await import("./office-history");
+    await saveHoursOverride({ day: "mon", opens: "09:00", closes: "17:00" });
+    await saveHoursOverride({ day: "mon", opens: "08:00", closes: "16:00" });
+
+    expect(previousChangeFor("hours", "mon")).toMatchObject({
+      type: "hours",
+      day: "mon",
+      opens: "09:00",
+      closes: "17:00",
+    });
+  });
+
+  it("stages a return to the coded times when there is only one version", async () => {
+    const { saveHoursOverride } = await import("./live-hours");
+    const { previousChangeFor } = await import("./office-history");
+    const { business } = await import("@/content");
+    await saveHoursOverride({ day: "tue", opens: "08:00", closes: "12:00" });
+
+    expect(previousChangeFor("hours", "tue")).toMatchObject({
+      type: "hours",
+      day: "tue",
+      opens: business.hours[1]!.opens,
+      closes: business.hours[1]!.closes ?? "",
+    });
+  });
+});

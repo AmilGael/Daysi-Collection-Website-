@@ -1,4 +1,4 @@
-import { alterationServices, appointmentTypes, priceList, styles } from "@/content";
+import { alterationServices, appointmentTypes, business, priceList, styles } from "@/content";
 import type { OfficeChange, UndoKind } from "./office-validation";
 import {
   addedStyles,
@@ -8,6 +8,7 @@ import {
   type StyleOverride,
 } from "./live-catalog";
 import { manageableGallery, type GalleryVisibility } from "./live-gallery";
+import { DAY_IDS, type HoursOverride } from "./live-hours";
 import {
   assemblePriceList,
   customEntries,
@@ -194,6 +195,36 @@ const requestStatus: Stream<StoredRequest> = {
 };
 
 /**
+ * Keyed by the day id. The baseline is the day as the site shipped, so undoing
+ * a first edit puts the coded times back. A closed coded day carries `closes:
+ * null`, which becomes "" on the wire.
+ */
+const hours = recordStream<HoursOverride>(
+  "hours-overrides",
+  (record) => record.day,
+  (id) => {
+    const index = DAY_IDS.indexOf(id as (typeof DAY_IDS)[number]);
+    const coded = index === -1 ? undefined : business.hours[index];
+    return coded
+      ? {
+          type: "hours",
+          key: `hours:${id}`,
+          day: id as (typeof DAY_IDS)[number],
+          opens: coded.opens,
+          closes: coded.closes ?? "",
+        }
+      : undefined;
+  },
+  (record, id) => ({
+    type: "hours",
+    key: `hours:${id}`,
+    day: id as (typeof DAY_IDS)[number],
+    opens: record.opens,
+    closes: record.closes,
+  }),
+);
+
+/**
  * Text is keyed by the item, the field and the language together, so each box
  * has its own history. The baseline is the empty value, which the merge reads
  * as a return to the coded words, so a first edit is undoable like any other.
@@ -253,6 +284,7 @@ function streamFor(kind: UndoKind): Stream<unknown> {
     case "request-status": return erased(requestStatus);
     case "style-text": return erased(styleText);
     case "work-text": return erased(workText);
+    case "hours": return erased(hours);
   }
 }
 

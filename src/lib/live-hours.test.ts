@@ -81,7 +81,15 @@ describe("who reads the hours", () => {
         if (entry.isDirectory()) {
           walk(full);
         } else if (/\.tsx?$/.test(entry.name) && !entry.name.endsWith(".test.ts")) {
-          if (full.endsWith(path.join("src", "lib", "live-hours.ts"))) continue;
+          // Two files are allowed the coded hours, and only two. This module,
+          // which is what puts her hours over them; and the undo registry,
+          // whose baseline for a day IS the shipped value, because undoing a
+          // first edit has to land back on what the site came with.
+          const allowed = [
+            path.join("src", "lib", "live-hours.ts"),
+            path.join("src", "lib", "office-history.ts"),
+          ];
+          if (allowed.some((suffix) => full.endsWith(suffix))) continue;
           if (/business\.hours/.test(fs.readFileSync(full, "utf8"))) offenders.push(full);
         }
       }
