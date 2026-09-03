@@ -110,6 +110,15 @@ describe("the shopfront tab", () => {
   it("is guarded", () => {
     expectGuarded("shopfront/page.tsx");
   });
+
+  it("keeps both of its sections inside one draft provider, so the bar pins to the tab", () => {
+    const source = read("shopfront/page.tsx");
+    const open = source.indexOf("<OfficeDraftProvider");
+    const close = source.indexOf("</OfficeDraftProvider>");
+    expect(open).toBeGreaterThan(-1);
+    expect(open).toBeLessThan(source.indexOf("<section"));
+    expect(close).toBeGreaterThan(source.lastIndexOf("</section>"));
+  });
 });
 
 describe("the books tab", () => {
