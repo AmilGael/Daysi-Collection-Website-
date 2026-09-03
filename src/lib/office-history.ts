@@ -53,12 +53,18 @@ function recordStream<R>(
   };
 }
 
+/** Photos are only ever added from the office, so an undo never takes them away. */
+function newestPhotos(id: string): readonly string[] | undefined {
+  return versionsOf<StyleOverride>("style-overrides", (record) => record.styleId, id).at(-1)?.addedPhotos;
+}
+
 const styleOverride = recordStream<StyleOverride>(
   "style-overrides",
   (record) => record.styleId,
   (id) => {
     const style = assembleStyles(styles, addedStyles(), []).find((candidate) => candidate.id === id);
     if (!style) return undefined;
+    const photos = newestPhotos(id);
     return {
       type: "style-override",
       key: `style:${id}`,
@@ -67,17 +73,21 @@ const styleOverride = recordStream<StyleOverride>(
       stock: Object.fromEntries(
         style.sizes.map((size) => [size.sizeId, size.inStock]),
       ) as SizeStock,
+      ...(photos && photos.length > 0 ? { addedPhotos: [...photos] } : {}),
     };
   },
-  (record, id) => ({
-    type: "style-override",
-    key: `style:${id}`,
-    styleId: id,
-    isPublished: record.isPublished,
-    stock: record.stock,
-    ...(record.addedPhotos === undefined ? {} : { addedPhotos: [...record.addedPhotos] }),
-    ...(record.coverSrc === undefined ? {} : { coverSrc: record.coverSrc }),
-  }),
+  (record, id) => {
+    const photos = newestPhotos(id) ?? record.addedPhotos;
+    return {
+      type: "style-override",
+      key: `style:${id}`,
+      styleId: id,
+      isPublished: record.isPublished,
+      stock: record.stock,
+      ...(photos === undefined ? {} : { addedPhotos: [...photos] }),
+      ...(record.coverSrc === undefined ? {} : { coverSrc: record.coverSrc }),
+    };
+  },
 );
 
 const workVisibility = recordStream<GalleryVisibility>(

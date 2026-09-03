@@ -59,6 +59,31 @@ describe("office undo history", () => {
     });
   });
 
+  it("keeps the newest photos when undoing to the baseline and to the earlier line", async () => {
+    const { previousChangeFor } = await import("./office-history");
+    const { saveStyleOverride } = await import("./live-catalog");
+
+    await saveStyleOverride({
+      styleId: "frutera", isPublished: true, stock: { m: false },
+      addedPhotos: ["/uploads/a.jpg"], coverSrc: "/uploads/a.jpg",
+    });
+    expect(previousChangeFor("style-override", "frutera")).toEqual({
+      type: "style-override", key: "style:frutera", styleId: "frutera",
+      isPublished: true, stock: { s: true, m: true, l: true },
+      addedPhotos: ["/uploads/a.jpg"],
+    });
+
+    await saveStyleOverride({
+      styleId: "frutera", isPublished: false, stock: { m: false },
+      addedPhotos: ["/uploads/a.jpg", "/uploads/b.jpg"], coverSrc: "/uploads/b.jpg",
+    });
+    expect(previousChangeFor("style-override", "frutera")).toEqual({
+      type: "style-override", key: "style:frutera", styleId: "frutera",
+      isPublished: true, stock: { m: false },
+      addedPhotos: ["/uploads/a.jpg", "/uploads/b.jpg"], coverSrc: "/uploads/a.jpg",
+    });
+  });
+
   it("returns the coded price baseline after one entry override", async () => {
     const { priceList } = await import("@/content");
     const { previousChangeFor } = await import("./office-history");
