@@ -515,10 +515,17 @@ describe("text changes", () => {
     expect(collectionChangeSchema.safeParse({ ...base, locale: "fr" }).success).toBe(false);
   });
 
-  it("refuses a description past its limit", () => {
+  it("refuses a value past the longest field's limit", () => {
     expect(
       collectionChangeSchema.safeParse({ ...base, value: "x".repeat(401) }).success,
     ).toBe(false);
+  });
+
+  it("accepts a long name at the schema, which the action then refuses", () => {
+    // TEXT_LIMITS.name is 60; the schema's outer bound is the longest field.
+    expect(
+      collectionChangeSchema.safeParse({ ...base, field: "name", value: "x".repeat(100) }).success,
+    ).toBe(true);
   });
 
   it("accepts a staged caption change on the gallery tab", () => {
@@ -582,20 +589,21 @@ const localeField = z.enum(["es", "en"]);
 const textValue = <F extends keyof typeof TEXT_LIMITS>(field: F) =>
   z.string().trim().max(TEXT_LIMITS[field]);
 
-export const styleTextSchema = z
-  .object({
-    type: z.literal("style-text"),
-    key: changeKey,
-    id,
-    field: z.enum(["name", "color", "description", "detail"]),
-    locale: localeField,
-    value: z.string().trim().max(400),
-  })
-  .superRefine((change, ctx) => {
-    if (change.value.length > TEXT_LIMITS[change.field]) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "too long", path: ["value"] });
-    }
-  });
+/**
+ * One flat object, not a refinement: `z.discriminatedUnion` refuses a
+ * `ZodEffects` member, and turning the collection union into a plain `z.union`
+ * would cost the discriminated error messages every other change type relies
+ * on. The outer bound here is the longest field; the exact per-field limit is
+ * enforced in the action, where every other refusal already lives.
+ */
+export const styleTextSchema = z.object({
+  type: z.literal("style-text"),
+  key: changeKey,
+  id,
+  field: z.enum(["name", "color", "description", "detail"]),
+  locale: localeField,
+  value: z.string().trim().max(400),
+});
 
 export const workTextSchema = z.object({
   type: z.literal("work-text"),
@@ -610,14 +618,12 @@ export const workTextSchema = z.object({
 `z.discriminatedUnion` cannot take a `ZodEffects` member, so add `styleTextSchema` to the collection union as its inner object and keep the length refinement on the union:
 
 ```ts
-export const collectionChangeSchema = z.union([
-  z.discriminatedUnion("type", [
-    styleOverrideSchema.extend({ type: z.literal("style-override"), key: changeKey }),
-    styleCreateSchema.extend({ type: z.literal("style-create"), key: changeKey }),
-    retireChangeSchema,
-    restoreChangeSchema,
-  ]),
+export const collectionChangeSchema = z.discriminatedUnion("type", [
+  styleOverrideSchema.extend({ type: z.literal("style-override"), key: changeKey }),
+  styleCreateSchema.extend({ type: z.literal("style-create"), key: changeKey }),
   styleTextSchema,
+  retireChangeSchema,
+  restoreChangeSchema,
 ]);
 
 export const galleryChangeSchema = z.discriminatedUnion("type", [
@@ -675,21 +681,27 @@ git commit -m "Validate the two text changes and register their undo kinds"
 Create `src/lib/live-text.store.test.ts`:
 
 ```ts
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-let directory: string;
+// `records.ts` reads the data directory into a module-level constant, so the
+// store tests reset the module registry and import inside the test. Copied
+// from src/lib/office-history.test.ts; keep the two in step.
+let dir: string;
 
 beforeEach(() => {
-  directory = mkdtempSync(path.join(tmpdir(), "daysi-text-"));
-  process.env.DATA_DIR = directory;
+  vi.resetModules();
+  dir = mkdtempSync(path.join(tmpdir(), "daysi-text-"));
+  process.env.DATA_DIR = dir;
+  process.env.AUTH_SECRET = "test-signing-key";
+  vi.stubEnv("NODE_ENV", "test");
 });
 
 afterEach(() => {
-  rmSync(directory, { recursive: true, force: true });
-  delete process.env.DATA_DIR;
+  rmSync(dir, { recursive: true, force: true });
+  vi.unstubAllEnvs();
 });
 
 describe("saveTextOverride", () => {
@@ -725,7 +737,7 @@ describe("saveTextOverride", () => {
 });
 ```
 
-Check first how `src/lib/records.test.ts` points the store at a temporary directory and copy that pattern exactly rather than the sketch above if it differs; `DATA_DIR` is read in `src/lib/records.ts`.
+The dynamic `await import("./live-text")` inside each test is required, not a style choice: `src/lib/records.ts` reads the directory into a module-level constant at import time, so a static import would bind the real data directory before `beforeEach` runs.
 
 - [ ] **Step 2: Run the test and watch it fail or pass**
 
@@ -740,10 +752,15 @@ In `src/app/[locale]/office/collection/actions.ts`, add the import and a case in
 import { saveTextOverride } from "@/lib/live-text";
 ```
 
+and add `TEXT_LIMITS` to the existing import from `@/lib/office-validation`.
+
 ```ts
         case "style-text": {
           if (!manageableStyles().some((style) => style.id === change.id)) {
             throw new ChangeRefused("unknown-style");
+          }
+          if (change.value.length > TEXT_LIMITS[change.field]) {
+            throw new ChangeRefused("too-long");
           }
           await saveTextOverride({
             subject: "style",
@@ -1206,7 +1223,23 @@ Pass it into `CollectionManager` as a prop and hand it down to `TextFields`. Do 
 
 - [ ] **Step 2: Render the link under a box that has history**
 
-In `text-fields.tsx`, inside the `label`, after the input:
+In `text-fields.tsx`, widen the props first:
+
+```tsx
+export function TextFields({
+  subject,
+  id,
+  fields,
+  undoable,
+}: {
+  subject: "style" | "gallery";
+  id: string;
+  fields: readonly Field[];
+  undoable: ReadonlySet<string>;
+}): JSX.Element {
+```
+
+Then, inside the `label`, after the input:
 
 ```tsx
 {undoable.has(`${id}:${entry.field}:${locale}`) && !pending ? (
