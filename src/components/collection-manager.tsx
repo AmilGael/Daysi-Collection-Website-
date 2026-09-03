@@ -6,6 +6,7 @@ import type { Locale } from "@/i18n/routing";
 import type { CollectionChange } from "@/lib/office-validation";
 import { Pending } from "./office/confirm-bar";
 import { RetiredGroup, RetireButton } from "./office/retired-group";
+import { TextFields } from "./office/text-fields";
 import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft, type DraftChange } from "./office/use-office-draft";
 
@@ -21,6 +22,12 @@ export type ManagedStyle = {
   readonly coverSrc?: string;
   readonly retired: boolean;
   readonly undoable: boolean;
+  readonly texts: {
+    readonly name: { readonly es: string; readonly en: string };
+    readonly color: { readonly es: string; readonly en: string };
+    readonly description: { readonly es: string; readonly en: string };
+    readonly detail: { readonly es: string; readonly en: string };
+  };
 };
 
 type StyleOverrideChange = Extract<CollectionChange, { type: "style-override" }>;
@@ -186,6 +193,28 @@ export function CollectionManager({
                   {row.undoable && !entry ? <UndoLink kind="style-override" id={row.id} /> : null}
                 </span>
               ) : null}
+              <TextFields
+                subject="style"
+                id={row.id}
+                fields={[
+                  { field: "name", label: t("textsName"), es: row.texts.name.es, en: row.texts.name.en },
+                  { field: "color", label: t("textsColor"), es: row.texts.color.es, en: row.texts.color.en },
+                  {
+                    field: "description",
+                    label: t("textsDescription"),
+                    es: row.texts.description.es,
+                    en: row.texts.description.en,
+                    multiline: true,
+                  },
+                  {
+                    field: "detail",
+                    label: t("textsDetail"),
+                    es: row.texts.detail.es,
+                    en: row.texts.detail.en,
+                    multiline: true,
+                  },
+                ]}
+              />
             </div>
 
             <fieldset className="col-start-2 flex items-center gap-4 sm:col-start-3">

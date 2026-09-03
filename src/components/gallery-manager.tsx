@@ -8,6 +8,7 @@ import type { GalleryChange } from "@/lib/office-validation";
 import { ErrorText, Pending } from "./office/confirm-bar";
 import { readImageSize } from "./office/image-reads";
 import { RetiredGroup, RetireButton } from "./office/retired-group";
+import { TextFields } from "./office/text-fields";
 import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft } from "./office/use-office-draft";
 import { buttonClass } from "./ui";
@@ -19,6 +20,9 @@ export type ManagedWork = {
   readonly height: number;
   readonly category: GalleryCategoryId;
   readonly caption: string;
+  readonly texts: {
+    readonly caption: { readonly es: string; readonly en: string };
+  };
   readonly hidden: boolean;
   readonly retired: boolean;
   readonly undoable: boolean;
@@ -118,6 +122,17 @@ export function GalleryManager({ works, retired, categories }: {
                 <RetireButton name={work.caption || work.id} onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: work.id } })} />
                 {work.undoable && !entry ? <UndoLink kind="work-visibility" id={work.id} /> : null}
               </span> : null}
+              <TextFields
+                subject="gallery"
+                id={work.id}
+                fields={[{
+                  field: "caption",
+                  label: t("textsCaption"),
+                  es: work.texts.caption.es,
+                  en: work.texts.caption.en,
+                  multiline: true,
+                }]}
+              />
             </li>
           );
         })}

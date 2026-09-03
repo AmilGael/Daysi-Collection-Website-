@@ -30,6 +30,7 @@ export default async function OfficeGalleryPage({
     height: work.height,
     category: work.category,
     caption: translate(work.caption, language),
+    texts: { caption: work.caption },
     hidden: work.hidden,
     retired: work.retired,
     undoable: undoable.has(work.id),

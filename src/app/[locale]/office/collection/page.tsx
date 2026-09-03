@@ -46,6 +46,12 @@ export default async function OfficeCollectionPage({
     coverSrc: overridesById.get(style.id)?.coverSrc,
     retired: style.retired,
     undoable: undoable.has(style.id),
+    texts: {
+      name: style.name,
+      color: style.color,
+      description: style.description,
+      detail: style.detail,
+    },
   }));
   const active = managedStyles.filter((style) => !style.retired);
   const retired = managedStyles.filter((style) => style.retired);
