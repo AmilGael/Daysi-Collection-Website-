@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { categories } from "@/content";
 import type { ZodTypeAny } from "zod";
+import { DAY_IDS } from "./live-hours";
 
 /**
  * The shapes the office endpoints accept, kept out of the route files so they
@@ -176,13 +177,47 @@ export const priceChangeSchema = z.discriminatedUnion("type", [
   restoreChangeSchema,
 ]);
 
-export const shopfrontChangeSchema = z.discriminatedUnion("type", [
+/** "HH:MM" on a 24 hour clock, or "" for a closed day. */
+const clockTime = z.union([z.literal(""), z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)]);
+/** "YYYY-MM-DD". String comparison orders these correctly, which the ranges rely on. */
+const calendarDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+export const hoursChangeSchema = z
+  .object({
+    type: z.literal("hours"),
+    key: changeKey,
+    day: z.enum(DAY_IDS),
+    opens: clockTime,
+    closes: clockTime,
+  })
+  .refine(
+    (change) =>
+      (change.opens === "") === (change.closes === "") &&
+      (change.opens === "" || change.opens < change.closes),
+    { message: "closing time must be after opening time" },
+  );
+
+export const closureAddSchema = z
+  .object({
+    type: z.literal("closure-add"),
+    key: changeKey,
+    from: calendarDate,
+    to: calendarDate,
+    note: z.string().trim().max(120),
+  })
+  .refine((change) => change.from <= change.to, { message: "range ends before it starts" });
+
+export const shopfrontChangeSchema = z.union([
   z.object({
     type: z.literal("notice"),
     key: changeKey,
     message: z.string().trim().max(200),
     visible: z.boolean(),
   }),
+  hoursChangeSchema,
+  closureAddSchema,
+  retireChangeSchema,
+  restoreChangeSchema,
 ]);
 
 export const workChangeSchema = z.discriminatedUnion("type", [
@@ -211,6 +246,7 @@ export const UNDO_KINDS = [
   "alteration",
   "appointment",
   "notice",
+  "hours",
   "request-status",
   "style-text",
   "work-text",

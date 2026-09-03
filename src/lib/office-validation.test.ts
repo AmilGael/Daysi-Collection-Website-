@@ -148,7 +148,7 @@ describe.each([
 
 describe("undo query", () => {
   it("accepts a named stream and non-empty id", () => {
-    expect([...UNDO_KINDS]).toEqual(["style-override", "work-visibility", "price-entry", "alteration", "appointment", "notice", "request-status", "style-text", "work-text"]);
+    expect([...UNDO_KINDS]).toEqual(["style-override", "work-visibility", "price-entry", "alteration", "appointment", "notice", "hours", "request-status", "style-text", "work-text"]);
     expect(undoQuerySchema.safeParse({ kind: "notice", id: "site" }).success).toBe(true);
     expect(undoQuerySchema.safeParse({ kind: "retired:style", id: "x" }).success).toBe(false);
   });
@@ -256,6 +256,75 @@ describe("text changes", () => {
         value: "x",
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("shopfront hours and closures", () => {
+  const hours = {
+    type: "hours" as const,
+    key: "hours:mon",
+    day: "mon" as const,
+    opens: "09:00",
+    closes: "17:00",
+  };
+
+  it("accepts a day's new times", () => {
+    expect(shopfrontChangeSchema.safeParse(hours).success).toBe(true);
+  });
+
+  it("accepts empty times, which close the day", () => {
+    expect(shopfrontChangeSchema.safeParse({ ...hours, opens: "", closes: "" }).success).toBe(true);
+  });
+
+  it("refuses a time that is not a time", () => {
+    expect(shopfrontChangeSchema.safeParse({ ...hours, opens: "9am" }).success).toBe(false);
+    expect(shopfrontChangeSchema.safeParse({ ...hours, closes: "25:00" }).success).toBe(false);
+  });
+
+  it("refuses a day that is not a day", () => {
+    expect(shopfrontChangeSchema.safeParse({ ...hours, day: "funday" }).success).toBe(false);
+  });
+
+  it("refuses a closing time at or before the opening time", () => {
+    expect(shopfrontChangeSchema.safeParse({ ...hours, opens: "17:00", closes: "09:00" }).success).toBe(false);
+    expect(shopfrontChangeSchema.safeParse({ ...hours, opens: "09:00", closes: "09:00" }).success).toBe(false);
+  });
+
+  const closure = {
+    type: "closure-add" as const,
+    key: "closure:1",
+    from: "2026-12-24",
+    to: "2027-01-02",
+    note: "Navidad",
+  };
+
+  it("accepts a closed range", () => {
+    expect(shopfrontChangeSchema.safeParse(closure).success).toBe(true);
+  });
+
+  it("accepts a single closed day as the same date twice", () => {
+    expect(shopfrontChangeSchema.safeParse({ ...closure, from: "2026-11-05", to: "2026-11-05" }).success).toBe(true);
+  });
+
+  it("refuses a range that ends before it starts", () => {
+    expect(shopfrontChangeSchema.safeParse({ ...closure, from: "2026-12-24", to: "2026-12-01" }).success).toBe(false);
+  });
+
+  it("refuses a date that is not a date", () => {
+    expect(shopfrontChangeSchema.safeParse({ ...closure, from: "24/12/2026" }).success).toBe(false);
+  });
+
+  it("still accepts the notice, and retire and restore", () => {
+    expect(shopfrontChangeSchema.safeParse({
+      type: "notice", key: "notice:site", message: "Hola", visible: true,
+    }).success).toBe(true);
+    expect(shopfrontChangeSchema.safeParse({ type: "retire", key: "r:1", id: "clo-1" }).success).toBe(true);
+  });
+});
+
+describe("UNDO_KINDS", () => {
+  it("carries the hours stream", () => {
+    expect(UNDO_KINDS).toContain("hours");
   });
 });
 

@@ -872,7 +872,11 @@ Copy the existing notice member's exact field definitions from the current file 
 - [ ] **Step 4: Run the tests**
 
 Run: `npx vitest run src/lib/office-validation.test.ts && npm run typecheck`
-Expected: the vitest run passes. The typecheck will FAIL with a non-exhaustive `switch` in `src/lib/office-history.ts` because `UNDO_KINDS` now names a stream that does not exist. That is expected and Task 6 fixes it. Report the error and move on; do not patch it here.
+Expected: the vitest run passes. The typecheck will FAIL with THREE errors, all expected, none to be fixed here:
+- `src/lib/office-history.ts`, a non-exhaustive `switch`, because `UNDO_KINDS` now names a stream that does not exist. Task 6 supplies it.
+- `src/app/[locale]/office/shopfront/actions.ts`, twice, reading `.message` and `.visible` off a change that might now be an hours row or a closure. The action still assumes every shopfront change is the notice. Task 7 gives it a `switch`.
+
+Report them and move on. The typecheck stays red from here until Task 7.
 
 - [ ] **Step 5: Commit**
 
