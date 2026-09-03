@@ -39,7 +39,9 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
   const fileRef = useRef<HTMLInputElement>(null);
   const previewsRef = useRef<Record<string, string>>({});
   const selectedPreviewRef = useRef<string | null>(null);
-  const [caption, setCaption] = useState("");
+  const [captionEs, setCaptionEs] = useState("");
+  const [captionEn, setCaptionEn] = useState("");
+  const [captionTouched, setCaptionTouched] = useState(false);
   const [category, setCategory] = useState<GalleryCategoryId>(categories[0]?.id ?? "commissions");
   const [preview, setPreview] = useState<string | null>(null);
   const [pendingPreviews, setPendingPreviews] = useState<Record<string, string>>({});
@@ -72,6 +74,11 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
     else draft.stage(key, { wire: { type: "work-visibility", key, id: work.id, hidden } });
   }
 
+  function changeCaptionEs(value: string) {
+    setCaptionEs(value);
+    if (!captionTouched) setCaptionEn(value);
+  }
+
   async function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const file = fileRef.current?.files?.[0];
@@ -85,13 +92,15 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
     const key = `work-add:${crypto.randomUUID()}`;
     const wire: GalleryChange = {
       type: "work-add", key, src: "", width: size.width, height: size.height,
-      category, caption: caption.trim(),
+      category, caption: { es: captionEs.trim(), en: captionEn.trim() },
     };
     const objectUrl = preview ?? URL.createObjectURL(file);
     selectedPreviewRef.current = null;
     setPendingPreviews((current) => ({ ...current, [key]: objectUrl }));
     draft.stage(key, { wire, files: [file], withUploads: ([src]) => ({ ...wire, src: src ?? "" }) });
-    setCaption("");
+    setCaptionEs("");
+    setCaptionEn("");
+    setCaptionTouched(false);
     setPreview(null);
     if (fileRef.current) fileRef.current.value = "";
   }
@@ -146,7 +155,7 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
             <span className="relative block aspect-3/4 overflow-hidden border border-line">
               {src ? <Image src={src} alt="" fill unoptimized sizes="10rem" className="object-cover" /> : null}
             </span>
-            <p className="truncate text-[0.6875rem] text-ink-faint">{wire.caption}</p>
+            <p className="truncate text-[0.6875rem] text-ink-faint">{wire.caption.es}</p>
             <Pending confirming={draft.pending(entry.key)?.confirming} error={entry.error} count={entry.count} />
             <button type="button" onClick={() => draft.unstage(entry.key)} className="text-left text-xs underline underline-offset-4">{t("removePending")}</button>
           </li>;
@@ -182,10 +191,19 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
             </select>
           </label>
         </div>
-        <label className="flex flex-col gap-1.5 text-[0.75rem] text-ink-faint">
-          {t("galleryCaption")}
-          <input value={caption} onChange={(event) => setCaption(event.target.value)} maxLength={200} placeholder={t("galleryCaptionPlaceholder")} className="border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink" />
-        </label>
+        <fieldset className="grid gap-2">
+          <legend className="text-[0.75rem] text-ink-faint">{t("galleryCaption")}</legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-1 text-[0.75rem] text-ink-faint">
+              {t("textsSpanish")}
+              <input value={captionEs} onChange={(event) => changeCaptionEs(event.target.value)} maxLength={200} placeholder={t("galleryCaptionPlaceholder")} className="border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink" />
+            </label>
+            <label className="grid gap-1 text-[0.75rem] text-ink-faint">
+              {t("textsEnglish")}
+              <input value={captionEn} onChange={(event) => { setCaptionTouched(true); setCaptionEn(event.target.value); }} maxLength={200} placeholder={t("galleryCaptionPlaceholder")} className="border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink" />
+            </label>
+          </div>
+        </fieldset>
         <div><button type="submit" className={buttonClass({ size: "small", tone: "solid" })}>{t("gallerySave")}</button></div>
         {formError ? <p role="alert" className="text-[0.8125rem] text-ink"><ErrorText code={formError} /></p> : null}
       </form>

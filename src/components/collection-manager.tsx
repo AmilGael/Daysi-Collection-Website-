@@ -260,7 +260,7 @@ export function CollectionManager({
         return (
           <div key={entry.key} className="flex items-center gap-4 border-b border-line py-4">
             <div className="min-w-0 flex-1">
-              <p className="text-[0.9375rem]">{wire.name}</p>
+              <p className="text-[0.9375rem]">{wire.name.es}</p>
               <p className="text-[0.75rem] uppercase tracking-[0.14em] text-ink-faint">{wire.categoryId}</p>
             </div>
             <Pending confirming={draft.pending(entry.key)?.confirming} error={entry.error} count={entry.count} />

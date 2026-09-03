@@ -46,8 +46,13 @@ describe("what the office accepts for a style override", () => {
 
 describe("what the office accepts for a new garment", () => {
   const draft = {
-    name: "Cumbia maxi",
-    description: "A gathered-waist maxi in a golden print.",
+    name: { es: "Cumbia maxi", en: "Cumbia maxi" },
+    description: {
+      es: "A gathered-waist maxi in a golden print.",
+      en: "A gathered-waist maxi in a golden print.",
+    },
+    detail: { es: "", en: "" },
+    color: { es: "", en: "" },
     categoryId: "dresses",
     fabricId: "medallon-print",
     sizes: { s: true, m: true, l: false },
@@ -80,8 +85,13 @@ const styleOverrideChange = {
 const styleCreateChange = {
   type: "style-create",
   key: "style-create:one",
-  name: "Cumbia maxi",
-  description: "A gathered-waist maxi in a golden print.",
+  name: { es: "Cumbia maxi", en: "Cumbia maxi" },
+  description: {
+    es: "A gathered-waist maxi in a golden print.",
+    en: "A gathered-waist maxi in a golden print.",
+  },
+  detail: { es: "", en: "" },
+  color: { es: "", en: "" },
   categoryId: "dresses",
   fabricId: "medallon-print",
   sizes: { s: true, m: true, l: false },
@@ -94,7 +104,7 @@ const workAdd = {
   width: 1200,
   height: 1600,
   category: "runway",
-  caption: "Golden dress",
+  caption: { es: "Golden dress", en: "Golden dress" },
 };
 const fabricAdd = {
   type: "fabric-add",
@@ -253,5 +263,44 @@ describe("UNDO_KINDS", () => {
   it("carries the two text streams", () => {
     expect(UNDO_KINDS).toContain("style-text");
     expect(UNDO_KINDS).toContain("work-text");
+  });
+});
+
+describe("bilingual creation", () => {
+  const draft = {
+    type: "style-create" as const,
+    key: "create:1",
+    name: { es: "Vestido", en: "Dress" },
+    description: { es: "Una descripción larga.", en: "A long enough description." },
+    detail: { es: "", en: "" },
+    color: { es: "Azul", en: "Blue" },
+    categoryId: "dresses",
+    fabricId: "laguna",
+    sizes: { s: false, m: true, l: false },
+    photos: ["/uploads/a.jpg"],
+  };
+
+  it("accepts a garment with both languages", () => {
+    expect(collectionChangeSchema.safeParse(draft).success).toBe(true);
+  });
+
+  it("refuses a garment whose English name is missing", () => {
+    expect(
+      collectionChangeSchema.safeParse({ ...draft, name: { es: "Vestido", en: "" } }).success,
+    ).toBe(false);
+  });
+
+  it("accepts a gallery photo with both captions", () => {
+    expect(
+      galleryChangeSchema.safeParse({
+        type: "work-add",
+        key: "add:1",
+        src: "/uploads/g.jpg",
+        width: 10,
+        height: 10,
+        category: "runway",
+        caption: { es: "Un vestido marfil.", en: "An ivory dress." },
+      }).success,
+    ).toBe(true);
   });
 });

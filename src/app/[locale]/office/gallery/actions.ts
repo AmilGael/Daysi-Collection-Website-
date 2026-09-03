@@ -12,8 +12,8 @@ export const applyGalleryChanges = ownerAction(
   async (changes) => applyEach(changes, async (change) => {
     switch (change.type) {
       case "work-add": {
-        const { type: _type, key: _key, caption, ...work } = change;
-        await addGalleryWork({ id: newReference("GAL").toLowerCase(), ...work, caption: { en: caption, es: caption } });
+        const { type: _type, key: _key, ...work } = change;
+        await addGalleryWork({ id: newReference("GAL").toLowerCase(), ...work });
         return;
       }
       case "work-visibility":

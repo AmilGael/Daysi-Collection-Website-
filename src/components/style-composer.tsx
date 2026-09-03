@@ -42,10 +42,18 @@ export function StyleComposer({
   const draft = useOfficeDraft<CollectionChange>();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [detail, setDetail] = useState("");
-  const [color, setColor] = useState("");
+  const [nameEs, setNameEs] = useState("");
+  const [nameEn, setNameEn] = useState("");
+  const [nameTouched, setNameTouched] = useState(false);
+  const [descriptionEs, setDescriptionEs] = useState("");
+  const [descriptionEn, setDescriptionEn] = useState("");
+  const [descriptionTouched, setDescriptionTouched] = useState(false);
+  const [detailEs, setDetailEs] = useState("");
+  const [detailEn, setDetailEn] = useState("");
+  const [detailTouched, setDetailTouched] = useState(false);
+  const [colorEs, setColorEs] = useState("");
+  const [colorEn, setColorEn] = useState("");
+  const [colorTouched, setColorTouched] = useState(false);
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
   const [fabricId, setFabricId] = useState(fabrics[0]?.id ?? "");
   const [price, setPrice] = useState("");
@@ -54,6 +62,26 @@ export function StyleComposer({
 
   const existingPrice = pricedPairs[`${categoryId}--${fabricId}`];
   const needsPrice = existingPrice === undefined;
+
+  function changeNameEs(value: string) {
+    setNameEs(value);
+    if (!nameTouched) setNameEn(value);
+  }
+
+  function changeDescriptionEs(value: string) {
+    setDescriptionEs(value);
+    if (!descriptionTouched) setDescriptionEn(value);
+  }
+
+  function changeDetailEs(value: string) {
+    setDetailEs(value);
+    if (!detailTouched) setDetailEn(value);
+  }
+
+  function changeColorEs(value: string) {
+    setColorEs(value);
+    if (!colorTouched) setColorEn(value);
+  }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -68,10 +96,10 @@ export function StyleComposer({
     const wire: CollectionChange = {
       type: "style-create",
       key,
-      name: name.trim(),
-      description: description.trim(),
-      detail: detail.trim(),
-      color: color.trim(),
+      name: { es: nameEs.trim(), en: nameEn.trim() },
+      description: { es: descriptionEs.trim(), en: descriptionEn.trim() },
+      detail: { es: detailEs.trim(), en: detailEn.trim() },
+      color: { es: colorEs.trim(), en: colorEn.trim() },
       categoryId,
       fabricId,
       sizes,
@@ -84,10 +112,18 @@ export function StyleComposer({
       withUploads: (srcs) => ({ ...wire, photos: [...srcs] }),
     });
 
-    setName("");
-    setDescription("");
-    setDetail("");
-    setColor("");
+    setNameEs("");
+    setNameEn("");
+    setNameTouched(false);
+    setDescriptionEs("");
+    setDescriptionEn("");
+    setDescriptionTouched(false);
+    setDetailEs("");
+    setDetailEn("");
+    setDetailTouched(false);
+    setColorEs("");
+    setColorEn("");
+    setColorTouched(false);
     setPrice("");
     if (fileRef.current) fileRef.current.value = "";
   }
@@ -95,51 +131,25 @@ export function StyleComposer({
   return (
     <form onSubmit={submit} className="flex max-w-2xl flex-col gap-6">
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label={t("styleName")}>
-          <input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            required
-            minLength={2}
-            maxLength={60}
-            placeholder={t("styleNamePlaceholder")}
-            className={inputClass}
-          />
-        </Field>
-        <Field label={t("styleColor")}>
-          <input
-            value={color}
-            onChange={(event) => setColor(event.target.value)}
-            maxLength={80}
-            placeholder={t("styleColorPlaceholder")}
-            className={inputClass}
-          />
-        </Field>
+        <PairField label={t("styleName")} spanish={t("textsSpanish")} english={t("textsEnglish")}
+          es={nameEs} en={nameEn} onEs={changeNameEs}
+          onEn={(value) => { setNameTouched(true); setNameEn(value); }} minLength={2} maxLength={60}
+          placeholder={t("styleNamePlaceholder")} required />
+        <PairField label={t("styleColor")} spanish={t("textsSpanish")} english={t("textsEnglish")}
+          es={colorEs} en={colorEn} onEs={changeColorEs}
+          onEn={(value) => { setColorTouched(true); setColorEn(value); }} maxLength={80}
+          placeholder={t("styleColorPlaceholder")} />
       </div>
 
-      <Field label={t("styleDescription")}>
-        <textarea
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          required
-          minLength={10}
-          maxLength={400}
-          rows={2}
-          placeholder={t("styleDescriptionPlaceholder")}
-          className={`${inputClass} resize-none`}
-        />
-      </Field>
+      <PairField label={t("styleDescription")} spanish={t("textsSpanish")} english={t("textsEnglish")}
+        es={descriptionEs} en={descriptionEn} onEs={changeDescriptionEs}
+        onEn={(value) => { setDescriptionTouched(true); setDescriptionEn(value); }} minLength={10} maxLength={400}
+        placeholder={t("styleDescriptionPlaceholder")} required multiline />
 
-      <Field label={t("styleDetail")}>
-        <textarea
-          value={detail}
-          onChange={(event) => setDetail(event.target.value)}
-          maxLength={400}
-          rows={2}
-          placeholder={t("styleDetailPlaceholder")}
-          className={`${inputClass} resize-none`}
-        />
-      </Field>
+      <PairField label={t("styleDetail")} spanish={t("textsSpanish")} english={t("textsEnglish")}
+        es={detailEs} en={detailEn} onEs={changeDetailEs}
+        onEn={(value) => { setDetailTouched(true); setDetailEn(value); }} maxLength={400}
+        placeholder={t("styleDetailPlaceholder")} multiline />
 
       <div className="grid gap-5 sm:grid-cols-3">
         <Field label={t("styleCategory")}>
@@ -238,5 +248,46 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {label}
       {children}
     </label>
+  );
+}
+
+function PairField({ label, spanish, english, es, en, onEs, onEn, minLength, maxLength,
+  placeholder, required = false, multiline = false }: {
+  label: string;
+  spanish: string;
+  english: string;
+  es: string;
+  en: string;
+  onEs: (value: string) => void;
+  onEn: (value: string) => void;
+  minLength?: number;
+  maxLength: number;
+  placeholder: string;
+  required?: boolean;
+  multiline?: boolean;
+}) {
+  const control = (locale: "es" | "en") => {
+    const props = {
+      value: locale === "es" ? es : en,
+      onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+        (locale === "es" ? onEs : onEn)(event.target.value),
+      minLength,
+      maxLength,
+      required,
+      placeholder,
+      className: `${inputClass}${multiline ? " resize-none" : ""}`,
+      "aria-label": `${label}, ${locale === "es" ? spanish : english}`,
+    };
+    return multiline ? <textarea rows={2} {...props} /> : <input {...props} />;
+  };
+
+  return (
+    <fieldset className="grid gap-2">
+      <legend className="text-[0.75rem] text-ink-faint">{label}</legend>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="grid gap-1 text-[0.75rem] text-ink-faint">{spanish}{control("es")}</label>
+        <label className="grid gap-1 text-[0.75rem] text-ink-faint">{english}{control("en")}</label>
+      </div>
+    </fieldset>
   );
 }

@@ -85,26 +85,26 @@ export const applyCollectionChanges = ownerAction(
 
           // Retired styles keep their slugs so restoring one cannot create a collision.
           const taken = new Set(manageableStyles().map((style) => style.slug));
-          const base = slugify(draft.name, 50) || newReference("STY").toLowerCase();
+          const base = slugify(draft.name.es, 50) || newReference("STY").toLowerCase();
           let slug = base;
           for (let n = 2; taken.has(slug); n += 1) slug = `${base}-${n}`;
 
           await saveAddedStyle({
             id: newReference("STY").toLowerCase(),
             slug,
-            name: { en: draft.name, es: draft.name },
+            name: draft.name,
             categoryId: draft.categoryId,
             priceEntryId,
-            color: { en: draft.color, es: draft.color },
-            description: { en: draft.description, es: draft.description },
-            detail: { en: draft.detail, es: draft.detail },
+            color: draft.color,
+            description: draft.description,
+            detail: draft.detail,
             sizes: (["s", "m", "l"] as const).map((sizeId) => ({
               sizeId,
               inStock: draft.sizes[sizeId],
             })),
             photos: draft.photos.map((src, index) => ({
               src,
-              alt: { en: draft.name, es: draft.name },
+              alt: draft.name,
               isPrimary: index === 0,
             })),
             customizationAvailable: true,

@@ -19,6 +19,14 @@ const cents = z.number().int().min(0).max(5_000_00);
 const fabricCents = z.number().int().min(1_00).max(5_000_00);
 const id = z.string().trim().min(1).max(60);
 
+/** A field Daysi fills in both languages. The English box is pre-filled from
+ *  the Spanish as she types, so neither side is ever blank by accident. */
+const pair = (min: number, max: number) =>
+  z.object({
+    es: z.string().trim().min(min).max(max),
+    en: z.string().trim().min(min).max(max),
+  });
+
 export const styleOverrideSchema = z.object({
   styleId: z.string().trim().min(1).max(60),
   isPublished: z.boolean(),
@@ -33,10 +41,10 @@ export const styleOverrideSchema = z.object({
 });
 
 export const styleCreateSchema = z.object({
-  name: z.string().trim().min(2).max(60),
-  description: z.string().trim().min(10).max(400),
-  detail: z.string().trim().max(400).default(""),
-  color: z.string().trim().max(80).default(""),
+  name: pair(2, 60),
+  description: pair(10, 400),
+  detail: pair(0, 400),
+  color: pair(0, 80),
   categoryId: z.enum(categories.map((category) => category.id) as [string, ...string[]]),
   fabricId: z.string().trim().min(1).max(60),
   /** Only consulted when the garment-and-cloth pair has no published price. */
@@ -113,7 +121,7 @@ export const galleryWorkSchema = z.object({
   width: z.number().int().min(1).max(20000),
   height: z.number().int().min(1).max(20000),
   category: z.enum(["runway", "commissions", "bridal", "accessories", "press", "workroom"]),
-  caption: z.string().trim().max(200),
+  caption: pair(0, 200),
 });
 export const galleryChangeSchema = z.discriminatedUnion("type", [
   galleryWorkSchema.extend({ type: z.literal("work-add"), key: changeKey }),
