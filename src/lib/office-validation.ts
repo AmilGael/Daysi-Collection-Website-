@@ -1,7 +1,11 @@
 import { z } from "zod";
 import { categories } from "@/content";
 import type { ZodTypeAny } from "zod";
-import { DAY_IDS } from "./live-hours";
+
+// Kept client-safe: importing live-hours here would pull its filesystem-backed
+// record store into every office editor that imports these schemas. The list is
+// written twice on purpose, and live-hours.test.ts fails if the two drift.
+const DAY_IDS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
 /**
  * The shapes the office endpoints accept, kept out of the route files so they

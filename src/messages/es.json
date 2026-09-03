@@ -534,7 +534,9 @@
       "nothing-to-undo": "No hay una versión anterior que recuperar.",
       "in-use": "{count, plural, one {# prenda del sitio todavía usa esto} other {# prendas del sitio todavía usan esto}}. Retire la prenda primero.",
       "unknown-fabric": "No se encontró esa tela.",
-      "entry-retired": "Ese precio está retirado. Restáurelo en Precios antes de usarlo."
+      "entry-retired": "Ese precio está retirado. Restáurelo en Precios antes de usarlo.",
+      "day-booked": "{count, plural, one {Hay # cita ese día} other {Hay # citas esos días}}. Muévalas o retírelas en Trabajo primero.",
+      "unknown-closure": "No se encontró ese cierre."
     },
     "retire": "Retirar",
     "retireConfirm": "¿Retirar {name}? Sale del sitio. Puede restaurarla desde Retirados.",

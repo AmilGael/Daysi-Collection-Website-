@@ -99,3 +99,20 @@ describe("who reads the hours", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe("the two copies of the day list", () => {
+  it("still agree", () => {
+    // office-validation.ts cannot import this module: it is reachable from
+    // client components, and live-hours pulls in the filesystem-backed record
+    // store. So the seven ids are written twice on purpose. If they ever drift,
+    // a day she edits in the office would fail validation with no clue why.
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "src/lib/office-validation.ts"),
+      "utf8",
+    );
+    const match = /const DAY_IDS = \[([^\]]+)\]/.exec(source);
+    expect(match).not.toBeNull();
+    const theirs = [...match![1]!.matchAll(/"([a-z]+)"/g)].map((found) => found[1]);
+    expect(theirs).toEqual([...DAY_IDS]);
+  });
+});

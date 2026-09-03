@@ -142,6 +142,45 @@ describe("collection action text limits", () => {
   });
 });
 
+describe("shopfront refuses a change that would strand a booking", () => {
+  let dataDirectory: string;
+
+  beforeEach(() => {
+    vi.resetModules();
+    dataDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "daysi-action-guard-"));
+    process.env.DATA_DIR = dataDirectory;
+  });
+
+  afterEach(() => {
+    fs.rmSync(dataDirectory, { recursive: true, force: true });
+    delete process.env.DATA_DIR;
+  });
+
+  it("refuses a closure over a booked day, with the count", async () => {
+    viewer.mockResolvedValue({ role: "owner" } as Awaited<ReturnType<typeof currentViewer>>);
+    const { saveRequest } = await import("@/lib/request-store");
+    const { applyShopfrontChanges } = await import("@/app/[locale]/office/shopfront/actions");
+
+    await saveRequest({
+      reference: "APT-1",
+      kind: "appointment",
+      submittedAt: "2026-09-03T12:00:00.000Z",
+      locale: "es",
+      client: { name: "Ana", email: "ana@example.com" },
+      details: { date: "2036-12-24", startTime: "11:00", minutes: 60 },
+      status: "new",
+    });
+
+    const key = "closure:1";
+    await expect(applyShopfrontChanges([{
+      type: "closure-add", key, from: "2036-12-24", to: "2036-12-26", note: "Navidad",
+    }])).resolves.toEqual({
+      ok: true,
+      results: [{ key, ok: false, error: "day-booked", count: 1 }],
+    });
+  });
+});
+
 describe("office action structure", () => {
   it("keeps exactly one ownerAction in every editable tab", () => {
     const officeRoot = path.join(process.cwd(), "src/app/[locale]/office");
