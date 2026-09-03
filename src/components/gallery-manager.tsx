@@ -152,11 +152,16 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
             </li>
           );
         })}
-        {pendingAdds.map((entry) => {
+        {pendingAdds.length > 0 ? (
+          <li>
+            {/* Their own grid: the list is a column of full-width rows now, and
+                a not-yet-confirmed photo is a thumbnail, not a row. */}
+            <ul className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-8">
+              {pendingAdds.map((entry) => {
           const wire = entry.change.wire;
           if (wire.type !== "work-add") return null;
           const src = pendingPreviews[entry.key];
-          return <li key={entry.key} className="flex w-40 flex-col gap-1.5">
+          return <li key={entry.key} className="flex flex-col gap-1.5">
             <span className="relative block aspect-3/4 overflow-hidden border border-line">
               {src ? <Image src={src} alt="" fill unoptimized sizes="10rem" className="object-cover" /> : null}
             </span>
@@ -164,7 +169,10 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
             <Pending confirming={draft.pending(entry.key)?.confirming} error={entry.error} count={entry.count} />
             <button type="button" onClick={() => draft.unstage(entry.key)} className="text-left text-xs underline underline-offset-4">{t("removePending")}</button>
           </li>;
-        })}
+              })}
+            </ul>
+          </li>
+        ) : null}
       </ul>
 
       <RetiredGroup

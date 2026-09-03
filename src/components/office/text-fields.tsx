@@ -61,7 +61,6 @@ export function TextFields({
           <Pending
             confirming={stagedStatuses.some((entry) => entry.confirming)}
             error={stagedError}
-            count={stagedTexts.length}
             label={t("textsStaged", { count: stagedTexts.length })}
           />
         ) : null}

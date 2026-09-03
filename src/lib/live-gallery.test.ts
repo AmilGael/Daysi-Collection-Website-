@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { GalleryWork } from "@/content/types";
 import { assembleGallery, type GalleryVisibility } from "./live-gallery";
@@ -92,5 +94,29 @@ describe("assembleGallery with text overrides", () => {
       },
     ]);
     expect(merged[0]!.caption).toEqual({ es: "Viejo", en: "New caption" });
+  });
+});
+
+describe("the office gallery page's coded captions", () => {
+  it("does not filter the coded works by visibility", () => {
+    // assembleGallery drops hidden works. If the page built its coded map with
+    // the real visibility records, a hidden photo would have no coded entry and
+    // fall back to its merged caption, and clearing its caption box would then
+    // look like a no-op edit and never stage. Found in review, 2026-09-03.
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "src/app/[locale]/office/gallery/page.tsx"),
+      "utf8",
+    );
+    const coded = source.slice(source.indexOf("codedWorks"), source.indexOf("manageableGallery()"));
+    expect(coded).toContain("assembleGallery(");
+    expect(coded).not.toContain("galleryVisibility");
+  });
+
+  it("keeps a hidden work out of the assembled gallery", () => {
+    const seed = [
+      { id: "g1", src: "/g.jpg", width: 10, height: 10, category: "runway", caption: { es: "A", en: "A" } },
+    ] as const;
+    expect(assembleGallery(seed, [], [{ id: "g1", hidden: true }])).toHaveLength(0);
+    expect(assembleGallery(seed, [], [])).toHaveLength(1);
   });
 });
