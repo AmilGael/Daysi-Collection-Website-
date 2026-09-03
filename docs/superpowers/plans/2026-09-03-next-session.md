@@ -53,6 +53,15 @@ Daysi opens the Stripe account herself; test keys first (`sk_test_`, a webhook o
 - DMARC from quarantine to reject after a clean month (about 2026-10-01).
 - Confirm `fly scale count 1` stays the rule; never a second machine while the store is a single file.
 
+## 7. next-intl advisories (Dependabot, two medium alerts, closes only with the 4.x migration)
+
+Seen on 2026-09-03 when pushing `office-polish`. Both are on `next-intl`, pinned at 3.26.5; every 3.x release is in the vulnerable range and the first patched release is 4.9.2 (`latest` is 4.14.2), so there is no same-line bump. They do not block `npm run deploy`, whose audit gate is `--audit-level=high`.
+
+- GHSA-8f24-v5vv-gm5j (CVE-2026-40299): open redirect in the middleware when `localePrefix` is `as-needed`. `src/i18n/routing.ts` sets `always`, so the stated precondition is not met here; treat as not exploitable as configured, but do not lower the confidence past that without reading the fix.
+- GHSA-4c35-wcg5-mm9h: prototype pollution through `experimental.messages.precompile` with attacker-controlled catalog keys. That option is 4.x-only and is not set; the catalogs are the two bundles in the repo, not user input.
+
+What closes them: the next-intl 4.x migration that was deferred (breaking changes in `next-intl/middleware`, the navigation helpers and `getRequestConfig`; read the 4.0 upgrade notes first). Own PR, after item 2 and before or alongside item 3, because step 4's text overrides touch the same message plumbing and should not be written twice. Verification: typecheck, tests, build, the smoke run, and a browser pass of both locales including the `/` to `/es` redirect and a bad-locale 404. Until then, Dependabot will keep the two alerts open and its weekly PR will propose the major bump; close that PR rather than merging it blind.
+
 ## Process notes for whoever picks this up
 
 - Never run `fly deploy` directly; `npm run deploy` is the gate. The auto-mode classifier blocks `fly deploy`, `fly secrets set` and `npm run smoke` for the agent; the user runs those.
