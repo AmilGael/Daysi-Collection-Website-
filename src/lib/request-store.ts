@@ -64,6 +64,12 @@ export type StoredRequest = {
   readonly details: Readonly<Record<string, string | number | boolean | readonly string[]>>;
   readonly estimate?: Estimate;
   readonly photoFile?: string;
+  /**
+   * Who appended this line when it was not the client: the office changing a
+   * status, or Stripe marking a payment. Lines written before this shipped
+   * carry nothing. Undo is offered only on a line the office wrote.
+   */
+  readonly source?: "office" | "stripe";
   status: "new" | "answered" | "scheduled" | "paid" | "closed";
 };
 

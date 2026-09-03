@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { appendRecord, latestBy, readRecords } from "./records";
 
 export type RetiredKind = "style" | "gallery" | "fabric" | "price-entry" | "request";
@@ -14,7 +15,14 @@ export function retiredKey(kind: RetiredKind, id: string): string {
   return `${kind}:${id}`;
 }
 
-export function retiredSet(kind: RetiredKind): Set<string> {
+/**
+ * Memoised per render request with React `cache`: a Work render asks for
+ * the request set a dozen times and the file is parsed once. Outside a
+ * render (a server action, a route handler, this file's tests) `cache`
+ * hands the call straight through, so a write is visible on the next read.
+ * The set is shared, hence read-only.
+ */
+export const retiredSet = cache((kind: RetiredKind): ReadonlySet<string> => {
   const latest = latestBy(readRecords<RetiredRecord>(RETIRED), (record) =>
     retiredKey(record.kind, record.id),
   );
@@ -23,7 +31,7 @@ export function retiredSet(kind: RetiredKind): Set<string> {
       .filter((record) => record.kind === kind && record.retired)
       .map((record) => record.id),
   );
-}
+});
 
 export async function setRetired(
   kind: RetiredKind,

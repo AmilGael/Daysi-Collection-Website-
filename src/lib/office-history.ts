@@ -19,7 +19,6 @@ import {
 } from "./live-pricing";
 import { readRecords, versionsOf } from "./records";
 import { REQUEST_KINDS, listRequests, requestVersions, type StoredRequest } from "./request-store";
-import { retiredKey, type RetiredKind, type RetiredRecord } from "./retired";
 
 type Stream<R> = {
   readonly all: () => R[];
@@ -27,6 +26,7 @@ type Stream<R> = {
   readonly versions: (id: string) => R[];
   readonly baseline: (id: string) => OfficeChange | undefined;
   readonly toChange: (record: R, id: string) => OfficeChange;
+  readonly undoable?: (latest: R) => boolean;
 };
 
 function erased<R>(source: Stream<R>): Stream<unknown> {
@@ -36,6 +36,7 @@ function erased<R>(source: Stream<R>): Stream<unknown> {
     versions: source.versions,
     baseline: source.baseline,
     toChange: (record, id) => source.toChange(record as R, id),
+    undoable: source.undoable ? (record) => source.undoable!(record as R) : undefined,
   };
 }
 
@@ -54,12 +55,18 @@ function recordStream<R>(
   };
 }
 
+/** Photos are only ever added from the office, so an undo never takes them away. */
+function newestPhotos(id: string): readonly string[] | undefined {
+  return versionsOf<StyleOverride>("style-overrides", (record) => record.styleId, id).at(-1)?.addedPhotos;
+}
+
 const styleOverride = recordStream<StyleOverride>(
   "style-overrides",
   (record) => record.styleId,
   (id) => {
     const style = assembleStyles(styles, addedStyles(), []).find((candidate) => candidate.id === id);
     if (!style) return undefined;
+    const photos = newestPhotos(id);
     return {
       type: "style-override",
       key: `style:${id}`,
@@ -68,17 +75,21 @@ const styleOverride = recordStream<StyleOverride>(
       stock: Object.fromEntries(
         style.sizes.map((size) => [size.sizeId, size.inStock]),
       ) as SizeStock,
+      ...(photos && photos.length > 0 ? { addedPhotos: [...photos] } : {}),
     };
   },
-  (record, id) => ({
-    type: "style-override",
-    key: `style:${id}`,
-    styleId: id,
-    isPublished: record.isPublished,
-    stock: record.stock,
-    ...(record.addedPhotos === undefined ? {} : { addedPhotos: [...record.addedPhotos] }),
-    ...(record.coverSrc === undefined ? {} : { coverSrc: record.coverSrc }),
-  }),
+  (record, id) => {
+    const photos = newestPhotos(id) ?? record.addedPhotos;
+    return {
+      type: "style-override",
+      key: `style:${id}`,
+      styleId: id,
+      isPublished: record.isPublished,
+      stock: record.stock,
+      ...(photos === undefined ? {} : { addedPhotos: [...photos] }),
+      ...(record.coverSrc === undefined ? {} : { coverSrc: record.coverSrc }),
+    };
+  },
 );
 
 const workVisibility = recordStream<GalleryVisibility>(
@@ -171,6 +182,7 @@ const requestStatus: Stream<StoredRequest> = {
   key: (record) => record.reference,
   versions: requestVersions,
   baseline: () => undefined,
+  undoable: (record) => record.source === "office",
   toChange: (record, id) => ({
     type: "request-status",
     key: `request:${id}`,
@@ -179,29 +191,6 @@ const requestStatus: Stream<StoredRequest> = {
     status: record.status,
   }),
 };
-
-const retiredPrefix: Record<RetiredKind, string> = {
-  style: "style:",
-  gallery: "gallery:",
-  fabric: "fabric:",
-  "price-entry": "entry:",
-  request: "request:",
-};
-
-function retiredStream(kind: RetiredKind): Stream<RetiredRecord> {
-  const key = (record: RetiredRecord) => retiredKey(record.kind, record.id);
-  return {
-    all: () => readRecords<RetiredRecord>("retired").filter((record) => record.kind === kind),
-    key,
-    versions: (id) => versionsOf("retired", key, retiredKey(kind, id)),
-    baseline: (id) => ({ type: "restore", key: `${retiredPrefix[kind]}${id}`, id }),
-    toChange: (record, id) => ({
-      type: record.retired ? "retire" : "restore",
-      key: `${retiredPrefix[kind]}${id}`,
-      id,
-    }),
-  };
-}
 
 function streamFor(kind: UndoKind): Stream<unknown> {
   switch (kind) {
@@ -212,17 +201,14 @@ function streamFor(kind: UndoKind): Stream<unknown> {
     case "appointment": return erased(appointment);
     case "notice": return erased(notice);
     case "request-status": return erased(requestStatus);
-    case "retired:style": return erased(retiredStream("style"));
-    case "retired:gallery": return erased(retiredStream("gallery"));
-    case "retired:fabric": return erased(retiredStream("fabric"));
-    case "retired:price-entry": return erased(retiredStream("price-entry"));
-    case "retired:request": return erased(retiredStream("request"));
   }
 }
 
 export function previousChangeFor(kind: UndoKind, id: string): OfficeChange | undefined {
   const stream = streamFor(kind);
   const versions = stream.versions(id);
+  const latest = versions.at(-1);
+  if (latest === undefined || (stream.undoable && !stream.undoable(latest))) return undefined;
   if (versions.length >= 2) return stream.toChange(versions[versions.length - 2], id);
   return versions.length === 1 ? stream.baseline(id) : undefined;
 }
@@ -230,14 +216,16 @@ export function previousChangeFor(kind: UndoKind, id: string): OfficeChange | un
 export function undoableIds(kind: UndoKind): Set<string> {
   const stream = streamFor(kind);
   const counts = new Map<string, number>();
+  const latest = new Map<string, unknown>();
   for (const record of stream.all()) {
-    const id = kind.startsWith("retired:")
-      ? (record as RetiredRecord).id
-      : stream.key(record);
+    const id = stream.key(record);
     counts.set(id, (counts.get(id) ?? 0) + 1);
+    latest.set(id, record);
   }
   return new Set(
-    [...counts].filter(([id, count]) => count >= 2 || stream.baseline(id) !== undefined)
+    [...counts].filter(([id, count]) =>
+      (count >= 2 || stream.baseline(id) !== undefined) &&
+      (stream.undoable?.(latest.get(id)) ?? true))
       .map(([id]) => id),
   );
 }

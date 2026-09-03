@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  UNDO_KINDS,
   changesOf,
   collectionChangeSchema,
   fabricChangeSchema,
@@ -137,7 +138,9 @@ describe.each([
 
 describe("undo query", () => {
   it("accepts a named stream and non-empty id", () => {
+    expect([...UNDO_KINDS]).toEqual(["style-override", "work-visibility", "price-entry", "alteration", "appointment", "notice", "request-status"]);
     expect(undoQuerySchema.safeParse({ kind: "notice", id: "site" }).success).toBe(true);
+    expect(undoQuerySchema.safeParse({ kind: "retired:style", id: "x" }).success).toBe(false);
   });
 
   it("refuses an unknown stream and an empty id", () => {

@@ -26,7 +26,7 @@ export default async function OfficeShopfrontPage({
   const undoable = undoableIds("notice").has("site");
 
   return (
-    <>
+    <OfficeDraftProvider apply={applyShopfrontChanges}>
       <section className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <h2 className="text-heading">{t("noticeTitle")}</h2>
@@ -34,13 +34,11 @@ export default async function OfficeShopfrontPage({
             {t("noticeLead")}
           </p>
         </div>
-        <OfficeDraftProvider apply={applyShopfrontChanges}>
-          <NoticeEditor
-            initialMessage={notice?.message ?? ""}
-            initialVisible={notice?.visible ?? false}
-            undoable={undoable}
-          />
-        </OfficeDraftProvider>
+        <NoticeEditor
+          initialMessage={notice?.message ?? ""}
+          initialVisible={notice?.visible ?? false}
+          undoable={undoable}
+        />
       </section>
 
       {/* The workroom QR, moved off the public contact page: it is Daysi's
@@ -55,6 +53,6 @@ export default async function OfficeShopfrontPage({
         </div>
         <SiteQrCode size={192} />
       </section>
-    </>
+    </OfficeDraftProvider>
   );
 }

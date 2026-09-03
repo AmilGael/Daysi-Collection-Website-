@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import en from "@/messages/en.json";
 import es from "@/messages/es.json";
@@ -51,6 +53,7 @@ describe("office draft reducer", () => {
     const state = stage(stage(emptyDraft, "style:one", "first"), "style:two", "second");
     const settled = draftReducer(state, {
       type: "settled",
+      keys: ["style:one", "style:two"],
       results: [
         { key: "style:one", ok: true },
         { key: "style:two", ok: false, error: "in-use", count: 3 },
@@ -66,6 +69,7 @@ describe("office draft reducer", () => {
   it("marks a missing result as failed", () => {
     const settled = draftReducer(stage(emptyDraft, "style:one", "first"), {
       type: "settled",
+      keys: ["style:one"],
       results: [],
     });
     expect(settled.entries[0]?.error).toBe("failed");
@@ -74,6 +78,7 @@ describe("office draft reducer", () => {
   it("returns to idle when every key settles successfully", () => {
     const settled = draftReducer(stage(emptyDraft, "style:one", "first"), {
       type: "settled",
+      keys: ["style:one"],
       results: [{ key: "style:one", ok: true }],
     });
     expect(settled).toEqual(emptyDraft);
@@ -91,9 +96,39 @@ describe("office draft reducer", () => {
   it("clears a failed entry error when that key is staged again", () => {
     const failed = draftReducer(stage(emptyDraft, "style:one", "first"), {
       type: "settled",
+      keys: ["style:one"],
       results: [{ key: "style:one", ok: false, error: "failed" }],
     });
     expect(stage(failed, "style:one", "fixed").entries[0]?.error).toBeUndefined();
+  });
+
+  it("leaves a key staged during the confirm alone", () => {
+    const state = stage(stage(emptyDraft, "style:one", "first"), "style:two", "second");
+    const settled = draftReducer(state, {
+      type: "settled",
+      keys: ["style:one"],
+      results: [{ key: "style:one", ok: true }],
+    });
+    expect(settled).toEqual({ entries: [{ key: "style:two", change: { value: "second" } }], status: "idle" });
+  });
+
+  it("keeps a failed sent key and an untouched key side by side", () => {
+    const state = stage(stage(emptyDraft, "style:one", "first"), "style:two", "second");
+    const settled = draftReducer(state, {
+      type: "settled",
+      keys: ["style:one"],
+      results: [{ key: "style:one", ok: false, error: "in-use", count: 2 }],
+    });
+    expect(settled.status).toBe("failed");
+    expect(settled.entries).toEqual([
+      { key: "style:one", change: { value: "first" }, error: "in-use", count: 2 },
+      { key: "style:two", change: { value: "second" } },
+    ]);
+  });
+
+  it("is told which keys the provider sent, not just their results", () => {
+    const provider = readFileSync(path.join(process.cwd(), "src/components/office/use-office-draft.tsx"), "utf8");
+    expect(provider).toContain('{ type: "settled", keys, results:');
   });
 
   it("finds a pending entry by key", () => {

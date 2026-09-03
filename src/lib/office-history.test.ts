@@ -19,7 +19,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-const request = (status: StoredRequest["status"]): StoredRequest => ({
+const request = (status: StoredRequest["status"], source?: StoredRequest["source"]): StoredRequest => ({
   reference: "MSG-TEST",
   kind: "contact",
   submittedAt: "2026-09-03T12:00:00.000Z",
@@ -27,6 +27,7 @@ const request = (status: StoredRequest["status"]): StoredRequest => ({
   client: { name: "Ana", email: "ana@example.com" },
   details: { message: "Hola" },
   status,
+  ...(source === undefined ? {} : { source }),
 });
 
 describe("office undo history", () => {
@@ -56,6 +57,31 @@ describe("office undo history", () => {
       styleId: "frutera",
       isPublished: false,
       stock: { m: false },
+    });
+  });
+
+  it("keeps the newest photos when undoing to the baseline and to the earlier line", async () => {
+    const { previousChangeFor } = await import("./office-history");
+    const { saveStyleOverride } = await import("./live-catalog");
+
+    await saveStyleOverride({
+      styleId: "frutera", isPublished: true, stock: { m: false },
+      addedPhotos: ["/uploads/a.jpg"], coverSrc: "/uploads/a.jpg",
+    });
+    expect(previousChangeFor("style-override", "frutera")).toEqual({
+      type: "style-override", key: "style:frutera", styleId: "frutera",
+      isPublished: true, stock: { s: true, m: true, l: true },
+      addedPhotos: ["/uploads/a.jpg"],
+    });
+
+    await saveStyleOverride({
+      styleId: "frutera", isPublished: false, stock: { m: false },
+      addedPhotos: ["/uploads/a.jpg", "/uploads/b.jpg"], coverSrc: "/uploads/b.jpg",
+    });
+    expect(previousChangeFor("style-override", "frutera")).toEqual({
+      type: "style-override", key: "style:frutera", styleId: "frutera",
+      isPublished: true, stock: { m: false },
+      addedPhotos: ["/uploads/a.jpg", "/uploads/b.jpg"], coverSrc: "/uploads/a.jpg",
     });
   });
 
@@ -107,7 +133,7 @@ describe("office undo history", () => {
     expect(previousChangeFor("request-status", "MSG-TEST")).toBeUndefined();
     expect(undoableIds("request-status")).not.toContain("MSG-TEST");
 
-    await saveRequest(request("answered"));
+    await saveRequest(request("answered", "office"));
     expect(previousChangeFor("request-status", "MSG-TEST")).toEqual({
       type: "request-status",
       key: "request:MSG-TEST",
@@ -117,26 +143,22 @@ describe("office undo history", () => {
     });
   });
 
-  it("reverses retirement records and keeps retirement kinds separate", async () => {
+  it("does not offer a Stripe line or an unmarked line for undo", async () => {
     const { previousChangeFor, undoableIds } = await import("./office-history");
-    const { setRetired } = await import("./retired");
+    const { saveRequest } = await import("./request-store");
 
-    await setRetired("gallery", "frutera", true);
-    expect(undoableIds("retired:style")).not.toContain("frutera");
+    await saveRequest(request("new"));
+    await saveRequest(request("answered"));            // unmarked: written before this shipped
+    expect(previousChangeFor("request-status", "MSG-TEST")).toBeUndefined();
+    expect(undoableIds("request-status")).not.toContain("MSG-TEST");
 
-    await setRetired("style", "frutera", true);
-    expect(undoableIds("retired:style")).toContain("frutera");
-    expect(previousChangeFor("retired:style", "frutera")).toEqual({
-      type: "restore",
-      key: "style:frutera",
-      id: "frutera",
-    });
+    await saveRequest(request("paid", "stripe"));
+    expect(previousChangeFor("request-status", "MSG-TEST")).toBeUndefined();
+    expect(undoableIds("request-status")).not.toContain("MSG-TEST");
 
-    await setRetired("style", "frutera", false);
-    expect(previousChangeFor("retired:style", "frutera")).toEqual({
-      type: "retire",
-      key: "style:frutera",
-      id: "frutera",
-    });
+    await saveRequest(request("closed", "office"));
+    expect(previousChangeFor("request-status", "MSG-TEST")).toMatchObject({ status: "paid" });
+    expect(undoableIds("request-status")).toContain("MSG-TEST");
   });
+
 });

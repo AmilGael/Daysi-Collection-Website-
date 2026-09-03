@@ -17,7 +17,7 @@ export type DraftAction<Change> =
   | { type: "unstage"; key: string }
   | { type: "discard" }
   | { type: "confirming" }
-  | { type: "settled"; results: readonly ChangeResult[] }
+  | { type: "settled"; keys: readonly string[]; results: readonly ChangeResult[] }
   | { type: "refused"; error: string };
 
 export const emptyDraft: DraftState<never> = { entries: [], status: "idle" };
@@ -43,13 +43,18 @@ export function draftReducer<Change>(
     case "confirming":
       return { entries: state.entries, status: "confirming" };
     case "settled": {
+      const sent = new Set(action.keys);
       const results = new Map(action.results.map((result) => [result.key, result]));
+      let failed = false;
       const entries = state.entries.flatMap((entry) => {
+        if (!sent.has(entry.key)) return [entry];
         const result = results.get(entry.key);
         if (result?.ok) return [];
+        failed = true;
         return [{ ...entry, error: result?.error ?? "failed", count: result?.count }];
       });
-      return entries.length === 0 ? emptyDraft : { entries, status: "failed" };
+      if (entries.length === 0) return emptyDraft;
+      return { entries, status: failed ? "failed" : "idle" };
     }
     case "refused":
       return { entries: state.entries, status: "failed", error: action.error };

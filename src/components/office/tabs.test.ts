@@ -110,6 +110,15 @@ describe("the shopfront tab", () => {
   it("is guarded", () => {
     expectGuarded("shopfront/page.tsx");
   });
+
+  it("keeps both of its sections inside one draft provider, so the bar pins to the tab", () => {
+    const source = read("shopfront/page.tsx");
+    const open = source.indexOf("<OfficeDraftProvider");
+    const close = source.indexOf("</OfficeDraftProvider>");
+    expect(open).toBeGreaterThan(-1);
+    expect(open).toBeLessThan(source.indexOf("<section"));
+    expect(close).toBeGreaterThan(source.lastIndexOf("</section>"));
+  });
 });
 
 describe("the books tab", () => {
@@ -157,5 +166,39 @@ describe("where the office tabs live", () => {
 
   it("is not the office layout, so there is one row of tabs and not two", () => {
     expect(read("layout.tsx")).not.toContain("OfficeTabs");
+  });
+});
+
+function officeKeys(bundle: { office: object }): string[] {
+  const flatten = (value: object, prefix: string): string[] =>
+    Object.entries(value).flatMap(([key, child]) =>
+      child !== null && typeof child === "object" ? flatten(child, `${prefix}${key}.`) : [`${prefix}${key}`],
+    );
+  return flatten(bundle.office, "").sort();
+}
+
+describe("the office copy", () => {
+  it("has the same keys in both languages", () => {
+    expect(officeKeys(es)).toEqual(officeKeys(en));
+  });
+
+  it("names the gallery button after the draft, not the old tab name", () => {
+    for (const bundle of [es, en]) {
+      const office = officeMessages(bundle);
+      expect(office.gallerySave).toBeTruthy();
+      expect(office.gallerySave).not.toMatch(/Agregar al trabajo|Add to the work/);
+      expect(office.gallerySave).not.toContain("—");
+      expect("gallerySaved" in office, "gallerySaved was removed in step 2").toBe(false);
+    }
+  });
+});
+
+describe("the tab strip on a phone", () => {
+  it("scrolls the active tab into view without moving the page", () => {
+    const strip = fs.readFileSync(path.join(process.cwd(), "src/components/office/office-tabs.tsx"), "utf8");
+    expect(strip).toContain("useEffect(");
+    expect(strip).toContain('a[aria-current="page"]');
+    expect(strip).toContain('scrollIntoView({ inline: "nearest", block: "nearest" })');
+    expect(strip).toContain("}, [pathname]);");
   });
 });

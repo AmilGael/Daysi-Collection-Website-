@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/routing";
 import { OFFICE_TABS } from "./tabs";
@@ -17,13 +18,20 @@ import { OFFICE_TABS } from "./tabs";
  * On a phone the strip scrolls sideways rather than wrapping: eight labels
  * on three lines stop reading as tabs. The site header places it: under the
  * bar on narrow screens, where the store links would not fit either.
+ * After a tap near the right end the strip scrolls the new active tab into
+ * view; `block: "nearest"` keeps the page where it is.
  */
 export function OfficeTabs() {
   const pathname = usePathname();
   const t = useTranslations("office");
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const active = navRef.current?.querySelector<HTMLElement>('a[aria-current="page"]');
+    active?.scrollIntoView({ inline: "nearest", block: "nearest" });
+  }, [pathname]);
 
   return (
-    <nav aria-label={t("tabsLabel")} className="overflow-x-auto">
+    <nav ref={navRef} aria-label={t("tabsLabel")} className="overflow-x-auto">
       <ul className="flex min-w-max">
         {OFFICE_TABS.map((tab) => {
           const active = pathname === tab.href;
