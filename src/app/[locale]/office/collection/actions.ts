@@ -6,7 +6,9 @@ import {
   saveAddedStyle,
   saveStyleOverride,
 } from "@/lib/live-catalog";
+import { saveTextOverride } from "@/lib/live-text";
 import {
+  TEXT_LIMITS,
   collectionChangeSchema,
   changesOf,
 } from "@/lib/office-validation";
@@ -33,6 +35,22 @@ export const applyCollectionChanges = ownerAction(
           }
           const { type: _type, key: _key, ...override } = change;
           await saveStyleOverride(override);
+          return;
+        }
+        case "style-text": {
+          if (!manageableStyles().some((style) => style.id === change.id)) {
+            throw new ChangeRefused("unknown-style");
+          }
+          if (change.value.length > TEXT_LIMITS[change.field]) {
+            throw new ChangeRefused("too-long");
+          }
+          await saveTextOverride({
+            subject: "style",
+            id: change.id,
+            field: change.field,
+            locale: change.locale,
+            value: change.value,
+          });
           return;
         }
         case "style-create": {

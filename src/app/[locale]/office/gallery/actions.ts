@@ -2,6 +2,7 @@
 
 import { ChangeRefused, applyEach, ownerAction } from "@/lib/action-guard";
 import { addGalleryWork, manageableGallery, setGalleryVisibility } from "@/lib/live-gallery";
+import { saveTextOverride } from "@/lib/live-text";
 import { changesOf, galleryChangeSchema } from "@/lib/office-validation";
 import { setRetired } from "@/lib/retired";
 import { newReference } from "@/lib/security";
@@ -19,6 +20,19 @@ export const applyGalleryChanges = ownerAction(
         if (!manageableGallery().some((work) => work.id === change.id)) throw new ChangeRefused("unknown-work");
         await setGalleryVisibility(change.id, change.hidden);
         return;
+      case "work-text": {
+        if (!manageableGallery().some((work) => work.id === change.id)) {
+          throw new ChangeRefused("unknown-work");
+        }
+        await saveTextOverride({
+          subject: "gallery",
+          id: change.id,
+          field: change.field,
+          locale: change.locale,
+          value: change.value,
+        });
+        return;
+      }
       case "retire":
         if (!manageableGallery().some((work) => work.id === change.id)) throw new ChangeRefused("unknown-work");
         await setRetired("gallery", change.id, true);

@@ -515,6 +515,7 @@
       "upload-failed": "The photo could not be uploaded. Try once more.",
       "unknown-style": "That garment could not be found.",
       "unknown-work": "That work could not be found.",
+      "too-long": "That text is too long.",
       "unknown-entry": "That garment price could not be found.",
       "unknown-alteration": "That alteration could not be found.",
       "unknown-appointment": "That appointment could not be found.",
