@@ -1,9 +1,42 @@
+# What stays out of the image build.
+#
+# Fly uploads the whole directory as build context, and the `build` stage's
+# `COPY . .` takes all of it. Only what `npm run build` reads belongs there:
+# package.json, the lockfile, the Next/TypeScript/PostCSS configs, src/ and
+# public/ (served as-is by the run stage). docker-entrypoint.sh is copied by
+# the run stage and stays too. Everything below is weight or a leak.
+# Before this list the context was 110 MB across 598 files, 85 MB of it the
+# agent worktrees under .claude/.
+
+# Version control and CI
 .git
 .github
+
+# Installed and built inside the Dockerfile; local copies would only be stale
 node_modules
 .next
 out
+*.tsbuildinfo
+next-env.d.ts
+
+# Editor and agent working state
+.claude
+.superpowers
+.impeccable
+.vscode
+.idea
+.DS_Store
+
+# Local data and secrets. The volume holds the real store, and every key is
+# read at request time, so no env file is needed to build.
 .data
 .env
-.env.local
+.env.*
+
+# Documentation and local-only tooling, never imported by the build
+docs
 *.md
+scripts
+vitest.config.ts
+coverage
+*.log
