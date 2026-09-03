@@ -119,3 +119,46 @@ Step 2 is on `main` and deployed (PR #20). Step 3 keeps Design section 3 with th
 **2. Retire and restore reach fabrics, price entries, and everything in Trabajo.** Kinds become `style | gallery | fabric | price-entry | request`; requests are keyed by reference and cover orders, alteration requests, commissions, appointments, contact messages and premiere sign-ups. One `activeRequests(kind)` in `request-store.ts` is the single seam: the ledger, the books, `availability` (a retired appointment frees its slot), the client's account pages and the Work tab all read through it; the Stripe webhook keeps reading raw records. Custom fabrics only (seeded fabrics are referenced by seeded styles); a price entry or fabric that a live garment points at is refused with `in-use` and a count. Restore is always available from the tab's "Retirados" group.
 
 **3. Everything goes through the confirm bar**, including retire, restore and undo, exactly as in step 2.
+
+## Amendment 3, 2026-09-03 (decided with the user before step 4)
+
+Steps 1 to 3 are on `main` and deployed (PRs #17, #18, #20, #21, plus the polish PR #27). Step 4 adds the one layer the original design named but never built: words. Today the live layers override state (published, stock, price, hidden, retired) and never text, so fixing a typo in a garment description is a deploy. Two decisions bound the step.
+
+**1. Scope is garments and gallery photos only.** Four fields on a garment (name, colour, description, detail) and one on a gallery photo (caption), for seeded and office-added items alike. Fabrics, alterations, appointment types, premieres and the site notice keep today's behaviour; they belong to the tabs that steps 5 and 6 rebuild, and pulling them forward would mean building those editors first.
+
+**2. An override speaks about one field in one language.** A record names the subject, the id, the field and the locale. Spanish and English of the same field are independent, so correcting a Spanish typo on a seeded garment leaves its English translation untouched. A blank value is not a blank page: it clears that one override and returns the field to the coded words, which for an added garment are the words Daysi typed when she created it.
+
+### Record and merge
+
+New append-only collection `text-overrides`, one record per box confirmed:
+
+```ts
+type TextOverride = {
+  subject: "style" | "gallery";
+  id: string;
+  field: "name" | "color" | "description" | "detail" | "caption";
+  locale: "es" | "en";
+  value: string;      // "" clears the override
+  updatedAt: string;
+};
+```
+
+`latestBy` keys on subject, id, field and locale together. A new pure module `src/lib/live-text.ts` merges them, and is called inside `assembleStyles` **before** `applyOverrides`, and inside `assembleGallery`. The order is not arbitrary: `applyOverrides` builds alt text for office-added photos out of the garment's name, so the text layer runs first and the corrected name reaches those photos. No page changes: every public and office read already goes through those two assemblers.
+
+Validation mirrors `styleCreateSchema` (name 60, colour 80, description 400, detail 400, caption 200), trimmed, with the empty string allowed as the clear.
+
+### Editing surface
+
+Each row in Collection and each photo in Gallery gains an "Editar textos" disclosure holding two columns, Español and English, each box pre-filled with what the site shows now. Editing stages an ordinary pending change into the tab's draft, with the same pending mark, the same confirm bar, the same discard prompt. No new routes and no new server actions: two change types, `style-text` and `work-text`, join `collectionChangeSchema` and `galleryChangeSchema`, keyed `text:<subject>:<id>:<field>:<locale>` so the draft dedupes per box.
+
+### Undo
+
+Two streams join the registry in `office-history.ts`, keyed by id, field and locale, reading `versionsOf("text-overrides", ...)`. The baseline for a field never overridden is the empty value, so Deshacer on a first edit stages a return to the coded words, and undo of an undo is another staged reversal. `UNDO_KINDS` grows by `style-text` and `work-text`.
+
+### The monolingual creation fix
+
+The layer above lets Daysi correct words after the fact; this half stops them being born wrong. `collection/actions.ts` and `gallery/actions.ts` copy one typed string into both locale slots, so every garment and photo she adds reads as Spanish to an English visitor. Both create forms gain an English column beside the Spanish one, mirroring what she types until she edits the English box, and `styleCreateSchema` and `galleryWorkSchema` take pairs rather than single strings for name, colour, description, detail and caption. Roughly double the fields on those two forms, and the last place in the office where a language is invented.
+
+### Testing
+
+A pure merge test for field and locale precision and for blank clearing, over seeded and added items; schema tests for the two change types and the paired create schemas; history tests for the baseline and the previous version; and the existing structural scans, which stay green because no new `use server` file appears. Browser pass: correct a Spanish description on a seeded garment and confirm the English is unchanged on the English page, clear a box and see the coded words return, add a garment with both languages filled.
