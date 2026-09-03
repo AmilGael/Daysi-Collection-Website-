@@ -19,7 +19,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-const request = (status: StoredRequest["status"]): StoredRequest => ({
+const request = (status: StoredRequest["status"], source?: StoredRequest["source"]): StoredRequest => ({
   reference: "MSG-TEST",
   kind: "contact",
   submittedAt: "2026-09-03T12:00:00.000Z",
@@ -27,6 +27,7 @@ const request = (status: StoredRequest["status"]): StoredRequest => ({
   client: { name: "Ana", email: "ana@example.com" },
   details: { message: "Hola" },
   status,
+  ...(source === undefined ? {} : { source }),
 });
 
 describe("office undo history", () => {
@@ -132,7 +133,7 @@ describe("office undo history", () => {
     expect(previousChangeFor("request-status", "MSG-TEST")).toBeUndefined();
     expect(undoableIds("request-status")).not.toContain("MSG-TEST");
 
-    await saveRequest(request("answered"));
+    await saveRequest(request("answered", "office"));
     expect(previousChangeFor("request-status", "MSG-TEST")).toEqual({
       type: "request-status",
       key: "request:MSG-TEST",
@@ -140,6 +141,24 @@ describe("office undo history", () => {
       reference: "MSG-TEST",
       status: "new",
     });
+  });
+
+  it("does not offer a Stripe line or an unmarked line for undo", async () => {
+    const { previousChangeFor, undoableIds } = await import("./office-history");
+    const { saveRequest } = await import("./request-store");
+
+    await saveRequest(request("new"));
+    await saveRequest(request("answered"));            // unmarked: written before this shipped
+    expect(previousChangeFor("request-status", "MSG-TEST")).toBeUndefined();
+    expect(undoableIds("request-status")).not.toContain("MSG-TEST");
+
+    await saveRequest(request("paid", "stripe"));
+    expect(previousChangeFor("request-status", "MSG-TEST")).toBeUndefined();
+    expect(undoableIds("request-status")).not.toContain("MSG-TEST");
+
+    await saveRequest(request("closed", "office"));
+    expect(previousChangeFor("request-status", "MSG-TEST")).toMatchObject({ status: "paid" });
+    expect(undoableIds("request-status")).toContain("MSG-TEST");
   });
 
 });

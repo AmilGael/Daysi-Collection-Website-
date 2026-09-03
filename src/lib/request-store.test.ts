@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { StoredRequest } from "./request-store";
@@ -68,5 +68,14 @@ describe("active and manageable requests", () => {
     const { findRequest, requestVersions } = await import("./request-store");
     expect(requestVersions("ORD-UNKNOWN")).toEqual([]);
     expect(findRequest("ORD-UNKNOWN")).toBeUndefined();
+  });
+});
+
+describe("who marks a status line", () => {
+  const source = (relative: string) => readFileSync(path.join(process.cwd(), relative), "utf8");
+  it("is the office on the work action and Stripe on the webhook, and nobody on a client submission", () => {
+    expect(source("src/app/[locale]/office/work/actions.ts")).toContain('source: "office"');
+    expect(source("src/app/api/stripe/webhook/route.ts")).toContain('status: "paid", source: "stripe"');
+    expect(source("src/lib/notify.ts")).not.toContain("source:");
   });
 });

@@ -26,6 +26,7 @@ type Stream<R> = {
   readonly versions: (id: string) => R[];
   readonly baseline: (id: string) => OfficeChange | undefined;
   readonly toChange: (record: R, id: string) => OfficeChange;
+  readonly undoable?: (latest: R) => boolean;
 };
 
 function erased<R>(source: Stream<R>): Stream<unknown> {
@@ -35,6 +36,7 @@ function erased<R>(source: Stream<R>): Stream<unknown> {
     versions: source.versions,
     baseline: source.baseline,
     toChange: (record, id) => source.toChange(record as R, id),
+    undoable: source.undoable ? (record) => source.undoable!(record as R) : undefined,
   };
 }
 
@@ -180,6 +182,7 @@ const requestStatus: Stream<StoredRequest> = {
   key: (record) => record.reference,
   versions: requestVersions,
   baseline: () => undefined,
+  undoable: (record) => record.source === "office",
   toChange: (record, id) => ({
     type: "request-status",
     key: `request:${id}`,
@@ -204,6 +207,8 @@ function streamFor(kind: UndoKind): Stream<unknown> {
 export function previousChangeFor(kind: UndoKind, id: string): OfficeChange | undefined {
   const stream = streamFor(kind);
   const versions = stream.versions(id);
+  const latest = versions.at(-1);
+  if (latest === undefined || (stream.undoable && !stream.undoable(latest))) return undefined;
   if (versions.length >= 2) return stream.toChange(versions[versions.length - 2], id);
   return versions.length === 1 ? stream.baseline(id) : undefined;
 }
@@ -211,12 +216,16 @@ export function previousChangeFor(kind: UndoKind, id: string): OfficeChange | un
 export function undoableIds(kind: UndoKind): Set<string> {
   const stream = streamFor(kind);
   const counts = new Map<string, number>();
+  const latest = new Map<string, unknown>();
   for (const record of stream.all()) {
     const id = stream.key(record);
     counts.set(id, (counts.get(id) ?? 0) + 1);
+    latest.set(id, record);
   }
   return new Set(
-    [...counts].filter(([id, count]) => count >= 2 || stream.baseline(id) !== undefined)
+    [...counts].filter(([id, count]) =>
+      (count >= 2 || stream.baseline(id) !== undefined) &&
+      (stream.undoable?.(latest.get(id)) ?? true))
       .map(([id]) => id),
   );
 }

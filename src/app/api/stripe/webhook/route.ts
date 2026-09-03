@@ -46,7 +46,8 @@ async function markPaid(reference: string): Promise<void> {
     const records = listRequests(kind);
     const record = records.findLast((candidate) => candidate.reference === reference);
     if (!record) continue;
-    await saveRequest({ ...record, status: "paid" });
+    // The spread would otherwise carry the office's mark onto a line the office did not write.
+    await saveRequest({ ...record, status: "paid", source: "stripe" });
     return;
   }
   console.warn(`[stripe] Paid session for unknown reference ${reference}.`);

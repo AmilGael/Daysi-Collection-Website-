@@ -14,7 +14,7 @@ export const applyWorkChanges = ownerAction(
           const record = findRequest(change.reference);
           if (!record) throw new ChangeRefused("unknown-reference");
           if (record.status !== change.status) {
-            await saveRequest({ ...record, status: change.status });
+            await saveRequest({ ...record, status: change.status, source: "office" });
           }
           return;
         }
