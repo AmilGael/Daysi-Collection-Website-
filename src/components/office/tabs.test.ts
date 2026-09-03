@@ -183,3 +183,13 @@ describe("the office copy", () => {
     }
   });
 });
+
+describe("the tab strip on a phone", () => {
+  it("scrolls the active tab into view without moving the page", () => {
+    const strip = fs.readFileSync(path.join(process.cwd(), "src/components/office/office-tabs.tsx"), "utf8");
+    expect(strip).toContain("useEffect(");
+    expect(strip).toContain('a[aria-current="page"]');
+    expect(strip).toContain('scrollIntoView({ inline: "nearest", block: "nearest" })');
+    expect(strip).toContain("}, [pathname]);");
+  });
+});
