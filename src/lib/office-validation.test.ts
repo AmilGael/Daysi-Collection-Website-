@@ -138,7 +138,7 @@ describe.each([
 
 describe("undo query", () => {
   it("accepts a named stream and non-empty id", () => {
-    expect([...UNDO_KINDS]).toEqual(["style-override", "work-visibility", "price-entry", "alteration", "appointment", "notice", "request-status"]);
+    expect([...UNDO_KINDS]).toEqual(["style-override", "work-visibility", "price-entry", "alteration", "appointment", "notice", "request-status", "style-text", "work-text"]);
     expect(undoQuerySchema.safeParse({ kind: "notice", id: "site" }).success).toBe(true);
     expect(undoQuerySchema.safeParse({ kind: "retired:style", id: "x" }).success).toBe(false);
   });
@@ -180,5 +180,78 @@ describe("office price boundaries", () => {
 
   it("refuses a price one cent above 5000 dollars", () => {
     expect(priceChangeSchema.safeParse({ ...entry, fixedPrice: 500_001 }).success).toBe(false);
+  });
+});
+
+describe("text changes", () => {
+  const base = {
+    type: "style-text" as const,
+    key: "text:style:s1:description:es",
+    id: "s1",
+    field: "description" as const,
+    locale: "es" as const,
+    value: "Palabras nuevas",
+  };
+
+  it("accepts a staged style text change", () => {
+    expect(collectionChangeSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("accepts an empty value, which clears the override", () => {
+    expect(collectionChangeSchema.safeParse({ ...base, value: "" }).success).toBe(true);
+  });
+
+  it("refuses a field the garment does not have", () => {
+    expect(collectionChangeSchema.safeParse({ ...base, field: "caption" }).success).toBe(false);
+  });
+
+  it("refuses a locale the site does not serve", () => {
+    expect(collectionChangeSchema.safeParse({ ...base, locale: "fr" }).success).toBe(false);
+  });
+
+  it("refuses a value past the longest field's limit", () => {
+    expect(
+      collectionChangeSchema.safeParse({ ...base, value: "x".repeat(401) }).success,
+    ).toBe(false);
+  });
+
+  it("accepts a long name at the schema, which the action then refuses", () => {
+    // TEXT_LIMITS.name is 60; the schema's outer bound is the longest field.
+    expect(
+      collectionChangeSchema.safeParse({ ...base, field: "name", value: "x".repeat(100) }).success,
+    ).toBe(true);
+  });
+
+  it("accepts a staged caption change on the gallery tab", () => {
+    expect(
+      galleryChangeSchema.safeParse({
+        type: "work-text",
+        key: "text:gallery:g1:caption:en",
+        id: "g1",
+        field: "caption",
+        locale: "en",
+        value: "A June wedding dress.",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("refuses a garment field on the gallery tab", () => {
+    expect(
+      galleryChangeSchema.safeParse({
+        type: "work-text",
+        key: "text:gallery:g1:name:en",
+        id: "g1",
+        field: "name",
+        locale: "en",
+        value: "x",
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("UNDO_KINDS", () => {
+  it("carries the two text streams", () => {
+    expect(UNDO_KINDS).toContain("style-text");
+    expect(UNDO_KINDS).toContain("work-text");
   });
 });

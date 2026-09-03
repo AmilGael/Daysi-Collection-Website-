@@ -14,7 +14,7 @@ import type { ZodTypeAny } from "zod";
  */
 
 const uploadPath = z.string().regex(/^\/uploads\/[a-z0-9-]+\.(jpg|png|webp)$/);
-export const changeKey = z.string().regex(/^[a-z-]+:[A-Za-z0-9._-]+$/).max(120);
+export const changeKey = z.string().regex(/^[a-z-]+:[A-Za-z0-9._:-]+$/).max(120);
 const cents = z.number().int().min(0).max(5_000_00);
 const fabricCents = z.number().int().min(1_00).max(5_000_00);
 const id = z.string().trim().min(1).max(60);
@@ -59,9 +59,51 @@ export const restoreChangeSchema = z.object({
   id,
 });
 
+/** Field limits mirror styleCreateSchema and galleryWorkSchema, so a correction
+ *  can never be longer than the words it replaces were allowed to be. */
+export const TEXT_LIMITS = {
+  name: 60,
+  color: 80,
+  description: 400,
+  detail: 400,
+  caption: 200,
+} as const;
+
+const localeField = z.enum(["es", "en"]);
+
+/** An empty value is the clear: it returns the field to the coded words. */
+const textValue = <F extends keyof typeof TEXT_LIMITS>(field: F) =>
+  z.string().trim().max(TEXT_LIMITS[field]);
+
+/**
+ * One flat object, not a refinement: `z.discriminatedUnion` refuses a
+ * `ZodEffects` member, and turning the collection union into a plain `z.union`
+ * would cost the discriminated error messages every other change type relies
+ * on. The outer bound here is the longest field; the exact per-field limit is
+ * enforced in the action, where every other refusal already lives.
+ */
+export const styleTextSchema = z.object({
+  type: z.literal("style-text"),
+  key: changeKey,
+  id,
+  field: z.enum(["name", "color", "description", "detail"]),
+  locale: localeField,
+  value: z.string().trim().max(400),
+});
+
+export const workTextSchema = z.object({
+  type: z.literal("work-text"),
+  key: changeKey,
+  id,
+  field: z.literal("caption"),
+  locale: localeField,
+  value: textValue("caption"),
+});
+
 export const collectionChangeSchema = z.discriminatedUnion("type", [
   styleOverrideSchema.extend({ type: z.literal("style-override"), key: changeKey }),
   styleCreateSchema.extend({ type: z.literal("style-create"), key: changeKey }),
+  styleTextSchema,
   retireChangeSchema,
   restoreChangeSchema,
 ]);
@@ -76,6 +118,7 @@ export const galleryWorkSchema = z.object({
 export const galleryChangeSchema = z.discriminatedUnion("type", [
   galleryWorkSchema.extend({ type: z.literal("work-add"), key: changeKey }),
   z.object({ type: z.literal("work-visibility"), key: changeKey, id, hidden: z.boolean() }),
+  workTextSchema,
   retireChangeSchema,
   restoreChangeSchema,
 ]);
@@ -161,6 +204,8 @@ export const UNDO_KINDS = [
   "appointment",
   "notice",
   "request-status",
+  "style-text",
+  "work-text",
 ] as const;
 export type UndoKind = (typeof UNDO_KINDS)[number];
 export const undoQuerySchema = z.object({
