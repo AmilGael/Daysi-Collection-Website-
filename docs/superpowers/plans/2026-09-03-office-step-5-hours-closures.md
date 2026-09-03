@@ -209,7 +209,7 @@ git commit -m "Let Daysi's opening hours override the coded ones"
 
 **Interfaces:**
 - Consumes: `records.ts` helpers; `retiredSet` from `src/lib/retired.ts`.
-- Produces: `type Closure`, `allClosures()`, `activeClosures()`, `saveClosure(closure)`, `coversDate(closure, date)`, `closedOn(closures, date)`, `datesInClosure(closure)`.
+- Produces: `type Closure`, `allClosures()`, `activeClosures()`, `manageableClosures()` (every closure flagged `retired`, used by the tab and by Task 7's action), `saveClosure(closure)`, `coversDate(closure, date)`, `closedOn(closures, date)`, `datesInClosure(closure)`.
 
 - [ ] **Step 1: Write the failing test**
 
