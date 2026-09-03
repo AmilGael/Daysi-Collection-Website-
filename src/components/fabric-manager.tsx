@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { FabricChange } from "@/lib/office-validation";
-import { Pending } from "./office/confirm-bar";
+import { ErrorText, Pending } from "./office/confirm-bar";
+import { readAverageColor } from "./office/image-reads";
 import { RetireButton, RetiredGroup } from "./office/retired-group";
 import { useOfficeDraft } from "./office/use-office-draft";
 import { buttonClass } from "./ui";
@@ -43,7 +44,7 @@ export function FabricManager({
 
   const [name, setName] = useState("");
   const [prices, setPrices] = useState<Record<string, string>>({});
-  const [formError, setFormError] = useState(false);
+  const [formError, setFormError] = useState<"invalid" | "upload-failed" | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [pendingPreviews, setPendingPreviews] = useState<Record<string, string>>({});
 
@@ -68,31 +69,6 @@ export function FabricManager({
     if (selectedPreviewRef.current) URL.revokeObjectURL(selectedPreviewRef.current);
   }, []);
 
-  async function averageColorOf(file: File): Promise<string> {
-    const bitmap = await createImageBitmap(file);
-    const canvas = document.createElement("canvas");
-    canvas.width = 10;
-    canvas.height = 10;
-    const context = canvas.getContext("2d");
-    if (!context) return "#8e8471";
-    context.drawImage(bitmap, 0, 0, 10, 10);
-    const { data } = context.getImageData(0, 0, 10, 10);
-    let r = 0;
-    let g = 0;
-    let b = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      r += data[i]!;
-      g += data[i + 1]!;
-      b += data[i + 2]!;
-    }
-    const pixels = data.length / 4;
-    const hex = (value: number) =>
-      Math.round(value / pixels)
-        .toString(16)
-        .padStart(2, "0");
-    return `#${hex(r)}${hex(g)}${hex(b)}`;
-  }
-
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const file = fileRef.current?.files?.[0];
@@ -103,16 +79,22 @@ export function FabricManager({
       if (!entered) continue;
       const value = parseFloat(entered);
       if (!Number.isFinite(value) || value < 1 || value > 5000) {
-        setFormError(true);
+        setFormError("invalid");
         return;
       }
       priceBody[category] = Math.round(value * 100);
     }
     if (Object.keys(priceBody).length === 0) {
-      setFormError(true);
+      setFormError("invalid");
       return;
     }
-    setFormError(false);
+    setFormError(null);
+
+    const averageColor = await readAverageColor(file);
+    if (!averageColor) {
+      setFormError("upload-failed");
+      return;
+    }
 
     const key = `fabric-add:${crypto.randomUUID()}`;
     const wire: FabricChange = {
@@ -120,7 +102,7 @@ export function FabricManager({
       key,
       name: name.trim(),
       swatchImage: "",
-      averageColor: await averageColorOf(file),
+      averageColor,
       prices: priceBody,
     };
     const objectUrl = preview ?? URL.createObjectURL(file);
@@ -276,7 +258,7 @@ export function FabricManager({
         </div>
         {formError ? (
           <p role="alert" className="text-[0.8125rem] text-ink">
-            {t.has("error.invalid") ? t("error.invalid") : t("updateFailed")}
+            <ErrorText code={formError} />
           </p>
         ) : null}
         <p className="text-[0.8125rem] leading-relaxed text-ink-faint">{t("fabricNote")}</p>

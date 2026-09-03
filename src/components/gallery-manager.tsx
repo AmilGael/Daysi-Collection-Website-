@@ -5,7 +5,8 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import type { GalleryCategoryId } from "@/content/types";
 import type { GalleryChange } from "@/lib/office-validation";
-import { Pending } from "./office/confirm-bar";
+import { ErrorText, Pending } from "./office/confirm-bar";
+import { readImageSize } from "./office/image-reads";
 import { RetiredGroup, RetireButton } from "./office/retired-group";
 import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft } from "./office/use-office-draft";
@@ -37,6 +38,7 @@ export function GalleryManager({ works, retired, categories }: {
   const [category, setCategory] = useState<GalleryCategoryId>(categories[0]?.id ?? "commissions");
   const [preview, setPreview] = useState<string | null>(null);
   const [pendingPreviews, setPendingPreviews] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => { previewsRef.current = pendingPreviews; }, [pendingPreviews]);
   useEffect(() => {
@@ -69,13 +71,17 @@ export function GalleryManager({ works, retired, categories }: {
     event.preventDefault();
     const file = fileRef.current?.files?.[0];
     if (!file) return;
-    const bitmap = await createImageBitmap(file);
+    const size = await readImageSize(file);
+    if (!size) {
+      setFormError("upload-failed");
+      return;
+    }
+    setFormError(null);
     const key = `work-add:${crypto.randomUUID()}`;
     const wire: GalleryChange = {
-      type: "work-add", key, src: "", width: bitmap.width, height: bitmap.height,
+      type: "work-add", key, src: "", width: size.width, height: size.height,
       category, caption: caption.trim(),
     };
-    bitmap.close();
     const objectUrl = preview ?? URL.createObjectURL(file);
     selectedPreviewRef.current = null;
     setPendingPreviews((current) => ({ ...current, [key]: objectUrl }));
@@ -164,6 +170,7 @@ export function GalleryManager({ works, retired, categories }: {
           <input value={caption} onChange={(event) => setCaption(event.target.value)} maxLength={200} placeholder={t("galleryCaptionPlaceholder")} className="border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink" />
         </label>
         <div><button type="submit" className={buttonClass({ size: "small", tone: "solid" })}>{t("gallerySave")}</button></div>
+        {formError ? <p role="alert" className="text-[0.8125rem] text-ink"><ErrorText code={formError} /></p> : null}
       </form>
     </div>
   );
