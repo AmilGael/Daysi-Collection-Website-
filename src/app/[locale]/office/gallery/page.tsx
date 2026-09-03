@@ -1,7 +1,8 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { translate } from "@/content";
-import { GALLERY_ORDER, manageableGallery } from "@/lib/live-gallery";
+import { galleryWorks } from "@/content/gallery";
+import { addedGalleryWorks, assembleGallery, GALLERY_ORDER, manageableGallery } from "@/lib/live-gallery";
 import { undoableIds } from "@/lib/office-history";
 import { GalleryManager, type ManagedWork } from "@/components/gallery-manager";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
@@ -23,6 +24,14 @@ export default async function OfficeGalleryPage({
   const tg = await getTranslations("gallery");
 
   const undoable = undoableIds("work-visibility");
+  const undoableTexts = undoableIds("work-text");
+  const codedWorks = new Map(
+    // No visibility argument: assembleGallery drops hidden works, and a hidden
+    // photo with no coded entry would fall back to its merged caption, which is
+    // exactly the equality that stops a clear from staging. manageableGallery
+    // passes [] here for the same reason.
+    assembleGallery(galleryWorks, addedGalleryWorks(), [], new Set()).map((work) => [work.id, work]),
+  );
   const galleryWorksManaged: ManagedWork[] = manageableGallery().map((work) => ({
     id: work.id,
     src: work.src,
@@ -30,6 +39,8 @@ export default async function OfficeGalleryPage({
     height: work.height,
     category: work.category,
     caption: translate(work.caption, language),
+    texts: { caption: work.caption },
+    codedTexts: { caption: codedWorks.get(work.id)?.caption ?? work.caption },
     hidden: work.hidden,
     retired: work.retired,
     undoable: undoable.has(work.id),
@@ -47,7 +58,12 @@ export default async function OfficeGalleryPage({
         </p>
       </div>
       <OfficeDraftProvider apply={applyGalleryChanges}>
-        <GalleryManager works={active} retired={retired} categories={galleryCategories} />
+        <GalleryManager
+          works={active}
+          retired={retired}
+          categories={galleryCategories}
+          undoableTexts={undoableTexts}
+        />
       </OfficeDraftProvider>
     </section>
   );

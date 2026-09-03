@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { styles } from "@/content";
 import type { GarmentStyle } from "@/content/types";
 import { assembleStyles, type StyleOverride } from "./live-catalog";
 
@@ -82,5 +83,53 @@ describe("assembling the catalog from seed and what Daysi added", () => {
 
   it("behaves unchanged with an empty retired set", () => {
     expect(assembleStyles([style("a")], [style("new")], [], new Set()).map((s) => s.id)).toEqual(["a", "new"]);
+  });
+});
+
+describe("assembleStyles with text overrides", () => {
+  it("applies a text override to a seeded garment", () => {
+    const seed = styles.slice(0, 1);
+    const merged = assembleStyles(seed, [], [], new Set(), [
+      {
+        subject: "style",
+        id: seed[0]!.id,
+        field: "description",
+        locale: "es",
+        value: "Palabras nuevas",
+        updatedAt: "2026-09-03T00:00:00.000Z",
+      },
+    ]);
+    expect(merged[0]!.description.es).toBe("Palabras nuevas");
+    expect(merged[0]!.description.en).toBe(seed[0]!.description.en);
+  });
+
+  it("gives an office-added photo the corrected name in its alt text", () => {
+    const seed = styles.slice(0, 1);
+    const merged = assembleStyles(
+      seed,
+      [],
+      [
+        {
+          styleId: seed[0]!.id,
+          isPublished: true,
+          stock: {},
+          addedPhotos: ["/uploads/new.jpg"],
+          updatedAt: "2026-09-03T00:00:00.000Z",
+        },
+      ],
+      new Set(),
+      [
+        {
+          subject: "style",
+          id: seed[0]!.id,
+          field: "name",
+          locale: "es",
+          value: "Nombre corregido",
+          updatedAt: "2026-09-03T00:00:00.000Z",
+        },
+      ],
+    );
+    const added = merged[0]!.photos.find((photo) => photo.src === "/uploads/new.jpg");
+    expect(added!.alt.es).toContain("Nombre corregido");
   });
 });

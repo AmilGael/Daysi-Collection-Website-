@@ -17,6 +17,7 @@ import {
   type AppointmentOverride,
   type PriceEntryOverride,
 } from "./live-pricing";
+import { textKey, type TextField, type TextOverride, type TextSubject } from "./live-text";
 import { readRecords, versionsOf } from "./records";
 import { REQUEST_KINDS, listRequests, requestVersions, type StoredRequest } from "./request-store";
 
@@ -192,6 +193,55 @@ const requestStatus: Stream<StoredRequest> = {
   }),
 };
 
+/**
+ * Text is keyed by the item, the field and the language together, so each box
+ * has its own history. The baseline is the empty value, which the merge reads
+ * as a return to the coded words, so a first edit is undoable like any other.
+ */
+function textStream(subject: TextSubject, type: "style-text" | "work-text"): Stream<TextOverride> {
+  const composite = (record: TextOverride) => `${record.id}:${record.field}:${record.locale}`;
+  const split = (id: string) => {
+    const parts = id.split(":");
+    const locale = parts.pop() ?? "es";
+    const field = parts.pop() ?? "";
+    return { itemId: parts.join(":"), field: field as TextField, locale: locale as "es" | "en" };
+  };
+  const toChange = (record: TextOverride, _id: string): OfficeChange => {
+    return {
+      type,
+      key: `text:${textKey(subject, record.id, record.field, record.locale)}`,
+      id: record.id,
+      field: record.field,
+      locale: record.locale,
+      value: record.value,
+    } as OfficeChange;
+  };
+  return {
+    all: () => readRecords<TextOverride>("text-overrides").filter((r) => r.subject === subject),
+    key: composite,
+    versions: (id) =>
+      readRecords<TextOverride>("text-overrides").filter(
+        (record) => record.subject === subject && composite(record) === id,
+      ),
+    baseline: (id) => {
+      const { itemId, field, locale } = split(id);
+      if (itemId.length === 0 || field.length === 0) return undefined;
+      return {
+        type,
+        key: `text:${textKey(subject, itemId, field, locale)}`,
+        id: itemId,
+        field,
+        locale,
+        value: "",
+      } as OfficeChange;
+    },
+    toChange,
+  };
+}
+
+const styleText = textStream("style", "style-text");
+const workText = textStream("gallery", "work-text");
+
 function streamFor(kind: UndoKind): Stream<unknown> {
   switch (kind) {
     case "style-override": return erased(styleOverride);
@@ -201,6 +251,8 @@ function streamFor(kind: UndoKind): Stream<unknown> {
     case "appointment": return erased(appointment);
     case "notice": return erased(notice);
     case "request-status": return erased(requestStatus);
+    case "style-text": return erased(styleText);
+    case "work-text": return erased(workText);
   }
 }
 

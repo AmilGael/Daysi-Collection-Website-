@@ -14,10 +14,18 @@ import type { ZodTypeAny } from "zod";
  */
 
 const uploadPath = z.string().regex(/^\/uploads\/[a-z0-9-]+\.(jpg|png|webp)$/);
-export const changeKey = z.string().regex(/^[a-z-]+:[A-Za-z0-9._-]+$/).max(120);
+export const changeKey = z.string().regex(/^[a-z-]+:[A-Za-z0-9._:-]+$/).max(120);
 const cents = z.number().int().min(0).max(5_000_00);
 const fabricCents = z.number().int().min(1_00).max(5_000_00);
 const id = z.string().trim().min(1).max(60);
+
+/** A field Daysi fills in both languages. The English box is pre-filled from
+ *  the Spanish as she types, so neither side is ever blank by accident. */
+const pair = (min: number, max: number) =>
+  z.object({
+    es: z.string().trim().min(min).max(max),
+    en: z.string().trim().min(min).max(max),
+  });
 
 export const styleOverrideSchema = z.object({
   styleId: z.string().trim().min(1).max(60),
@@ -33,10 +41,10 @@ export const styleOverrideSchema = z.object({
 });
 
 export const styleCreateSchema = z.object({
-  name: z.string().trim().min(2).max(60),
-  description: z.string().trim().min(10).max(400),
-  detail: z.string().trim().max(400).default(""),
-  color: z.string().trim().max(80).default(""),
+  name: pair(2, 60),
+  description: pair(10, 400),
+  detail: pair(0, 400),
+  color: pair(0, 80),
   categoryId: z.enum(categories.map((category) => category.id) as [string, ...string[]]),
   fabricId: z.string().trim().min(1).max(60),
   /** Only consulted when the garment-and-cloth pair has no published price. */
@@ -59,9 +67,51 @@ export const restoreChangeSchema = z.object({
   id,
 });
 
+/** Field limits mirror styleCreateSchema and galleryWorkSchema, so a correction
+ *  can never be longer than the words it replaces were allowed to be. */
+export const TEXT_LIMITS = {
+  name: 60,
+  color: 80,
+  description: 400,
+  detail: 400,
+  caption: 200,
+} as const;
+
+const localeField = z.enum(["es", "en"]);
+
+/** An empty value is the clear: it returns the field to the coded words. */
+const textValue = <F extends keyof typeof TEXT_LIMITS>(field: F) =>
+  z.string().trim().max(TEXT_LIMITS[field]);
+
+/**
+ * One flat object, not a refinement: `z.discriminatedUnion` refuses a
+ * `ZodEffects` member, and turning the collection union into a plain `z.union`
+ * would cost the discriminated error messages every other change type relies
+ * on. The outer bound here is the longest field; the exact per-field limit is
+ * enforced in the action, where every other refusal already lives.
+ */
+export const styleTextSchema = z.object({
+  type: z.literal("style-text"),
+  key: changeKey,
+  id,
+  field: z.enum(["name", "color", "description", "detail"]),
+  locale: localeField,
+  value: z.string().trim().max(400),
+});
+
+export const workTextSchema = z.object({
+  type: z.literal("work-text"),
+  key: changeKey,
+  id,
+  field: z.literal("caption"),
+  locale: localeField,
+  value: textValue("caption"),
+});
+
 export const collectionChangeSchema = z.discriminatedUnion("type", [
   styleOverrideSchema.extend({ type: z.literal("style-override"), key: changeKey }),
   styleCreateSchema.extend({ type: z.literal("style-create"), key: changeKey }),
+  styleTextSchema,
   retireChangeSchema,
   restoreChangeSchema,
 ]);
@@ -71,11 +121,12 @@ export const galleryWorkSchema = z.object({
   width: z.number().int().min(1).max(20000),
   height: z.number().int().min(1).max(20000),
   category: z.enum(["runway", "commissions", "bridal", "accessories", "press", "workroom"]),
-  caption: z.string().trim().max(200),
+  caption: pair(0, 200),
 });
 export const galleryChangeSchema = z.discriminatedUnion("type", [
   galleryWorkSchema.extend({ type: z.literal("work-add"), key: changeKey }),
   z.object({ type: z.literal("work-visibility"), key: changeKey, id, hidden: z.boolean() }),
+  workTextSchema,
   retireChangeSchema,
   restoreChangeSchema,
 ]);
@@ -161,6 +212,8 @@ export const UNDO_KINDS = [
   "appointment",
   "notice",
   "request-status",
+  "style-text",
+  "work-text",
 ] as const;
 export type UndoKind = (typeof UNDO_KINDS)[number];
 export const undoQuerySchema = z.object({

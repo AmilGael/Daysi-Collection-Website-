@@ -6,6 +6,7 @@ import type { Locale } from "@/i18n/routing";
 import type { CollectionChange } from "@/lib/office-validation";
 import { Pending } from "./office/confirm-bar";
 import { RetiredGroup, RetireButton } from "./office/retired-group";
+import { TextFields } from "./office/text-fields";
 import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft, type DraftChange } from "./office/use-office-draft";
 
@@ -21,6 +22,13 @@ export type ManagedStyle = {
   readonly coverSrc?: string;
   readonly retired: boolean;
   readonly undoable: boolean;
+  readonly texts: {
+    readonly name: { readonly es: string; readonly en: string };
+    readonly color: { readonly es: string; readonly en: string };
+    readonly description: { readonly es: string; readonly en: string };
+    readonly detail: { readonly es: string; readonly en: string };
+  };
+  readonly codedTexts: ManagedStyle["texts"];
 };
 
 type StyleOverrideChange = Extract<CollectionChange, { type: "style-override" }>;
@@ -64,10 +72,12 @@ export function CollectionManager({
   styles,
   retired,
   locale: _locale,
+  undoableTexts,
 }: {
   styles: readonly ManagedStyle[];
   retired: readonly ManagedStyle[];
   locale: Locale;
+  undoableTexts: ReadonlySet<string>;
 }) {
   const t = useTranslations("office");
   const draft = useOfficeDraft<CollectionChange>();
@@ -186,6 +196,33 @@ export function CollectionManager({
                   {row.undoable && !entry ? <UndoLink kind="style-override" id={row.id} /> : null}
                 </span>
               ) : null}
+              <TextFields
+                subject="style"
+                id={row.id}
+                undoable={undoableTexts}
+                fields={[
+                  { field: "name", label: t("textsName"), es: row.texts.name.es, en: row.texts.name.en, codedEs: row.codedTexts.name.es, codedEn: row.codedTexts.name.en },
+                  { field: "color", label: t("textsColor"), es: row.texts.color.es, en: row.texts.color.en, codedEs: row.codedTexts.color.es, codedEn: row.codedTexts.color.en },
+                  {
+                    field: "description",
+                    label: t("textsDescription"),
+                    es: row.texts.description.es,
+                    en: row.texts.description.en,
+                    codedEs: row.codedTexts.description.es,
+                    codedEn: row.codedTexts.description.en,
+                    multiline: true,
+                  },
+                  {
+                    field: "detail",
+                    label: t("textsDetail"),
+                    es: row.texts.detail.es,
+                    en: row.texts.detail.en,
+                    codedEs: row.codedTexts.detail.es,
+                    codedEn: row.codedTexts.detail.en,
+                    multiline: true,
+                  },
+                ]}
+              />
             </div>
 
             <fieldset className="col-start-2 flex items-center gap-4 sm:col-start-3">
@@ -228,7 +265,7 @@ export function CollectionManager({
         return (
           <div key={entry.key} className="flex items-center gap-4 border-b border-line py-4">
             <div className="min-w-0 flex-1">
-              <p className="text-[0.9375rem]">{wire.name}</p>
+              <p className="text-[0.9375rem]">{wire.name.es}</p>
               <p className="text-[0.75rem] uppercase tracking-[0.14em] text-ink-faint">{wire.categoryId}</p>
             </div>
             <Pending confirming={draft.pending(entry.key)?.confirming} error={entry.error} count={entry.count} />

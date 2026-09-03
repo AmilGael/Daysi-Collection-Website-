@@ -8,6 +8,7 @@ import type { GalleryChange } from "@/lib/office-validation";
 import { ErrorText, Pending } from "./office/confirm-bar";
 import { readImageSize } from "./office/image-reads";
 import { RetiredGroup, RetireButton } from "./office/retired-group";
+import { TextFields } from "./office/text-fields";
 import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft } from "./office/use-office-draft";
 import { buttonClass } from "./ui";
@@ -19,22 +20,29 @@ export type ManagedWork = {
   readonly height: number;
   readonly category: GalleryCategoryId;
   readonly caption: string;
+  readonly texts: {
+    readonly caption: { readonly es: string; readonly en: string };
+  };
+  readonly codedTexts: ManagedWork["texts"];
   readonly hidden: boolean;
   readonly retired: boolean;
   readonly undoable: boolean;
 };
 
-export function GalleryManager({ works, retired, categories }: {
+export function GalleryManager({ works, retired, categories, undoableTexts }: {
   works: readonly ManagedWork[];
   retired: readonly ManagedWork[];
   categories: readonly { readonly id: GalleryCategoryId; readonly label: string }[];
+  undoableTexts: ReadonlySet<string>;
 }) {
   const t = useTranslations("office");
   const draft = useOfficeDraft<GalleryChange>();
   const fileRef = useRef<HTMLInputElement>(null);
   const previewsRef = useRef<Record<string, string>>({});
   const selectedPreviewRef = useRef<string | null>(null);
-  const [caption, setCaption] = useState("");
+  const [captionEs, setCaptionEs] = useState("");
+  const [captionEn, setCaptionEn] = useState("");
+  const [captionTouched, setCaptionTouched] = useState(false);
   const [category, setCategory] = useState<GalleryCategoryId>(categories[0]?.id ?? "commissions");
   const [preview, setPreview] = useState<string | null>(null);
   const [pendingPreviews, setPendingPreviews] = useState<Record<string, string>>({});
@@ -67,6 +75,11 @@ export function GalleryManager({ works, retired, categories }: {
     else draft.stage(key, { wire: { type: "work-visibility", key, id: work.id, hidden } });
   }
 
+  function changeCaptionEs(value: string) {
+    setCaptionEs(value);
+    if (!captionTouched) setCaptionEn(value);
+  }
+
   async function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const file = fileRef.current?.files?.[0];
@@ -80,13 +93,15 @@ export function GalleryManager({ works, retired, categories }: {
     const key = `work-add:${crypto.randomUUID()}`;
     const wire: GalleryChange = {
       type: "work-add", key, src: "", width: size.width, height: size.height,
-      category, caption: caption.trim(),
+      category, caption: { es: captionEs.trim(), en: captionEn.trim() },
     };
     const objectUrl = preview ?? URL.createObjectURL(file);
     selectedPreviewRef.current = null;
     setPendingPreviews((current) => ({ ...current, [key]: objectUrl }));
     draft.stage(key, { wire, files: [file], withUploads: ([src]) => ({ ...wire, src: src ?? "" }) });
-    setCaption("");
+    setCaptionEs("");
+    setCaptionEn("");
+    setCaptionTouched(false);
     setPreview(null);
     if (fileRef.current) fileRef.current.value = "";
   }
@@ -95,33 +110,54 @@ export function GalleryManager({ works, retired, categories }: {
 
   return (
     <div className="flex flex-col gap-8">
-      <ul className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-8">
+      <ul className="flex flex-col gap-4">
         {works.map((work) => {
           const key = `gallery:${work.id}`;
           const entry = draft.pending(key);
           const hidden = entry?.change.wire.type === "work-visibility" ? entry.change.wire.hidden : work.hidden;
           const retiring = entry?.change.wire.type === "retire";
           return (
-            <li key={work.id} className={`flex flex-col gap-1.5 ${retiring ? "opacity-50" : ""}`}>
-              <span className={`relative block aspect-3/4 overflow-hidden border border-line transition-opacity ${hidden ? "opacity-30" : ""}`}>
-                <Image src={work.src} alt="" fill sizes="10rem" className="object-cover" />
-              </span>
-              {entry ? <span className="flex flex-wrap items-center gap-2">
-                <Pending confirming={entry.confirming} error={entry.error} count={entry.count} />
-                {retiring ? <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">{t("removePending")}</button> : null}
-              </span> : null}
-              <label className="flex cursor-pointer items-center gap-1.5 text-[0.6875rem] text-ink-faint">
-                <input type="checkbox" checked={!hidden} disabled={retiring} onChange={(event) => stageVisibility(work, !event.target.checked)} className="h-3.5 w-3.5 accent-ink" />
-                {hidden ? t("hidden") : t("shown")}
-              </label>
-              {!retiring ? <span className="flex items-center gap-2">
-                <RetireButton name={work.caption || work.id} onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: work.id } })} />
-                {work.undoable && !entry ? <UndoLink kind="work-visibility" id={work.id} /> : null}
-              </span> : null}
+            <li key={work.id} className={`grid gap-4 border-b border-line pb-4 sm:grid-cols-[10rem_minmax(0,1fr)] ${retiring ? "opacity-50" : ""}`}>
+              <div className="flex flex-col gap-1.5">
+                <span className={`relative block aspect-3/4 overflow-hidden border border-line transition-opacity ${hidden ? "opacity-30" : ""}`}>
+                  <Image src={work.src} alt="" fill sizes="10rem" className="object-cover" />
+                </span>
+                {entry ? <span className="flex flex-wrap items-center gap-2">
+                  <Pending confirming={entry.confirming} error={entry.error} count={entry.count} />
+                  {retiring ? <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">{t("removePending")}</button> : null}
+                </span> : null}
+                <label className="flex cursor-pointer items-center gap-1.5 text-[0.6875rem] text-ink-faint">
+                  <input type="checkbox" checked={!hidden} disabled={retiring} onChange={(event) => stageVisibility(work, !event.target.checked)} className="h-3.5 w-3.5 accent-ink" />
+                  {hidden ? t("hidden") : t("shown")}
+                </label>
+                {!retiring ? <span className="flex items-center gap-2">
+                  <RetireButton name={work.caption || work.id} onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: work.id } })} />
+                  {work.undoable && !entry ? <UndoLink kind="work-visibility" id={work.id} /> : null}
+                </span> : null}
+              </div>
+              <TextFields
+                subject="gallery"
+                id={work.id}
+                undoable={undoableTexts}
+                fields={[{
+                  field: "caption",
+                  label: t("textsCaption"),
+                  es: work.texts.caption.es,
+                  en: work.texts.caption.en,
+                  codedEs: work.codedTexts.caption.es,
+                  codedEn: work.codedTexts.caption.en,
+                  multiline: true,
+                }]}
+              />
             </li>
           );
         })}
-        {pendingAdds.map((entry) => {
+        {pendingAdds.length > 0 ? (
+          <li>
+            {/* Their own grid: the list is a column of full-width rows now, and
+                a not-yet-confirmed photo is a thumbnail, not a row. */}
+            <ul className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-8">
+              {pendingAdds.map((entry) => {
           const wire = entry.change.wire;
           if (wire.type !== "work-add") return null;
           const src = pendingPreviews[entry.key];
@@ -129,11 +165,14 @@ export function GalleryManager({ works, retired, categories }: {
             <span className="relative block aspect-3/4 overflow-hidden border border-line">
               {src ? <Image src={src} alt="" fill unoptimized sizes="10rem" className="object-cover" /> : null}
             </span>
-            <p className="truncate text-[0.6875rem] text-ink-faint">{wire.caption}</p>
+            <p className="truncate text-[0.6875rem] text-ink-faint">{wire.caption.es}</p>
             <Pending confirming={draft.pending(entry.key)?.confirming} error={entry.error} count={entry.count} />
             <button type="button" onClick={() => draft.unstage(entry.key)} className="text-left text-xs underline underline-offset-4">{t("removePending")}</button>
           </li>;
-        })}
+              })}
+            </ul>
+          </li>
+        ) : null}
       </ul>
 
       <RetiredGroup
@@ -165,10 +204,19 @@ export function GalleryManager({ works, retired, categories }: {
             </select>
           </label>
         </div>
-        <label className="flex flex-col gap-1.5 text-[0.75rem] text-ink-faint">
-          {t("galleryCaption")}
-          <input value={caption} onChange={(event) => setCaption(event.target.value)} maxLength={200} placeholder={t("galleryCaptionPlaceholder")} className="border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink" />
-        </label>
+        <fieldset className="grid gap-2">
+          <legend className="text-[0.75rem] text-ink-faint">{t("galleryCaption")}</legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-1 text-[0.75rem] text-ink-faint">
+              {t("textsSpanish")}
+              <input value={captionEs} onChange={(event) => changeCaptionEs(event.target.value)} maxLength={200} placeholder={t("galleryCaptionPlaceholder")} className="border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink" />
+            </label>
+            <label className="grid gap-1 text-[0.75rem] text-ink-faint">
+              {t("textsEnglish")}
+              <input value={captionEn} onChange={(event) => { setCaptionTouched(true); setCaptionEn(event.target.value); }} maxLength={200} placeholder={t("galleryCaptionPlaceholder")} className="border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink" />
+            </label>
+          </div>
+        </fieldset>
         <div><button type="submit" className={buttonClass({ size: "small", tone: "solid" })}>{t("gallerySave")}</button></div>
         {formError ? <p role="alert" className="text-[0.8125rem] text-ink"><ErrorText code={formError} /></p> : null}
       </form>

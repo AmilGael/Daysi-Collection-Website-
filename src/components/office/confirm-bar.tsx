@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { JSX } from "react";
+import type { JSX, ReactNode } from "react";
 import type { DraftStatus } from "./draft-reducer";
 
 export function ErrorText({ code, count }: { code: string; count?: number }) {
@@ -63,15 +63,17 @@ export function Pending({
   confirming,
   error,
   count,
+  label,
 }: {
   confirming?: boolean;
   error?: string;
   count?: number;
+  label?: ReactNode;
 }): JSX.Element {
   const t = useTranslations("office");
   return (
     <span className={`text-[0.6875rem] font-semibold uppercase tracking-wider ${error ? "text-ink" : "text-marigold"}`}>
-      {confirming ? t("confirming") : t("pendingMark")}
+      {confirming ? t("confirming") : label ?? t("pendingMark")}
       {error ? <> · <ErrorText code={error} count={count} /></> : null}
     </span>
   );

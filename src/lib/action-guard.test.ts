@@ -1,6 +1,7 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
 const state = vi.hoisted(() => ({ requestHeaders: new Headers() }));
@@ -103,6 +104,41 @@ describe("applyEach", () => {
       { key: "first", ok: false, error: "unknown-style" },
     ]);
     expect(result.results[0]).not.toHaveProperty("count");
+  });
+});
+
+describe("collection action text limits", () => {
+  // Its own store: the refusal path is the point of the test, and the passing
+  // path would otherwise append a record to whatever .data sits in the cwd.
+  let dataDirectory: string;
+
+  beforeEach(() => {
+    vi.resetModules();
+    dataDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "daysi-action-guard-"));
+    process.env.DATA_DIR = dataDirectory;
+  });
+
+  afterEach(() => {
+    fs.rmSync(dataDirectory, { recursive: true, force: true });
+    delete process.env.DATA_DIR;
+  });
+
+  it("refuses a 100-character garment name with too-long", async () => {
+    viewer.mockResolvedValue({ role: "owner" } as Awaited<ReturnType<typeof currentViewer>>);
+    const { applyCollectionChanges } = await import("@/app/[locale]/office/collection/actions");
+    const key = "text:style:frutera:name:en";
+
+    await expect(applyCollectionChanges([{
+      type: "style-text",
+      key,
+      id: "frutera",
+      field: "name",
+      locale: "en",
+      value: "x".repeat(100),
+    }])).resolves.toEqual({
+      ok: true,
+      results: [{ key, ok: false, error: "too-long" }],
+    });
   });
 });
 

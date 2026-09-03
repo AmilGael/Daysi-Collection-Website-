@@ -26,6 +26,21 @@ What she can do now:
 
 Steps 2 and 3 are deployed and live (2 September 2026).
 
+## Office step 4: words, built and awaiting deploy
+
+Fixing a typo used to mean a deploy. Now every garment name, colour, description and detail, and every gallery caption, is hers to correct from the office.
+
+- **Editar textos** on any garment row or gallery photo opens two boxes, Español and Inglés, filled with what the site shows now.
+- The two languages are separate. Correcting the Spanish leaves a good English translation alone.
+- Emptying a box brings back the words the piece shipped with, so there is a way out of a mistake without remembering what it said.
+- **Deshacer** works on each box on its own, staged into the confirm bar like every other change.
+- Adding a garment or a photo now asks for both languages. The English copies the Spanish as she types, and stops copying the moment she writes in the English box.
+- The manual has a new section 05, "Corregir las palabras de una prenda o una foto"; the later sections moved down one number.
+
+**Where a correction does not reach yet.** The words layer covers the collection pages, the gallery and the office. Four places still read the coded catalog directly, so a corrected name does not appear in them: the browser tab title and meta description on a garment page, the cart line, the Stripe checkout line, and the request email. The premieres page is the same. This is an older seam, not something this change introduced, and it affects garments Daysi added in exactly the same way. Worth its own small pass.
+
+Built on branch `office-step-4`. Not deployed yet.
+
 - **Polish (branch office-polish):** the tab strip follows the active tab on a phone; a photo the browser cannot read says so instead of hanging; the Vitrina bar pins like the others; a change she makes while confirming is not marked failed; Deshacer keeps added photos, and never offers a payment that Stripe wrote (older status lines offer it again only after she changes them).
 
 ## What could come next (not started)

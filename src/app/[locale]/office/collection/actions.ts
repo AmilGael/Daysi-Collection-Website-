@@ -6,7 +6,9 @@ import {
   saveAddedStyle,
   saveStyleOverride,
 } from "@/lib/live-catalog";
+import { saveTextOverride } from "@/lib/live-text";
 import {
+  TEXT_LIMITS,
   collectionChangeSchema,
   changesOf,
 } from "@/lib/office-validation";
@@ -33,6 +35,22 @@ export const applyCollectionChanges = ownerAction(
           }
           const { type: _type, key: _key, ...override } = change;
           await saveStyleOverride(override);
+          return;
+        }
+        case "style-text": {
+          if (!manageableStyles().some((style) => style.id === change.id)) {
+            throw new ChangeRefused("unknown-style");
+          }
+          if (change.value.length > TEXT_LIMITS[change.field]) {
+            throw new ChangeRefused("too-long");
+          }
+          await saveTextOverride({
+            subject: "style",
+            id: change.id,
+            field: change.field,
+            locale: change.locale,
+            value: change.value,
+          });
           return;
         }
         case "style-create": {
@@ -67,26 +85,26 @@ export const applyCollectionChanges = ownerAction(
 
           // Retired styles keep their slugs so restoring one cannot create a collision.
           const taken = new Set(manageableStyles().map((style) => style.slug));
-          const base = slugify(draft.name, 50) || newReference("STY").toLowerCase();
+          const base = slugify(draft.name.es, 50) || newReference("STY").toLowerCase();
           let slug = base;
           for (let n = 2; taken.has(slug); n += 1) slug = `${base}-${n}`;
 
           await saveAddedStyle({
             id: newReference("STY").toLowerCase(),
             slug,
-            name: { en: draft.name, es: draft.name },
+            name: draft.name,
             categoryId: draft.categoryId,
             priceEntryId,
-            color: { en: draft.color, es: draft.color },
-            description: { en: draft.description, es: draft.description },
-            detail: { en: draft.detail, es: draft.detail },
+            color: draft.color,
+            description: draft.description,
+            detail: draft.detail,
             sizes: (["s", "m", "l"] as const).map((sizeId) => ({
               sizeId,
               inStock: draft.sizes[sizeId],
             })),
             photos: draft.photos.map((src, index) => ({
               src,
-              alt: { en: draft.name, es: draft.name },
+              alt: draft.name,
               isPrimary: index === 0,
             })),
             customizationAvailable: true,
