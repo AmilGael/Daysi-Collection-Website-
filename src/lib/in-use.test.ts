@@ -52,3 +52,64 @@ describe("styles in use", () => {
     expect(stylesUsingFabric(styles, entries, "missing-fabric")).toBe(1);
   });
 });
+
+import { appointmentsOnDates, appointmentsOutsideHours } from "./in-use";
+import type { StoredRequest } from "./request-store";
+
+function appointment(date: string, startTime: string, minutes = 60): StoredRequest {
+  return {
+    reference: `APT-${date}-${startTime}`,
+    kind: "appointment",
+    submittedAt: "2026-09-03T12:00:00.000Z",
+    locale: "es",
+    client: { name: "Ana", email: "ana@example.com" },
+    details: { date, startTime, minutes },
+    status: "new",
+  } as StoredRequest;
+}
+
+describe("appointmentsOnDates", () => {
+  it("counts the appointments falling on any of the dates", () => {
+    const booked = [appointment("2026-12-24", "11:00"), appointment("2026-12-28", "11:00")];
+    expect(appointmentsOnDates(booked, ["2026-12-24", "2026-12-25"])).toBe(1);
+  });
+
+  it("counts nothing when the days are free", () => {
+    expect(appointmentsOnDates([appointment("2026-12-24", "11:00")], ["2026-12-26"])).toBe(0);
+  });
+
+  it("ignores an appointment already closed out", () => {
+    const done = { ...appointment("2026-12-24", "11:00"), status: "closed" } as StoredRequest;
+    expect(appointmentsOnDates([done], ["2026-12-24"])).toBe(0);
+  });
+});
+
+describe("appointmentsOutsideHours", () => {
+  const today = "2026-10-01";
+
+  it("counts a booking that starts before the new opening time", () => {
+    // 2026-10-05 is a Monday.
+    expect(appointmentsOutsideHours([appointment("2026-10-05", "09:00")], "mon", "10:00", "18:00", today)).toBe(1);
+  });
+
+  it("counts a booking that would run past the new closing time", () => {
+    expect(appointmentsOutsideHours([appointment("2026-10-05", "17:30")], "mon", "10:00", "18:00", today)).toBe(1);
+  });
+
+  it("counts nothing when the booking still fits", () => {
+    expect(appointmentsOutsideHours([appointment("2026-10-05", "11:00")], "mon", "10:00", "18:00", today)).toBe(0);
+  });
+
+  it("counts every booking when the day is being closed", () => {
+    expect(appointmentsOutsideHours([appointment("2026-10-05", "11:00")], "mon", "", "", today)).toBe(1);
+  });
+
+  it("ignores a booking on a different weekday", () => {
+    // 2026-10-06 is a Tuesday.
+    expect(appointmentsOutsideHours([appointment("2026-10-06", "09:00")], "mon", "10:00", "18:00", today)).toBe(0);
+  });
+
+  it("ignores a booking already in the past, which cannot be stranded", () => {
+    expect(appointmentsOutsideHours([appointment("2026-09-28", "09:00")], "mon", "10:00", "18:00", today)).toBe(0);
+  });
+});
