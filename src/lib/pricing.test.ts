@@ -4,6 +4,7 @@ import { liveFindPriceEntry as findPriceEntry } from "./live-pricing";
 import {
   estimateAlteration,
   estimateAppointment,
+  estimateCart,
   estimateCommission,
   estimateReadyMade,
 } from "./pricing";
@@ -81,6 +82,29 @@ describe("New York clothing sales tax", () => {
       sizeId: "m",
       customize: false,
     });
+    expect(estimate?.salesTax).toBeGreaterThan(0);
+  });
+
+  it("keeps the exemption per item when several of one garment are bought", () => {
+    // New York exempts clothing under $110 a piece. Two $105 shirts are two
+    // exempt garments, not one $210 taxable line, and the difference is money
+    // Daysi would be collecting without owing it.
+    const shirt = findPriceEntry("shirts--daisy-cotton");
+    const estimate = estimateCart([
+      { styleSlug: "amapola", sizeId: "s", customize: false, quantity: 2 },
+    ]);
+    expect(shirt?.fixedPrice).toBeLessThan(11000);
+    expect(estimate?.subtotal).toBe((shirt?.fixedPrice ?? 0) * 2);
+    expect(estimate?.salesTax).toBe(0);
+    expect(estimate?.total).toBe(estimate?.subtotal);
+  });
+
+  it("still taxes several of a garment that is over the exemption on its own", () => {
+    const set = findPriceEntry("heritage--fish-batik");
+    const estimate = estimateCart([
+      { styleSlug: "sirena", sizeId: "s", customize: false, quantity: 2 },
+    ]);
+    expect(set?.fixedPrice).toBeGreaterThan(11000);
     expect(estimate?.salesTax).toBeGreaterThan(0);
   });
 

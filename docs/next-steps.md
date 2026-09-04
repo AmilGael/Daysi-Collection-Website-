@@ -37,18 +37,74 @@ Steps 2 and 3 are deployed and live (2 September 2026).
 
 Cards are the only thing the site does not do yet. The code is done; the keys are missing.
 
-1. **Daysi opens the Stripe account herself.** It must be in her name, with her bank for payouts. Do not open it for her.
-2. In Stripe, get the **test** keys first. The secret key starts with `sk_test_`.
-3. In Stripe, add a **webhook** pointing at `https://daysiscollectioninc.com/api/stripe/webhook`, listening for `checkout.session.completed`. Stripe gives a signing secret that starts with `whsec_`.
-4. Put both on Fly, in one command (paste your own values):
+The test purchase happens on the helper's own computer first, so the live site is never
+pretending to take money. A real visitor buying something during a test would get a checkout
+that charges nothing.
+
+1. **Daysi opens the Stripe account herself.** It must be in her name, with her bank for
+   payouts. Do not open it for her. While she is in there: set the name that shows on a card
+   statement (DAYSI COLLECTION), turn on the receipt email for successful payments, and
+   **leave Tax switched off**. The site works out New York sales tax itself and it is already
+   inside the amount charged. Switching Stripe's on would charge it twice.
+2. **The helper tests on their own computer, with their own practice Stripe account.** Daysi's
+   account is only ever used for real money. Nothing on the live site changes while this is
+   happening.
+3. Install Stripe's command line tool and sign in to the practice account:
 
 ```bash
-fly secrets set -a daysicollectioninc STRIPE_SECRET_KEY="sk_test_..." STRIPE_WEBHOOK_SECRET="whsec_..."
+brew install stripe/stripe-cli/stripe && stripe login
 ```
 
-5. Buy one thing on the site with Stripe's test card `4242 4242 4242 4242`. The order should show as paid in the office.
-6. When that works, repeat steps 2 to 4 with the **live** keys (`sk_live_`) and a **new** live webhook with its **own** `whsec_`. Never reuse the test one.
-7. Step-by-step guide with pictures: https://claude.ai/code/artifact/386f58d9-cea6-4106-a080-a4e194585df5
+4. Start the site in one terminal, and Stripe's listener in another:
+
+```bash
+npm run dev
+```
+
+```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+
+5. The listener prints a secret starting with `whsec_`. Put it in `.env.local` next to the
+   practice key, along with the site address:
+
+```
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_...the one the listener printed"
+SITE_URL="http://localhost:3000"
+```
+
+   **Then stop the site and start it again.** Keys are read once when it starts, so nothing
+   happens until it is restarted. This is the step that most often looks broken.
+
+6. Buy the Amapola shirt in size S with Stripe's test card `4242 4242 4242 4242`, any future
+   expiry date, any three digits. The charge should read **exactly $105.00**, the listener
+   should show `checkout.session.completed`, and the order should show as **Pagado** in
+   Trabajo. Any other amount means something added tax twice.
+
+   Buy it on the site. A fake payment made from inside Stripe's own tools has no order number
+   attached, so nothing will change and that is correct.
+
+7. When that works, take Daysi's **real** keys. In her Stripe account, add a webhook pointing
+   at `https://daysiscollectioninc.com/api/stripe/webhook`, listening for
+   `checkout.session.completed`. It gives its **own** signing secret. Never reuse the practice
+   one, and never put a practice key on the live site.
+
+8. Put both on Fly, in one command (paste your own values):
+
+```bash
+fly secrets set -a daysicollectioninc STRIPE_SECRET_KEY="sk_live_..." STRIPE_WEBHOOK_SECRET="whsec_..."
+```
+
+9. Buy one small real thing with a real card, check it says Pagado, then give the money back in
+   Stripe.
+
+**If she gives money back.** A refund is done in Stripe. The site does not hear about it, so
+the order still says Pagado. Open Trabajo, set that order to **Cerrado**, and press Confirmar.
+Otherwise the money still counts as received in Libros. The order number is written on the
+charge in Stripe, so it is easy to find the right row.
+
+10. Step-by-step guide with pictures: https://claude.ai/code/artifact/386f58d9-cea6-4106-a080-a4e194585df5
 
 ## Small things still owed
 

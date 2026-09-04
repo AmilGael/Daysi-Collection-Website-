@@ -51,6 +51,11 @@ export async function createCheckoutSession(
     locale: request.locale,
     customer_email: request.customerEmail,
     client_reference_id: request.reference,
+    // One inline amount, already final. `pricing.ts` works out New York sales tax
+    // itself (with the clothing exemption under $110) and folds it into `dueNow`,
+    // so the tax is inside this number. Never add `automatic_tax` here, and leave
+    // Stripe's own Tax settings switched off: either would charge it a second time
+    // and put the dashboard at odds with the sales file `books.ts` writes.
     line_items: [
       {
         quantity: 1,
@@ -65,6 +70,11 @@ export async function createCheckoutSession(
       },
     ],
     metadata: { reference: request.reference },
+    // The same reference on the payment intent, so it reaches the charge and any
+    // refund made from it. Refunds are done by hand in Stripe's dashboard and the
+    // site never hears about them, so the reference has to be visible there for
+    // the order to be findable afterwards.
+    payment_intent_data: { metadata: { reference: request.reference } },
     success_url: `${env.siteUrl}/${request.locale}/checkout/thank-you?reference=${request.reference}`,
     cancel_url: `${env.siteUrl}/${request.locale}/checkout/cancelled?reference=${request.reference}`,
   });

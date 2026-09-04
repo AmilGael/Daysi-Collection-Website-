@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { verifyWebhook } from "@/lib/payments";
-import { listRequests, saveRequest } from "@/lib/request-store";
+import { markPaid } from "@/lib/payment-events";
 
 /**
  * Stripe's confirmation that a payment really completed.
@@ -31,24 +31,10 @@ export async function POST(request: Request) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
     const reference = session.metadata?.reference ?? session.client_reference_id;
-    if (reference) await markPaid(reference);
+    if (reference && (await markPaid(reference)) === "unknown") {
+      console.warn(`[stripe] Paid session for unknown reference ${reference}.`);
+    }
   }
 
   return NextResponse.json({ received: true });
-}
-
-/**
- * Appends the paid state for the reference. The store is append-only, so the
- * latest record for a reference is the current one.
- */
-async function markPaid(reference: string): Promise<void> {
-  for (const kind of ["appointment", "order", "commission", "alteration"] as const) {
-    const records = listRequests(kind);
-    const record = records.findLast((candidate) => candidate.reference === reference);
-    if (!record) continue;
-    // The spread would otherwise carry the office's mark onto a line the office did not write.
-    await saveRequest({ ...record, status: "paid", source: "stripe" });
-    return;
-  }
-  console.warn(`[stripe] Paid session for unknown reference ${reference}.`);
 }

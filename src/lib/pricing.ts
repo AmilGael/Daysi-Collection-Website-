@@ -28,6 +28,14 @@ export type EstimateLine = {
   readonly label: Localized;
   readonly note?: Localized;
   readonly amount: Cents;
+  /**
+   * What one piece on this line costs, when the line stands for more than one.
+   * The clothing exemption is a per-item rule, so two $105 shirts are two exempt
+   * garments and not one $210 taxable line. Absent, the line is a single item
+   * and `amount` is already the item price, which is what every record written
+   * before this field existed relies on.
+   */
+  readonly unitAmount?: Cents;
   readonly taxBasis: TaxBasis;
 };
 
@@ -66,7 +74,8 @@ const CLOTHING_EXEMPTION_THRESHOLD: Cents = 11000;
  * return start disagreeing.
  */
 export function isTaxable(line: EstimateLine): boolean {
-  return line.taxBasis === "clothing" && line.amount >= CLOTHING_EXEMPTION_THRESHOLD;
+  const perItem = line.unitAmount ?? line.amount;
+  return line.taxBasis === "clothing" && perItem >= CLOTHING_EXEMPTION_THRESHOLD;
 }
 
 function taxFor(lines: readonly EstimateLine[]): Cents {
@@ -171,6 +180,7 @@ export function estimateCart(
         es: `Talla ${item.sizeId.toUpperCase()}${quantity > 1 ? ` · ${quantity} piezas` : ""}`,
       },
       amount: price.fixedPrice * quantity,
+      unitAmount: price.fixedPrice,
       taxBasis: "clothing",
     });
 
@@ -179,6 +189,7 @@ export function estimateCart(
         label: { en: "Made to your measurements", es: "Hecho a su medida" },
         note: price.customizationNote,
         amount: price.customizationExtra * quantity,
+        unitAmount: price.customizationExtra,
         taxBasis: "clothing",
       });
     }
