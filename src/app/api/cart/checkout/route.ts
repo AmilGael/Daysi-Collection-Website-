@@ -71,6 +71,10 @@ export async function POST(request: Request) {
     }));
 
   const reference = newReference("ORD");
+  // With Stripe configured and money due, the client is about to be sent to
+  // pay. Daysi must not hear about the order until that payment is confirmed,
+  // or a checkout abandoned on the card page reads exactly like a sale.
+  const awaitingPayment = paymentsEnabled && estimate.dueNow > 0;
   const record: StoredRequest = {
     reference,
     kind: "order",
@@ -94,6 +98,7 @@ export async function POST(request: Request) {
       Notes: details.notes,
     },
     estimate,
+    ...(awaitingPayment ? { awaitingPayment: true as const } : {}),
     status: "new",
   };
 
@@ -105,7 +110,7 @@ export async function POST(request: Request) {
   // The cart is emptied only once the order is safely recorded.
   await writeCart(emptyCart);
 
-  const checkout = paymentsEnabled
+  const checkout = awaitingPayment
     ? await createCheckoutSession({
         reference,
         description: `Daysi Collection · ${reference}`,

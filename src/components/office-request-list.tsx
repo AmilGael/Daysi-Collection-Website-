@@ -8,6 +8,7 @@ import type { WorkChange } from "@/lib/office-validation";
 import { Pending } from "@/components/office/confirm-bar";
 import { RetireButton } from "@/components/office/retired-group";
 import { UndoLink } from "@/components/office/undo-link";
+import { Tag } from "@/components/ui";
 import { useOfficeDraft } from "@/components/office/use-office-draft";
 
 const STATUSES = ["new", "answered", "scheduled", "paid", "closed"] as const;
@@ -108,6 +109,9 @@ export function OfficeRequestList({
               <span className="text-[0.9375rem] tabular-nums">
                 {formatMoney(record.estimate.total, locale)}
               </span>
+            ) : null}
+            {record.awaitingPayment && status !== "paid" ? (
+              <Tag tone="quiet">{t("awaitingPayment")}</Tag>
             ) : null}
             <label className="flex items-center gap-2">
               <span className="sr-only">{to("statusLabel")}</span>

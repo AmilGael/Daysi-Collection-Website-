@@ -437,6 +437,7 @@
       "contact": "Message",
       "premiere-signup": "Premiere list"
     },
+    "awaitingPayment": "Awaiting payment",
     "status": {
       "new": "Received",
       "answered": "Answered",

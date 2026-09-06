@@ -70,6 +70,14 @@ export type StoredRequest = {
    * carry nothing. Undo is offered only on a line the office wrote.
    */
   readonly source?: "office" | "stripe";
+  /**
+   * Set at submission when a card payment stands between this record and Daysi:
+   * the client was sent to Stripe and has not come back paid. Such a record is
+   * stored so the webhook can find it, but Daysi is not told about it until
+   * Stripe confirms — see `recordRequest` and `markPaid`. A form that stops at
+   * the payment page must never look like an order in her inbox.
+   */
+  readonly awaitingPayment?: true;
   status: "new" | "answered" | "scheduled" | "paid" | "closed";
 };
 

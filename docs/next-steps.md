@@ -100,6 +100,13 @@ SITE_URL="http://localhost:3000"
    Buy it on the site. A fake payment made from inside Stripe's own tools has no order number
    attached, so nothing will change and that is correct.
 
+   **Daysi's email arrives only after the card goes through** (since 6 September 2026). Filling
+   in the form and stopping on the payment page sends her nothing; the order sits in Trabajo
+   marked **Pago pendiente** until Stripe confirms, and the email she gets then says PAID in the
+   subject. Bookings with a deposit work the same way. If a "Pago pendiente" row never turns into
+   Pagado, the client walked away: set it to Cerrado so it leaves Libros. Requests with nothing
+   to pay up front (alterations, commissions, messages) still reach her at once.
+
 7. When that works, take Daysi's **real** keys. In her Stripe account, add a webhook pointing
    at `https://daysiscollectioninc.com/api/stripe/webhook`, listening for
    `checkout.session.completed`. It gives its **own** signing secret. Never reuse the practice
