@@ -57,3 +57,33 @@ describe("createCheckoutSession", () => {
     await expect(createCheckoutSession(order(0))).resolves.toBeNull();
   });
 });
+
+describe("how long a checkout stays open", () => {
+  const createMock = vi.fn(async (_params: unknown) => ({ url: "https://checkout.stripe.test/s" }));
+
+  async function sessionArgs(request: Parameters<typeof order>[0] | undefined, expiresInMinutes?: number) {
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_mocked");
+    vi.stubEnv("SITE_URL", "https://example.test");
+    createMock.mockClear();
+    vi.doMock("stripe", () => ({
+      default: class {
+        checkout = { sessions: { create: createMock } };
+      },
+    }));
+    const { createCheckoutSession } = await import("./payments");
+    await createCheckoutSession({ ...order(request ?? 10500), ...(expiresInMinutes ? { expiresInMinutes } : {}) });
+    return createMock.mock.calls[0]![0] as { expires_at?: number };
+  }
+
+  it("closes a booking's payment page when the hold on the slot runs out", async () => {
+    const before = Math.floor(Date.now() / 1000);
+    const args = await sessionArgs(undefined, 30);
+    expect(args.expires_at).toBeGreaterThanOrEqual(before + 30 * 60);
+    expect(args.expires_at).toBeLessThanOrEqual(before + 30 * 60 + 5);
+  });
+
+  it("leaves Stripe's own default for an order, which holds nothing", async () => {
+    const args = await sessionArgs(undefined);
+    expect(args).not.toHaveProperty("expires_at");
+  });
+});

@@ -1,5 +1,5 @@
 import { business, findAppointmentType } from "@/content";
-import { activeRequests } from "./request-store";
+import { activeRequests, type StoredRequest } from "./request-store";
 
 /**
  * When Daysi can be booked. Slots are generated from the opening hours in
@@ -22,6 +22,26 @@ const MINIMUM_LEAD_HOURS = 24;
 const SLOT_STEP_MINUTES = 30;
 /** Time left between appointments to write notes and reset the table. */
 const BUFFER_MINUTES = 15;
+
+/**
+ * How long a booking keeps its slot while the client is still on Stripe's
+ * payment page. The Checkout session is told to expire at exactly this age
+ * (Stripe's minimum is 30 minutes), so once the hold has run out nobody can
+ * pay for an hour that has since been offered to somebody else.
+ */
+export const BOOKING_PAYMENT_HOLD_MINUTES = 30;
+/**
+ * The calendar waits this much longer before letting the slot go: a payment
+ * made in the hold's last minute reaches the webhook a little after it.
+ */
+const HOLD_GRACE_MINUTES = 15;
+
+/** An unpaid booking older than this no longer holds its slot. */
+function holdExpired(appointment: StoredRequest, now: Date): boolean {
+  if (!appointment.awaitingPayment || appointment.status === "paid") return false;
+  const age = now.getTime() - new Date(appointment.submittedAt).getTime();
+  return age > (BOOKING_PAYMENT_HOLD_MINUTES + HOLD_GRACE_MINUTES) * 60_000;
+}
 
 export type DaySlots = {
   readonly date: string;
@@ -90,12 +110,13 @@ function hoursForWeekday(weekday: number) {
   return business.hours[index];
 }
 
-async function bookedSlots(): Promise<Set<string>> {
+async function bookedSlots(now: Date): Promise<Set<string>> {
   const appointments = activeRequests("appointment");
   const taken = new Set<string>();
 
   for (const appointment of appointments) {
     if (appointment.status === "closed") continue;
+    if (holdExpired(appointment, now)) continue;
     const date = appointment.details.date;
     const start = appointment.details.startTime;
     const minutes = appointment.details.minutes;
@@ -120,7 +141,7 @@ export async function availableDays(
   const type = findAppointmentType(appointmentTypeId);
   if (!type) return [];
 
-  const taken = await bookedSlots();
+  const taken = await bookedSlots(now);
   const earliest = now.getTime() + MINIMUM_LEAD_HOURS * 60 * 60 * 1000;
   const days: DaySlots[] = [];
   const seenDates = new Set<string>();

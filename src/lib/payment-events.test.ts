@@ -134,3 +134,55 @@ describe("markPaid tells Daysi", () => {
     expect(findRequest("ORD-1")).not.toHaveProperty("awaitingPayment");
   });
 });
+
+describe("markExpired", () => {
+  it("closes a booking whose payment page ran out, so it leaves the calendar and the books", async () => {
+    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    const { saveRequest, findRequest } = await import("./request-store");
+    const { markExpired } = await import("./payment-events");
+
+    await saveRequest(
+      record({ reference: "CIT-1", kind: "appointment", status: "scheduled", awaitingPayment: true }),
+    );
+    expect(await markExpired("CIT-1")).toBe("closed");
+
+    expect(findRequest("CIT-1")).toMatchObject({ status: "closed", source: "stripe" });
+    expect(findRequest("CIT-1")).not.toHaveProperty("awaitingPayment");
+    expect(lines("appointment")).toHaveLength(2);
+  });
+
+  it("leaves a paid order alone when Stripe reports its session expired afterwards", async () => {
+    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    const { saveRequest, findRequest } = await import("./request-store");
+    const { markPaid, markExpired } = await import("./payment-events");
+
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await markPaid("ORD-1");
+    expect(await markExpired("ORD-1")).toBe("not-waiting");
+
+    expect(findRequest("ORD-1")?.status).toBe("paid");
+    expect(lines("order")).toHaveLength(2);
+  });
+
+  it("leaves a record the office has already handled alone", async () => {
+    // Daysi took cash and marked it herself; the dead payment page is not news.
+    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    const { saveRequest, findRequest } = await import("./request-store");
+    const { markExpired } = await import("./payment-events");
+
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await saveRequest(
+      record({ reference: "ORD-1", kind: "order", awaitingPayment: true, status: "answered", source: "office" }),
+    );
+    expect(await markExpired("ORD-1")).toBe("not-waiting");
+
+    expect(findRequest("ORD-1")?.status).toBe("answered");
+    expect(lines("order")).toHaveLength(2);
+  });
+
+  it("writes nothing for a reference it does not recognise", async () => {
+    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    const { markExpired } = await import("./payment-events");
+    expect(await markExpired("ORD-nobody")).toBe("unknown");
+  });
+});
