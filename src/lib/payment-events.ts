@@ -1,4 +1,5 @@
-import { listRequests, saveRequest } from "./request-store";
+import { notifyOwner } from "./notify";
+import { listRequests, saveRequest, type StoredRequest } from "./request-store";
 
 /**
  * What a completed Stripe payment does to the record it belongs to.
@@ -13,8 +14,12 @@ const PAYABLE_KINDS = ["appointment", "order", "commission", "alteration"] as co
 export type MarkPaidOutcome = "marked" | "already-paid" | "unknown";
 
 /**
- * Appends the paid state for the reference. The store is append-only, so the
- * latest record for a reference is the current one.
+ * Appends the paid state for the reference, and tells Daysi. The store is
+ * append-only, so the latest record for a reference is the current one.
+ *
+ * This is where a card-paid order reaches her inbox: not when the form was
+ * filled in, but when Stripe says the money arrived. A retried delivery
+ * returns early above the notification, so she is told once.
  */
 export async function markPaid(reference: string): Promise<MarkPaidOutcome> {
   for (const kind of PAYABLE_KINDS) {
@@ -33,8 +38,12 @@ export async function markPaid(reference: string): Promise<MarkPaidOutcome> {
       return "already-paid";
     }
 
-    // The spread would otherwise carry the office's mark onto a line the office did not write.
-    await saveRequest({ ...current, status: "paid", source: "stripe" });
+    // The spread would otherwise carry the office's mark onto a line the office
+    // did not write, and the waiting mark onto a line that is no longer waiting.
+    const { awaitingPayment: _waiting, ...settled } = current;
+    const paid: StoredRequest = { ...settled, status: "paid", source: "stripe" };
+    await saveRequest(paid);
+    await notifyOwner(paid);
     return "marked";
   }
   return "unknown";

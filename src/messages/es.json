@@ -437,6 +437,7 @@
       "contact": "Mensaje",
       "premiere-signup": "Lista de estreno"
     },
+    "awaitingPayment": "Pago pendiente",
     "status": {
       "new": "Recibido",
       "answered": "Contestado",

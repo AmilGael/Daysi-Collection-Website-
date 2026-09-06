@@ -102,3 +102,35 @@ describe("markPaid", () => {
     expect(lines("order")).toHaveLength(3);
   });
 });
+
+describe("markPaid tells Daysi", () => {
+  it("announces the order once Stripe confirms, and only once", async () => {
+    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    const { saveRequest } = await import("./request-store");
+    const { markPaid } = await import("./payment-events");
+    const { notifyOwner } = await import("./notify");
+
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    expect(notifyOwner).not.toHaveBeenCalled();
+
+    await markPaid("ORD-1");
+    expect(notifyOwner).toHaveBeenCalledTimes(1);
+    expect(notifyOwner).toHaveBeenCalledWith(
+      expect.objectContaining({ reference: "ORD-1", status: "paid", source: "stripe" }),
+    );
+
+    await markPaid("ORD-1");
+    expect(notifyOwner).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops the waiting mark from the paid line", async () => {
+    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    const { saveRequest, findRequest } = await import("./request-store");
+    const { markPaid } = await import("./payment-events");
+
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await markPaid("ORD-1");
+
+    expect(findRequest("ORD-1")).not.toHaveProperty("awaitingPayment");
+  });
+});

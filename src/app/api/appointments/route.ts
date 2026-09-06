@@ -82,6 +82,9 @@ export async function POST(request: Request) {
     if (!stillFree) return { slotTaken: true as const };
 
     const reference = newReference("CIT");
+    // A deposit stands between this booking and Daysi: she hears about it when
+    // Stripe confirms the deposit, not when the form is sent.
+    const awaitingPayment = paymentsEnabled && estimate.dueNow > 0;
     const record: StoredRequest = {
       reference,
       kind: "appointment",
@@ -103,11 +106,12 @@ export async function POST(request: Request) {
         Purpose: booking.purpose,
       },
       estimate,
+      ...(awaitingPayment ? { awaitingPayment: true as const } : {}),
       status: "scheduled",
     };
 
     const delivered = await recordRequest(record);
-    return { slotTaken: false as const, reference, delivered };
+    return { slotTaken: false as const, reference, delivered, awaitingPayment };
   });
 
   if (outcome.slotTaken) {
@@ -118,7 +122,7 @@ export async function POST(request: Request) {
   }
   const reference = outcome.reference;
 
-  const checkout = paymentsEnabled
+  const checkout = outcome.awaitingPayment
     ? await createCheckoutSession({
         reference,
         description: translate(type.name, booking.client.locale),

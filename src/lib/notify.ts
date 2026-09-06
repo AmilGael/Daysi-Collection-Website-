@@ -55,7 +55,19 @@ export function summarise(request: StoredRequest): string {
 
   if (request.photoFile) lines.push("", `Photo attached: ${request.photoFile}`);
 
+  if (paidByCard(request)) {
+    lines.push(
+      "",
+      `Paid by card: ${formatMoney(request.estimate?.dueNow ?? 0, "en")} — confirmed by Stripe.`,
+    );
+  }
+
   return lines.join("\n");
+}
+
+/** Only Stripe's own line counts: a status Daysi set by hand is not a card payment. */
+function paidByCard(request: StoredRequest): boolean {
+  return request.status === "paid" && request.source === "stripe";
 }
 
 /**
@@ -107,7 +119,7 @@ export async function notifyOwner(request: StoredRequest): Promise<void> {
   await sendEmail({
     to: env.ownerEmails,
     replyTo: request.client.email,
-    subject: `${KIND_LABELS[request.kind]} — ${request.client.name} (${request.reference})`,
+    subject: `${paidByCard(request) ? "PAID · " : ""}${KIND_LABELS[request.kind]} — ${request.client.name} (${request.reference})`,
     text: summarise(request),
   });
 }
@@ -119,6 +131,13 @@ export async function notifyOwner(request: StoredRequest): Promise<void> {
  * far as Daysi is concerned. Returns false only when the request reached
  * neither the store nor a configured mailbox — the one case where telling the
  * client "sent" would be a lie.
+ *
+ * A request still waiting on a card payment is the exception: it is stored and
+ * nothing more. Daysi hears about it from `markPaid`, when Stripe confirms the
+ * money, so a client who reaches the payment page and stops has not put an
+ * order in her inbox. For such a request the store is the only place it can
+ * live — the webhook looks the reference up there — so a failed write is a
+ * failed request.
  */
 export async function recordRequest(request: StoredRequest): Promise<boolean> {
   let stored = true;
@@ -127,6 +146,11 @@ export async function recordRequest(request: StoredRequest): Promise<boolean> {
   } catch (error) {
     stored = false;
     console.error(`[store] Could not persist ${request.reference}`, error);
+  }
+
+  if (request.awaitingPayment) {
+    if (stored) console.info(`[notify] ${request.kind} ${request.reference} held until Stripe confirms.`);
+    return stored;
   }
 
   await notifyOwner(request);
