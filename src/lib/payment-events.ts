@@ -12,6 +12,15 @@ import { listRequests, saveRequest, type StoredRequest } from "./request-store";
 const PAYABLE_KINDS = ["appointment", "order", "commission", "alteration"] as const;
 
 export type MarkPaidOutcome = "marked" | "already-paid" | "unknown";
+export type MarkExpiredOutcome = "closed" | "not-waiting" | "unknown";
+
+function versionsOf(reference: string): StoredRequest[] {
+  for (const kind of PAYABLE_KINDS) {
+    const versions = listRequests(kind).filter((candidate) => candidate.reference === reference);
+    if (versions.length > 0) return versions;
+  }
+  return [];
+}
 
 /**
  * Appends the paid state for the reference, and tells Daysi. The store is
@@ -22,11 +31,9 @@ export type MarkPaidOutcome = "marked" | "already-paid" | "unknown";
  * returns early above the notification, so she is told once.
  */
 export async function markPaid(reference: string): Promise<MarkPaidOutcome> {
-  for (const kind of PAYABLE_KINDS) {
-    const versions = listRequests(kind).filter((candidate) => candidate.reference === reference);
-    const current = versions.at(-1);
-    if (!current) continue;
-
+  const versions = versionsOf(reference);
+  const current = versions.at(-1);
+  if (current) {
     // Stripe retries a delivery it believes failed, for up to three days, and
     // the question is whether this payment has been written down before — not
     // whether the newest line happens to be it. If Daysi has since corrected the
@@ -47,4 +54,23 @@ export async function markPaid(reference: string): Promise<MarkPaidOutcome> {
     return "marked";
   }
   return "unknown";
+}
+
+/**
+ * The payment page ran out with nobody paying. The record is closed so it
+ * leaves the calendar, Trabajo's open list and the books; Daysi is not told,
+ * because nothing happened. Only the client's own untouched line is closed:
+ * once Stripe has written a payment, or Daysi has changed anything herself,
+ * the dead page is not news and the record is left as it is.
+ */
+export async function markExpired(reference: string): Promise<MarkExpiredOutcome> {
+  const current = versionsOf(reference).at(-1);
+  if (!current) return "unknown";
+  if (!current.awaitingPayment || current.source !== undefined || current.status === "paid") {
+    return "not-waiting";
+  }
+
+  const { awaitingPayment: _waiting, ...settled } = current;
+  await saveRequest({ ...settled, status: "closed", source: "stripe" });
+  return "closed";
 }

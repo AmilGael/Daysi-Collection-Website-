@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { verifyWebhook } from "@/lib/payments";
-import { markPaid } from "@/lib/payment-events";
+import { markExpired, markPaid } from "@/lib/payment-events";
 
 /**
  * Stripe's confirmation that a payment really completed.
@@ -33,6 +33,16 @@ export async function POST(request: Request) {
     const reference = session.metadata?.reference ?? session.client_reference_id;
     if (reference && (await markPaid(reference)) === "unknown") {
       console.warn(`[stripe] Paid session for unknown reference ${reference}.`);
+    }
+  }
+
+  // The client never paid and the page has closed. Bookings hold their slot for
+  // only this long, so the record is closed and the hour goes back on offer.
+  if (event.type === "checkout.session.expired") {
+    const session = event.data.object;
+    const reference = session.metadata?.reference ?? session.client_reference_id;
+    if (reference && (await markExpired(reference)) === "unknown") {
+      console.warn(`[stripe] Expired session for unknown reference ${reference}.`);
     }
   }
 

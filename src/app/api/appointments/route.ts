@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { findAppointmentType, translate } from "@/content";
-import { availableDays, isSlotAvailable } from "@/lib/availability";
+import { BOOKING_PAYMENT_HOLD_MINUTES, availableDays, isSlotAvailable } from "@/lib/availability";
 import { estimateAppointment } from "@/lib/pricing";
 import { appointmentSchema, isLikelyBot } from "@/lib/validation";
 import { callerKey, checkRateLimit, pruneRateLimits } from "@/lib/rate-limit";
@@ -129,6 +129,7 @@ export async function POST(request: Request) {
         estimate,
         customerEmail: booking.client.email,
         locale: booking.client.locale,
+        expiresInMinutes: BOOKING_PAYMENT_HOLD_MINUTES,
       })
     : null;
 

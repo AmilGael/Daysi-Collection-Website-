@@ -107,9 +107,16 @@ SITE_URL="http://localhost:3000"
    Pagado, the client walked away: set it to Cerrado so it leaves Libros. Requests with nothing
    to pay up front (alterations, commissions, messages) still reach her at once.
 
+   **A booking nobody paid for gives its hour back on its own.** The payment page for a
+   booking closes after 30 minutes, and the calendar offers the hour again 45 minutes after
+   the form was sent. When Stripe reports the closed page (the `expired` event above), the
+   row becomes Cerrado by itself; the same happens to a cart order left on the payment page.
+
 7. When that works, take Daysi's **real** keys. In her Stripe account, add a webhook pointing
-   at `https://daysiscollectioninc.com/api/stripe/webhook`, listening for
-   `checkout.session.completed`. It gives its **own** signing secret. Never reuse the practice
+   at `https://daysiscollectioninc.com/api/stripe/webhook`, listening for **two** events:
+   `checkout.session.completed` and `checkout.session.expired`. The second one is how an
+   abandoned payment page closes its order, and how a booking nobody paid for gives its hour
+   back. It gives its **own** signing secret. Never reuse the practice
    one, and never put a practice key on the live site.
 
 8. Put both on Fly, in one command (paste your own values):

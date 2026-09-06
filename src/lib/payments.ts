@@ -33,6 +33,12 @@ export type CheckoutRequest = {
   readonly estimate: Estimate;
   readonly customerEmail: string;
   readonly locale: Locale;
+  /**
+   * Closes the payment page after this long. Set for bookings, whose slot is
+   * only held that long (see `BOOKING_PAYMENT_HOLD_MINUTES`); left unset for
+   * orders, which hold nothing and keep Stripe's own default of a day.
+   */
+  readonly expiresInMinutes?: number;
 };
 
 /**
@@ -75,6 +81,9 @@ export async function createCheckoutSession(
     // site never hears about them, so the reference has to be visible there for
     // the order to be findable afterwards.
     payment_intent_data: { metadata: { reference: request.reference } },
+    ...(request.expiresInMinutes
+      ? { expires_at: Math.floor(Date.now() / 1000) + request.expiresInMinutes * 60 }
+      : {}),
     success_url: `${env.siteUrl}/${request.locale}/checkout/thank-you?reference=${request.reference}`,
     cancel_url: `${env.siteUrl}/${request.locale}/checkout/cancelled?reference=${request.reference}`,
   });
