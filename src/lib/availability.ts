@@ -1,5 +1,5 @@
 import { business, findAppointmentType } from "@/content";
-import { activeRequests, type StoredRequest } from "./request-store";
+import { activeRequests, owesNothing, type StoredRequest } from "./request-store";
 
 /**
  * When Daysi can be booked. Slots are generated from the opening hours in
@@ -115,7 +115,7 @@ async function bookedSlots(now: Date): Promise<Set<string>> {
   const taken = new Set<string>();
 
   for (const appointment of appointments) {
-    if (appointment.status === "closed") continue;
+    if (owesNothing(appointment.status)) continue;
     if (holdExpired(appointment, now)) continue;
     const date = appointment.details.date;
     const start = appointment.details.startTime;

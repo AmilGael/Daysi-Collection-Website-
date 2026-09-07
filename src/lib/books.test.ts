@@ -131,3 +131,17 @@ describe("the summary shown before download", () => {
     expect(summary.outstanding).toBe(0);
   });
 });
+
+describe("a refunded order on the export", () => {
+  it("is neither received nor outstanding in the summary", () => {
+    const summary = exportSummary([record({ status: "refunded" })], "2026-01-01", "2026-12-31");
+    expect(summary.received).toBe(0);
+    expect(summary.outstanding).toBe(0);
+  });
+
+  it("says so in the paid column", () => {
+    const csv = salesCsv([record({ status: "refunded" })], "en", "2026-01-01", "2026-12-31");
+    expect(csv).toContain("Refunded");
+    expect(csv).not.toContain("Paid in full");
+  });
+});

@@ -1,5 +1,5 @@
 import type { Cents } from "@/content";
-import { activeRequests, type StoredRequest } from "./request-store";
+import { activeRequests, owesNothing, type StoredRequest } from "./request-store";
 
 /**
  * What Daysi has actually earned, and what is still owed to her.
@@ -39,7 +39,7 @@ export function earningsFrom(records: readonly StoredRequest[]): Earnings {
     if (record.status === "paid") {
       received += total;
       paidCount += 1;
-    } else if (record.status !== "closed") {
+    } else if (!owesNothing(record.status)) {
       outstanding += total;
       openCount += 1;
     }

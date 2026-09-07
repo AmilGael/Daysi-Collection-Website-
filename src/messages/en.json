@@ -443,6 +443,7 @@
       "answered": "Answered",
       "scheduled": "Booked",
       "paid": "Paid",
+      "refunded": "Refunded",
       "closed": "Closed"
     }
   },

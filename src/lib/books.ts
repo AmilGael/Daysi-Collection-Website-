@@ -1,7 +1,7 @@
 import { translate } from "@/content";
 import type { Locale } from "@/i18n/routing";
 import { isTaxable } from "./pricing";
-import type { StoredRequest } from "./request-store";
+import { owesNothing, type StoredRequest } from "./request-store";
 
 /**
  * The books, as a file Daysi can hand to an accountant.
@@ -98,7 +98,7 @@ export function salesRows(
         isTaxable(line) ? "TAX" : "NON",
         record.kind,
         record.status,
-        record.status === "paid" ? "Paid in full" : "Open",
+        record.status === "paid" ? "Paid in full" : record.status === "refunded" ? "Refunded" : "Open",
       ];
     });
   });
@@ -135,7 +135,7 @@ export function exportSummary(
     lines += estimate.lines.length;
     salesTax += estimate.salesTax;
     if (record.status === "paid") received += estimate.total;
-    else if (record.status !== "closed") outstanding += estimate.total;
+    else if (!owesNothing(record.status)) outstanding += estimate.total;
   }
 
   return { invoices: inRange.length, lines, received, outstanding, salesTax };

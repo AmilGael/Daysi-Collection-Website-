@@ -178,6 +178,7 @@ describe("change batch boundaries", () => {
     expect(fabricChangeSchema.safeParse({ ...fabricAdd, prices: { dresses: 99 } }).success).toBe(false);
     expect(priceChangeSchema.safeParse({ type: "entry", key: "entry:x", id: "x", fixedPrice: 5_000_01, customizationExtra: 0 }).success).toBe(false);
     expect(workChangeSchema.safeParse({ type: "request-status", key: "request:x", kind: "order", reference: "x", status: "done" }).success).toBe(false);
+    expect(workChangeSchema.safeParse({ type: "request-status", key: "request:x", kind: "order", reference: "x", status: "refunded" }).success).toBe(true);
   });
 });
 

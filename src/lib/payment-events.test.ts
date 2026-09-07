@@ -186,3 +186,48 @@ describe("markExpired", () => {
     expect(await markExpired("ORD-nobody")).toBe("unknown");
   });
 });
+
+describe("markRefunded", () => {
+  it("writes the refund Stripe reports on top of the paid order", async () => {
+    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    const { saveRequest, findRequest } = await import("./request-store");
+    const { markPaid, markRefunded } = await import("./payment-events");
+
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await markPaid("ORD-1");
+    expect(await markRefunded("ORD-1")).toBe("refunded");
+
+    expect(findRequest("ORD-1")).toMatchObject({ status: "refunded", source: "stripe" });
+    expect(lines("order")).toHaveLength(3);
+  });
+
+  it("does not repeat itself when Stripe delivers the refund twice", async () => {
+    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    const { saveRequest } = await import("./request-store");
+    const { markPaid, markRefunded } = await import("./payment-events");
+
+    await saveRequest(record({ reference: "ORD-1", kind: "order" }));
+    await markPaid("ORD-1");
+    await markRefunded("ORD-1");
+    expect(await markRefunded("ORD-1")).toBe("already-refunded");
+    expect(lines("order")).toHaveLength(3);
+  });
+
+  it("does not put the money back when the payment event is retried after the refund", async () => {
+    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    const { saveRequest, findRequest } = await import("./request-store");
+    const { markPaid, markRefunded } = await import("./payment-events");
+
+    await saveRequest(record({ reference: "ORD-1", kind: "order" }));
+    await markPaid("ORD-1");
+    await markRefunded("ORD-1");
+    expect(await markPaid("ORD-1")).toBe("already-paid");
+    expect(findRequest("ORD-1")?.status).toBe("refunded");
+  });
+
+  it("writes nothing for a reference it does not recognise", async () => {
+    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    const { markRefunded } = await import("./payment-events");
+    expect(await markRefunded("ORD-nobody")).toBe("unknown");
+  });
+});

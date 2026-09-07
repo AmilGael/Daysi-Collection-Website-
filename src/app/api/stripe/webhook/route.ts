@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { verifyWebhook } from "@/lib/payments";
-import { markExpired, markPaid } from "@/lib/payment-events";
+import { markExpired, markPaid, markRefunded } from "@/lib/payment-events";
 
 /**
  * Stripe's confirmation that a payment really completed.
@@ -43,6 +43,20 @@ export async function POST(request: Request) {
     const reference = session.metadata?.reference ?? session.client_reference_id;
     if (reference && (await markExpired(reference)) === "unknown") {
       console.warn(`[stripe] Expired session for unknown reference ${reference}.`);
+    }
+  }
+
+  // Money given back from Stripe's dashboard. The reference travels on the
+  // charge because `payments.ts` stamps it on the payment intent. Only a full
+  // refund changes the record: the site cannot say which part of an order a
+  // partial one covers, so that stays Daysi's call in Trabajo.
+  if (event.type === "charge.refunded") {
+    const charge = event.data.object;
+    const reference = charge.metadata?.reference;
+    if (!charge.refunded) {
+      console.info(`[stripe] Partial refund on ${reference ?? charge.id}; left for the office.`);
+    } else if (reference && (await markRefunded(reference)) === "unknown") {
+      console.warn(`[stripe] Refund for unknown reference ${reference}.`);
     }
   }
 

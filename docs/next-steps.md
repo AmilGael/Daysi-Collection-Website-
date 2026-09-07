@@ -113,10 +113,11 @@ SITE_URL="http://localhost:3000"
    row becomes Cerrado by itself; the same happens to a cart order left on the payment page.
 
 7. When that works, take Daysi's **real** keys. In her Stripe account, add a webhook pointing
-   at `https://daysiscollectioninc.com/api/stripe/webhook`, listening for **two** events:
-   `checkout.session.completed` and `checkout.session.expired`. The second one is how an
-   abandoned payment page closes its order, and how a booking nobody paid for gives its hour
-   back. It gives its **own** signing secret. Never reuse the practice
+   at `https://daysiscollectioninc.com/api/stripe/webhook`, listening for **three** events:
+   `checkout.session.completed`, `checkout.session.expired` and `charge.refunded`. The second
+   one is how an abandoned payment page closes its order, and how a booking nobody paid for
+   gives its hour back; the third is how a refund she makes in Stripe reaches the site. It
+   gives its **own** signing secret. Never reuse the practice
    one, and never put a practice key on the live site.
 
 8. Put both on Fly, in one command (paste your own values):
@@ -128,10 +129,11 @@ fly secrets set -a daysicollectioninc STRIPE_SECRET_KEY="sk_live_..." STRIPE_WEB
 9. Buy one small real thing with a real card, check it says Pagado, then give the money back in
    Stripe.
 
-**If she gives money back.** A refund is done in Stripe. The site does not hear about it, so
-the order still says Pagado. Open Trabajo, set that order to **Cerrado**, and press Confirmar.
-Otherwise the money still counts as received in Libros. The order number is written on the
-charge in Stripe, so it is easy to find the right row.
+**If she gives money back.** A full refund made in Stripe reaches the site through the
+`charge.refunded` event (since 7 September 2026): the order turns **Reembolsado** on its own,
+leaves the money received in Libros, and a refunded booking gives its hour back. A partial
+refund, or cash handed back, she marks herself: open Trabajo, set the row to Reembolsado, and
+press Confirmar. The order number is written on the charge in Stripe, so it is easy to find.
 
 10. Step-by-step guide with pictures: https://claude.ai/code/artifact/386f58d9-cea6-4106-a080-a4e194585df5
 
