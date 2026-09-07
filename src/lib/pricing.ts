@@ -1,4 +1,7 @@
-import { commissionDepositRate, findCategory, findStyle, type Cents, type Localized } from "@/content";
+import { commissionDepositRate, findCategory, type Cents, type Localized } from "@/content";
+// The live catalog, never the coded one: a garment Daysi added from the office
+// has to be priceable, and one she corrected has to be named as she wrote it.
+import { liveStyleBySlug as findStyle } from "./live-catalog";
 import {
   liveFindAlteration as findAlteration,
   liveFindAppointmentType as findAppointmentType,

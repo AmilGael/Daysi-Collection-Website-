@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { alterationServices, appointmentTypes, sizes, styles } from "@/content";
+import { alterationServices, appointmentTypes, sizes } from "@/content";
 
 /**
  * One schema per form. Every route handler parses its body through the schema
@@ -38,7 +38,6 @@ const botCheck = z.object({
   renderedAt: z.coerce.number().int().nonnegative(),
 });
 
-const styleSlugs = styles.map((style) => style.slug) as [string, ...string[]];
 const sizeIds = sizes.map((size) => size.id) as ["s", ...("s" | "m" | "l")[]];
 const alterationIds = alterationServices.map((item) => item.id) as [string, ...string[]];
 const appointmentIds = appointmentTypes.map((item) => item.id) as [string, ...string[]];
@@ -68,7 +67,10 @@ export const alterationRequestSchema = botCheck.extend({
 export const orderRequestSchema = botCheck.extend({
   kind: z.literal("order"),
   client,
-  styleSlug: z.enum(styleSlugs),
+  // Any well-formed slug: whether it names a garment on sale right now is the
+  // live catalog's call, made when the route prices it. A list fixed at build
+  // time would refuse every garment Daysi adds from the office.
+  styleSlug: z.string().trim().min(1).max(80).regex(/^[a-z0-9-]+$/),
   sizeId: z.enum(sizeIds),
   customize: z.boolean().default(false),
   notes: message.optional().default(""),

@@ -1,7 +1,8 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { premiereListing, stylesInPremiere, translate } from "@/content";
+import { premiereListing, translate } from "@/content";
+import { liveStylesInPremiere as stylesInPremiere } from "@/lib/live-catalog";
 import type { Locale } from "@/i18n/routing";
 import { SectionHeading, Tag, TextLink } from "@/components/ui";
 import { LookbookGrid, StyleCard } from "@/components/style-card";

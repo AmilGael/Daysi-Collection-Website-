@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { alterationServices, findStyle, translate } from "@/content";
+import { alterationServices, translate } from "@/content";
+import { liveStyleBySlug as findStyle } from "@/lib/live-catalog";
 import {
   estimateAlteration,
   estimateCommission,
