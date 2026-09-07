@@ -443,6 +443,7 @@
       "answered": "Contestado",
       "scheduled": "Reservado",
       "paid": "Pagado",
+      "refunded": "Reembolsado",
       "closed": "Cerrado"
     }
   },

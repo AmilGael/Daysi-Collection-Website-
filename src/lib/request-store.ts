@@ -78,8 +78,18 @@ export type StoredRequest = {
    * the payment page must never look like an order in her inbox.
    */
   readonly awaitingPayment?: true;
-  status: "new" | "answered" | "scheduled" | "paid" | "closed";
+  /**
+   * `refunded` is money given back after `paid`: Stripe writes it when Daysi
+   * refunds a card in its dashboard, and she can set it herself for cash. It
+   * counts as neither received nor owed, and frees a booking's hour.
+   */
+  status: "new" | "answered" | "scheduled" | "paid" | "refunded" | "closed";
 };
+
+/** Nothing is owed on these: the money came in and went back, or the matter is over. */
+export function owesNothing(status: StoredRequest["status"]): boolean {
+  return status === "closed" || status === "refunded";
+}
 
 async function ensureDirectory(directory: string): Promise<void> {
   await mkdir(directory, { recursive: true, mode: OWNER_ONLY_DIRECTORY });

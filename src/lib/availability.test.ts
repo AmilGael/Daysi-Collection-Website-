@@ -93,3 +93,24 @@ describe("a booking still waiting on its deposit", () => {
     expect(slots).not.toContain(startTime);
   });
 });
+
+describe("a refunded booking", () => {
+  it("gives its hour back like a closed one", async () => {
+    const { availableDays } = await import("./availability");
+    const { saveRequest } = await import("./request-store");
+    const now = new Date("2026-09-07T12:00:00Z");
+    const [day] = await availableDays("consultation-30", now);
+    const startTime = day!.slots[0]!;
+    await saveRequest({
+      reference: "CIT-BACK",
+      kind: "appointment",
+      submittedAt: now.toISOString(),
+      locale: "en",
+      client: { name: "Ana", email: "ana@example.com" },
+      details: { date: day!.date, startTime, minutes: 30 },
+      status: "refunded",
+      source: "stripe",
+    });
+    expect((await availableDays("consultation-30", now))[0]?.slots).toContain(startTime);
+  });
+});

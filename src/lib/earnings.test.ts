@@ -56,3 +56,29 @@ describe("the active earnings ledger", () => {
     expect(earningsFrom(loadLedger()).received).toBe(12000);
   });
 });
+
+describe("a refunded order", () => {
+  it("counts as neither received nor owed", async () => {
+    const { earningsFrom } = await import("./earnings");
+    const refunded: StoredRequest = {
+      reference: "ORD-BACK",
+      kind: "order",
+      submittedAt: "2026-09-01T12:00:00.000Z",
+      locale: "en",
+      client: { name: "Ana", email: "ana@example.com" },
+      details: {},
+      estimate: {
+        lines: [],
+        subtotal: 12000,
+        salesTax: 0,
+        total: 12000,
+        dueNow: 12000,
+        dueOnCollection: 0,
+        dueNowReason: { en: "", es: "" },
+      },
+      status: "refunded",
+      source: "stripe",
+    };
+    expect(earningsFrom([refunded])).toEqual({ received: 0, outstanding: 0, paidCount: 0, openCount: 0 });
+  });
+});

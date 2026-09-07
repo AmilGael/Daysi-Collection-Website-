@@ -11,7 +11,7 @@ import { UndoLink } from "@/components/office/undo-link";
 import { Tag } from "@/components/ui";
 import { useOfficeDraft } from "@/components/office/use-office-draft";
 
-const STATUSES = ["new", "answered", "scheduled", "paid", "closed"] as const;
+const STATUSES = ["new", "answered", "scheduled", "paid", "refunded", "closed"] as const;
 
 /**
  * The office's working copy of the request table: the same columns a client

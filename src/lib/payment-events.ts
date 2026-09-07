@@ -13,6 +13,7 @@ const PAYABLE_KINDS = ["appointment", "order", "commission", "alteration"] as co
 
 export type MarkPaidOutcome = "marked" | "already-paid" | "unknown";
 export type MarkExpiredOutcome = "closed" | "not-waiting" | "unknown";
+export type MarkRefundedOutcome = "refunded" | "already-refunded" | "unknown";
 
 function versionsOf(reference: string): StoredRequest[] {
   for (const kind of PAYABLE_KINDS) {
@@ -54,6 +55,22 @@ export async function markPaid(reference: string): Promise<MarkPaidOutcome> {
     return "marked";
   }
   return "unknown";
+}
+
+/**
+ * Daysi gave the money back in Stripe's dashboard, in full. The refund is a
+ * fact about money, so it is written on top of whatever the record says now,
+ * even a status Daysi set by hand since; only a refund already written is
+ * not written again. Nothing is sent to her: she is the one who refunded.
+ */
+export async function markRefunded(reference: string): Promise<MarkRefundedOutcome> {
+  const current = versionsOf(reference).at(-1);
+  if (!current) return "unknown";
+  if (current.status === "refunded") return "already-refunded";
+
+  const { awaitingPayment: _waiting, ...settled } = current;
+  await saveRequest({ ...settled, status: "refunded", source: "stripe" });
+  return "refunded";
 }
 
 /**
