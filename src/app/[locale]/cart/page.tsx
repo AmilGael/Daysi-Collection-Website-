@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { publishedStyles } from "@/content";
+import { liveStyles } from "@/lib/live-catalog";
 import { readCart } from "@/lib/cart";
 import { estimateCart } from "@/lib/pricing";
 import { paymentsEnabled } from "@/lib/env";
@@ -26,7 +26,7 @@ export default async function CartPage({
         <CartView
           initialCart={cart}
           initialEstimate={estimate}
-          styles={publishedStyles()}
+          styles={liveStyles()}
           viewer={
             viewer ? { name: viewer.account.name, email: viewer.account.email } : null
           }

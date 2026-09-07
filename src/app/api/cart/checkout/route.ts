@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { findStyle, translate } from "@/content";
+import { translate } from "@/content";
+import { liveStyleBySlug as findStyle } from "@/lib/live-catalog";
 import { emptyCart, readCart, writeCart } from "@/lib/cart";
 import { estimateCart } from "@/lib/pricing";
 import { callerKey, checkRateLimit, pruneRateLimits } from "@/lib/rate-limit";

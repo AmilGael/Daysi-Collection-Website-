@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findStyle } from "@/content";
+import { liveStyleBySlug as findStyle } from "@/lib/live-catalog";
 import {
   addLine,
   cartCount,

@@ -32,7 +32,9 @@ export async function generateMetadata({
   params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
   const { locale, slug } = await params;
-  const style = publishedStyles().find((candidate) => candidate.slug === slug);
+  // The live catalog, like the page body below: the tab title and the shared
+  // preview must carry the name Daysi corrected, and exist for a piece she added.
+  const style = liveStyles().find((candidate) => candidate.slug === slug);
   if (!style) return {};
 
   const language = locale as Locale;

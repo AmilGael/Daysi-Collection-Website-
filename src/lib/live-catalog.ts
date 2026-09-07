@@ -1,6 +1,6 @@
 import { appendRecord, latestBy, readRecords } from "./records";
 import { styles } from "@/content";
-import type { GarmentStyle } from "@/content/types";
+import type { GarmentStyle, Premiere } from "@/content/types";
 import { retiredSet } from "./retired";
 import { applyStyleText, textOverrides, type TextOverride } from "./live-text";
 
@@ -150,6 +150,14 @@ export function manageableStyles(): (GarmentStyle & { retired: boolean })[] {
 
 export function liveStyleBySlug(slug: string): GarmentStyle | undefined {
   return liveStyles().find((style) => style.slug === slug);
+}
+
+/** The premiere's pieces as the site shows them now: corrected, and only if still published. */
+export function liveStylesInPremiere(premiere: Premiere): GarmentStyle[] {
+  const live = new Map(liveStyles().map((style) => [style.id, style]));
+  return premiere.styleIds
+    .map((id) => live.get(id))
+    .filter((style): style is GarmentStyle => style !== undefined);
 }
 
 export function currentNotice(): SiteNotice | null {
