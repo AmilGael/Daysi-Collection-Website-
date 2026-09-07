@@ -11,6 +11,10 @@ export const routing = defineRouting({
   defaultLocale: "es",
   localePrefix: "always",
   localeDetection: true,
+  // next-intl 4 remembers a chosen language only for the browser session. A
+  // client who picked English should still land on English next month, which
+  // is what version 3 did, so the cookie keeps its year.
+  localeCookie: { maxAge: 60 * 60 * 24 * 365 },
 });
 
 export type Locale = (typeof routing.locales)[number];
