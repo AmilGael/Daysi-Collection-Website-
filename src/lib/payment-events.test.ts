@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import type Stripe from "stripe";
 import type { StoredRequest, StoredRequestKind } from "./request-store";
 
 /**
@@ -41,6 +42,48 @@ const lines = (kind: StoredRequestKind): StoredRequest[] =>
     .split("\n")
     .filter((line) => line.length > 0)
     .map((line) => JSON.parse(line) as StoredRequest);
+
+/**
+ * Hand-built events carry only the fields `applyPaymentEvent` reads. A real
+ * `Stripe.Checkout.Session` has dozens of required fields the function never
+ * looks at, so one cast here is cheaper than a full fixture.
+ */
+type SessionEventType =
+  | "checkout.session.completed"
+  | "checkout.session.async_payment_succeeded"
+  | "checkout.session.async_payment_failed"
+  | "checkout.session.expired";
+
+const sessionEvent = (
+  type: SessionEventType,
+  session: {
+    reference?: string;
+    clientReferenceId?: string;
+    payment_status?: Stripe.Checkout.Session.PaymentStatus;
+  } = {},
+): Stripe.Event =>
+  ({
+    type,
+    data: {
+      object: {
+        metadata: session.reference ? { reference: session.reference } : {},
+        client_reference_id: session.clientReferenceId ?? null,
+        payment_status: session.payment_status ?? "paid",
+      },
+    },
+  }) as unknown as Stripe.Event;
+
+const chargeEvent = (charge: { reference?: string; refunded: boolean }): Stripe.Event =>
+  ({
+    type: "charge.refunded",
+    data: {
+      object: {
+        id: "ch_1",
+        metadata: charge.reference ? { reference: charge.reference } : {},
+        refunded: charge.refunded,
+      },
+    },
+  }) as unknown as Stripe.Event;
 
 describe("markPaid", () => {
   it("marks the order paid and says the line came from Stripe", async () => {
@@ -229,5 +272,188 @@ describe("markRefunded", () => {
     vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
     const { markRefunded } = await import("./payment-events");
     expect(await markRefunded("ORD-nobody")).toBe("unknown");
+  });
+});
+
+/**
+ * The webhook hands every verified event here. `checkout.session.completed`
+ * says the client finished the page, not that the money is in: for a bank
+ * payment it arrives days before the funds, so only `payment_status` and the
+ * two async events are allowed to move money.
+ */
+describe("applyPaymentEvent", () => {
+  async function setup() {
+    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    const { saveRequest, findRequest } = await import("./request-store");
+    const { applyPaymentEvent } = await import("./payment-events");
+    const { notifyOwner } = await import("./notify");
+    return { saveRequest, findRequest, applyPaymentEvent, notifyOwner };
+  }
+
+  it("marks an order paid when the session completed with the money in", async () => {
+    const { saveRequest, findRequest, applyPaymentEvent, notifyOwner } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+
+    expect(
+      await applyPaymentEvent(sessionEvent("checkout.session.completed", { reference: "ORD-1" })),
+    ).toBe("marked");
+    expect(findRequest("ORD-1")).toMatchObject({ status: "paid", source: "stripe" });
+    expect(notifyOwner).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves a session Stripe reports unpaid alone, so a bank payment is not written as received", async () => {
+    const { saveRequest, findRequest, applyPaymentEvent, notifyOwner } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+
+    expect(
+      await applyPaymentEvent(
+        sessionEvent("checkout.session.completed", { reference: "ORD-1", payment_status: "unpaid" }),
+      ),
+    ).toBe("not-paid-yet");
+    expect(findRequest("ORD-1")).toMatchObject({ status: "new", awaitingPayment: true });
+    expect(lines("order")).toHaveLength(1);
+    expect(notifyOwner).not.toHaveBeenCalled();
+  });
+
+  it("marks the order paid, and tells Daysi, when the bank payment lands later", async () => {
+    const { saveRequest, findRequest, applyPaymentEvent, notifyOwner } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await applyPaymentEvent(
+      sessionEvent("checkout.session.completed", { reference: "ORD-1", payment_status: "unpaid" }),
+    );
+
+    expect(
+      await applyPaymentEvent(
+        sessionEvent("checkout.session.async_payment_succeeded", { reference: "ORD-1" }),
+      ),
+    ).toBe("marked");
+    expect(findRequest("ORD-1")).toMatchObject({ status: "paid", source: "stripe" });
+    expect(findRequest("ORD-1")).not.toHaveProperty("awaitingPayment");
+    expect(lines("order")).toHaveLength(2);
+    expect(notifyOwner).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not repeat itself when the completed event is retried after the bank payment landed", async () => {
+    const { saveRequest, applyPaymentEvent, notifyOwner } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await applyPaymentEvent(
+      sessionEvent("checkout.session.async_payment_succeeded", { reference: "ORD-1" }),
+    );
+
+    expect(
+      await applyPaymentEvent(sessionEvent("checkout.session.completed", { reference: "ORD-1" })),
+    ).toBe("already-paid");
+    expect(lines("order")).toHaveLength(2);
+    expect(notifyOwner).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes the order when the bank payment bounces", async () => {
+    const { saveRequest, findRequest, applyPaymentEvent, notifyOwner } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await applyPaymentEvent(
+      sessionEvent("checkout.session.completed", { reference: "ORD-1", payment_status: "unpaid" }),
+    );
+
+    expect(
+      await applyPaymentEvent(
+        sessionEvent("checkout.session.async_payment_failed", { reference: "ORD-1", payment_status: "unpaid" }),
+      ),
+    ).toBe("closed");
+    expect(findRequest("ORD-1")).toMatchObject({ status: "closed", source: "stripe" });
+    expect(findRequest("ORD-1")).not.toHaveProperty("awaitingPayment");
+    expect(notifyOwner).not.toHaveBeenCalled();
+  });
+
+  it("leaves a record the office has already handled alone when the bank payment bounces", async () => {
+    const { saveRequest, findRequest, applyPaymentEvent } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await saveRequest(
+      record({ reference: "ORD-1", kind: "order", awaitingPayment: true, status: "answered", source: "office" }),
+    );
+
+    expect(
+      await applyPaymentEvent(
+        sessionEvent("checkout.session.async_payment_failed", { reference: "ORD-1", payment_status: "unpaid" }),
+      ),
+    ).toBe("not-waiting");
+    expect(findRequest("ORD-1")?.status).toBe("answered");
+    expect(lines("order")).toHaveLength(2);
+  });
+
+  it("does not close an order Stripe already paid when a failure arrives late", async () => {
+    const { saveRequest, findRequest, applyPaymentEvent } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await applyPaymentEvent(
+      sessionEvent("checkout.session.async_payment_succeeded", { reference: "ORD-1" }),
+    );
+
+    expect(
+      await applyPaymentEvent(
+        sessionEvent("checkout.session.async_payment_failed", { reference: "ORD-1", payment_status: "unpaid" }),
+      ),
+    ).toBe("not-waiting");
+    expect(findRequest("ORD-1")?.status).toBe("paid");
+  });
+
+  it("falls back to the client reference when the session carries no metadata", async () => {
+    const { saveRequest, findRequest, applyPaymentEvent } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+
+    expect(
+      await applyPaymentEvent(
+        sessionEvent("checkout.session.completed", { clientReferenceId: "ORD-1" }),
+      ),
+    ).toBe("marked");
+    expect(findRequest("ORD-1")?.status).toBe("paid");
+  });
+
+  it("does nothing with a session that names no order", async () => {
+    // What Stripe's own `stripe trigger` fixtures look like.
+    const { applyPaymentEvent } = await setup();
+    expect(await applyPaymentEvent(sessionEvent("checkout.session.completed"))).toBe("no-reference");
+    expect(() => lines("order")).toThrow();
+  });
+
+  it("warns, and writes nothing, for a reference it does not recognise", async () => {
+    const { applyPaymentEvent } = await setup();
+    expect(
+      await applyPaymentEvent(sessionEvent("checkout.session.completed", { reference: "ORD-nobody" })),
+    ).toBe("unknown");
+  });
+
+  it("ignores an event it was not written for", async () => {
+    const { applyPaymentEvent } = await setup();
+    const event = { type: "payment_intent.created", data: { object: {} } } as unknown as Stripe.Event;
+    expect(await applyPaymentEvent(event)).toBe("ignored");
+  });
+
+  it("still closes an abandoned payment page", async () => {
+    const { saveRequest, findRequest, applyPaymentEvent } = await setup();
+    await saveRequest(
+      record({ reference: "CIT-1", kind: "appointment", status: "scheduled", awaitingPayment: true }),
+    );
+
+    expect(
+      await applyPaymentEvent(
+        sessionEvent("checkout.session.expired", { reference: "CIT-1", payment_status: "unpaid" }),
+      ),
+    ).toBe("closed");
+    expect(findRequest("CIT-1")?.status).toBe("closed");
+  });
+
+  it("still writes a full refund, and only logs a partial one", async () => {
+    const { saveRequest, findRequest, applyPaymentEvent } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await applyPaymentEvent(sessionEvent("checkout.session.completed", { reference: "ORD-1" }));
+
+    expect(await applyPaymentEvent(chargeEvent({ reference: "ORD-1", refunded: false }))).toBe(
+      "partial-refund",
+    );
+    expect(findRequest("ORD-1")?.status).toBe("paid");
+
+    expect(await applyPaymentEvent(chargeEvent({ reference: "ORD-1", refunded: true }))).toBe(
+      "refunded",
+    );
+    expect(findRequest("ORD-1")?.status).toBe("refunded");
   });
 });

@@ -72,7 +72,11 @@ describe("how long a checkout stays open", () => {
     }));
     const { createCheckoutSession } = await import("./payments");
     await createCheckoutSession({ ...order(request ?? 10500), ...(expiresInMinutes ? { expiresInMinutes } : {}) });
-    return createMock.mock.calls[0]![0] as { expires_at?: number };
+    return createMock.mock.calls[0]![0] as {
+      expires_at?: number;
+      payment_method_types?: string[];
+      success_url?: string;
+    };
   }
 
   it("closes a booking's payment page when the hold on the slot runs out", async () => {
@@ -85,5 +89,78 @@ describe("how long a checkout stays open", () => {
   it("leaves Stripe's own default for an order, which holds nothing", async () => {
     const args = await sessionArgs(undefined);
     expect(args).not.toHaveProperty("expires_at");
+  });
+
+  it("sends the client back with the session's id, so the thank-you page can ask whether the money is in", async () => {
+    const args = await sessionArgs(undefined);
+    expect(args.success_url).toBe(
+      "https://example.test/en/checkout/thank-you?reference=ORD-1&session_id={CHECKOUT_SESSION_ID}",
+    );
+  });
+
+  describe("which ways of paying it offers", () => {
+    it("takes only cards for a booking, whose slot hold cannot wait for a bank debit to clear", async () => {
+      const args = await sessionArgs(undefined, 30);
+      expect(args.payment_method_types).toEqual(["card"]);
+    });
+
+    it("lets Stripe's dashboard choose for an order, which holds nothing", async () => {
+      const args = await sessionArgs(undefined);
+      expect(args).not.toHaveProperty("payment_method_types");
+    });
+  });
+});
+
+/**
+ * The thank-you page asks Stripe whether the money is in before it says so.
+ * Every answer but a clear "paid" or "unpaid" on the right order is "unknown",
+ * which the page renders as its plain thanks: the lookup informs a sentence,
+ * never the books.
+ */
+describe("what the thank-you page is told", () => {
+  const retrieveMock = vi.fn(async (_id: string): Promise<unknown> => ({}));
+
+  async function statusOf(sessionId: string, reference: string, key = "sk_test_mocked") {
+    vi.stubEnv("STRIPE_SECRET_KEY", key);
+    retrieveMock.mockClear();
+    vi.doMock("stripe", () => ({
+      default: class {
+        checkout = { sessions: { retrieve: retrieveMock } };
+      },
+    }));
+    const { checkoutPaymentStatus } = await import("./payments");
+    return checkoutPaymentStatus(sessionId, reference);
+  }
+
+  it("says paid when Stripe reports the session paid", async () => {
+    retrieveMock.mockResolvedValueOnce({ payment_status: "paid", metadata: { reference: "ORD-1" } });
+    expect(await statusOf("cs_test_1", "ORD-1")).toBe("paid");
+    expect(retrieveMock).toHaveBeenCalledWith("cs_test_1");
+  });
+
+  it("says pending while the bank has not sent the money", async () => {
+    retrieveMock.mockResolvedValueOnce({ payment_status: "unpaid", metadata: { reference: "ORD-1" } });
+    expect(await statusOf("cs_test_1", "ORD-1")).toBe("pending");
+  });
+
+  it("says unknown without asking Stripe when payments are not configured", async () => {
+    expect(await statusOf("cs_test_1", "ORD-1", "")).toBe("unknown");
+    expect(retrieveMock).not.toHaveBeenCalled();
+  });
+
+  it("says unknown for an id that could not be a Stripe session, without asking", async () => {
+    expect(await statusOf("abc", "ORD-1")).toBe("unknown");
+    expect(retrieveMock).not.toHaveBeenCalled();
+  });
+
+  it("says unknown, rather than failing the page, when Stripe cannot be reached", async () => {
+    retrieveMock.mockRejectedValueOnce(new Error("connection reset"));
+    expect(await statusOf("cs_test_1", "ORD-1")).toBe("unknown");
+  });
+
+  it("says unknown when the session belongs to another order", async () => {
+    // Otherwise a hand-edited URL could show one order's state under another's number.
+    retrieveMock.mockResolvedValueOnce({ payment_status: "paid", metadata: { reference: "ORD-2" } });
+    expect(await statusOf("cs_test_1", "ORD-1")).toBe("unknown");
   });
 });

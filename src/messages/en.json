@@ -296,6 +296,8 @@
   "checkout": {
     "thankYouTitle": "Payment received.",
     "thankYouLead": "Reference {reference}. A receipt is on its way to your email, and Daysi has been told.",
+    "pendingTitle": "Payment on its way.",
+    "pendingLead": "Reference {reference}. Your bank is still sending the payment, which can take a few days. When it arrives you will get a receipt by email and Daysi will be told. Your request is already saved.",
     "cancelledTitle": "Payment cancelled.",
     "cancelledLead": "Nothing was charged. Your request is still saved under {reference}. You can pay later or settle in person.",
     "backHome": "Back to the site",

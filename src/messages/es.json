@@ -296,6 +296,8 @@
   "checkout": {
     "thankYouTitle": "Pago recibido.",
     "thankYouLead": "Referencia {reference}. El recibo va en camino a su correo, y Daysi ya fue avisada.",
+    "pendingTitle": "Pago en camino.",
+    "pendingLead": "Referencia {reference}. Su banco todavía está enviando el pago, y eso puede tardar unos días. Cuando llegue, recibirá el recibo por correo y Daysi será avisada. Su solicitud ya quedó guardada.",
     "cancelledTitle": "Pago cancelado.",
     "cancelledLead": "No se cobró nada. Su solicitud sigue guardada con la referencia {reference}. Puede pagar después o en persona.",
     "backHome": "Volver al sitio",

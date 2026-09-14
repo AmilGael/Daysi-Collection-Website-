@@ -107,17 +107,25 @@ SITE_URL="http://localhost:3000"
    Pagado, the client walked away: set it to Cerrado so it leaves Libros. Requests with nothing
    to pay up front (alterations, commissions, messages) still reach her at once.
 
+   If a client pays an order from a bank account rather than a card (since 9 September 2026),
+   the row stays Pago pendiente and her email waits until the money lands, usually a few days;
+   the client's thank-you page says so. If the bank refuses the payment, the row turns Cerrado
+   by itself. Bookings only take cards, so a deposit never waits.
+
    **A booking nobody paid for gives its hour back on its own.** The payment page for a
    booking closes after 30 minutes, and the calendar offers the hour again 45 minutes after
    the form was sent. When Stripe reports the closed page (the `expired` event above), the
    row becomes Cerrado by itself; the same happens to a cart order left on the payment page.
 
 7. When that works, take Daysi's **real** keys. In her Stripe account, add a webhook pointing
-   at `https://daysiscollectioninc.com/api/stripe/webhook`, listening for **three** events:
-   `checkout.session.completed`, `checkout.session.expired` and `charge.refunded`. The second
-   one is how an abandoned payment page closes its order, and how a booking nobody paid for
-   gives its hour back; the third is how a refund she makes in Stripe reaches the site. It
-   gives its **own** signing secret. Never reuse the practice
+   at `https://daysiscollectioninc.com/api/stripe/webhook`, listening for **five** events:
+   `checkout.session.completed`, `checkout.session.expired`, `charge.refunded`,
+   `checkout.session.async_payment_succeeded` and `checkout.session.async_payment_failed`. The
+   second one is how an abandoned payment page closes its order, and how a booking nobody paid
+   for gives its hour back; the third is how a refund she makes in Stripe reaches the site. The
+   fourth is how an order paid from a bank account turns Pagado once the money actually lands,
+   days after the client pressed pay; the fifth closes that order by itself when the bank
+   payment bounces. It gives its **own** signing secret. Never reuse the practice
    one, and never put a practice key on the live site.
 
 8. Put both on Fly, in one command (paste your own values):
