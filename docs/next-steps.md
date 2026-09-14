@@ -103,14 +103,18 @@ SITE_URL="http://localhost:3000"
    **Daysi's email arrives only after the card goes through** (since 6 September 2026). Filling
    in the form and stopping on the payment page sends her nothing; the order sits in Trabajo
    marked **Pago pendiente** until Stripe confirms, and the email she gets then says PAID in the
-   subject. Bookings with a deposit work the same way. If a "Pago pendiente" row never turns into
-   Pagado, the client walked away: set it to Cerrado so it leaves Libros. Requests with nothing
-   to pay up front (alterations, commissions, messages) still reach her at once.
+   subject. Bookings with a deposit work the same way. A "Pago pendiente" row closes by itself
+   when its payment page runs out (see below); one that lingers means the client walked away,
+   and she can set it to Cerrado so it leaves Libros. Requests with nothing to pay up front
+   (alterations, commissions, messages) still reach her at once.
 
    If a client pays an order from a bank account rather than a card (since 9 September 2026),
-   the row stays Pago pendiente and her email waits until the money lands, usually a few days;
-   the client's thank-you page says so. If the bank refuses the payment, the row turns Cerrado
-   by itself. Bookings only take cards, so a deposit never waits.
+   the row shows **Pago en camino desde el banco**: the client did pay, the bank is still moving
+   the money, usually for a few days, and she should leave the row alone. Her email waits until
+   the money lands, and the client's thank-you page says so. If the bank refuses the payment,
+   the row is marked **Pago rechazado por el banco** and closed (unless she had already taken it
+   in hand, in which case it keeps her status), and both she and the client get an email so
+   another way to pay can be agreed. Bookings only take cards, so a deposit never waits.
 
    **A booking nobody paid for gives its hour back on its own.** The payment page for a
    booking closes after 30 minutes, and the calendar offers the hour again 45 minutes after

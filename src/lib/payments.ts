@@ -34,13 +34,37 @@ export type CheckoutRequest = {
   readonly customerEmail: string;
   readonly locale: Locale;
   /**
-   * Closes the payment page after this long, and restricts it to cards. Set
-   * for bookings, whose slot is only held that long (see
-   * `BOOKING_PAYMENT_HOLD_MINUTES`); left unset for orders, which hold nothing
-   * and keep Stripe's own default of a day.
+   * Closes the payment page after this long. Set for bookings, whose slot is
+   * only held that long (see `BOOKING_PAYMENT_HOLD_MINUTES`); left unset for
+   * orders, which hold nothing and keep Stripe's own default of a day.
    */
   readonly expiresInMinutes?: number;
+  /**
+   * Offer cards only. Set for bookings: a bank debit takes days to clear, so
+   * a deposit paid that way could land after the hour had been given back to
+   * the calendar. Cards carry Apple Pay and Google Pay with them. This is an
+   * explicit list to Stripe, so it also leaves out Link and the other wallets
+   * the dashboard may enable; orders keep whatever the dashboard allows.
+   */
+  readonly cardsOnly?: boolean;
 };
+
+/**
+ * Stripe refuses an expiry under thirty minutes measured on its own clock.
+ * The hold is exactly thirty, so the page is told a minute more: the rounding
+ * of `Date.now()` and the request's own travel time must not decide it.
+ */
+const EXPIRY_MARGIN_SECONDS = 60;
+
+/** How long the thank-you page waits for Stripe before it stops asking. */
+const LOOKUP_TIMEOUT_MS = 5_000;
+
+/** The order a Checkout session belongs to, or null for a session this site did not make. */
+export function referenceOf(
+  session: Pick<Stripe.Checkout.Session, "metadata" | "client_reference_id">,
+): string | null {
+  return session.metadata?.reference ?? session.client_reference_id ?? null;
+}
 
 /**
  * Creates a Checkout session for the amount due now. The amount comes from the
@@ -84,15 +108,11 @@ export async function createCheckoutSession(
     payment_intent_data: { metadata: { reference: request.reference } },
     ...(request.expiresInMinutes
       ? {
-          expires_at: Math.floor(Date.now() / 1000) + request.expiresInMinutes * 60,
-          // A booking's slot is only held that long. A bank debit takes days to
-          // clear, so a deposit paid that way would land after the hour had been
-          // given back to the calendar. Cards, with Apple Pay and Google Pay
-          // riding on them, settle at once. Orders hold nothing and keep
-          // whatever the dashboard allows.
-          payment_method_types: ["card"],
+          expires_at:
+            Math.floor(Date.now() / 1000) + request.expiresInMinutes * 60 + EXPIRY_MARGIN_SECONDS,
         }
       : {}),
+    ...(request.cardsOnly ? { payment_method_types: ["card" as const] } : {}),
     // Stripe fills in the braces with the session's id, so the thank-you page
     // can ask whether the money is actually in before it says so.
     success_url: `${env.siteUrl}/${request.locale}/checkout/thank-you?reference=${request.reference}&session_id={CHECKOUT_SESSION_ID}`,
@@ -105,12 +125,13 @@ export async function createCheckoutSession(
 export type CheckoutPaymentStatus = "paid" | "pending" | "unknown";
 
 /**
- * What the thank-you page may say. Stripe sends the client back the moment
- * the page is done, which for a bank debit is days before the money moves, so
- * the page asks rather than assumes. "unknown" means the page falls back to
- * its plain thanks: for an id that could not be a session, a session that
- * belongs to another order, Stripe switched off, or Stripe unreachable. The
- * books are written by the webhook, never by this lookup.
+ * What Stripe says about a session, for the thank-you page in the moment
+ * before the webhook has written anything. "pending" is a completed page whose
+ * bank debit has not cleared; "unknown" is everything the page must not build
+ * a promise on: an id that could not be a session, a session for another
+ * order, a page still open or expired, Stripe switched off, Stripe slow or
+ * unreachable. The call is given one short try, because the client is waiting
+ * on it and the books are written by the webhook, never by this lookup.
  */
 export async function checkoutPaymentStatus(
   sessionId: string,
@@ -119,11 +140,16 @@ export async function checkoutPaymentStatus(
   if (!paymentsEnabled) return "unknown";
   if (!sessionId.startsWith("cs_")) return "unknown";
   try {
-    const session = await stripe().checkout.sessions.retrieve(sessionId);
+    const session = await stripe().checkout.sessions.retrieve(sessionId, {
+      timeout: LOOKUP_TIMEOUT_MS,
+      maxNetworkRetries: 0,
+    });
     // A hand-edited URL must not show one order's state under another's number.
-    const belongsTo = session.metadata?.reference ?? session.client_reference_id;
-    if (belongsTo !== reference) return "unknown";
-    return session.payment_status === "paid" ? "paid" : "pending";
+    if (referenceOf(session) !== reference) return "unknown";
+    if (session.payment_status === "paid" || session.payment_status === "no_payment_required") {
+      return "paid";
+    }
+    return session.status === "complete" ? "pending" : "unknown";
   } catch (error) {
     console.warn(`[stripe] Could not read session ${sessionId} for the thank-you page.`, error);
     return "unknown";

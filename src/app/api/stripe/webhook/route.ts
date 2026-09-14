@@ -31,7 +31,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "bad-signature" }, { status: 400 });
   }
 
-  await applyPaymentEvent(event);
+  const outcome = await applyPaymentEvent(event);
+  console.info(`[stripe] ${event.type} → ${outcome}`);
 
-  return NextResponse.json({ received: true });
+  return NextResponse.json({ received: true, outcome });
 }

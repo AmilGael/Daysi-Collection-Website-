@@ -283,12 +283,50 @@ describe("markRefunded", () => {
  */
 describe("applyPaymentEvent", () => {
   async function setup() {
-    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    vi.doMock("./notify", () => ({
+      notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaymentFailed: vi.fn(async () => undefined),
+    }));
     const { saveRequest, findRequest } = await import("./request-store");
     const { applyPaymentEvent } = await import("./payment-events");
-    const { notifyOwner } = await import("./notify");
-    return { saveRequest, findRequest, applyPaymentEvent, notifyOwner };
+    const { notifyOwner, notifyClientPaymentFailed } = await import("./notify");
+    return { saveRequest, findRequest, applyPaymentEvent, notifyOwner, notifyClientPaymentFailed };
   }
+
+  it("notes that the money came by card, and when, on a completed page", async () => {
+    const { saveRequest, findRequest, applyPaymentEvent } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+
+    await applyPaymentEvent(sessionEvent("checkout.session.completed", { reference: "ORD-1" }));
+    const paid = findRequest("ORD-1");
+    expect(paid).toMatchObject({ status: "paid", paidVia: "card" });
+    expect(typeof paid?.paidAt).toBe("string");
+  });
+
+  it("treats a session that needed no payment as paid", async () => {
+    const { saveRequest, findRequest, applyPaymentEvent } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+
+    expect(
+      await applyPaymentEvent(
+        sessionEvent("checkout.session.completed", { reference: "ORD-1", payment_status: "no_payment_required" }),
+      ),
+    ).toBe("marked");
+    expect(findRequest("ORD-1")?.status).toBe("paid");
+  });
+
+  it("brings a retired row back when its money arrives, so the payment is seen", async () => {
+    const { saveRequest, applyPaymentEvent, notifyOwner } = await setup();
+    const { retiredSet, setRetired } = await import("./retired");
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await setRetired("request", "ORD-1", true);
+
+    expect(
+      await applyPaymentEvent(sessionEvent("checkout.session.completed", { reference: "ORD-1" })),
+    ).toBe("marked");
+    expect(retiredSet("request").has("ORD-1")).toBe(false);
+    expect(notifyOwner).toHaveBeenCalledTimes(1);
+  });
 
   it("marks an order paid when the session completed with the money in", async () => {
     const { saveRequest, findRequest, applyPaymentEvent, notifyOwner } = await setup();
@@ -301,7 +339,7 @@ describe("applyPaymentEvent", () => {
     expect(notifyOwner).toHaveBeenCalledTimes(1);
   });
 
-  it("leaves a session Stripe reports unpaid alone, so a bank payment is not written as received", async () => {
+  it("writes down that the bank is sending the money when the page completes unpaid, without calling it received", async () => {
     const { saveRequest, findRequest, applyPaymentEvent, notifyOwner } = await setup();
     await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
 
@@ -309,10 +347,20 @@ describe("applyPaymentEvent", () => {
       await applyPaymentEvent(
         sessionEvent("checkout.session.completed", { reference: "ORD-1", payment_status: "unpaid" }),
       ),
-    ).toBe("not-paid-yet");
-    expect(findRequest("ORD-1")).toMatchObject({ status: "new", awaitingPayment: true });
-    expect(lines("order")).toHaveLength(1);
+    ).toBe("bank-pending");
+    expect(findRequest("ORD-1")).toMatchObject({ status: "new", awaitingPayment: "bank", source: "stripe" });
+    expect(lines("order")).toHaveLength(2);
     expect(notifyOwner).not.toHaveBeenCalled();
+  });
+
+  it("writes the bank's promise once, however often Stripe repeats the completed page", async () => {
+    const { saveRequest, applyPaymentEvent } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    const unpaid = sessionEvent("checkout.session.completed", { reference: "ORD-1", payment_status: "unpaid" });
+
+    await applyPaymentEvent(unpaid);
+    expect(await applyPaymentEvent(unpaid)).toBe("already-pending");
+    expect(lines("order")).toHaveLength(2);
   });
 
   it("marks the order paid, and tells Daysi, when the bank payment lands later", async () => {
@@ -327,9 +375,9 @@ describe("applyPaymentEvent", () => {
         sessionEvent("checkout.session.async_payment_succeeded", { reference: "ORD-1" }),
       ),
     ).toBe("marked");
-    expect(findRequest("ORD-1")).toMatchObject({ status: "paid", source: "stripe" });
+    expect(findRequest("ORD-1")).toMatchObject({ status: "paid", source: "stripe", paidVia: "bank" });
     expect(findRequest("ORD-1")).not.toHaveProperty("awaitingPayment");
-    expect(lines("order")).toHaveLength(2);
+    expect(lines("order")).toHaveLength(3);
     expect(notifyOwner).toHaveBeenCalledTimes(1);
   });
 
@@ -347,8 +395,8 @@ describe("applyPaymentEvent", () => {
     expect(notifyOwner).toHaveBeenCalledTimes(1);
   });
 
-  it("closes the order when the bank payment bounces", async () => {
-    const { saveRequest, findRequest, applyPaymentEvent, notifyOwner } = await setup();
+  it("closes the order, writes down the refusal, and tells both Daysi and the client when the bank payment bounces", async () => {
+    const { saveRequest, findRequest, applyPaymentEvent, notifyOwner, notifyClientPaymentFailed } = await setup();
     await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
     await applyPaymentEvent(
       sessionEvent("checkout.session.completed", { reference: "ORD-1", payment_status: "unpaid" }),
@@ -358,26 +406,45 @@ describe("applyPaymentEvent", () => {
       await applyPaymentEvent(
         sessionEvent("checkout.session.async_payment_failed", { reference: "ORD-1", payment_status: "unpaid" }),
       ),
-    ).toBe("closed");
-    expect(findRequest("ORD-1")).toMatchObject({ status: "closed", source: "stripe" });
+    ).toBe("failed");
+    expect(findRequest("ORD-1")).toMatchObject({ status: "closed", source: "stripe", paymentFailed: true });
     expect(findRequest("ORD-1")).not.toHaveProperty("awaitingPayment");
-    expect(notifyOwner).not.toHaveBeenCalled();
+    expect(notifyOwner).toHaveBeenCalledTimes(1);
+    expect(notifyOwner).toHaveBeenCalledWith(expect.objectContaining({ paymentFailed: true }));
+    expect(notifyClientPaymentFailed).toHaveBeenCalledTimes(1);
   });
 
-  it("leaves a record the office has already handled alone when the bank payment bounces", async () => {
-    const { saveRequest, findRequest, applyPaymentEvent } = await setup();
+  it("keeps the status Daysi set, but still records the refusal and tells her, when the bank payment bounces on a record she has handled", async () => {
+    const { saveRequest, findRequest, applyPaymentEvent, notifyOwner } = await setup();
     await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await applyPaymentEvent(
+      sessionEvent("checkout.session.completed", { reference: "ORD-1", payment_status: "unpaid" }),
+    );
     await saveRequest(
-      record({ reference: "ORD-1", kind: "order", awaitingPayment: true, status: "answered", source: "office" }),
+      record({ reference: "ORD-1", kind: "order", awaitingPayment: "bank", status: "answered", source: "office" }),
     );
 
     expect(
       await applyPaymentEvent(
         sessionEvent("checkout.session.async_payment_failed", { reference: "ORD-1", payment_status: "unpaid" }),
       ),
-    ).toBe("not-waiting");
-    expect(findRequest("ORD-1")?.status).toBe("answered");
+    ).toBe("failed");
+    expect(findRequest("ORD-1")).toMatchObject({ status: "answered", source: "stripe", paymentFailed: true });
+    expect(findRequest("ORD-1")).not.toHaveProperty("awaitingPayment");
+    expect(lines("order")).toHaveLength(4);
+    expect(notifyOwner).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not tell anyone twice when the failure is delivered again", async () => {
+    const { saveRequest, applyPaymentEvent, notifyOwner, notifyClientPaymentFailed } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    const failed = sessionEvent("checkout.session.async_payment_failed", { reference: "ORD-1", payment_status: "unpaid" });
+
+    await applyPaymentEvent(failed);
+    expect(await applyPaymentEvent(failed)).toBe("not-waiting");
     expect(lines("order")).toHaveLength(2);
+    expect(notifyOwner).toHaveBeenCalledTimes(1);
+    expect(notifyClientPaymentFailed).toHaveBeenCalledTimes(1);
   });
 
   it("does not close an order Stripe already paid when a failure arrives late", async () => {

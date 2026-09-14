@@ -82,3 +82,35 @@ describe("a refunded order", () => {
     expect(earningsFrom([refunded])).toEqual({ received: 0, outstanding: 0, paidCount: 0, openCount: 0 });
   });
 });
+
+describe("cleared earnings per month", () => {
+  it("counts a bank payment in the month the money arrived, not the month the order was placed", async () => {
+    const { monthlyReceived } = await import("./earnings");
+    const order: StoredRequest = {
+      reference: "ORD-LATE",
+      kind: "order",
+      submittedAt: "2026-09-30T18:00:00.000Z",
+      locale: "en",
+      client: { name: "Ana", email: "ana@example.com" },
+      details: {},
+      estimate: {
+        lines: [],
+        subtotal: 12000,
+        salesTax: 0,
+        total: 12000,
+        dueNow: 12000,
+        dueOnCollection: 0,
+        dueNowReason: { en: "", es: "" },
+      },
+      status: "paid",
+      source: "stripe",
+      paidVia: "bank",
+      paidAt: "2026-10-03T09:00:00.000Z",
+    };
+
+    expect(monthlyReceived([order], 2, new Date("2026-10-15T12:00:00Z"))).toEqual([
+      { month: "2026-09", total: 0 },
+      { month: "2026-10", total: 12000 },
+    ]);
+  });
+});

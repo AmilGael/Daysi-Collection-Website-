@@ -44,7 +44,10 @@ export function checkRateLimit(
  * client address; locally it falls back to a constant, which is fine because
  * there is only ever one caller.
  */
-export function callerKey(request: Request, scope: string): string {
+export function callerKey(
+  request: { readonly headers: { get(name: string): string | null } },
+  scope: string,
+): string {
   const forwarded = request.headers.get("x-forwarded-for");
   const address = forwarded?.split(",")[0]?.trim() ?? "local";
   return `${scope}:${address}`;

@@ -63,7 +63,9 @@ export function monthlyReceived(
 
   for (const record of records) {
     if (record.status !== "paid") continue;
-    const month = record.submittedAt.slice(0, 7);
+    // The month the money cleared. A bank debit lands days after the order;
+    // a line written before `paidAt` existed is a card, paid the day it was placed.
+    const month = (record.paidAt ?? record.submittedAt).slice(0, 7);
     if (!buckets.has(month)) continue;
     buckets.set(month, (buckets.get(month) ?? 0) + (record.estimate?.total ?? 0));
   }

@@ -298,6 +298,11 @@
     "thankYouLead": "Referencia {reference}. El recibo va en camino a su correo, y Daysi ya fue avisada.",
     "pendingTitle": "Pago en camino.",
     "pendingLead": "Referencia {reference}. Su banco todavía está enviando el pago, y eso puede tardar unos días. Cuando llegue, recibirá el recibo por correo y Daysi será avisada. Su solicitud ya quedó guardada.",
+    "unknownTitle": "Gracias.",
+    "unknownLead": "Referencia {reference}. Le confirmaremos el pago por correo en cuanto Stripe lo reporte.",
+    "failedTitle": "El pago no se completó.",
+    "failedLead": "Referencia {reference}. Su banco no envió el pago, así que no se cobró nada. Daysi ya fue avisada y le escribirá para acordar otra forma de pagar.",
+    "bankNote": "Los pagos desde el banco los maneja Stripe en su propia página segura. Este sitio nunca ve sus datos bancarios.",
     "cancelledTitle": "Pago cancelado.",
     "cancelledLead": "No se cobró nada. Su solicitud sigue guardada con la referencia {reference}. Puede pagar después o en persona.",
     "backHome": "Volver al sitio",
@@ -440,6 +445,8 @@
       "premiere-signup": "Lista de estreno"
     },
     "awaitingPayment": "Pago pendiente",
+    "bankPending": "Pago en camino desde el banco",
+    "paymentFailed": "Pago rechazado por el banco",
     "status": {
       "new": "Recibido",
       "answered": "Contestado",

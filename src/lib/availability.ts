@@ -36,9 +36,13 @@ export const BOOKING_PAYMENT_HOLD_MINUTES = 30;
  */
 const HOLD_GRACE_MINUTES = 15;
 
-/** An unpaid booking older than this no longer holds its slot. */
+/**
+ * An unpaid booking older than this no longer holds its slot. A deposit the
+ * bank is still sending (`awaitingPayment: "bank"`) is a payment made, not a
+ * page abandoned, so it keeps the hour until the bank answers.
+ */
 function holdExpired(appointment: StoredRequest, now: Date): boolean {
-  if (!appointment.awaitingPayment || appointment.status === "paid") return false;
+  if (appointment.awaitingPayment !== true || appointment.status === "paid") return false;
   const age = now.getTime() - new Date(appointment.submittedAt).getTime();
   return age > (BOOKING_PAYMENT_HOLD_MINUTES + HOLD_GRACE_MINUTES) * 60_000;
 }

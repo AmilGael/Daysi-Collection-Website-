@@ -1,6 +1,8 @@
 import type Stripe from "stripe";
-import { notifyOwner } from "./notify";
+import { notifyClientPaymentFailed, notifyOwner } from "./notify";
+import { referenceOf } from "./payments";
 import { listRequests, saveRequest, type StoredRequest } from "./request-store";
+import { retiredSet, setRetired } from "./retired";
 
 /**
  * What a Stripe event does to the record it belongs to.
@@ -11,8 +13,10 @@ import { listRequests, saveRequest, type StoredRequest } from "./request-store";
  * `checkout.session.completed` is not proof of money. It says the client
  * finished the page; for a card that is the same moment the money moves, but
  * for a bank debit the funds follow days later, or never. So the session's
- * `payment_status` decides whether a completed page is a payment, and the two
- * `async_payment_*` events carry the bank's answer when it comes.
+ * `payment_status` decides whether a completed page is a payment or a
+ * promise, the promise is written down so the office and the client's own
+ * pages can see it, and the two `async_payment_*` events carry the bank's
+ * answer when it comes.
  */
 
 /** The kinds a payment can belong to. Messages and sign-ups are never charged. */
@@ -21,6 +25,8 @@ const PAYABLE_KINDS = ["appointment", "order", "commission", "alteration"] as co
 export type MarkPaidOutcome = "marked" | "already-paid" | "unknown";
 export type MarkExpiredOutcome = "closed" | "not-waiting" | "unknown";
 export type MarkRefundedOutcome = "refunded" | "already-refunded" | "unknown";
+export type MarkBankPendingOutcome = "bank-pending" | "already-pending" | "not-waiting" | "unknown";
+export type MarkFailedOutcome = "failed" | "not-waiting" | "unknown";
 
 function versionsOf(reference: string): StoredRequest[] {
   for (const kind of PAYABLE_KINDS) {
@@ -34,34 +40,57 @@ function versionsOf(reference: string): StoredRequest[] {
  * Appends the paid state for the reference, and tells Daysi. The store is
  * append-only, so the latest record for a reference is the current one.
  *
- * This is where a card-paid order reaches her inbox: not when the form was
- * filled in, but when Stripe says the money arrived. A retried delivery
- * returns early above the notification, so she is told once.
+ * This is where a paid order reaches her inbox: not when the form was filled
+ * in, but when Stripe says the money arrived. A retried delivery returns
+ * early above the notification, so she is told once. A row she had retired
+ * while the bank was still sending is brought back: money that arrived must
+ * be seen, and Libros counts only the rows in view.
  */
 export async function markPaid(reference: string): Promise<MarkPaidOutcome> {
   const versions = versionsOf(reference);
   const current = versions.at(-1);
-  if (current) {
-    // Stripe retries a delivery it believes failed, for up to three days, and
-    // the question is whether this payment has been written down before — not
-    // whether the newest line happens to be it. If Daysi has since corrected the
-    // record, closing an order she refunded, say, then the newest line is hers,
-    // and marking it paid again would quietly put the money back in the books.
-    // One payment, one line. Her own marks are untouched: this only refuses to
-    // repeat a line Stripe already wrote.
-    if (versions.some((version) => version.status === "paid" && version.source === "stripe")) {
-      return "already-paid";
-    }
+  if (!current) return "unknown";
 
-    // The spread would otherwise carry the office's mark onto a line the office
-    // did not write, and the waiting mark onto a line that is no longer waiting.
-    const { awaitingPayment: _waiting, ...settled } = current;
-    const paid: StoredRequest = { ...settled, status: "paid", source: "stripe" };
-    await saveRequest(paid);
-    await notifyOwner(paid);
-    return "marked";
+  // Stripe retries a delivery it believes failed, for up to three days, and
+  // the question is whether this payment has been written down before — not
+  // whether the newest line happens to be it. If Daysi has since corrected the
+  // record, closing an order she refunded, say, then the newest line is hers,
+  // and marking it paid again would quietly put the money back in the books.
+  // One payment, one line. Her own marks are untouched: this only refuses to
+  // repeat a line Stripe already wrote.
+  if (versions.some((version) => version.status === "paid" && version.source === "stripe")) {
+    return "already-paid";
   }
-  return "unknown";
+
+  // The spread would otherwise carry the office's mark onto a line the office
+  // did not write, and the waiting mark onto a line that is no longer waiting.
+  const { awaitingPayment: waiting, paymentFailed: _failed, ...settled } = current;
+  const paidVia = waiting === "bank" ? "bank" : "card";
+  const paid: StoredRequest = { ...settled, status: "paid", source: "stripe", paidVia, paidAt: new Date().toISOString() };
+  await saveRequest(paid);
+  if (retiredSet("request").has(reference)) {
+    console.info(`[stripe] ${reference} was retired; restored so the payment is seen.`);
+    await setRetired("request", reference, false);
+  }
+  await notifyOwner(paid);
+  return "marked";
+}
+
+/**
+ * The page completed but the money has not moved: a bank debit is in flight.
+ * The promise is written down so that Trabajo, the client's own list and the
+ * thank-you page all read one stored fact, and a bank payment on its way
+ * never looks like a card page somebody abandoned. Nothing is sent to Daysi:
+ * she hears about it from `markPaid`, when the money is actually in.
+ */
+export async function markBankPending(reference: string): Promise<MarkBankPendingOutcome> {
+  const current = versionsOf(reference).at(-1);
+  if (!current) return "unknown";
+  if (current.status === "paid" || current.paymentFailed) return "not-waiting";
+  if (current.awaitingPayment === "bank") return "already-pending";
+
+  await saveRequest({ ...current, awaitingPayment: "bank", source: "stripe" });
+  return "bank-pending";
 }
 
 /**
@@ -84,12 +113,8 @@ export async function markRefunded(reference: string): Promise<MarkRefundedOutco
  * The payment page ran out with nobody paying. The record is closed so it
  * leaves the calendar, Trabajo's open list and the books; Daysi is not told,
  * because nothing happened. Only the client's own untouched line is closed:
- * once Stripe has written a payment, or Daysi has changed anything herself,
+ * once Stripe has written anything, or Daysi has changed anything herself,
  * the dead page is not news and the record is left as it is.
- *
- * A bank payment that bounces closes the record the same way: the client's
- * line is still waiting, nothing was ever received, and the same guard keeps
- * a late failure off a record Stripe has since paid or Daysi has handled.
  */
 export async function markExpired(reference: string): Promise<MarkExpiredOutcome> {
   const current = versionsOf(reference).at(-1);
@@ -103,12 +128,39 @@ export async function markExpired(reference: string): Promise<MarkExpiredOutcome
   return "closed";
 }
 
+/**
+ * The bank refused the debit, days after the client was told the payment was
+ * on its way. Nothing was received, so the record is closed like an abandoned
+ * page, unless Daysi has already taken it in hand, in which case her status
+ * stands. Either way the refusal is written on the line, she is told, and so
+ * is the client: a silent close here would leave them waiting for a piece
+ * nobody is making. A record already paid, or already marked refused, is
+ * left alone, so a retried delivery tells nobody twice.
+ */
+export async function markFailed(reference: string): Promise<MarkFailedOutcome> {
+  const current = versionsOf(reference).at(-1);
+  if (!current) return "unknown";
+  if (current.status === "paid" || !current.awaitingPayment) return "not-waiting";
+
+  const { awaitingPayment: _waiting, ...rest } = current;
+  const failed: StoredRequest = {
+    ...rest,
+    status: current.source === "office" ? current.status : "closed",
+    source: "stripe",
+    paymentFailed: true,
+  };
+  await saveRequest(failed);
+  await notifyOwner(failed);
+  await notifyClientPaymentFailed(failed);
+  return "failed";
+}
+
 export type PaymentEventOutcome =
   | MarkPaidOutcome
   | MarkExpiredOutcome
   | MarkRefundedOutcome
-  /** The page completed, but `payment_status` is not "paid": the bank has not sent the money. */
-  | "not-paid-yet"
+  | MarkBankPendingOutcome
+  | MarkFailedOutcome
   /** Logged and left for the office, which knows what part of the order it covers. */
   | "partial-refund"
   /** Stripe's own fixtures, or a session this site did not create. */
@@ -116,8 +168,10 @@ export type PaymentEventOutcome =
   /** An event type the site was not written for. */
   | "ignored";
 
-function referenceOf(session: Stripe.Checkout.Session): string | null {
-  return session.metadata?.reference ?? session.client_reference_id ?? null;
+/** Every mark answers "unknown" for a reference the store has never seen; one warning covers them. */
+function warnIfUnknown<Outcome extends string>(outcome: Outcome, what: string, reference: string): Outcome {
+  if (outcome === "unknown") console.warn(`[stripe] ${what} for unknown reference ${reference}.`);
+  return outcome;
 }
 
 /**
@@ -131,15 +185,12 @@ export async function applyPaymentEvent(event: Stripe.Event): Promise<PaymentEve
       const session = event.data.object;
       const reference = referenceOf(session);
       if (!reference) return "no-reference";
-      if (session.payment_status !== "paid") {
-        console.info(
-          `[stripe] Session for ${reference} completed but not paid yet (${session.payment_status}); waiting for the bank.`,
-        );
-        return "not-paid-yet";
+      // "unpaid" on a completed page is a bank debit in flight. Anything else
+      // ("paid", or "no_payment_required" for a session with nothing owed) is settled.
+      if (session.payment_status === "unpaid") {
+        return warnIfUnknown(await markBankPending(reference), "Unpaid completed session", reference);
       }
-      const outcome = await markPaid(reference);
-      if (outcome === "unknown") console.warn(`[stripe] Paid session for unknown reference ${reference}.`);
-      return outcome;
+      return warnIfUnknown(await markPaid(reference), "Paid session", reference);
     }
 
     // The bank's answer, days after the page completed. Stripe only sends this
@@ -147,9 +198,14 @@ export async function applyPaymentEvent(event: Stripe.Event): Promise<PaymentEve
     case "checkout.session.async_payment_succeeded": {
       const reference = referenceOf(event.data.object);
       if (!reference) return "no-reference";
-      const outcome = await markPaid(reference);
-      if (outcome === "unknown") console.warn(`[stripe] Bank payment for unknown reference ${reference}.`);
-      return outcome;
+      return warnIfUnknown(await markPaid(reference), "Bank payment", reference);
+    }
+
+    // The bank refused the debit.
+    case "checkout.session.async_payment_failed": {
+      const reference = referenceOf(event.data.object);
+      if (!reference) return "no-reference";
+      return warnIfUnknown(await markFailed(reference), "Failed bank payment", reference);
     }
 
     // The client never paid and the page has closed. Bookings hold their slot
@@ -157,20 +213,7 @@ export async function applyPaymentEvent(event: Stripe.Event): Promise<PaymentEve
     case "checkout.session.expired": {
       const reference = referenceOf(event.data.object);
       if (!reference) return "no-reference";
-      const outcome = await markExpired(reference);
-      if (outcome === "unknown") console.warn(`[stripe] Expired session for unknown reference ${reference}.`);
-      return outcome;
-    }
-
-    // The bank refused the debit. Nothing was received, so the record is
-    // closed exactly as an abandoned page is, and Daysi is not told.
-    case "checkout.session.async_payment_failed": {
-      const reference = referenceOf(event.data.object);
-      if (!reference) return "no-reference";
-      const outcome = await markExpired(reference);
-      if (outcome === "closed") console.info(`[stripe] Bank payment for ${reference} failed; record closed.`);
-      if (outcome === "unknown") console.warn(`[stripe] Failed bank payment for unknown reference ${reference}.`);
-      return outcome;
+      return warnIfUnknown(await markExpired(reference), "Expired session", reference);
     }
 
     // Money given back from Stripe's dashboard. The reference travels on the
@@ -185,9 +228,7 @@ export async function applyPaymentEvent(event: Stripe.Event): Promise<PaymentEve
         return "partial-refund";
       }
       if (!reference) return "no-reference";
-      const outcome = await markRefunded(reference);
-      if (outcome === "unknown") console.warn(`[stripe] Refund for unknown reference ${reference}.`);
-      return outcome;
+      return warnIfUnknown(await markRefunded(reference), "Refund", reference);
     }
 
     default:

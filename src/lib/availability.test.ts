@@ -84,6 +84,14 @@ describe("a booking still waiting on its deposit", () => {
     expect(slots).toContain(startTime);
   });
 
+  it("keeps the slot for as long as a bank payment for the deposit is on its way", async () => {
+    const { startTime, slots } = await holdAt(minutesAgo(3 * 24 * 60), {
+      awaitingPayment: "bank",
+      source: "stripe",
+    });
+    expect(slots).not.toContain(startTime);
+  });
+
   it("keeps the slot for a paid booking no matter how old", async () => {
     const { startTime, slots } = await holdAt(minutesAgo(600), {
       awaitingPayment: undefined,
