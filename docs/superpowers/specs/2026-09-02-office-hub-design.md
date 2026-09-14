@@ -162,3 +162,117 @@ The layer above lets Daysi correct words after the fact; this half stops them be
 ### Testing
 
 A pure merge test for field and locale precision and for blank clearing, over seeded and added items; schema tests for the two change types and the paired create schemas; history tests for the baseline and the previous version; and the existing structural scans, which stay green because no new `use server` file appears. Browser pass: correct a Spanish description on a seeded garment and confirm the English is unchanged on the English page, clear a box and see the coded words return, add a garment with both languages filled.
+
+## Amendment 4, 2026-09-14: take two (decided with the user on 14 September)
+
+Steps 1 to 4 are live. On 14 September Gamaliel walked every tab and judged the result a picture of what the office could be rather than something Daysi can run: too many boxes, two languages everywhere, photos she can add but not manage, a design studio she cannot touch. The walk-through was checked against the running code and written up with nine questions in `docs/superpowers/plans/2026-09-14-office-take-two-draft.md`. The answers, all given the same day, bound this amendment:
+
+| Question | Answer |
+| --- | --- |
+| First tab's name | Hoy, with the work under it |
+| Phone or computer | Phone |
+| Where English comes from | Written automatically by a translation service |
+| Photos | Add, remove, reorder, mark the cover; no cropping |
+| Design studio | A set of shapes drawn once; Daysi turns them on and off and names them |
+| Prices | Keep the list, fix phone typing |
+| Confirm button | Always visible, greyed until there is something to confirm |
+| A helper in the office | Not now |
+| Fabric prices | Four, one per garment type |
+
+One principle governs everything below: **the office is a phone app.** Lists show; a sheet edits; one thing per screen; Spanish is the only language typed; photos are large. The draft, the confirm bar, retire and restore, undo, the record format, the guard and the one-action-per-tab pattern all stay exactly as amendments 1 to 3 left them.
+
+### 1. Hoy absorbs Trabajo
+
+`OFFICE_TABS` loses `work`; the office is seven tabs. `office/page.tsx` renders, in this order: the four figures; orders and alterations; sessions; messages and the premiere list side by side; the six months of bars; the retired group. Money at a glance, then what needs her, then the months she reads when she has time. The page wraps its work sections in one `OfficeDraftProvider` over the work action, which moves out of `work/actions.ts` into `office/actions.ts` beside the undo reader already there; its revalidate list names `/[locale]/office` where it named `/[locale]/office/work`.
+
+`office/work/page.tsx` stays as a permanent redirect to `/office`, so bookmarks and the manual's links keep working. The smoke script keeps `/office/work` and expects it to land on the office. `tabs.test.ts` asserts seven tabs and the redirect. Messages lose `tabWork`; the `work` heading key stays because the section does. The manual's section 09 says Hoy where it said Trabajo.
+
+### 2. The sheet
+
+One new client component, `src/components/office/sheet.tsx`: a `<dialog>` that fills the screen below 640 px and is a right-hand panel of 28 rem above. It is a place to edit, not a place that saves. Every control inside it stages change types the tab's action already accepts (`style-override`, `style-create`, `style-text`, `retire`, `restore`, `work-add`, `work-visibility`, `work-text`, `fabric-add`) plus the two this amendment adds (`translate`, `shape`), keyed as today, so the bar, the pending marks, discard and undo need no new code paths. **Listo** closes the sheet; so does Escape and the phone's back gesture. Nothing is lost on close because staged changes live in the tab's draft, not in the sheet.
+
+The bar stays reachable inside a sheet: the sheet sits above the page content and below the bar in stacking order, and reserves the bar's height at its foot, so **Confirmar cambios** is visible and tappable whether a sheet is open or not.
+
+### 3. Colección
+
+The list becomes cards. Each card: the cover photo at 3:4, the name, category and price (looked up from the live price list through the garment's price entry), the photo count, the three size switches S M L, and an **Oculta** chip when the garment is not shown. Ticking a size stages a `style-override` straight from the card, because "S is out" is the daily action and should not need a sheet. A **+** card at the head of the list opens the create sheet. Retired garments sit under Retirados as today.
+
+**The garment sheet.** Photos first: every photo of the garment in its current order, the cover marked **Portada**, each with a menu of **Portada** and **Quitar**, hold-to-move to reorder, and a **+ Agregar** tile that appends a file (previewed from an object URL until confirm, uploaded at confirm as today). Then the words in Spanish only: Nombre, Color, Qué es, Cómo está hecha; beneath them a **Ver inglés** disclosure that shows the English read-only, with **Corregir** turning each line into a box that stages a `style-text` for `en`. Then Tallas as switches, **Se muestra en el sitio** as a switch, **Retirar**, and Deshacer where the row is undoable. Listo.
+
+**The create sheet** is the same layout, empty: photos (at least one), the words in Spanish, Prenda and Tela pickers, a price only when the pair has none on the price list, sizes. It stages one `style-create`.
+
+**Record.** `StyleOverride` gains an optional field:
+
+```ts
+/** The complete list of photos to show, in order; the first is the cover.
+ *  A coded photo left out is hidden, never deleted. */
+readonly photos?: readonly string[];
+```
+
+`applyOverrides` treats `photos` as authoritative when present: the garment's photos become those srcs in that order, each resolved from the coded photo of the same src (keeping its alt) or, for an `/uploads/` src, given the atelier alt as added photos are today; `photos[0]` is primary; a src the garment does not own is dropped. When `photos` is absent the existing `addedPhotos` and `coverSrc` rule runs unchanged, so every record already on the volume reads exactly as before. The schema allows one to twelve entries, each a coded src or an upload path; the action refuses a src the garment does not own with `unknown-photo`. Reorder, Quitar and Portada all edit the one `style:<id>` override in the draft, as stock and shown do; a new file rides on `files` and `withUploads` and is appended to `photos`. Undo needs nothing new: restoring the previous override restores its `photos`, which also closes the gap noted after step 3 (an undo used to drop photos added in the same override).
+
+### 4. Galería and Telas
+
+**Galería** is a grid of photos, three across on a phone, a hidden photo dimmed with an **Oculta** chip, a **+** tile first. Tap a photo for its sheet: the photo large, the caption in Spanish with Ver inglés, **Se muestra** as a switch, Retirar, Deshacer. The add sheet asks for the photo, where it belongs, and one caption in Spanish.
+
+**Telas** is a grid of swatches with a **+** tile first. The add sheet asks for a name, the swatch photograph, and the four garment types as rows, each with a **Se ofrece** switch and a price box that appears only when the switch is on; at least one must be on. That is the same `fabric-add` record as today, shown as rows instead of four bare boxes. Tapping an existing swatch opens a sheet that shows its name, swatch and the four prices read-only with a **Cambiar en Precios** link, and **Retirar** when it is one she added. Fabric names stay one string used for both languages; they are cloth names, not sentences.
+
+Below the fabric wall, Telas gains the studio section described in 8.
+
+### 5. One language typed, two published
+
+Every form and sheet asks for Spanish only. At confirm, the action translates whatever Spanish changed and writes the English beside it: for a create, into the `en` slot of each pair; for a correction, as a second `text-overrides` record for the same field with locale `en`, so per-box undo per language keeps working. This reverses the second half of amendment 3: `styleCreateSchema` and `galleryWorkSchema` take one Spanish string per field again and the action builds the pair, so the English is translated or plainly marked as a copy, never invented by a form.
+
+New module `src/lib/translate.ts`, one function: `translateToEnglish(fields, context)`, taking a map of field name to Spanish text and a context (`"garment"`, `"photo"`) and returning the same keys in English, or `null`. It calls the Claude API through the official SDK (`@anthropic-ai/sdk`), model `claude-opus-5`, non-streaming, with a structured-output format that mirrors the input keys so the reply is parsed rather than scraped, a short system prompt (a Bronx atelier; Garífuna heritage pieces; garment names are names and stay; keep the register and roughly the length; no quotation marks), a 20-second timeout and one attempt. The key is `ANTHROPIC_API_KEY`, read in `env.ts` like every other secret, with `translationEnabled` beside `paymentsEnabled` and `emailEnabled`.
+
+**Fallback.** When translation is off, times out, is refused or fails, the English is a copy of the Spanish, which is what the office does today, and the confirm still succeeds; a translation problem must never stop a photo from landing. Nothing new is recorded to mark it: a field whose English equals its Spanish is, by definition, untranslated. The sheet's Ver inglés shows **Inglés pendiente** on such a line with a **Traducir** link that stages a `translate` change (`{ type: "translate", key, id, fields }`) in the tab's draft; confirming it runs the same call and writes the `en` records. `translate` joins `collectionChangeSchema` and `galleryChangeSchema`.
+
+Cost, for the manual and `next-steps.md`: a garment's four fields are about 150 words; each translation is a fraction of a cent, and a busy month is under a dollar.
+
+### 6. Precios on a phone
+
+No structural change. Every price box gets `inputMode="decimal"`, selects its whole value on focus so a tap never lands mid-number, and a tap target at least 2.75 rem tall. The list, the two columns and Retirar stay.
+
+### 7. The bar, always visible
+
+`ConfirmBar` no longer returns null at zero changes. With nothing staged it reads **Sin cambios**, hides Descartar, and shows Confirmar cambios greyed and disabled, in the same place, so the button is always where she left it. Every tab with a draft provider shows it; Libros has nothing to confirm and shows none. The layout's bottom padding already reserves the space.
+
+### 8. The studio's shapes
+
+`src/content/silhouettes.ts` grows from five to twelve, three per price category, drawn once against the croquis: dresses (puff-sleeve dress, square-neck midi, shirt dress); pants (palazzo, straight-leg, wide culotte); shirts (camp-collar shirt, bow blouse, tie-front blouse); heritage (wrap dress with head wrap, blouse and full skirt two-piece, head wrap alone). The seven new shapes ship **off**, so the public studio does not change on deploy; the original five ship on.
+
+New append-only collection `studio-shapes`:
+
+```ts
+type ShapeOverride = {
+  readonly shapeId: string;
+  readonly enabled: boolean;
+  readonly name?: { readonly es: string; readonly en: string };
+  readonly updatedAt: string;
+};
+```
+
+`latestBy(shapeId)`. A new reader `liveSilhouettes()` in `src/lib/live-studio.ts` returns the coded shapes with names overridden and disabled ones removed; the design studio page reads it instead of the coded list. The action refuses disabling the last enabled shape (`last-shape`), so the studio can never be empty.
+
+Office surface: a section **Las formas del estudio** under the fabric wall in Telas, a grid of the twelve shapes drawn small in a neutral fill by the same mockup drawer, each with an on/off switch. Tap a shape for its sheet: the name in Spanish with Ver inglés, and the switch. A `shape` change (`{ type: "shape", key, shapeId, enabled, name? }`) joins `fabricChangeSchema`; the fabric action writes it and revalidates `/[locale]/design-studio`. `UNDO_KINDS` gains `studio-shape`, registered in `office-history.ts` over `versionsOf("studio-shapes", shapeId)` with the coded name and shipped on/off state as the baseline.
+
+### 9. What does not change
+
+The draft reducer and confirm flow; retire, restore and the in-use refusals; undo; `records.ts` and every existing collection; the guard; one `ownerAction` per tab; the uploads route; Vitrina; Libros; the price list's structure and the Precios action.
+
+### 10. Testing
+
+Pure tests: `applyOverrides` with `photos` (order kept, a coded photo left out is hidden, a foreign src is dropped, a record without `photos` reads as before); `liveSilhouettes` (names overridden, disabled removed, last-shape refusal); `translateToEnglish` with an injected client (a good reply is parsed by key, a malformed reply returns null, no key returns null without a call) and the actions' fallback (English equals Spanish, confirm still succeeds); schema tests for `photos`, `translate` and `shape`; the tabs test at seven with the redirect; the guard scan unchanged.
+
+Browser pass at 375 px, signed in: the bar reads Sin cambios on every editable tab before anything is touched; open a garment's sheet, remove a shipped photo, move another first, mark a cover, Listo, confirm, and see the public page agree; add a garment in Spanish only and, with a key, read its English on the English site, or without one see Inglés pendiente and Traducir; type into a price and see the whole number selected; add a fabric with two of four types on; turn a shape on and find it in the public studio; the leave-tab prompt still fires.
+
+### 11. Order of work
+
+Each step is its own pull request from `main`, deployed with `npm run deploy` as it lands, with `docs/manual-del-taller.html` and `docs/next-steps.md` updated in the same PR.
+
+1. Hoy absorbs Trabajo; the bar always visible; Precios phone typing. One small PR.
+2. The sheet; Colección as cards and a sheet with full photo control; `translate.ts` and Spanish-only in that sheet and the create sheet. The big one.
+3. Galería and Telas as grids and sheets, Spanish-only, with the fabric rows.
+4. The studio's seven new shapes and the Telas section that controls them.
+
+Step 2 lands the translation module because the Colección sheet is the first Spanish-only surface; steps 3 and 4 reuse it.
