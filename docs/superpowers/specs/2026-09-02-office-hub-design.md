@@ -169,7 +169,7 @@ Steps 1 to 4 are live. On 14 September Gamaliel walked every tab and judged the 
 
 | Question | Answer |
 | --- | --- |
-| First tab's name | Hoy, with the work under it |
+| First tab's name | Hub, with the work under it (Hoy was the first answer; changed to Hub the same day) |
 | Phone or computer | Phone |
 | Where English comes from | Written automatically by a translation service |
 | Photos | Add, remove, reorder, mark the cover; no cropping |
@@ -181,11 +181,11 @@ Steps 1 to 4 are live. On 14 September Gamaliel walked every tab and judged the 
 
 One principle governs everything below: **the office is a phone app.** Lists show; a sheet edits; one thing per screen; Spanish is the only language typed; photos are large. The draft, the confirm bar, retire and restore, undo, the record format, the guard and the one-action-per-tab pattern all stay exactly as amendments 1 to 3 left them.
 
-### 1. Hoy absorbs Trabajo
+### 1. Hub: Hoy and Trabajo become one tab
 
-`OFFICE_TABS` loses `work`; the office is seven tabs. `office/page.tsx` renders, in this order: the four figures; orders and alterations; sessions; messages and the premiere list side by side; the six months of bars; the retired group. Money at a glance, then what needs her, then the months she reads when she has time. The page wraps its work sections in one `OfficeDraftProvider` over the work action, which moves out of `work/actions.ts` into `office/actions.ts` beside the undo reader already there; its revalidate list names `/[locale]/office` where it named `/[locale]/office/work`.
+`OFFICE_TABS` loses `work` and its first entry becomes `{ id: "hub", href: "/office", labelKey: "tabHub" }`, labelled **Hub** in both languages; the office is seven tabs. `office/page.tsx` renders, in this order: the four figures; orders and alterations; sessions; messages and the premiere list side by side; the six months of bars; the retired group. Money at a glance, then what needs her, then the months she reads when she has time. The page wraps its work sections in one `OfficeDraftProvider` over the work action, which moves out of `work/actions.ts` into `office/actions.ts` beside the undo reader already there; its revalidate list names `/[locale]/office` where it named `/[locale]/office/work`.
 
-`office/work/page.tsx` stays as a permanent redirect to `/office`, so bookmarks and the manual's links keep working. The smoke script keeps `/office/work` and expects it to land on the office. `tabs.test.ts` asserts seven tabs and the redirect. Messages lose `tabWork`; the `work` heading key stays because the section does. The manual's section 09 says Hoy where it said Trabajo.
+`office/work/page.tsx` stays as a permanent redirect to `/office`, so bookmarks and the manual's links keep working. The smoke script keeps `/office/work` and expects it to land on the office. `tabs.test.ts` asserts seven tabs and the redirect. Messages lose `tabWork` and `tabToday` and gain `tabHub`; the `work` heading key stays because the section does. The manual and `next-steps.md` say Hub wherever they said Hoy or Trabajo.
 
 ### 2. The sheet
 
@@ -270,7 +270,7 @@ Browser pass at 375 px, signed in: the bar reads Sin cambios on every editable t
 
 Each step is its own pull request from `main`, deployed with `npm run deploy` as it lands, with `docs/manual-del-taller.html` and `docs/next-steps.md` updated in the same PR.
 
-1. Hoy absorbs Trabajo; the bar always visible; Precios phone typing. One small PR.
+1. Hub: Hoy and Trabajo become one tab; the bar always visible; Precios phone typing. One small PR.
 2. The sheet; Colección as cards and a sheet with full photo control; `translate.ts` and Spanish-only in that sheet and the create sheet. The big one.
 3. Galería and Telas as grids and sheets, Spanish-only, with the fabric rows.
 4. The studio's seven new shapes and the Telas section that controls them.

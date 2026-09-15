@@ -76,6 +76,6 @@ Spec to follow at `docs/superpowers/specs/` once the questions are answered, as 
 
 ## Answers, 14 September 2026
 
-1a Hoy · phone · 3a automatic translation · no cropping · 5a a drawn set of shapes · 6a keep the list · 7b bar always visible · 8a no helper · four fabric prices.
+1d Hub (first answered 1a Hoy, changed to Hub the same day) · phone · 3a automatic translation · no cropping · 5a a drawn set of shapes · 6a keep the list · 7b bar always visible · 8a no helper · four fabric prices.
 
 The design that follows from them is Amendment 4 of `docs/superpowers/specs/2026-09-02-office-hub-design.md`.
