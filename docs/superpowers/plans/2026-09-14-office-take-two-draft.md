@@ -76,6 +76,8 @@ Spec to follow at `docs/superpowers/specs/` once the questions are answered, as 
 
 ## Answers, 14 September 2026
 
-1d Hub (first answered 1a Hoy, changed to Hub the same day) · phone · 3a automatic translation · no cropping · 5a a drawn set of shapes · 6a keep the list · 7b bar always visible · 8a no helper · four fabric prices.
+Final, after a second round the same day: 1d Hub · both phone and computer · 3a automatic translation · photos kept as first answered (no cropping) · 5b her own garment photos with the fabric beside them · 6a keep the list · 7b bar always visible · 8c an AI helper that answers from the manual · one price per fabric.
+
+First round, superseded: 1a Hoy · phone · 5a a drawn set of shapes · 8a no helper · four fabric prices.
 
 The design that follows from them is Amendment 4 of `docs/superpowers/specs/2026-09-02-office-hub-design.md`.
