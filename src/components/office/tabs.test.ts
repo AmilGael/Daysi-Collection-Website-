@@ -158,7 +158,9 @@ describe("the smoke script", () => {
       expect(smoke, `${tab.href} in PRIVATE`).toContain(`"${tab.href}"`);
     }
   });
+});
 
+describe("the old Trabajo address", () => {
   it("checks that the old Trabajo address redirects into the office for good", () => {
     const config = fs.readFileSync(path.join(process.cwd(), "next.config.ts"), "utf8");
     expect(config).toContain('source: "/:locale(es|en)/office/work"');

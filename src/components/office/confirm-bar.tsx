@@ -60,7 +60,7 @@ export function ConfirmBar({
           type="button"
           onClick={onConfirm}
           disabled={idle || status === "confirming"}
-          className="bg-ink px-4 py-2 text-sm font-semibold text-paper disabled:opacity-40"
+          className="bg-ink px-4 py-2 text-sm font-semibold text-paper disabled:opacity-60"
         >
           {status === "confirming" ? t("confirming") : t("confirmChanges")}
         </button>

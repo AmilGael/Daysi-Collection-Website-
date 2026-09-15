@@ -15,8 +15,15 @@ describe("centsFromInput", () => {
   });
 
   it("returns null for anything that is not an amount", () => {
-    for (const text of ["", "   ", "abc", "-1", "1.2.3", "1,000.00", "12.345", "$5"]) {
+    for (const text of ["", "   ", "abc", "-1", "1.2.3", "1,000.00", "12.345", "$5", ".5"]) {
       expect(centsFromInput(text), JSON.stringify(text)).toBeNull();
     }
+  });
+
+  it("keeps the boundaries the price box relies on", () => {
+    expect(centsFromInput("195.")).toBe(19500);
+    expect(centsFromInput("5000.00")).toBe(500000);
+    // The helper does not know the ceiling; the caller refuses above 500000.
+    expect(centsFromInput("5000.01")).toBe(500001);
   });
 });

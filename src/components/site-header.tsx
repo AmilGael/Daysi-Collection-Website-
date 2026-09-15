@@ -31,7 +31,7 @@ export function SiteHeader({
   const to = useTranslations("office");
   const pathname = usePathname();
 
-  // Inside the office the bar belongs to the office: its eight tabs take the
+  // Inside the office the bar belongs to the office: its seven tabs take the
   // place of the store links, and the store is one tap away through the
   // menu. Office tabs match exactly, because `/office` prefixes every other
   // one; store links match by prefix, because a garment page is still the

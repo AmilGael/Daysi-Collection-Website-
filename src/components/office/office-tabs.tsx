@@ -11,11 +11,11 @@ import { OFFICE_TABS } from "./tabs";
  * Each tab is a real link to a real route, so it can be bookmarked and the
  * back button works. Active is an exact match on the pathname, not a prefix:
  * `/office` is the start of every other tab's path, and a prefix test would
- * light Today up everywhere. `usePathname` from the routing helpers hands
+ * light Hub up everywhere. `usePathname` from the routing helpers hands
  * back the path without its locale, so the comparison is against the hrefs
  * as written in the list.
  *
- * On a phone the strip scrolls sideways rather than wrapping: eight labels
+ * On a phone the strip scrolls sideways rather than wrapping: seven labels
  * on three lines stop reading as tabs. The site header places it: under the
  * bar on narrow screens, where the store links would not fit either.
  * After a tap near the right end the strip scrolls the new active tab into

@@ -112,13 +112,20 @@ function PriceTable({ caption, columns, rows, toChange, undoKind, retirable }: {
                 autoComplete="off"
                 value={value}
                 disabled={retiring}
-                onFocus={(event) => event.currentTarget.select()}
+                onFocus={(event) => {
+                  // Deferred a frame: on iOS the tap that focused the box
+                  // places the caret after focus fires, and would undo an
+                  // immediate select().
+                  const box = event.currentTarget;
+                  requestAnimationFrame(() => box.select());
+                }}
                 onChange={(event) => {
                   const next = [...shown];
                   next[index] = event.target.value;
                   setTyping((current) => ({ ...current, [row.id]: next }));
                   const cents = next.map(centsFromInput);
                   if (cents.some((amount) => amount === null || amount > 500_000)) return;
+                  // The guard above returned on any null; the ?? 0 only satisfies the type.
                   const amounts = cents.map((amount) => amount ?? 0);
                   if (amounts.every((amount, amountIndex) => amount === row.amounts[amountIndex])) draft.unstage(key);
                   else draft.stage(key, { wire: toChange(row.id, amounts) });

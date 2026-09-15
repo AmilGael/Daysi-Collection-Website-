@@ -540,7 +540,7 @@
     },
     "retire": "Retirar",
     "retireConfirm": "¿Retirar {name}? Sale del sitio. Puede restaurarla desde Retirados.",
-    "retireRequestConfirm": "¿Retirar {name}? Sale de Trabajo, de los libros y de la cuenta de la clienta. Puede restaurarla desde Retirados.",
+    "retireRequestConfirm": "¿Retirar {name}? Sale del Hub, de los libros y de la cuenta de la clienta. Puede restaurarla desde Retirados.",
     "retireYes": "Sí, retirar",
     "retireNo": "No",
     "restore": "Restaurar",

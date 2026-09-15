@@ -17,7 +17,8 @@ describe("the price boxes", () => {
   });
 
   it("select the whole value on focus and parse through centsFromInput", () => {
-    expect(source).toContain("onFocus={(event) => event.currentTarget.select()}");
+    expect(source).toContain("requestAnimationFrame(() => box.select());");
+    expect(source).toContain("const box = event.currentTarget;");
     expect(source).toContain('import { centsFromInput } from "@/lib/money";');
     expect(source).toContain("next.map(centsFromInput)");
     expect(source).not.toContain("parseFloat(");
