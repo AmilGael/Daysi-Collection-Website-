@@ -104,6 +104,52 @@ describe("notifyOwner", () => {
     expect(body.text).toContain("$105");
   });
 
+  it("says the money came by bank transfer when it did", async () => {
+    const { notifyOwner } = await import("./notify");
+
+    await notifyOwner(record({ status: "paid", source: "stripe", paidVia: "bank" }));
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as {
+      subject: string;
+      text: string;
+    };
+    expect(body.subject).toContain("PAID");
+    expect(body.text).toContain("Paid by bank transfer");
+    expect(body.text).not.toContain("Paid by card");
+  });
+
+  it("tells Daysi that a bank payment was refused, and that nothing came in", async () => {
+    const { notifyOwner } = await import("./notify");
+
+    await notifyOwner(record({ status: "closed", source: "stripe", paymentFailed: true }));
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as {
+      subject: string;
+      text: string;
+    };
+    expect(body.subject).toContain("REFUSED");
+    expect(body.subject).not.toContain("PAID");
+    expect(body.text).toContain("refused");
+    expect(body.text).toContain("$105");
+  });
+
+  it("does not head a refusal PAID, even on a row whose status says paid", async () => {
+    // The refusal line carries Daysi's own Pagado forward. Reading the status
+    // alone would send her a letter headed PAID about money that bounced.
+    const { notifyOwner } = await import("./notify");
+
+    await notifyOwner(record({ status: "paid", source: "stripe", paymentFailed: true }));
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as {
+      subject: string;
+      text: string;
+    };
+    expect(body.subject).not.toContain("PAID");
+    expect(body.subject).toContain("REFUSED");
+    expect(body.text).not.toContain("confirmed by Stripe");
+    expect(body.text).toContain("refused");
+  });
+
   it("does not claim a payment for a request that was not paid", async () => {
     const { notifyOwner } = await import("./notify");
 
@@ -115,5 +161,38 @@ describe("notifyOwner", () => {
     };
     expect(body.subject).not.toContain("PAID");
     expect(body.text).not.toContain("Paid by card");
+  });
+});
+
+describe("notifyClientPaymentFailed", () => {
+  it("tells the client, in their own language, that the bank refused the payment", async () => {
+    const { notifyClientPaymentFailed } = await import("./notify");
+
+    await notifyClientPaymentFailed(
+      record({ locale: "es", status: "closed", source: "stripe", paymentFailed: true }),
+    );
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as {
+      to: string[];
+      reply_to?: string;
+      subject: string;
+      text: string;
+    };
+    expect(body.to).toEqual(["ana@example.com"]);
+    // The letter invites a reply, so it has to reach Daysi and not no-reply@.
+    expect(body.reply_to).toBe("daysi@example.com");
+    expect(body.subject).toContain("ORD-1");
+    expect(body.text).toContain("Su banco no envió el pago");
+    expect(body.text).not.toMatch(/\bbank\b/i);
+  });
+
+  it("writes in English to an English-speaking client", async () => {
+    const { notifyClientPaymentFailed } = await import("./notify");
+
+    await notifyClientPaymentFailed(record({ locale: "en", status: "closed", source: "stripe", paymentFailed: true }));
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as { text: string };
+    expect(body.text).toContain("bank");
+    expect(body.text).toContain("ORD-1");
   });
 });

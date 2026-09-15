@@ -76,8 +76,24 @@ export type StoredRequest = {
    * stored so the webhook can find it, but Daysi is not told about it until
    * Stripe confirms — see `recordRequest` and `markPaid`. A form that stops at
    * the payment page must never look like an order in her inbox.
+   *
+   * `"bank"` is the webhook's own mark: the client finished the page with a
+   * bank debit and the money is on its way, which takes days. It is a real
+   * payment in flight, not an abandoned page, so it keeps a booking's hour
+   * and the office shows it as such.
    */
-  readonly awaitingPayment?: true;
+  readonly awaitingPayment?: true | "bank";
+  /** How Stripe confirmed the money; written on the paid line by the webhook. */
+  readonly paidVia?: "card" | "bank";
+  /** When Stripe confirmed it. Earnings count the money in this month, not the order's. */
+  readonly paidAt?: string;
+  /**
+   * The bank refused the debit after the page had completed: nothing was
+   * received. Written by the webhook on the line that records it, so the
+   * office and the client's own list can say so rather than show a silent
+   * close.
+   */
+  readonly paymentFailed?: true;
   /**
    * `refunded` is money given back after `paid`: Stripe writes it when Daysi
    * refunds a card in its dashboard, and she can set it herself for cash. It

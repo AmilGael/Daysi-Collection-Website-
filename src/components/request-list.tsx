@@ -63,9 +63,11 @@ export async function RequestList({
               </span>
             ) : null}
             <Tag tone={record.status === "paid" ? "marigold" : "quiet"}>
-              {record.awaitingPayment && record.status !== "paid"
-                ? t("awaitingPayment")
-                : t(`status.${record.status}`)}
+              {record.paymentFailed
+                ? t("paymentFailed")
+                : record.awaitingPayment && record.status !== "paid"
+                  ? t(record.awaitingPayment === "bank" ? "bankPending" : "awaitingPayment")
+                  : t(`status.${record.status}`)}
             </Tag>
           </div>
         </article>

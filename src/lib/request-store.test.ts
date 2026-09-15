@@ -75,7 +75,9 @@ describe("who marks a status line", () => {
   const source = (relative: string) => readFileSync(path.join(process.cwd(), relative), "utf8");
   it("is the office on the work action and Stripe on the payment, and nobody on a client submission", () => {
     expect(source("src/app/[locale]/office/work/actions.ts")).toContain('source: "office"');
-    expect(source("src/lib/payment-events.ts")).toContain('status: "paid", source: "stripe"');
+    const marks = source("src/lib/payment-events.ts");
+    expect(marks).toContain('status: "paid"');
+    expect(marks).toContain('source: "stripe"');
     expect(source("src/lib/notify.ts")).not.toMatch(/\bsource:/);
   });
 });

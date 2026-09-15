@@ -36,7 +36,9 @@ export function earningsFrom(records: readonly StoredRequest[]): Earnings {
     const total = record.estimate?.total ?? 0;
     if (total === 0) continue;
 
-    if (record.status === "paid") {
+    // A refused payment keeps the status it found, which may say paid. The
+    // money is the one thing that did not arrive, so it is still owed.
+    if (record.status === "paid" && !record.paymentFailed) {
       received += total;
       paidCount += 1;
     } else if (!owesNothing(record.status)) {
@@ -62,8 +64,10 @@ export function monthlyReceived(
   }
 
   for (const record of records) {
-    if (record.status !== "paid") continue;
-    const month = record.submittedAt.slice(0, 7);
+    if (record.status !== "paid" || record.paymentFailed) continue;
+    // The month the money cleared. A bank debit lands days after the order;
+    // a line written before `paidAt` existed is a card, paid the day it was placed.
+    const month = (record.paidAt ?? record.submittedAt).slice(0, 7);
     if (!buckets.has(month)) continue;
     buckets.set(month, (buckets.get(month) ?? 0) + (record.estimate?.total ?? 0));
   }

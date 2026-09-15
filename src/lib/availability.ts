@@ -25,9 +25,10 @@ const BUFFER_MINUTES = 15;
 
 /**
  * How long a booking keeps its slot while the client is still on Stripe's
- * payment page. The Checkout session is told to expire at exactly this age
- * (Stripe's minimum is 30 minutes), so once the hold has run out nobody can
- * pay for an hour that has since been offered to somebody else.
+ * payment page. The Checkout session is told to expire at this age plus a
+ * small margin, since Stripe rejects an expiry under thirty minutes measured
+ * on its own clock; the grace below covers the difference, so once the hold
+ * has run out nobody can pay for an hour offered to somebody else.
  */
 export const BOOKING_PAYMENT_HOLD_MINUTES = 30;
 /**
@@ -36,11 +37,30 @@ export const BOOKING_PAYMENT_HOLD_MINUTES = 30;
  */
 const HOLD_GRACE_MINUTES = 15;
 
-/** An unpaid booking older than this no longer holds its slot. */
+/**
+ * Longest a deposit sent from a bank can still be coming. Debits settle
+ * within about four working days; past a week the hour must go back on
+ * offer, or one lost webhook holds it for ever.
+ */
+const BANK_SETTLEMENT_DAYS = 7;
+
+/**
+ * An unpaid booking older than this no longer holds its slot. A deposit the
+ * bank is still sending (`awaitingPayment: "bank"`) is a payment made, not a
+ * page abandoned, so it keeps the hour while the bank could still answer; a
+ * deposit the bank refused holds nothing at all.
+ */
 function holdExpired(appointment: StoredRequest, now: Date): boolean {
-  if (!appointment.awaitingPayment || appointment.status === "paid") return false;
+  // The refusal is read before the status, which it may have carried forward.
+  if (appointment.paymentFailed) return true;
+  if (appointment.status === "paid") return false;
+  if (!appointment.awaitingPayment) return false;
   const age = now.getTime() - new Date(appointment.submittedAt).getTime();
-  return age > (BOOKING_PAYMENT_HOLD_MINUTES + HOLD_GRACE_MINUTES) * 60_000;
+  const hold =
+    appointment.awaitingPayment === "bank"
+      ? BANK_SETTLEMENT_DAYS * 24 * 60
+      : BOOKING_PAYMENT_HOLD_MINUTES + HOLD_GRACE_MINUTES;
+  return age > hold * 60_000;
 }
 
 export type DaySlots = {

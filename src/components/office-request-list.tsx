@@ -110,8 +110,12 @@ export function OfficeRequestList({
                 {formatMoney(record.estimate.total, locale)}
               </span>
             ) : null}
-            {record.awaitingPayment && status !== "paid" ? (
-              <Tag tone="quiet">{t("awaitingPayment")}</Tag>
+            {record.paymentFailed ? (
+              <Tag tone="quiet">{t("paymentFailed")}</Tag>
+            ) : record.awaitingPayment && status !== "paid" ? (
+              <Tag tone="quiet">
+                {t(record.awaitingPayment === "bank" ? "bankPending" : "awaitingPayment")}
+              </Tag>
             ) : null}
             <label className="flex items-center gap-2">
               <span className="sr-only">{to("statusLabel")}</span>

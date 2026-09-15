@@ -14,7 +14,10 @@ export const applyWorkChanges = ownerAction(
           const record = findRequest(change.reference);
           if (!record) throw new ChangeRefused("unknown-reference");
           if (record.status !== change.status) {
-            await saveRequest({ ...record, status: change.status, source: "office" });
+            // Moving the row on is how she answers a refused payment, so the
+            // mark does not ride forward and hide every status after it.
+            const { paymentFailed: _handled, ...rest } = record;
+            await saveRequest({ ...rest, status: change.status, source: "office" });
           }
           return;
         }

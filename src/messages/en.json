@@ -296,6 +296,13 @@
   "checkout": {
     "thankYouTitle": "Payment received.",
     "thankYouLead": "Reference {reference}. A receipt is on its way to your email, and Daysi has been told.",
+    "pendingTitle": "Payment on its way.",
+    "pendingLead": "Reference {reference}. Your bank is still sending the payment, which can take a few days. When it arrives you will get a receipt by email and Daysi will be told. Your request is already saved.",
+    "unknownTitle": "Thank you.",
+    "unknownLead": "Reference {reference}. Keep it to hand. If your payment went through you will get a receipt by email, and Daysi will be in touch about anything still owed.",
+    "failedTitle": "The payment did not go through.",
+    "failedLead": "Reference {reference}. Your bank did not send the payment, so nothing was charged. Daysi has been told and will write to you about another way to pay.",
+    "bankNote": "Bank payments are handled by Stripe on their own secure page. This site never sees your bank details.",
     "cancelledTitle": "Payment cancelled.",
     "cancelledLead": "Nothing was charged. Your request is still saved under {reference}. You can pay later or settle in person.",
     "backHome": "Back to the site",
@@ -438,6 +445,8 @@
       "premiere-signup": "Premiere list"
     },
     "awaitingPayment": "Awaiting payment",
+    "bankPending": "Bank payment on its way",
+    "paymentFailed": "Bank payment refused",
     "status": {
       "new": "Received",
       "answered": "Answered",

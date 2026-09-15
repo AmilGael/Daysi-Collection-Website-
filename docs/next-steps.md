@@ -103,21 +103,38 @@ SITE_URL="http://localhost:3000"
    **Daysi's email arrives only after the card goes through** (since 6 September 2026). Filling
    in the form and stopping on the payment page sends her nothing; the order sits in Trabajo
    marked **Pago pendiente** until Stripe confirms, and the email she gets then says PAID in the
-   subject. Bookings with a deposit work the same way. If a "Pago pendiente" row never turns into
-   Pagado, the client walked away: set it to Cerrado so it leaves Libros. Requests with nothing
-   to pay up front (alterations, commissions, messages) still reach her at once.
+   subject. Bookings with a deposit work the same way. A "Pago pendiente" row closes by itself
+   when its payment page runs out (see below); one that lingers means the client walked away,
+   and she can set it to Cerrado so it leaves Libros. Requests with nothing to pay up front
+   (alterations, commissions, messages) still reach her at once.
+
+   If a client pays an order from a bank account rather than a card (since 9 September 2026),
+   the row shows **Pago en camino desde el banco**: the client did pay, the bank is still moving
+   the money, usually for a few days, and she should leave the row alone. Her email waits until
+   the money lands, and the client's thank-you page says so. Bookings only take cards, so a
+   deposit never waits.
+
+   **If the bank refuses the payment**, the row is marked **Pago rechazado por el banco** and is
+   left open, keeping whatever status it had. Nothing was received, so the money is still owed
+   and Libros still counts it as outstanding; both she and the client get an email so another
+   way to pay can be agreed. Moving the row on to any other status clears the mark. If the
+   client never pays, she sets it to Cerrado herself, as with any order nobody paid for. A
+   booking whose deposit was refused gives its hour back at once.
 
    **A booking nobody paid for gives its hour back on its own.** The payment page for a
    booking closes after 30 minutes, and the calendar offers the hour again 45 minutes after
-   the form was sent. When Stripe reports the closed page (the `expired` event above), the
+   the form was sent. When Stripe reports the closed page (the `expired` event in step 7), the
    row becomes Cerrado by itself; the same happens to a cart order left on the payment page.
 
 7. When that works, take Daysi's **real** keys. In her Stripe account, add a webhook pointing
-   at `https://daysiscollectioninc.com/api/stripe/webhook`, listening for **three** events:
-   `checkout.session.completed`, `checkout.session.expired` and `charge.refunded`. The second
-   one is how an abandoned payment page closes its order, and how a booking nobody paid for
-   gives its hour back; the third is how a refund she makes in Stripe reaches the site. It
-   gives its **own** signing secret. Never reuse the practice
+   at `https://daysiscollectioninc.com/api/stripe/webhook`, listening for **five** events:
+   `checkout.session.completed`, `checkout.session.expired`, `charge.refunded`,
+   `checkout.session.async_payment_succeeded` and `checkout.session.async_payment_failed`. The
+   second one is how an abandoned payment page closes its order, and how a booking nobody paid
+   for gives its hour back; the third is how a refund she makes in Stripe reaches the site. The
+   fourth is how an order paid from a bank account turns Pagado once the money actually lands,
+   days after the client pressed pay; the fifth closes that order by itself when the bank
+   payment bounces. It gives its **own** signing secret. Never reuse the practice
    one, and never put a practice key on the live site.
 
 8. Put both on Fly, in one command (paste your own values):

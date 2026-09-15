@@ -130,6 +130,7 @@ export async function POST(request: Request) {
         customerEmail: booking.client.email,
         locale: booking.client.locale,
         expiresInMinutes: BOOKING_PAYMENT_HOLD_MINUTES,
+        cardsOnly: true,
       })
     : null;
 

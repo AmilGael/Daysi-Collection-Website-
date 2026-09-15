@@ -28,6 +28,7 @@ export const SALES_COLUMNS = [
   "CustomerEmail",
   "InvoiceDate",
   "DueDate",
+  "PaidDate",
   "ItemDescription",
   "ItemQuantity",
   "ItemRate",
@@ -91,6 +92,10 @@ export function salesRows(
         record.client.email,
         day,
         day,
+        // The invoice keeps the day the order was placed, which is what the
+        // return is filed on; a bank payment clears days later, and this is
+        // what reconciles the export against the office's cleared-money trend.
+        record.paidAt ? record.paidAt.slice(0, 10) : "",
         note ? `${label} — ${note}` : label,
         "1",
         toAmount(line.amount),
@@ -98,7 +103,13 @@ export function salesRows(
         isTaxable(line) ? "TAX" : "NON",
         record.kind,
         record.status,
-        record.status === "paid" ? "Paid in full" : record.status === "refunded" ? "Refunded" : "Open",
+        record.paymentFailed
+          ? "Open — bank payment refused"
+          : record.status === "paid"
+            ? "Paid in full"
+            : record.status === "refunded"
+              ? "Refunded"
+              : "Open",
       ];
     });
   });
@@ -134,7 +145,7 @@ export function exportSummary(
     if (!estimate) continue;
     lines += estimate.lines.length;
     salesTax += estimate.salesTax;
-    if (record.status === "paid") received += estimate.total;
+    if (record.status === "paid" && !record.paymentFailed) received += estimate.total;
     else if (!owesNothing(record.status)) outstanding += estimate.total;
   }
 

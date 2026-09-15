@@ -55,19 +55,37 @@ export function summarise(request: StoredRequest): string {
 
   if (request.photoFile) lines.push("", `Photo attached: ${request.photoFile}`);
 
-  if (paidByCard(request)) {
+  if (paidByStripe(request)) {
     lines.push(
       "",
-      `Paid by card: ${formatMoney(request.estimate?.dueNow ?? 0, "en")} — confirmed by Stripe.`,
+      `Paid by ${request.paidVia === "bank" ? "bank transfer" : "card"}: ${formatMoney(request.estimate?.dueNow ?? 0, "en")} — confirmed by Stripe.`,
+    );
+  }
+
+  if (request.paymentFailed) {
+    lines.push(
+      "",
+      `Bank payment refused: ${formatMoney(request.estimate?.dueNow ?? 0, "en")} was not received.`,
+      "The client has been told. Ask them for another way to pay.",
     );
   }
 
   return lines.join("\n");
 }
 
-/** Only Stripe's own line counts: a status Daysi set by hand is not a card payment. */
-function paidByCard(request: StoredRequest): boolean {
-  return request.status === "paid" && request.source === "stripe";
+/**
+ * Only Stripe's own line counts: a status Daysi set by hand is not a
+ * confirmed payment. Nor is a line the refusal landed on — that line carries
+ * her Pagado forward, and the money is exactly what did not arrive.
+ */
+function paidByStripe(request: StoredRequest): boolean {
+  return request.status === "paid" && request.source === "stripe" && !request.paymentFailed;
+}
+
+function subjectPrefix(request: StoredRequest): string {
+  if (request.paymentFailed) return "PAYMENT REFUSED · ";
+  if (paidByStripe(request)) return "PAID · ";
+  return "";
 }
 
 /**
@@ -119,8 +137,56 @@ export async function notifyOwner(request: StoredRequest): Promise<void> {
   await sendEmail({
     to: env.ownerEmails,
     replyTo: request.client.email,
-    subject: `${paidByCard(request) ? "PAID · " : ""}${KIND_LABELS[request.kind]} — ${request.client.name} (${request.reference})`,
+    subject: `${subjectPrefix(request)}${KIND_LABELS[request.kind]} — ${request.client.name} (${request.reference})`,
     text: summarise(request),
+  });
+}
+
+/**
+ * The one message the site sends a client on its own: their bank refused the
+ * debit days after they were told the payment was on its way, so silence
+ * would leave them waiting for a piece nobody is making. Written in the
+ * language they used on the site; replies go to Daysi.
+ */
+export async function notifyClientPaymentFailed(request: StoredRequest): Promise<void> {
+  if (!emailEnabled) {
+    console.info(`[notify] ${request.reference} bank payment refused; client email not configured.`);
+    return;
+  }
+
+  const amount = formatMoney(request.estimate?.dueNow ?? 0, request.locale);
+  const name = forNotification(request.client.name);
+  const message =
+    request.locale === "es"
+      ? {
+          subject: `Su pago no llegó · ${request.reference}`,
+          text: [
+            `Hola ${name},`,
+            "",
+            `Su banco no envió el pago de ${amount} de la solicitud ${request.reference}, así que no se cobró nada.`,
+            "",
+            "Daysi ya fue avisada y le escribirá para acordar otra forma de pagar. También puede responder a este correo.",
+            "",
+            "Daysi Collection",
+          ].join("\n"),
+        }
+      : {
+          subject: `Your payment did not go through · ${request.reference}`,
+          text: [
+            `Hello ${name},`,
+            "",
+            `Your bank did not send the payment of ${amount} for request ${request.reference}, so nothing was charged.`,
+            "",
+            "Daysi has been told and will write to you about another way to pay. You can also reply to this email.",
+            "",
+            "Daysi Collection",
+          ].join("\n"),
+        };
+
+  await sendEmail({
+    to: request.client.email,
+    ...(env.ownerEmails[0] ? { replyTo: env.ownerEmails[0] } : {}),
+    ...message,
   });
 }
 
