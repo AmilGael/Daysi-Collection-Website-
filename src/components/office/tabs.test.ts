@@ -158,6 +158,18 @@ describe("the smoke script", () => {
       expect(smoke, `${tab.href} in PRIVATE`).toContain(`"${tab.href}"`);
     }
   });
+
+  it("checks that the old Trabajo address redirects into the office for good", () => {
+    const config = fs.readFileSync(path.join(process.cwd(), "next.config.ts"), "utf8");
+    expect(config).toContain('source: "/:locale(es|en)/office/work"');
+    expect(config).toContain('destination: "/:locale/office"');
+    expect(config).toContain("permanent: true");
+
+    const smoke = fs.readFileSync(path.join(process.cwd(), "scripts/smoke.mjs"), "utf8");
+    expect(smoke, "the redirect is checked").toContain("/es/office/work");
+    expect(smoke, "as a 308").toContain("308");
+    expect(smoke, "and no longer listed as a private page").not.toContain('"/office/work"');
+  });
 });
 
 describe("where the office tabs live", () => {

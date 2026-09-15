@@ -39,7 +39,6 @@ const PRIVATE = [
   "/account",
   "/account/orders",
   "/office",
-  "/office/work",
   "/office/collection",
   "/office/gallery",
   "/office/fabrics",
@@ -112,6 +111,17 @@ for (const path of PRIVATE) {
     return { ok, detail: `${response.status} ${location}` };
   });
 }
+
+// Trabajo folded into Hub on 14 September 2026; the old address must land
+// on the office rather than 404 for anyone who bookmarked it.
+await check("the old Trabajo address redirects into the office", async () => {
+  const response = await fetch(`${BASE}/es/office/work`, { redirect: "manual" });
+  const location = response.headers.get("location") ?? "";
+  return {
+    ok: response.status === 308 && location.endsWith("/es/office"),
+    detail: `${response.status} -> ${location || "(none)"}`,
+  };
+});
 
 await check("the cart starts empty and prices nothing", async () => {
   const response = await fetch(`${BASE}/api/cart`);
