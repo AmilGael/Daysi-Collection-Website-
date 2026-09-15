@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { centsFromInput } from "@/lib/money";
 import type { PriceChange, UndoKind } from "@/lib/office-validation";
 import { Pending } from "./office/confirm-bar";
 import { RetireButton, RetiredGroup } from "./office/retired-group";
@@ -106,22 +107,27 @@ function PriceTable({ caption, columns, rows, toChange, undoKind, retirable }: {
             <span className="flex items-center border border-line bg-paper px-2 focus-within:border-ink">
               <span className="text-[0.8125rem] text-ink-faint">$</span>
               <input
-                type="number" min="0" max="5000" step="0.01" value={value}
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                value={value}
                 disabled={retiring}
+                onFocus={(event) => event.currentTarget.select()}
                 onChange={(event) => {
                   const next = [...shown];
                   next[index] = event.target.value;
                   setTyping((current) => ({ ...current, [row.id]: next }));
-                  const cents = next.map((amount) => Math.round(parseFloat(amount) * 100));
-                  if (cents.some((amount) => !Number.isFinite(amount) || amount < 0 || amount > 500_000)) return;
-                  if (cents.every((amount, amountIndex) => amount === row.amounts[amountIndex])) draft.unstage(key);
-                  else draft.stage(key, { wire: toChange(row.id, cents) });
+                  const cents = next.map(centsFromInput);
+                  if (cents.some((amount) => amount === null || amount > 500_000)) return;
+                  const amounts = cents.map((amount) => amount ?? 0);
+                  if (amounts.every((amount, amountIndex) => amount === row.amounts[amountIndex])) draft.unstage(key);
+                  else draft.stage(key, { wire: toChange(row.id, amounts) });
                 }}
                 onBlur={() => setTyping((current) => {
                   const { [row.id]: _removed, ...rest } = current;
                   return rest;
                 })}
-                className="w-24 bg-transparent py-1.5 pl-1 text-right text-[0.875rem] tabular-nums"
+                className="min-h-11 w-24 bg-transparent py-1.5 pl-1 text-right text-[0.875rem] tabular-nums"
               />
             </span>
           </label>)}
