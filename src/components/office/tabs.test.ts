@@ -6,7 +6,7 @@ import en from "@/messages/en.json";
 import { OFFICE_TABS } from "./tabs";
 
 /**
- * The office is eight tabs, and everything that has to agree about them,
+ * The office is seven tabs, and everything that has to agree about them,
  * the routes, the smoke script, the two languages, the guard, is checked
  * here against one list rather than trusted to stay in step by hand.
  */
@@ -14,10 +14,9 @@ import { OFFICE_TABS } from "./tabs";
 const officeMessages = (bundle: { office: object }) => bundle.office as Record<string, string>;
 
 describe("the office tabs", () => {
-  it("are eight, in the agreed order, each under /office", () => {
+  it("are seven, in the agreed order, each under /office", () => {
     expect(OFFICE_TABS.map((tab) => tab.id)).toEqual([
-      "today",
-      "work",
+      "hub",
       "collection",
       "gallery",
       "fabrics",
@@ -70,15 +69,19 @@ describe("the office layout", () => {
   });
 });
 
-describe("the today tab", () => {
+describe("the hub tab", () => {
   it("is guarded", () => {
     expectGuarded("page.tsx");
   });
-});
 
-describe("the work tab", () => {
-  it("is guarded", () => {
-    expectGuarded("work/page.tsx");
+  it("holds the work inside one draft provider, so the bar pins to the tab", () => {
+    const source = read("page.tsx");
+    const open = source.indexOf("<OfficeDraftProvider");
+    const close = source.indexOf("</OfficeDraftProvider>");
+    expect(open).toBeGreaterThan(-1);
+    expect(open).toBeLessThan(source.indexOf("<section"));
+    expect(close).toBeGreaterThan(source.lastIndexOf("</section>"));
+    expect(source).toContain("applyWorkChanges");
   });
 });
 
