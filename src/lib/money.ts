@@ -24,3 +24,18 @@ export function applyRate(amount: Cents, rate: number): Cents {
 export function sum(amounts: readonly Cents[]): Cents {
   return amounts.reduce((total, amount) => total + amount, 0);
 }
+
+/**
+ * Cents from what someone typed into a price box.
+ *
+ * Accepts a comma as the decimal mark: a phone showing a Spanish keyboard
+ * offers a comma on its number pad where an English one offers a point, and
+ * `parseFloat("195,50")` would quietly read as 195. Anything that is not a
+ * plain non-negative amount with at most two decimals is null; the caller
+ * decides the range.
+ */
+export function centsFromInput(text: string): number | null {
+  const normalised = text.trim().replace(",", ".");
+  if (!/^\d+(\.\d{0,2})?$/.test(normalised)) return null;
+  return Math.round(parseFloat(normalised) * 100);
+}

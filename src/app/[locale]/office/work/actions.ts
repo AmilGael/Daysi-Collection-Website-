@@ -32,7 +32,6 @@ export const applyWorkChanges = ownerAction(
     }),
   {
     revalidate: [
-      "/[locale]/office/work",
       "/[locale]/office",
       "/[locale]/office/books",
       "/[locale]/account",

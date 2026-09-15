@@ -3,12 +3,11 @@
  *
  * One list, read by the layout (to draw the strip), by the tests (to check
  * every tab has a page, a guard, a smoke check and a name in each language)
- * and by nothing else. The order is the order Daysi works in: what came in
- * today, then the work, then what she sells, then the shop's own settings.
+ * and by nothing else. The order is the order Daysi works in: the hub
+ * first, then what she sells, then the shop's own settings.
  */
 export const OFFICE_TABS = [
-  { id: "today", href: "/office", labelKey: "tabToday" },
-  { id: "work", href: "/office/work", labelKey: "tabWork" },
+  { id: "hub", href: "/office", labelKey: "tabHub" },
   { id: "collection", href: "/office/collection", labelKey: "tabCollection" },
   { id: "gallery", href: "/office/gallery", labelKey: "tabGallery" },
   { id: "fabrics", href: "/office/fabrics", labelKey: "tabFabrics" },

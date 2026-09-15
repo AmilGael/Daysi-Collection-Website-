@@ -7,9 +7,11 @@ Short words. No jargon. Read top to bottom.
 - **Site is live** at daysiscollectioninc.com on Fly. Email works (sign-in links arrive). Google sign-in works.
 - **Miner attack fixed.** A bot got in through an old Next.js bug. We patched Next, rotated the three leaked keys, and proved the disk was clean. A guard now stops any deploy that has a known bad package. Dependabot watches for new ones.
 - **Deploy is one command.** From the `main` branch: `npm run deploy`. It checks packages, types and tests first. Never run `fly deploy` by hand.
-- **Office has tabs.** Hoy, Trabajo, Colección, Galería, Telas, Precios, Vitrina, Libros. The tabs sit in the top bar when Daysi is in the office. On a phone they scroll sideways.
+- **Office has tabs.** Hub, Colección, Galería, Telas, Precios, Vitrina, Libros. The tabs sit in the top bar when Daysi is in the office. On a phone they scroll sideways.
 - **Account button is a ring** so it does not look like the cart.
 - **Manual for Daysi** (`docs/manual-del-taller.html`) names the tab for each task.
+- **Hub** (14 September 2026): Hoy and Trabajo are one tab. The old Trabajo address still works and lands on Hub.
+- **The confirm bar is always there** (14 September 2026): it reads "Sin cambios" with a greyed button until she changes something.
 
 ## Office steps 2 and 3: done
 
@@ -18,7 +20,7 @@ Daysi changes things, sees them marked "pendiente", then presses **Confirmar cam
 What she can do now:
 
 - Every office tab has one bar at the bottom for confirming or discarding.
-- **Retirar / Restaurar** on garments, gallery photos, her own fabric rolls, prices, and everything in Trabajo (orders, alterations, commissions, appointments, messages, sign-ups). A retired piece leaves the site at once and sits under "Retirados" until she restores it. Nothing is ever deleted.
+- **Retirar / Restaurar** on garments, gallery photos, her own fabric rolls, prices, and everything in Hub (orders, alterations, commissions, appointments, messages, sign-ups). A retired piece leaves the site at once and sits under "Retirados" until she restores it. Nothing is ever deleted.
 - A fabric or price that a garment on the site still uses cannot be retired; the row says how many garments use it. Retire the garment first.
 - A retired appointment frees its hour and leaves the books and the client's account. Restore puts all three back.
 - **Deshacer** on any row she has changed (except a card payment Stripe wrote). It puts the earlier version in the list as "pendiente"; she still presses Confirmar. Deshacer twice is a redo.
@@ -95,13 +97,13 @@ SITE_URL="http://localhost:3000"
 6. Buy the Amapola shirt in size S with Stripe's test card `4242 4242 4242 4242`, any future
    expiry date, any three digits. The charge should read **exactly $105.00**, the listener
    should show `checkout.session.completed`, and the order should show as **Pagado** in
-   Trabajo. Any other amount means something added tax twice.
+   Hub. Any other amount means something added tax twice.
 
    Buy it on the site. A fake payment made from inside Stripe's own tools has no order number
    attached, so nothing will change and that is correct.
 
    **Daysi's email arrives only after the card goes through** (since 6 September 2026). Filling
-   in the form and stopping on the payment page sends her nothing; the order sits in Trabajo
+   in the form and stopping on the payment page sends her nothing; the order sits in Hub
    marked **Pago pendiente** until Stripe confirms, and the email she gets then says PAID in the
    subject. Bookings with a deposit work the same way. A "Pago pendiente" row closes by itself
    when its payment page runs out (see below); one that lingers means the client walked away,
@@ -149,7 +151,7 @@ fly secrets set -a daysicollectioninc STRIPE_SECRET_KEY="sk_live_..." STRIPE_WEB
 **If she gives money back.** A full refund made in Stripe reaches the site through the
 `charge.refunded` event (since 7 September 2026): the order turns **Reembolsado** on its own,
 leaves the money received in Libros, and a refunded booking gives its hour back. A partial
-refund, or cash handed back, she marks herself: open Trabajo, set the row to Reembolsado, and
+refund, or cash handed back, she marks herself: open Hub, set the row to Reembolsado, and
 press Confirmar. The order number is written on the charge in Stripe, so it is easy to find.
 
 10. Step-by-step guide with pictures: https://claude.ai/code/artifact/386f58d9-cea6-4106-a080-a4e194585df5

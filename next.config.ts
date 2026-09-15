@@ -55,6 +55,21 @@ const config: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  /**
+   * Trabajo folded into Hub on 14 September 2026. The address lived in
+   * bookmarks and in the manual, so it keeps working. 308 rather than 301
+   * for the same reason as the www redirect in middleware: the method and
+   * body survive, so nothing posted here turns into a GET.
+   */
+  async redirects() {
+    return [
+      {
+        source: "/:locale(es|en)/office/work",
+        destination: "/:locale/office",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default withNextIntl(config);
