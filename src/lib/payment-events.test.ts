@@ -517,6 +517,49 @@ describe("applyPaymentEvent", () => {
     expect(notifyClientPaymentFailed).toHaveBeenCalledTimes(1);
   });
 
+  it("leaves a record she has already settled alone when the refusal arrives", async () => {
+    // Writing a refusal onto a refunded row would claim money was given back
+    // that never came in, and Libros would hide the row either way.
+    const { saveRequest, findRequest, applyPaymentEvent, notifyOwner } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: "bank", status: "refunded", source: "office" }));
+
+    expect(
+      await applyPaymentEvent(
+        sessionEvent("checkout.session.async_payment_failed", { reference: "ORD-1", payment_status: "unpaid" }),
+      ),
+    ).toBe("not-waiting");
+    expect(findRequest("ORD-1")?.status).toBe("refunded");
+    expect(notifyOwner).not.toHaveBeenCalled();
+  });
+
+  it("does not promise the bank again after a refusal, even once the office has moved the row on", async () => {
+    // Stripe re-delivers for up to three days. The refusal is a fact about
+    // this reference, so a repeated completed page must not re-arm the wait.
+    const { saveRequest, findRequest, applyPaymentEvent } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    const unpaid = sessionEvent("checkout.session.completed", { reference: "ORD-1", payment_status: "unpaid" });
+    await applyPaymentEvent(unpaid);
+    await applyPaymentEvent(
+      sessionEvent("checkout.session.async_payment_failed", { reference: "ORD-1", payment_status: "unpaid" }),
+    );
+    await saveRequest(record({ reference: "ORD-1", kind: "order", status: "answered", source: "office" }));
+
+    expect(await applyPaymentEvent(unpaid)).toBe("not-waiting");
+    expect(findRequest("ORD-1")).not.toHaveProperty("awaitingPayment");
+  });
+
+  it("does not put a refund back on top of a status she set after it", async () => {
+    const { saveRequest, findRequest, applyPaymentEvent } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await applyPaymentEvent(sessionEvent("checkout.session.completed", { reference: "ORD-1" }));
+    const refund = chargeEvent({ reference: "ORD-1", refunded: true });
+    await applyPaymentEvent(refund);
+    await saveRequest(record({ reference: "ORD-1", kind: "order", status: "closed", source: "office" }));
+
+    expect(await applyPaymentEvent(refund)).toBe("already-refunded");
+    expect(findRequest("ORD-1")?.status).toBe("closed");
+  });
+
   it("brings a retired row back when its payment is refused, so the refusal can be seen", async () => {
     const { saveRequest, applyPaymentEvent } = await setup();
     const { retiredSet, setRetired } = await import("./retired");

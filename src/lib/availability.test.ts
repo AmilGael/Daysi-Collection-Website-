@@ -101,6 +101,16 @@ describe("a booking still waiting on its deposit", () => {
     expect(slots).toContain(startTime);
   });
 
+  it("gives the hour back on a refusal that landed on a booking marked paid by hand", async () => {
+    const { startTime, slots } = await holdAt(minutesAgo(60), {
+      awaitingPayment: undefined,
+      status: "paid",
+      source: "stripe",
+      paymentFailed: true,
+    });
+    expect(slots).toContain(startTime);
+  });
+
   it("gives the hour back when a bank payment has been on its way too long to be coming", async () => {
     const { startTime, slots } = await holdAt(minutesAgo(9 * 24 * 60), {
       awaitingPayment: "bank",

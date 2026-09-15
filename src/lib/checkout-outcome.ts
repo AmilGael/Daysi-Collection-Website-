@@ -28,10 +28,12 @@ export async function thankYouState(input: {
 }): Promise<ThankYouState> {
   const record = findRequest(input.reference);
   if (!record) return "unknown";
+  // A refusal is the last word on money, whatever status the line carries:
+  // it keeps whatever the row said, which may be a Pagado she set by hand.
+  if (record.paymentFailed) return "failed";
   // Only a payment Stripe wrote is a payment. A Pagado Daysi set by hand
   // after taking cash must not promise this client a receipt by email.
   if (record.status === "paid") return record.source === "stripe" ? "paid" : "unknown";
-  if (record.paymentFailed) return "failed";
   if (record.awaitingPayment === "bank") return "pending";
   if (record.awaitingPayment !== true) return "unknown";
 

@@ -169,3 +169,20 @@ describe("when the money actually cleared", () => {
     expect(column(row, "PaidDate")).toBe("");
   });
 });
+
+describe("money the bank refused", () => {
+  const refused = record({ status: "paid", source: "stripe", paymentFailed: true });
+
+  it("is owed, not received, in the summary above the file", () => {
+    expect(exportSummary([refused], "2026-01-01", "2026-12-31")).toMatchObject({
+      received: 0,
+      outstanding: 42500,
+    });
+  });
+
+  it("is not written into the file as paid in full", () => {
+    const [row] = salesRows([refused], "en");
+    expect(column(row, "Memo")).not.toBe("Paid in full");
+    expect(column(row, "PaidDate")).toBe("");
+  });
+});

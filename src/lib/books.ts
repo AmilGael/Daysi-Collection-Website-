@@ -103,7 +103,13 @@ export function salesRows(
         isTaxable(line) ? "TAX" : "NON",
         record.kind,
         record.status,
-        record.status === "paid" ? "Paid in full" : record.status === "refunded" ? "Refunded" : "Open",
+        record.paymentFailed
+          ? "Open — bank payment refused"
+          : record.status === "paid"
+            ? "Paid in full"
+            : record.status === "refunded"
+              ? "Refunded"
+              : "Open",
       ];
     });
   });
@@ -139,7 +145,7 @@ export function exportSummary(
     if (!estimate) continue;
     lines += estimate.lines.length;
     salesTax += estimate.salesTax;
-    if (record.status === "paid") received += estimate.total;
+    if (record.status === "paid" && !record.paymentFailed) received += estimate.total;
     else if (!owesNothing(record.status)) outstanding += estimate.total;
   }
 

@@ -90,6 +90,13 @@ describe("thankYouState", () => {
     expect(statusMock).not.toHaveBeenCalled();
   });
 
+  it("says failed even when the refusal landed on a row marked paid by hand", async () => {
+    const { saveRequest, thankYouState } = await setup();
+    await saveRequest(record({ status: "paid", source: "stripe", paymentFailed: true }));
+
+    expect(await thankYouState({ reference: "ORD-1", sessionId: "cs_test_1", caller: "a" })).toBe("failed");
+  });
+
   it("says failed once the bank has refused the payment", async () => {
     const { saveRequest, thankYouState } = await setup();
     await saveRequest(record({ status: "closed", source: "stripe", paymentFailed: true }));

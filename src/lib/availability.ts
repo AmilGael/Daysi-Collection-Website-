@@ -51,8 +51,9 @@ const BANK_SETTLEMENT_DAYS = 7;
  * deposit the bank refused holds nothing at all.
  */
 function holdExpired(appointment: StoredRequest, now: Date): boolean {
-  if (appointment.status === "paid") return false;
+  // The refusal is read before the status, which it may have carried forward.
   if (appointment.paymentFailed) return true;
+  if (appointment.status === "paid") return false;
   if (!appointment.awaitingPayment) return false;
   const age = now.getTime() - new Date(appointment.submittedAt).getTime();
   const hold =

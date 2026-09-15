@@ -133,6 +133,23 @@ describe("notifyOwner", () => {
     expect(body.text).toContain("$105");
   });
 
+  it("does not head a refusal PAID, even on a row whose status says paid", async () => {
+    // The refusal line carries Daysi's own Pagado forward. Reading the status
+    // alone would send her a letter headed PAID about money that bounced.
+    const { notifyOwner } = await import("./notify");
+
+    await notifyOwner(record({ status: "paid", source: "stripe", paymentFailed: true }));
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as {
+      subject: string;
+      text: string;
+    };
+    expect(body.subject).not.toContain("PAID");
+    expect(body.subject).toContain("REFUSED");
+    expect(body.text).not.toContain("confirmed by Stripe");
+    expect(body.text).toContain("refused");
+  });
+
   it("does not claim a payment for a request that was not paid", async () => {
     const { notifyOwner } = await import("./notify");
 

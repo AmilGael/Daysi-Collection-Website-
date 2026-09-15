@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import { notifyClientPaymentFailed, notifyOwner } from "./notify";
 import { referenceOf } from "./payments";
-import { listRequests, saveRequest, type StoredRequest } from "./request-store";
+import { listRequests, owesNothing, saveRequest, type StoredRequest } from "./request-store";
 import { retiredSet, setRetired } from "./retired";
 
 /**
@@ -80,13 +80,30 @@ export async function markPaid(
 }
 
 /**
- * Whether Stripe has written a payment for this reference before. The
- * question is never "does the newest line say paid" — Daysi may have set
- * that herself, believing money had arrived — but "did the money arrive".
+ * What Stripe itself has written about this reference, anywhere in its
+ * history. The question is never "what does the newest line say" — Daysi may
+ * have set that herself, believing money had arrived, and a later line
+ * carries her status forward — but "what did Stripe report".
+ *
+ * A reference is used once, by one checkout, so these facts are final: a
+ * payment Stripe reported cannot un-happen, and a refusal cannot be undone
+ * by a delivery Stripe repeats days later.
  */
-function paidByStripe(versions: readonly StoredRequest[]): boolean {
-  return versions.some((version) => version.status === "paid" && version.source === "stripe");
+function stripeWrote(
+  versions: readonly StoredRequest[],
+  fact: (version: StoredRequest) => boolean,
+): boolean {
+  return versions.some((version) => version.source === "stripe" && fact(version));
 }
+
+const paidByStripe = (versions: readonly StoredRequest[]): boolean =>
+  stripeWrote(versions, (version) => version.status === "paid" && !version.paymentFailed);
+
+const refusedByStripe = (versions: readonly StoredRequest[]): boolean =>
+  stripeWrote(versions, (version) => version.paymentFailed === true);
+
+const refundedByStripe = (versions: readonly StoredRequest[]): boolean =>
+  stripeWrote(versions, (version) => version.status === "refunded");
 
 /**
  * Brings a row Daysi had retired back into view, because an outcome she has
@@ -115,7 +132,7 @@ export async function markBankPending(reference: string): Promise<MarkBankPendin
   const versions = versionsOf(reference);
   const current = versions.at(-1);
   if (!current) return "unknown";
-  if (paidByStripe(versions) || current.paymentFailed) return "not-waiting";
+  if (paidByStripe(versions) || refusedByStripe(versions)) return "not-waiting";
   if (current.awaitingPayment === "bank") return "already-pending";
 
   await saveRequest({ ...current, awaitingPayment: "bank", source: "stripe" });
@@ -129,9 +146,10 @@ export async function markBankPending(reference: string): Promise<MarkBankPendin
  * not written again. Nothing is sent to her: she is the one who refunded.
  */
 export async function markRefunded(reference: string): Promise<MarkRefundedOutcome> {
-  const current = versionsOf(reference).at(-1);
+  const versions = versionsOf(reference);
+  const current = versions.at(-1);
   if (!current) return "unknown";
-  if (current.status === "refunded") return "already-refunded";
+  if (refundedByStripe(versions)) return "already-refunded";
 
   const { awaitingPayment: _waiting, paymentFailed: _failed, ...settled } = current;
   await saveRequest({ ...settled, status: "refunded", source: "stripe" });
@@ -178,6 +196,9 @@ export async function markFailed(reference: string): Promise<MarkFailedOutcome> 
   const current = versions.at(-1);
   if (!current) return "unknown";
   if (paidByStripe(versions) || !current.awaitingPayment) return "not-waiting";
+  // She has already settled the matter herself. A refusal written on top
+  // would claim money was given back, or closed out, that never came in.
+  if (owesNothing(current.status)) return "not-waiting";
 
   const { awaitingPayment: _waiting, ...rest } = current;
   const failed: StoredRequest = { ...rest, source: "stripe", paymentFailed: true };
@@ -212,6 +233,16 @@ function paidAt(event: Stripe.Event): string {
 }
 
 /**
+ * A delivery that names no order at all: Stripe's own fixtures, or a session
+ * this site did not create. Logged rather than dropped, because a live
+ * session that lost its reference is the one case worth chasing.
+ */
+function nameless(event: Stripe.Event): "no-reference" {
+  console.warn(`[stripe] ${event.type} ${event.id} named no order; nothing written.`);
+  return "no-reference";
+}
+
+/**
  * One line per delivery, naming the event, its id and the order it moved.
  * Several marks answer "not-waiting" for different reasons, so without the
  * reference there is no way to tell a correctly skipped duplicate from a
@@ -234,7 +265,7 @@ export async function applyPaymentEvent(event: Stripe.Event): Promise<PaymentEve
     case "checkout.session.completed": {
       const session = event.data.object;
       const reference = referenceOf(session);
-      if (!reference) return "no-reference";
+      if (!reference) return nameless(event);
       // "unpaid" on a completed page is a bank debit in flight. Anything else
       // ("paid", or "no_payment_required" for a session with nothing owed) is settled.
       if (session.payment_status === "unpaid") {
@@ -249,14 +280,14 @@ export async function applyPaymentEvent(event: Stripe.Event): Promise<PaymentEve
     // Stripe does not promise to deliver the completed page first.
     case "checkout.session.async_payment_succeeded": {
       const reference = referenceOf(event.data.object);
-      if (!reference) return "no-reference";
+      if (!reference) return nameless(event);
       return logged(await markPaid(reference, { via: "bank", at: paidAt(event) }), event, reference);
     }
 
     // The bank refused the debit.
     case "checkout.session.async_payment_failed": {
       const reference = referenceOf(event.data.object);
-      if (!reference) return "no-reference";
+      if (!reference) return nameless(event);
       return logged(await markFailed(reference), event, reference);
     }
 
@@ -264,7 +295,7 @@ export async function applyPaymentEvent(event: Stripe.Event): Promise<PaymentEve
     // for only this long, so the record is closed and the hour goes back on offer.
     case "checkout.session.expired": {
       const reference = referenceOf(event.data.object);
-      if (!reference) return "no-reference";
+      if (!reference) return nameless(event);
       return logged(await markExpired(reference), event, reference);
     }
 
@@ -279,7 +310,7 @@ export async function applyPaymentEvent(event: Stripe.Event): Promise<PaymentEve
         console.info(`[stripe] Partial refund on ${reference ?? charge.id}; left for the office.`);
         return "partial-refund";
       }
-      if (!reference) return "no-reference";
+      if (!reference) return nameless(event);
       return logged(await markRefunded(reference), event, reference);
     }
 

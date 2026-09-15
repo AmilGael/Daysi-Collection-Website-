@@ -73,14 +73,18 @@ export function summarise(request: StoredRequest): string {
   return lines.join("\n");
 }
 
-/** Only Stripe's own line counts: a status Daysi set by hand is not a confirmed payment. */
+/**
+ * Only Stripe's own line counts: a status Daysi set by hand is not a
+ * confirmed payment. Nor is a line the refusal landed on — that line carries
+ * her Pagado forward, and the money is exactly what did not arrive.
+ */
 function paidByStripe(request: StoredRequest): boolean {
-  return request.status === "paid" && request.source === "stripe";
+  return request.status === "paid" && request.source === "stripe" && !request.paymentFailed;
 }
 
 function subjectPrefix(request: StoredRequest): string {
-  if (paidByStripe(request)) return "PAID · ";
   if (request.paymentFailed) return "PAYMENT REFUSED · ";
+  if (paidByStripe(request)) return "PAID · ";
   return "";
 }
 
