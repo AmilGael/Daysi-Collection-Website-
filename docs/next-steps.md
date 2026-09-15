@@ -11,6 +11,7 @@ Short words. No jargon. Read top to bottom.
 - **Account button is a ring** so it does not look like the cart.
 - **Manual for Daysi** (`docs/manual-del-taller.html`) names the tab for each task.
 - **Hub** (14 September 2026): Hoy and Trabajo are one tab. The old Trabajo address still works and lands on Hub.
+- **The confirm bar is always there** (14 September 2026): it reads "Sin cambios" with a greyed button until she changes something.
 
 ## Office steps 2 and 3: done
 

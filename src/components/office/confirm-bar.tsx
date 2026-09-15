@@ -10,6 +10,12 @@ export function ErrorText({ code, count }: { code: string; count?: number }) {
   return <>{t.has(key) ? t(key, { count: count ?? 0 }) : t("updateFailed")}</>;
 }
 
+/**
+ * Always on the page, since 14 September 2026. With nothing staged it reads
+ * "Sin cambios" with a greyed Confirmar and no Descartar, in the same place
+ * it will be when something is: a button she can always see is one she
+ * never has to look for.
+ */
 export function ConfirmBar({
   count,
   status,
@@ -22,9 +28,9 @@ export function ConfirmBar({
   error?: string;
   onConfirm(): void;
   onDiscard(): void;
-}): JSX.Element | null {
+}): JSX.Element {
   const t = useTranslations("office");
-  if (count === 0) return null;
+  const idle = count === 0;
 
   return (
     <div
@@ -32,25 +38,29 @@ export function ConfirmBar({
       className="sticky bottom-0 z-30 mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-line bg-paper/95 py-3 backdrop-blur-md"
     >
       <div>
-        <p className="text-sm font-semibold">{t("changesPending", { count })}</p>
+        <p className={`text-sm font-semibold ${idle ? "text-ink-faint" : ""}`}>
+          {idle ? t("noChanges") : t("changesPending", { count })}
+        </p>
         {status === "failed" && error ? (
           <p className="mt-1 text-[0.8125rem] text-ink"><ErrorText code={error} /></p>
         ) : null}
       </div>
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onDiscard}
-          disabled={status === "confirming"}
-          className="border border-ink px-4 py-2 text-sm font-semibold disabled:opacity-60"
-        >
-          {t("discardChanges")}
-        </button>
+        {idle ? null : (
+          <button
+            type="button"
+            onClick={onDiscard}
+            disabled={status === "confirming"}
+            className="border border-ink px-4 py-2 text-sm font-semibold disabled:opacity-60"
+          >
+            {t("discardChanges")}
+          </button>
+        )}
         <button
           type="button"
           onClick={onConfirm}
-          disabled={status === "confirming"}
-          className="bg-ink px-4 py-2 text-sm font-semibold text-paper disabled:opacity-60"
+          disabled={idle || status === "confirming"}
+          className="bg-ink px-4 py-2 text-sm font-semibold text-paper disabled:opacity-40"
         >
           {status === "confirming" ? t("confirming") : t("confirmChanges")}
         </button>

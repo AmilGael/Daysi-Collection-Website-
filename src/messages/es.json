@@ -515,6 +515,7 @@
     "confirmChanges": "Confirmar cambios",
     "confirming": "Confirmando…",
     "discardChanges": "Descartar",
+    "noChanges": "Sin cambios",
     "leaveUnconfirmed": "Tiene cambios sin confirmar. ¿Salir de todos modos?",
     "removePending": "Quitar",
     "undo": "Deshacer",
