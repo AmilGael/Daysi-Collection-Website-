@@ -32,7 +32,6 @@ export async function POST(request: Request) {
   }
 
   const outcome = await applyPaymentEvent(event);
-  console.info(`[stripe] ${event.type} → ${outcome}`);
 
   return NextResponse.json({ received: true, outcome });
 }

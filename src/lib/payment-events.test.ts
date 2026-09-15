@@ -37,6 +37,12 @@ const record = (
   ...overrides,
 });
 
+/**
+ * What the dispatcher hands a mark. Both facts come off the Stripe event, so
+ * the marks never have to guess the method or the month from the record.
+ */
+const paidNow = { via: "card" as const, at: "2026-09-09T12:00:00.000Z" };
+
 const lines = (kind: StoredRequestKind): StoredRequest[] =>
   readFileSync(path.join(dir, `${kind}.jsonl`), "utf8")
     .split("\n")
@@ -61,9 +67,11 @@ const sessionEvent = (
     clientReferenceId?: string;
     payment_status?: Stripe.Checkout.Session.PaymentStatus;
   } = {},
+  created = Math.floor(Date.parse("2026-09-09T12:00:00.000Z") / 1000),
 ): Stripe.Event =>
   ({
     type,
+    created,
     data: {
       object: {
         metadata: session.reference ? { reference: session.reference } : {},
@@ -87,11 +95,15 @@ const chargeEvent = (charge: { reference?: string; refunded: boolean }): Stripe.
 
 describe("markPaid", () => {
   it("marks the order paid and says the line came from Stripe", async () => {
+    vi.doMock("./notify", () => ({
+      notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaymentFailed: vi.fn(async () => undefined),
+    }));
     const { saveRequest, findRequest } = await import("./request-store");
     const { markPaid } = await import("./payment-events");
 
     await saveRequest(record({ reference: "ORD-1", kind: "order" }));
-    expect(await markPaid("ORD-1")).toBe("marked");
+    expect(await markPaid("ORD-1", paidNow)).toBe("marked");
 
     expect(findRequest("ORD-1")).toMatchObject({ status: "paid", source: "stripe" });
     expect(lines("order")).toHaveLength(2);
@@ -104,7 +116,7 @@ describe("markPaid", () => {
     await saveRequest(record({ reference: "ORD-1", kind: "order" }));
     await saveRequest(record({ reference: "COM-1", kind: "commission" }));
 
-    expect(await markPaid("COM-1")).toBe("marked");
+    expect(await markPaid("COM-1", paidNow)).toBe("marked");
     expect(findRequest("COM-1")?.status).toBe("paid");
     expect(findRequest("ORD-1")?.status).toBe("new");
   });
@@ -114,7 +126,7 @@ describe("markPaid", () => {
     const { markPaid } = await import("./payment-events");
 
     await saveRequest(record({ reference: "ORD-1", kind: "order" }));
-    expect(await markPaid("ORD-nobody")).toBe("unknown");
+    expect(await markPaid("ORD-nobody", paidNow)).toBe("unknown");
     expect(lines("order")).toHaveLength(1);
   });
 
@@ -123,8 +135,8 @@ describe("markPaid", () => {
     const { markPaid } = await import("./payment-events");
 
     await saveRequest(record({ reference: "ORD-1", kind: "order" }));
-    await markPaid("ORD-1");
-    expect(await markPaid("ORD-1")).toBe("already-paid");
+    await markPaid("ORD-1", paidNow);
+    expect(await markPaid("ORD-1", paidNow)).toBe("already-paid");
     expect(lines("order")).toHaveLength(2);
   });
 
@@ -135,12 +147,12 @@ describe("markPaid", () => {
     const { markPaid } = await import("./payment-events");
 
     await saveRequest(record({ reference: "ORD-1", kind: "order" }));
-    await markPaid("ORD-1");
+    await markPaid("ORD-1", paidNow);
     await saveRequest(
       record({ reference: "ORD-1", kind: "order", status: "closed", source: "office" }),
     );
 
-    expect(await markPaid("ORD-1")).toBe("already-paid");
+    expect(await markPaid("ORD-1", paidNow)).toBe("already-paid");
     expect(findRequest("ORD-1")?.status).toBe("closed");
     expect(lines("order")).toHaveLength(3);
   });
@@ -156,13 +168,13 @@ describe("markPaid tells Daysi", () => {
     await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
     expect(notifyOwner).not.toHaveBeenCalled();
 
-    await markPaid("ORD-1");
+    await markPaid("ORD-1", paidNow);
     expect(notifyOwner).toHaveBeenCalledTimes(1);
     expect(notifyOwner).toHaveBeenCalledWith(
       expect.objectContaining({ reference: "ORD-1", status: "paid", source: "stripe" }),
     );
 
-    await markPaid("ORD-1");
+    await markPaid("ORD-1", paidNow);
     expect(notifyOwner).toHaveBeenCalledTimes(1);
   });
 
@@ -172,7 +184,7 @@ describe("markPaid tells Daysi", () => {
     const { markPaid } = await import("./payment-events");
 
     await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
-    await markPaid("ORD-1");
+    await markPaid("ORD-1", paidNow);
 
     expect(findRequest("ORD-1")).not.toHaveProperty("awaitingPayment");
   });
@@ -200,7 +212,7 @@ describe("markExpired", () => {
     const { markPaid, markExpired } = await import("./payment-events");
 
     await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
-    await markPaid("ORD-1");
+    await markPaid("ORD-1", paidNow);
     expect(await markExpired("ORD-1")).toBe("not-waiting");
 
     expect(findRequest("ORD-1")?.status).toBe("paid");
@@ -237,7 +249,7 @@ describe("markRefunded", () => {
     const { markPaid, markRefunded } = await import("./payment-events");
 
     await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
-    await markPaid("ORD-1");
+    await markPaid("ORD-1", paidNow);
     expect(await markRefunded("ORD-1")).toBe("refunded");
 
     expect(findRequest("ORD-1")).toMatchObject({ status: "refunded", source: "stripe" });
@@ -250,7 +262,7 @@ describe("markRefunded", () => {
     const { markPaid, markRefunded } = await import("./payment-events");
 
     await saveRequest(record({ reference: "ORD-1", kind: "order" }));
-    await markPaid("ORD-1");
+    await markPaid("ORD-1", paidNow);
     await markRefunded("ORD-1");
     expect(await markRefunded("ORD-1")).toBe("already-refunded");
     expect(lines("order")).toHaveLength(3);
@@ -262,9 +274,9 @@ describe("markRefunded", () => {
     const { markPaid, markRefunded } = await import("./payment-events");
 
     await saveRequest(record({ reference: "ORD-1", kind: "order" }));
-    await markPaid("ORD-1");
+    await markPaid("ORD-1", paidNow);
     await markRefunded("ORD-1");
-    expect(await markPaid("ORD-1")).toBe("already-paid");
+    expect(await markPaid("ORD-1", paidNow)).toBe("already-paid");
     expect(findRequest("ORD-1")?.status).toBe("refunded");
   });
 
@@ -381,6 +393,34 @@ describe("applyPaymentEvent", () => {
     expect(notifyOwner).toHaveBeenCalledTimes(1);
   });
 
+  it("says the money came by bank even when the bank's answer arrives before the completed page", async () => {
+    // Stripe does not promise an order. Reading the method off the record
+    // would call this a card payment, which is not what Daysi must reconcile.
+    const { saveRequest, findRequest, applyPaymentEvent } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+
+    await applyPaymentEvent(
+      sessionEvent("checkout.session.async_payment_succeeded", { reference: "ORD-1" }),
+    );
+    expect(findRequest("ORD-1")).toMatchObject({ status: "paid", paidVia: "bank" });
+  });
+
+  it("dates the money by the event's own time, not by when the delivery was handled", async () => {
+    // A delivery Stripe retries across a month boundary must not move the
+    // money into the wrong month of the earnings trend.
+    const { saveRequest, findRequest, applyPaymentEvent } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+
+    await applyPaymentEvent(
+      sessionEvent(
+        "checkout.session.async_payment_succeeded",
+        { reference: "ORD-1" },
+        Math.floor(Date.parse("2026-09-30T22:00:00.000Z") / 1000),
+      ),
+    );
+    expect(findRequest("ORD-1")?.paidAt).toBe("2026-09-30T22:00:00.000Z");
+  });
+
   it("does not repeat itself when the completed event is retried after the bank payment landed", async () => {
     const { saveRequest, applyPaymentEvent, notifyOwner } = await setup();
     await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
@@ -395,7 +435,9 @@ describe("applyPaymentEvent", () => {
     expect(notifyOwner).toHaveBeenCalledTimes(1);
   });
 
-  it("closes the order, writes down the refusal, and tells both Daysi and the client when the bank payment bounces", async () => {
+  it("leaves the order open, marked refused, and tells both Daysi and the client when the bank payment bounces", async () => {
+    // The client still owes the money, so the row has to stay in the books
+    // for her to chase. Closing it would say the matter was over.
     const { saveRequest, findRequest, applyPaymentEvent, notifyOwner, notifyClientPaymentFailed } = await setup();
     await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
     await applyPaymentEvent(
@@ -407,14 +449,14 @@ describe("applyPaymentEvent", () => {
         sessionEvent("checkout.session.async_payment_failed", { reference: "ORD-1", payment_status: "unpaid" }),
       ),
     ).toBe("failed");
-    expect(findRequest("ORD-1")).toMatchObject({ status: "closed", source: "stripe", paymentFailed: true });
+    expect(findRequest("ORD-1")).toMatchObject({ status: "new", source: "stripe", paymentFailed: true });
     expect(findRequest("ORD-1")).not.toHaveProperty("awaitingPayment");
     expect(notifyOwner).toHaveBeenCalledTimes(1);
     expect(notifyOwner).toHaveBeenCalledWith(expect.objectContaining({ paymentFailed: true }));
     expect(notifyClientPaymentFailed).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps the status Daysi set, but still records the refusal and tells her, when the bank payment bounces on a record she has handled", async () => {
+  it("keeps the status Daysi set when the bank payment bounces on a record she has handled", async () => {
     const { saveRequest, findRequest, applyPaymentEvent, notifyOwner } = await setup();
     await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
     await applyPaymentEvent(
@@ -433,6 +475,61 @@ describe("applyPaymentEvent", () => {
     expect(findRequest("ORD-1")).not.toHaveProperty("awaitingPayment");
     expect(lines("order")).toHaveLength(4);
     expect(notifyOwner).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps her status even when she changed it before the bank made its promise", async () => {
+    // The bank-pending line is written by Stripe on top of hers, so a rule
+    // that reads only the newest line would not see that she had been here.
+    const { saveRequest, findRequest, applyPaymentEvent } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await saveRequest(
+      record({ reference: "ORD-1", kind: "order", awaitingPayment: true, status: "answered", source: "office" }),
+    );
+    await applyPaymentEvent(
+      sessionEvent("checkout.session.completed", { reference: "ORD-1", payment_status: "unpaid" }),
+    );
+
+    await applyPaymentEvent(
+      sessionEvent("checkout.session.async_payment_failed", { reference: "ORD-1", payment_status: "unpaid" }),
+    );
+    expect(findRequest("ORD-1")).toMatchObject({ status: "answered", paymentFailed: true });
+  });
+
+  it("records the refusal and tells her even on a row she had marked paid by hand", async () => {
+    // Her own Pagado is not proof the money arrived; only Stripe's line is.
+    // Believing it would leave the books counting money that never came.
+    const { saveRequest, findRequest, applyPaymentEvent, notifyOwner, notifyClientPaymentFailed } = await setup();
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await applyPaymentEvent(
+      sessionEvent("checkout.session.completed", { reference: "ORD-1", payment_status: "unpaid" }),
+    );
+    await saveRequest(
+      record({ reference: "ORD-1", kind: "order", awaitingPayment: "bank", status: "paid", source: "office" }),
+    );
+
+    expect(
+      await applyPaymentEvent(
+        sessionEvent("checkout.session.async_payment_failed", { reference: "ORD-1", payment_status: "unpaid" }),
+      ),
+    ).toBe("failed");
+    expect(findRequest("ORD-1")).toMatchObject({ paymentFailed: true });
+    expect(notifyOwner).toHaveBeenCalledTimes(1);
+    expect(notifyClientPaymentFailed).toHaveBeenCalledTimes(1);
+  });
+
+  it("brings a retired row back when its payment is refused, so the refusal can be seen", async () => {
+    const { saveRequest, applyPaymentEvent } = await setup();
+    const { retiredSet, setRetired } = await import("./retired");
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+    await applyPaymentEvent(
+      sessionEvent("checkout.session.completed", { reference: "ORD-1", payment_status: "unpaid" }),
+    );
+    await setRetired("request", "ORD-1", true);
+
+    await applyPaymentEvent(
+      sessionEvent("checkout.session.async_payment_failed", { reference: "ORD-1", payment_status: "unpaid" }),
+    );
+    expect(retiredSet("request").has("ORD-1")).toBe(false);
   });
 
   it("does not tell anyone twice when the failure is delivered again", async () => {

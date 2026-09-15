@@ -111,14 +111,19 @@ SITE_URL="http://localhost:3000"
    If a client pays an order from a bank account rather than a card (since 9 September 2026),
    the row shows **Pago en camino desde el banco**: the client did pay, the bank is still moving
    the money, usually for a few days, and she should leave the row alone. Her email waits until
-   the money lands, and the client's thank-you page says so. If the bank refuses the payment,
-   the row is marked **Pago rechazado por el banco** and closed (unless she had already taken it
-   in hand, in which case it keeps her status), and both she and the client get an email so
-   another way to pay can be agreed. Bookings only take cards, so a deposit never waits.
+   the money lands, and the client's thank-you page says so. Bookings only take cards, so a
+   deposit never waits.
+
+   **If the bank refuses the payment**, the row is marked **Pago rechazado por el banco** and is
+   left open, keeping whatever status it had. Nothing was received, so the money is still owed
+   and Libros still counts it as outstanding; both she and the client get an email so another
+   way to pay can be agreed. Moving the row on to any other status clears the mark. If the
+   client never pays, she sets it to Cerrado herself, as with any order nobody paid for. A
+   booking whose deposit was refused gives its hour back at once.
 
    **A booking nobody paid for gives its hour back on its own.** The payment page for a
    booking closes after 30 minutes, and the calendar offers the hour again 45 minutes after
-   the form was sent. When Stripe reports the closed page (the `expired` event above), the
+   the form was sent. When Stripe reports the closed page (the `expired` event in step 7), the
    row becomes Cerrado by itself; the same happens to a cart order left on the payment page.
 
 7. When that works, take Daysi's **real** keys. In her Stripe account, add a webhook pointing

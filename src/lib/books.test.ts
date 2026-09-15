@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { StoredRequest } from "./request-store";
 import {
+  SALES_COLUMNS,
   billableInRange,
   escapeField,
   exportSummary,
@@ -38,6 +39,10 @@ const record = (over: Partial<StoredRequest> = {}): StoredRequest =>
     ...over,
   }) as StoredRequest;
 
+/** By name, never by position: a new column must not silently move an assertion. */
+const column = (row: readonly string[] | undefined, name: (typeof SALES_COLUMNS)[number]) =>
+  row?.[SALES_COLUMNS.indexOf(name)];
+
 describe("amounts on the export", () => {
   it("writes cents as plain decimal dollars, never a float", () => {
     expect(toAmount(42500)).toBe("425.00");
@@ -66,22 +71,22 @@ describe("spreadsheet safety", () => {
 describe("the sales file", () => {
   it("marks a garment at or above the $110 exemption as taxable", () => {
     const [row] = salesRows([record()], "en");
-    expect(row?.[9]).toBe("TAX");
+    expect(column(row, "ItemTaxCode")).toBe("TAX");
   });
 
   it("marks a garment under the exemption as exempt, matching what was charged", () => {
     const [row] = salesRows([record({ estimate: estimate(9500) })], "en");
-    expect(row?.[9]).toBe("NON");
+    expect(column(row, "ItemTaxCode")).toBe("NON");
   });
 
   it("never taxes Daysi's time", () => {
     const [row] = salesRows([record({ estimate: estimate(17500, "service") })], "en");
-    expect(row?.[9]).toBe("NON");
+    expect(column(row, "ItemTaxCode")).toBe("NON");
   });
 
   it("writes the description in the language she is reading", () => {
-    expect(salesRows([record()], "es")[0]?.[5]).toBe("Conjunto Frutera");
-    expect(salesRows([record()], "en")[0]?.[5]).toBe("Frutera two-piece");
+    expect(column(salesRows([record()], "es")[0], "ItemDescription")).toBe("Conjunto Frutera");
+    expect(column(salesRows([record()], "en")[0], "ItemDescription")).toBe("Frutera two-piece");
   });
 
   it("leads with a header row so the importer can map the columns", () => {
@@ -143,5 +148,24 @@ describe("a refunded order on the export", () => {
     const csv = salesCsv([record({ status: "refunded" })], "en", "2026-01-01", "2026-12-31");
     expect(csv).toContain("Refunded");
     expect(csv).not.toContain("Paid in full");
+  });
+});
+
+describe("when the money actually cleared", () => {
+  it("carries the payment date beside the invoice date, so the export and the office agree", () => {
+    // A bank debit clears days after the order. The invoice keeps the order's
+    // date, which is what the accountant files; the extra column is what lets
+    // the two be reconciled.
+    const [row] = salesRows(
+      [record({ submittedAt: "2026-09-30T18:00:00.000Z", paidAt: "2026-10-03T09:00:00.000Z" })],
+      "en",
+    );
+    expect(column(row, "PaidDate")).toBe("2026-10-03");
+    expect(column(row, "InvoiceDate")).toBe("2026-09-30");
+  });
+
+  it("leaves the payment date empty for money that has not come in", () => {
+    const [row] = salesRows([record({ status: "new" })], "en");
+    expect(column(row, "PaidDate")).toBe("");
   });
 });

@@ -1,5 +1,5 @@
-import { checkoutPaymentStatus } from "./payments";
-import { checkRateLimit } from "./rate-limit";
+import { checkoutPaymentStatus, isSessionId } from "./payments";
+import { checkRateLimit, pruneRateLimits } from "./rate-limit";
 import { findRequest } from "./request-store";
 
 /**
@@ -28,14 +28,17 @@ export async function thankYouState(input: {
 }): Promise<ThankYouState> {
   const record = findRequest(input.reference);
   if (!record) return "unknown";
-  if (record.status === "paid") return "paid";
+  // Only a payment Stripe wrote is a payment. A Pagado Daysi set by hand
+  // after taking cash must not promise this client a receipt by email.
+  if (record.status === "paid") return record.source === "stripe" ? "paid" : "unknown";
   if (record.paymentFailed) return "failed";
   if (record.awaitingPayment === "bank") return "pending";
   if (record.awaitingPayment !== true) return "unknown";
 
-  if (typeof input.sessionId !== "string") return "unknown";
-  if (!checkRateLimit(`thank-you:${input.caller}`, LOOKUPS_PER_HOUR, ONE_HOUR).allowed) {
-    return "unknown";
-  }
+  // Nothing below reaches Stripe unless it could actually answer, so a
+  // lookup that would be refused out of hand costs no part of the budget.
+  if (typeof input.sessionId !== "string" || !isSessionId(input.sessionId)) return "unknown";
+  pruneRateLimits();
+  if (!checkRateLimit(input.caller, LOOKUPS_PER_HOUR, ONE_HOUR).allowed) return "unknown";
   return checkoutPaymentStatus(input.sessionId, input.reference);
 }

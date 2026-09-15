@@ -645,13 +645,13 @@
       <li><span class="label">Reservado</span>: tiene día y hora en el calendario.</li>
       <li><span class="label">Pagado</span>: ya cobró. Si la clienta pagó desde su banco y no con tarjeta, el sitio lo pone en Pagado solo cuando el dinero llega, unos días después.</li>
       <li><span class="label">Reembolsado</span>: devolvió el dinero. Si lo devuelve con tarjeta desde Stripe, el sitio lo marca solo; si fue en efectivo, márquelo usted.</li>
-      <li><span class="label">Cerrado</span>: se entregó y se acabó. El sitio también cierra solo una fila cuando nadie pagó: la etiqueta de la fila dice por qué.</li>
+      <li><span class="label">Cerrado</span>: se entregó y se acabó. El sitio también pone en Cerrado, solo, una fila cuya página de pago se venció sin que nadie pagara.</li>
     </ol>
     <p>
       Junto al estado puede aparecer una etiqueta sobre el pago.
       <span class="label">Pago pendiente</span>: la clienta llegó a la página de pago y todavía no ha pagado.
       <span class="label">Pago en camino desde el banco</span>: sí pagó, desde su banco, y el dinero tarda unos días en llegar; déjela quieta.
-      <span class="label">Pago rechazado por el banco</span>: el banco no envió el dinero; usted y la clienta reciben un correo para acordar otra forma de pagar.
+      <span class="label">Pago rechazado por el banco</span>: el banco no envió el dinero. La fila se queda abierta y el dinero sigue debiéndose, porque la clienta todavía no ha pagado; usted y ella reciben un correo para acordar otra forma de pagar. Cuando usted cambia el estado, la etiqueta se quita.
     </p>
     <p>
       Puede cambiar varios estados juntos. Ninguno llega a la cuenta de la

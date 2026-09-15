@@ -299,7 +299,7 @@
     "pendingTitle": "Payment on its way.",
     "pendingLead": "Reference {reference}. Your bank is still sending the payment, which can take a few days. When it arrives you will get a receipt by email and Daysi will be told. Your request is already saved.",
     "unknownTitle": "Thank you.",
-    "unknownLead": "Reference {reference}. We will confirm your payment by email as soon as Stripe reports it.",
+    "unknownLead": "Reference {reference}. Keep it to hand. If your payment went through you will get a receipt by email, and Daysi will be in touch about anything still owed.",
     "failedTitle": "The payment did not go through.",
     "failedLead": "Reference {reference}. Your bank did not send the payment, so nothing was charged. Daysi has been told and will write to you about another way to pay.",
     "bankNote": "Bank payments are handled by Stripe on their own secure page. This site never sees your bank details.",

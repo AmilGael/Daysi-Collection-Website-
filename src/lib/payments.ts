@@ -59,6 +59,11 @@ const EXPIRY_MARGIN_SECONDS = 60;
 /** How long the thank-you page waits for Stripe before it stops asking. */
 const LOOKUP_TIMEOUT_MS = 5_000;
 
+/** Stripe's own prefix for a Checkout session. A budget is not spent on anything else. */
+export function isSessionId(value: string): boolean {
+  return value.startsWith("cs_");
+}
+
 /** The order a Checkout session belongs to, or null for a session this site did not make. */
 export function referenceOf(
   session: Pick<Stripe.Checkout.Session, "metadata" | "client_reference_id">,
@@ -138,7 +143,7 @@ export async function checkoutPaymentStatus(
   reference: string,
 ): Promise<CheckoutPaymentStatus> {
   if (!paymentsEnabled) return "unknown";
-  if (!sessionId.startsWith("cs_")) return "unknown";
+  if (!isSessionId(sessionId)) return "unknown";
   try {
     const session = await stripe().checkout.sessions.retrieve(sessionId, {
       timeout: LOOKUP_TIMEOUT_MS,

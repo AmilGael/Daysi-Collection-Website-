@@ -42,7 +42,10 @@ const statusMock = vi.fn(async (_id: string, _reference: string): Promise<"paid"
 async function setup() {
   statusMock.mockReset();
   statusMock.mockResolvedValue("unknown");
-  vi.doMock("./payments", () => ({ checkoutPaymentStatus: statusMock }));
+  vi.doMock("./payments", () => ({
+    checkoutPaymentStatus: statusMock,
+    isSessionId: (value: string) => value.startsWith("cs_"),
+  }));
   const { saveRequest } = await import("./request-store");
   const { thankYouState, LOOKUPS_PER_HOUR } = await import("./checkout-outcome");
   return { saveRequest, thankYouState, LOOKUPS_PER_HOUR };
@@ -55,6 +58,28 @@ describe("thankYouState", () => {
 
     expect(await thankYouState({ reference: "ORD-1", sessionId: "cs_test_1", caller: "a" })).toBe("paid");
     expect(statusMock).not.toHaveBeenCalled();
+  });
+
+  it("does not call a status Daysi set by hand a confirmed payment", async () => {
+    // The page would otherwise promise a Stripe receipt for cash she took
+    // in the shop, and nothing would ever arrive.
+    const { saveRequest, thankYouState } = await setup();
+    await saveRequest(record({ status: "paid", source: "office" }));
+
+    expect(await thankYouState({ reference: "ORD-1", sessionId: "cs_test_1", caller: "a" })).toBe("unknown");
+    expect(statusMock).not.toHaveBeenCalled();
+  });
+
+  it("spends no lookup on an id that could not be a Stripe session", async () => {
+    const { saveRequest, thankYouState, LOOKUPS_PER_HOUR } = await setup();
+    await saveRequest(record({ awaitingPayment: true }));
+    statusMock.mockResolvedValue("pending");
+
+    for (let hit = 0; hit < LOOKUPS_PER_HOUR + 2; hit += 1) {
+      expect(await thankYouState({ reference: "ORD-1", sessionId: "abc", caller: "budget" })).toBe("unknown");
+    }
+    expect(statusMock).not.toHaveBeenCalled();
+    expect(await thankYouState({ reference: "ORD-1", sessionId: "cs_test_1", caller: "budget" })).toBe("pending");
   });
 
   it("says pending from the store while the bank is sending the money", async () => {

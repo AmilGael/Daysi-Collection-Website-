@@ -110,7 +110,7 @@ export function OfficeRequestList({
                 {formatMoney(record.estimate.total, locale)}
               </span>
             ) : null}
-            {record.paymentFailed && status !== "paid" ? (
+            {record.paymentFailed ? (
               <Tag tone="quiet">{t("paymentFailed")}</Tag>
             ) : record.awaitingPayment && status !== "paid" ? (
               <Tag tone="quiet">

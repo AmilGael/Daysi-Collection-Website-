@@ -157,13 +157,16 @@ describe("notifyClientPaymentFailed", () => {
 
     const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as {
       to: string[];
+      reply_to?: string;
       subject: string;
       text: string;
     };
     expect(body.to).toEqual(["ana@example.com"]);
+    // The letter invites a reply, so it has to reach Daysi and not no-reply@.
+    expect(body.reply_to).toBe("daysi@example.com");
     expect(body.subject).toContain("ORD-1");
-    expect(body.text).toContain("banco");
-    expect(body.text).not.toContain("bank ");
+    expect(body.text).toContain("Su banco no envió el pago");
+    expect(body.text).not.toMatch(/\bbank\b/i);
   });
 
   it("writes in English to an English-speaking client", async () => {

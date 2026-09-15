@@ -299,7 +299,7 @@
     "pendingTitle": "Pago en camino.",
     "pendingLead": "Referencia {reference}. Su banco todavía está enviando el pago, y eso puede tardar unos días. Cuando llegue, recibirá el recibo por correo y Daysi será avisada. Su solicitud ya quedó guardada.",
     "unknownTitle": "Gracias.",
-    "unknownLead": "Referencia {reference}. Le confirmaremos el pago por correo en cuanto Stripe lo reporte.",
+    "unknownLead": "Referencia {reference}. Guárdela. Si el pago se completó, recibirá el recibo por correo, y Daysi le escribirá sobre cualquier cosa pendiente.",
     "failedTitle": "El pago no se completó.",
     "failedLead": "Referencia {reference}. Su banco no envió el pago, así que no se cobró nada. Daysi ya fue avisada y le escribirá para acordar otra forma de pagar.",
     "bankNote": "Los pagos desde el banco los maneja Stripe en su propia página segura. Este sitio nunca ve sus datos bancarios.",

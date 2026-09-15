@@ -28,6 +28,7 @@ export const SALES_COLUMNS = [
   "CustomerEmail",
   "InvoiceDate",
   "DueDate",
+  "PaidDate",
   "ItemDescription",
   "ItemQuantity",
   "ItemRate",
@@ -91,6 +92,10 @@ export function salesRows(
         record.client.email,
         day,
         day,
+        // The invoice keeps the day the order was placed, which is what the
+        // return is filed on; a bank payment clears days later, and this is
+        // what reconciles the export against the office's cleared-money trend.
+        record.paidAt ? record.paidAt.slice(0, 10) : "",
         note ? `${label} — ${note}` : label,
         "1",
         toAmount(line.amount),
