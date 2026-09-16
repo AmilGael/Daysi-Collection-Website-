@@ -32,4 +32,10 @@ describe("the sheet", () => {
     expect(office(es).sheetDone).toBe("Listo");
     expect(office(en).sheetDone).toBe("Done");
   });
+
+  it("focuses the first control inside its content, and names its buttons by what they show", () => {
+    expect(source).toContain('const first = content.current?.querySelector<HTMLElement>("input, textarea, select, button");');
+    expect(source).not.toContain('aria-label={t("sheetClose")}\n            className={buttonClass');
+    expect(source).toContain('aria-label={t("sheetClose")}\n        onClick={onClose}');
+  });
 });

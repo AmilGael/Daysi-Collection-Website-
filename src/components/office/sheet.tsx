@@ -34,12 +34,14 @@ export function Sheet({
 }): JSX.Element | null {
   const t = useTranslations("office");
   const panel = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
   const closing = useRef<"pop" | null>(null);
 
   useEffect(() => {
     if (!open) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    panel.current?.querySelector<HTMLElement>("input, textarea, select, button")?.focus();
+    const first = content.current?.querySelector<HTMLElement>("input, textarea, select, button");
+    (first ?? panel.current?.querySelector<HTMLElement>("button"))?.focus();
 
     const key = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -68,7 +70,12 @@ export function Sheet({
 
   return (
     <div className="fixed inset-0 z-20">
-      <div className="absolute inset-0 bg-ink/40" aria-hidden onClick={onClose} />
+      <button
+        type="button"
+        aria-label={t("sheetClose")}
+        onClick={onClose}
+        className="absolute inset-0 bg-ink/40"
+      />
       <div
         ref={panel}
         role="dialog"
@@ -81,13 +88,12 @@ export function Sheet({
           <button
             type="button"
             onClick={onClose}
-            aria-label={t("sheetClose")}
             className={buttonClass({ size: "small", tone: "solid" })}
           >
             {t("sheetDone")}
           </button>
         </header>
-        <div className="flex-1 overflow-y-auto px-5 py-5">{children}</div>
+        <div ref={content} className="flex-1 overflow-y-auto px-5 py-5">{children}</div>
       </div>
     </div>
   );
