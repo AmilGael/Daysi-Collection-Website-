@@ -69,7 +69,7 @@ export function Sheet({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-20">
+    <div className="fixed inset-0 z-50">
       <button
         type="button"
         aria-label={t("sheetClose")}

@@ -18,7 +18,7 @@ describe("the sheet", () => {
   it("is a dialog that stays under the confirm bar", () => {
     expect(source).toContain('role="dialog"');
     expect(source).toContain('aria-modal="true"');
-    expect(source).toContain("fixed inset-0 z-20");
+    expect(source).toContain("fixed inset-0 z-50");
     expect(source).toContain("bottom-16");
   });
 
