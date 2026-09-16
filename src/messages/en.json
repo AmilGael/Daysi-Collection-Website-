@@ -545,7 +545,10 @@
       "nothing-to-undo": "There is no earlier version to go back to.",
       "in-use": "{count, plural, one {# garment on the site still uses this} other {# garments on the site still use this}}. Retire the garment first.",
       "unknown-fabric": "That fabric could not be found.",
-      "entry-retired": "That price is retired. Restore it under Prices before using it."
+      "entry-retired": "That price is retired. Restore it under Prices before using it.",
+      "unknown-photo": "That photo does not belong to this garment.",
+      "translation-off": "Automatic translation is not set up; the English stays a copy of the Spanish.",
+      "translation-failed": "The translation did not come through. Try again."
     },
     "retire": "Retire",
     "retireConfirm": "Retire {name}? It leaves the site. You can restore it from Retired.",

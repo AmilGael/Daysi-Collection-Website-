@@ -545,7 +545,10 @@
       "nothing-to-undo": "No hay una versión anterior que recuperar.",
       "in-use": "{count, plural, one {# prenda del sitio todavía usa esto} other {# prendas del sitio todavía usan esto}}. Retire la prenda primero.",
       "unknown-fabric": "No se encontró esa tela.",
-      "entry-retired": "Ese precio está retirado. Restáurelo en Precios antes de usarlo."
+      "entry-retired": "Ese precio está retirado. Restáurelo en Precios antes de usarlo.",
+      "unknown-photo": "Esa foto no es de esta prenda.",
+      "translation-off": "La traducción automática no está configurada; el inglés queda igual al español.",
+      "translation-failed": "No se pudo traducir ahora. Intente otra vez."
     },
     "retire": "Retirar",
     "retireConfirm": "¿Retirar {name}? Sale del sitio. Puede restaurarla desde Retirados.",
