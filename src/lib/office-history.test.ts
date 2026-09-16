@@ -161,6 +161,25 @@ describe("office undo history", () => {
     expect(undoableIds("request-status")).toContain("MSG-TEST");
   });
 
+  it("restores the photo order and the studio switch a previous override carried", async () => {
+    const { previousChangeFor } = await import("./office-history");
+    const { saveStyleOverride } = await import("./live-catalog");
+    const a = "/images/real/frutera-capri.jpg";
+    const b = "/images/real/frutera-campaign.jpg";
+
+    await saveStyleOverride({ styleId: "frutera", isPublished: true, stock: {}, photos: [b, a], inStudio: true });
+    await saveStyleOverride({ styleId: "frutera", isPublished: true, stock: {}, photos: [a, b], inStudio: false });
+    expect(previousChangeFor("style-override", "frutera")).toEqual({
+      type: "style-override",
+      key: "style:frutera",
+      styleId: "frutera",
+      isPublished: true,
+      stock: {},
+      photos: [b, a],
+      inStudio: true,
+    });
+  });
+
 });
 
 describe("text undo", () => {

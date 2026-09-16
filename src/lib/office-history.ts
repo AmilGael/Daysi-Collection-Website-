@@ -56,7 +56,11 @@ function recordStream<R>(
   };
 }
 
-/** Photos are only ever added from the office, so an undo never takes them away. */
+/**
+ * Records written before the photo list existed only ever added photos, so
+ * an undo of one of those never takes a photo away. A record with a `photos`
+ * list is the whole truth and is restored as it was.
+ */
 function newestPhotos(id: string): readonly string[] | undefined {
   return versionsOf<StyleOverride>("style-overrides", (record) => record.styleId, id).at(-1)?.addedPhotos;
 }
@@ -80,15 +84,17 @@ const styleOverride = recordStream<StyleOverride>(
     };
   },
   (record, id) => {
-    const photos = newestPhotos(id) ?? record.addedPhotos;
+    const legacy = record.photos ? undefined : (newestPhotos(id) ?? record.addedPhotos);
     return {
       type: "style-override",
       key: `style:${id}`,
       styleId: id,
       isPublished: record.isPublished,
       stock: record.stock,
-      ...(photos === undefined ? {} : { addedPhotos: [...photos] }),
-      ...(record.coverSrc === undefined ? {} : { coverSrc: record.coverSrc }),
+      ...(record.photos ? { photos: [...record.photos] } : {}),
+      ...(legacy === undefined ? {} : { addedPhotos: [...legacy] }),
+      ...(record.coverSrc === undefined || record.photos ? {} : { coverSrc: record.coverSrc }),
+      ...(record.inStudio === undefined ? {} : { inStudio: record.inStudio }),
     };
   },
 );

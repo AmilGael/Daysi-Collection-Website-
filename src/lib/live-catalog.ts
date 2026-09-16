@@ -1,6 +1,6 @@
 import { appendRecord, latestBy, readRecords } from "./records";
 import { styles } from "@/content";
-import type { GarmentStyle, Premiere } from "@/content/types";
+import type { GarmentStyle, Premiere, StylePhoto } from "@/content/types";
 import { retiredSet } from "./retired";
 import { applyStyleText, textOverrides, type TextOverride } from "./live-text";
 
@@ -25,6 +25,15 @@ export type StyleOverride = {
   readonly addedPhotos?: readonly string[];
   /** When set, the photo with this src leads the style's gallery. */
   readonly coverSrc?: string;
+  /**
+   * The complete list of photos to show, in order; the first is the cover.
+   * A coded photo left out is hidden, never deleted. Absent on records
+   * written before 15 September 2026, which read by addedPhotos and
+   * coverSrc as they always did.
+   */
+  readonly photos?: readonly string[];
+  /** Offered in the design studio. Absent says nothing, so the garment's own flag stands. */
+  readonly inStudio?: boolean;
   readonly updatedAt: string;
 };
 
@@ -61,20 +70,36 @@ export function applyOverrides(
     const override = byId.get(style.id);
     if (!override) return style;
 
-    const added = (override.addedPhotos ?? []).map((src) => ({
-      src,
-      alt: {
-        en: `${style.name.en}, photographed in the atelier.`,
-        es: `${style.name.es}, fotografiado en el taller.`,
-      },
-      isPrimary: false,
-    }));
-    let photos = [...style.photos, ...added];
-    if (override.coverSrc && photos.some((photo) => photo.src === override.coverSrc)) {
-      photos = [
-        ...photos.filter((photo) => photo.src === override.coverSrc).map((photo) => ({ ...photo, isPrimary: true })),
-        ...photos.filter((photo) => photo.src !== override.coverSrc).map((photo) => ({ ...photo, isPrimary: false })),
-      ];
+    const atelierAlt = {
+      en: `${style.name.en}, photographed in the atelier.`,
+      es: `${style.name.es}, fotografiado en el taller.`,
+    };
+
+    let photos: StylePhoto[];
+    if (override.photos) {
+      // The list is the truth: coded photos keep their alt, uploads get the
+      // atelier's, a src the garment never owned is dropped, and a list that
+      // names nothing it owns changes nothing.
+      const coded = new Map(style.photos.map((photo) => [photo.src, photo]));
+      const listed = override.photos.flatMap((src) => {
+        const known = coded.get(src);
+        if (known) return [known];
+        if (src.startsWith("/uploads/")) return [{ src, alt: atelierAlt, isPrimary: false }];
+        return [];
+      });
+      photos = (listed.length > 0 ? listed : [...style.photos]).map((photo, index) => ({
+        ...photo,
+        isPrimary: index === 0,
+      }));
+    } else {
+      const added = (override.addedPhotos ?? []).map((src) => ({ src, alt: atelierAlt, isPrimary: false }));
+      photos = [...style.photos, ...added];
+      if (override.coverSrc && photos.some((photo) => photo.src === override.coverSrc)) {
+        photos = [
+          ...photos.filter((photo) => photo.src === override.coverSrc).map((photo) => ({ ...photo, isPrimary: true })),
+          ...photos.filter((photo) => photo.src !== override.coverSrc).map((photo) => ({ ...photo, isPrimary: false })),
+        ];
+      }
     }
 
     return {
@@ -85,6 +110,7 @@ export function applyOverrides(
         const stocked = override.stock[offered.sizeId as keyof SizeStock];
         return stocked === undefined ? offered : { ...offered, inStock: stocked };
       }),
+      ...(override.inStudio === undefined ? {} : { inStudio: override.inStudio }),
     };
   });
 }
@@ -127,6 +153,11 @@ export async function saveAddedStyle(style: GarmentStyle): Promise<void> {
 /** The catalog as the public site should see it right now. */
 export function liveStyles(): GarmentStyle[] {
   return allLiveStyles().filter((style) => style.isPublished);
+}
+
+/** The garments the design studio offers beside a fabric: live, and switched on. */
+export function liveStudioStyles(): GarmentStyle[] {
+  return liveStyles().filter((style) => style.inStudio === true);
 }
 
 /** Every style, published or not, with overrides applied — the office view. */

@@ -44,3 +44,57 @@ describe("the live catalog merge", () => {
     ).toBe(true);
   });
 });
+
+describe("the photo list on an override", () => {
+  const frutera = () => styles.find((style) => style.id === "frutera")!;
+  const coded = () => frutera().photos.map((photo) => photo.src);
+
+  it("shows the photos the record lists, in that order, the first as the cover", () => {
+    const [first, second] = coded();
+    const merged = applyOverrides(styles, [override({ photos: [second!, first!] })]);
+    const photos = merged.find((style) => style.id === "frutera")!.photos;
+    expect(photos.map((photo) => photo.src)).toEqual([second, first]);
+    expect(photos.map((photo) => photo.isPrimary)).toEqual([true, false]);
+    // A coded photo keeps its own alt text.
+    expect(photos[0]!.alt).toEqual(frutera().photos[1]!.alt);
+  });
+
+  it("hides a coded photo the list leaves out, and gives an upload the atelier alt", () => {
+    const [first] = coded();
+    const merged = applyOverrides(styles, [
+      override({ photos: ["/uploads/img-abc12345.jpg", first!] }),
+    ]);
+    const photos = merged.find((style) => style.id === "frutera")!.photos;
+    expect(photos.map((photo) => photo.src)).toEqual(["/uploads/img-abc12345.jpg", first]);
+    expect(photos[0]!.alt.es).toContain("fotografiado en el taller");
+    expect(photos[0]!.isPrimary).toBe(true);
+  });
+
+  it("drops a photo the garment does not own, and keeps the coded photos when nothing is left", () => {
+    const [first] = coded();
+    const withStranger = applyOverrides(styles, [override({ photos: ["/images/real/other.jpg", first!] })]);
+    expect(withStranger.find((style) => style.id === "frutera")!.photos.map((photo) => photo.src)).toEqual([first]);
+    const nothingLeft = applyOverrides(styles, [override({ photos: ["/images/real/other.jpg"] })]);
+    expect(nothingLeft.find((style) => style.id === "frutera")!.photos).toEqual(frutera().photos);
+  });
+
+  it("reads a record without a photo list exactly as before: added after coded, cover by src", () => {
+    const merged = applyOverrides(styles, [
+      override({ addedPhotos: ["/uploads/img-abc12345.jpg"], coverSrc: "/uploads/img-abc12345.jpg" }),
+    ]);
+    const photos = merged.find((style) => style.id === "frutera")!.photos;
+    expect(photos[0]!.src).toBe("/uploads/img-abc12345.jpg");
+    expect(photos[0]!.isPrimary).toBe(true);
+    expect(photos).toHaveLength(coded().length + 1);
+  });
+});
+
+describe("offered in the studio", () => {
+  it("is off for a coded garment and follows the record when it says so", () => {
+    expect(applyOverrides(styles, []).find((style) => style.id === "frutera")!.inStudio).toBeUndefined();
+    const on = applyOverrides(styles, [override({ inStudio: true })]);
+    expect(on.find((style) => style.id === "frutera")!.inStudio).toBe(true);
+    const silent = applyOverrides(styles, [override({ stock: { m: false } })]);
+    expect(silent.find((style) => style.id === "frutera")!.inStudio).toBeUndefined();
+  });
+});

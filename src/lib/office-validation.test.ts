@@ -46,13 +46,10 @@ describe("what the office accepts for a style override", () => {
 
 describe("what the office accepts for a new garment", () => {
   const draft = {
-    name: { es: "Cumbia maxi", en: "Cumbia maxi" },
-    description: {
-      es: "A gathered-waist maxi in a golden print.",
-      en: "A gathered-waist maxi in a golden print.",
-    },
-    detail: { es: "", en: "" },
-    color: { es: "", en: "" },
+    name: "Cumbia maxi",
+    description: "Un maxi de cintura fruncida en un estampado dorado.",
+    detail: "",
+    color: "",
     categoryId: "dresses",
     fabricId: "medallon-print",
     sizes: { s: true, m: true, l: false },
@@ -85,13 +82,10 @@ const styleOverrideChange = {
 const styleCreateChange = {
   type: "style-create",
   key: "style-create:one",
-  name: { es: "Cumbia maxi", en: "Cumbia maxi" },
-  description: {
-    es: "A gathered-waist maxi in a golden print.",
-    en: "A gathered-waist maxi in a golden print.",
-  },
-  detail: { es: "", en: "" },
-  color: { es: "", en: "" },
+  name: "Cumbia maxi",
+  description: "Un maxi de cintura fruncida en un estampado dorado.",
+  detail: "",
+  color: "",
   categoryId: "dresses",
   fabricId: "medallon-print",
   sizes: { s: true, m: true, l: false },
@@ -267,30 +261,10 @@ describe("UNDO_KINDS", () => {
   });
 });
 
-describe("bilingual creation", () => {
-  const draft = {
-    type: "style-create" as const,
-    key: "create:1",
-    name: { es: "Vestido", en: "Dress" },
-    description: { es: "Una descripción larga.", en: "A long enough description." },
-    detail: { es: "", en: "" },
-    color: { es: "Azul", en: "Blue" },
-    categoryId: "dresses",
-    fabricId: "laguna",
-    sizes: { s: false, m: true, l: false },
-    photos: ["/uploads/a.jpg"],
-  };
-
-  it("accepts a garment with both languages", () => {
-    expect(collectionChangeSchema.safeParse(draft).success).toBe(true);
-  });
-
-  it("refuses a garment whose English name is missing", () => {
-    expect(
-      collectionChangeSchema.safeParse({ ...draft, name: { es: "Vestido", en: "" } }).success,
-    ).toBe(false);
-  });
-
+describe("bilingual gallery captions", () => {
+  // A garment's own name, color, description and detail are Spanish-only at
+  // creation (see "a new garment is typed in Spanish only" below); the
+  // gallery's caption is still typed in both languages.
   it("accepts a gallery photo with both captions", () => {
     expect(
       galleryChangeSchema.safeParse({
@@ -303,5 +277,80 @@ describe("bilingual creation", () => {
         caption: { es: "Un vestido marfil.", en: "An ivory dress." },
       }).success,
     ).toBe(true);
+  });
+});
+
+describe("the photo list and the studio switch on an override", () => {
+  it("accepts a list of coded and uploaded photos, and the studio flag", () => {
+    const result = styleOverrideSchema.safeParse({
+      styleId: "frutera",
+      ...override,
+      photos: ["/images/real/frutera-capri.jpg", "/uploads/img-abc12345.jpg"],
+      inStudio: true,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("refuses an empty list and a list of more than twelve", () => {
+    expect(styleOverrideSchema.safeParse({ styleId: "frutera", ...override, photos: [] }).success).toBe(false);
+    expect(
+      styleOverrideSchema.safeParse({
+        styleId: "frutera",
+        ...override,
+        photos: Array.from({ length: 13 }, (_, index) => `/uploads/img-${index}.jpg`),
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("a new garment is typed in Spanish only", () => {
+  it("takes one string per field and defaults the studio switch to off", () => {
+    const result = styleCreateSchema.safeParse({
+      name: "Cumbia maxi",
+      description: "Un maxi de cintura fruncida en un estampado dorado.",
+      detail: "",
+      color: "",
+      categoryId: "dresses",
+      fabricId: "medallon-print",
+      sizes: { s: true, m: true, l: false },
+      photos: ["/uploads/img-abc123.jpg"],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.inStudio).toBe(false);
+  });
+
+  it("refuses the old two-language shape", () => {
+    const result = styleCreateSchema.safeParse({
+      name: { es: "Cumbia maxi", en: "Cumbia maxi" },
+      description: "Un maxi de cintura fruncida en un estampado dorado.",
+      detail: "",
+      color: "",
+      categoryId: "dresses",
+      fabricId: "medallon-print",
+      sizes: { s: true, m: true, l: false },
+      photos: ["/uploads/img-abc123.jpg"],
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("asking for a translation", () => {
+  it("names the garment and the fields", () => {
+    const result = collectionChangeSchema.safeParse({
+      type: "translate",
+      key: "translate:style:frutera",
+      id: "frutera",
+      fields: ["name", "description"],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("refuses an unknown field and an empty list", () => {
+    expect(
+      collectionChangeSchema.safeParse({ type: "translate", key: "translate:style:frutera", id: "frutera", fields: ["slug"] }).success,
+    ).toBe(false);
+    expect(
+      collectionChangeSchema.safeParse({ type: "translate", key: "translate:style:frutera", id: "frutera", fields: [] }).success,
+    ).toBe(false);
   });
 });
