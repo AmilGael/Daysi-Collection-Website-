@@ -38,13 +38,21 @@ export const styleOverrideSchema = z.object({
     .max(12)
     .optional(),
   coverSrc: z.string().max(200).optional(),
+  /** The full photo order, cover first: a coded src or an upload path each. Absent keeps the older rule. */
+  photos: z
+    .array(z.string().trim().min(1).max(200).regex(/^\/(images|uploads)\/[A-Za-z0-9._/-]+\.(jpg|jpeg|png|webp)$/))
+    .min(1)
+    .max(12)
+    .optional(),
+  inStudio: z.boolean().optional(),
 });
 
+/** Typed in Spanish only; the action writes the English (design, Amendment 4 §5). */
 export const styleCreateSchema = z.object({
-  name: pair(2, 60),
-  description: pair(10, 400),
-  detail: pair(0, 400),
-  color: pair(0, 80),
+  name: z.string().trim().min(2).max(60),
+  description: z.string().trim().min(10).max(400),
+  detail: z.string().trim().max(400),
+  color: z.string().trim().max(80),
   categoryId: z.enum(categories.map((category) => category.id) as [string, ...string[]]),
   fabricId: z.string().trim().min(1).max(60),
   /** Only consulted when the garment-and-cloth pair has no published price. */
@@ -54,6 +62,7 @@ export const styleCreateSchema = z.object({
     .array(uploadPath)
     .min(1)
     .max(8),
+  inStudio: z.boolean().default(false),
 });
 
 export const retireChangeSchema = z.object({
@@ -108,10 +117,19 @@ export const workTextSchema = z.object({
   value: textValue("caption"),
 });
 
+/** "Traducir": write the English for these fields from their current Spanish. */
+export const translateChangeSchema = z.object({
+  type: z.literal("translate"),
+  key: changeKey,
+  id,
+  fields: z.array(z.enum(["name", "color", "description", "detail"])).min(1).max(4),
+});
+
 export const collectionChangeSchema = z.discriminatedUnion("type", [
   styleOverrideSchema.extend({ type: z.literal("style-override"), key: changeKey }),
   styleCreateSchema.extend({ type: z.literal("style-create"), key: changeKey }),
   styleTextSchema,
+  translateChangeSchema,
   retireChangeSchema,
   restoreChangeSchema,
 ]);

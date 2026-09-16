@@ -27,6 +27,12 @@ export type DraftChange<Wire> = {
   readonly wire: Wire;
   readonly files?: readonly File[];
   readonly withUploads?: (srcs: readonly string[]) => Wire;
+  /**
+   * Whatever the editor that staged this needs to redraw it: the sheet keeps
+   * its photo slots here so a pending order survives closing and reopening.
+   * The provider never reads it.
+   */
+  readonly meta?: unknown;
 };
 export type ApplyChanges<Wire> = (
   changes: Wire[],

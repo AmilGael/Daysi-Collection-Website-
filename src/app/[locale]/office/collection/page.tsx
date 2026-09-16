@@ -1,16 +1,17 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { categories, styles, translate } from "@/content";
-import { addedStyles, assembleStyles, manageableStyles, styleOverrides } from "@/lib/live-catalog";
+import { translationEnabled } from "@/lib/env";
+import { addedStyles, assembleStyles, manageableStyles } from "@/lib/live-catalog";
 import { liveFabrics, livePriceList } from "@/lib/live-pricing";
 import { undoableIds } from "@/lib/office-history";
-import { CollectionManager, type ManagedStyle } from "@/components/collection-manager";
-import { StyleComposer } from "@/components/style-composer";
+import { CollectionCards } from "@/components/collection-cards";
+import type { ManagedStyle } from "@/components/office/garment-draft";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { officeViewer } from "../_lib/viewer";
 import { applyCollectionChanges } from "./actions";
 
-/** Collection: the rack, and the form that puts a new garment on it. */
+/** Colección: the rack as cards, and the sheet that opens one. */
 export default async function OfficeCollectionPage({
   params,
 }: {
@@ -25,12 +26,13 @@ export default async function OfficeCollectionPage({
 
   const undoable = undoableIds("style-override");
   const undoableTexts = undoableIds("style-text");
-  const overridesById = new Map(styleOverrides().map((override) => [override.styleId, override]));
   const codedStyles = new Map(
-    assembleStyles(styles, addedStyles(), styleOverrides(), new Set()).map((style) => [style.id, style]),
+    assembleStyles(styles, addedStyles(), [], new Set()).map((style) => [style.id, style]),
   );
+  const prices = new Map(livePriceList().map((entry) => [entry.id, entry.fixedPrice]));
   const managedStyles: ManagedStyle[] = manageableStyles().map((style) => ({
     id: style.id,
+    slug: style.slug,
     name: translate(style.name, language),
     category: translate(
       categories.find((category) => category.id === style.categoryId)?.name ?? {
@@ -39,15 +41,14 @@ export default async function OfficeCollectionPage({
       },
       language,
     ),
-    photo: (style.photos.find((photo) => photo.isPrimary) ?? style.photos[0])?.src ?? "",
-    photoCount: style.photos.length,
+    price: prices.get(style.priceEntryId) ?? null,
+    photos: style.photos.map((photo) => photo.src),
     isPublished: style.isPublished,
+    inStudio: style.inStudio === true,
     sizes: style.sizes.map((size) => ({
       sizeId: size.sizeId as "s" | "m" | "l",
       inStock: size.inStock,
     })),
-    addedPhotos: overridesById.get(style.id)?.addedPhotos ?? [],
-    coverSrc: overridesById.get(style.id)?.coverSrc,
     retired: style.retired,
     undoable: undoable.has(style.id),
     texts: {
@@ -87,27 +88,16 @@ export default async function OfficeCollectionPage({
         </p>
       </div>
       <OfficeDraftProvider apply={applyCollectionChanges}>
-        <CollectionManager
+        <CollectionCards
           styles={active}
           retired={retired}
           locale={language}
+          categories={composerCategories}
+          fabrics={composerFabrics}
+          pricedPairs={pricedPairs}
           undoableTexts={undoableTexts}
+          translationEnabled={translationEnabled}
         />
-
-        <div className="flex flex-col gap-4 border-t border-line pt-8">
-          <div className="flex flex-col gap-2">
-            <h3 className="text-[0.9375rem] font-medium">{t("styleAddTitle")}</h3>
-            <p className="max-w-xl text-[0.875rem] leading-relaxed text-ink-faint">
-              {t("styleAddLead")}
-            </p>
-          </div>
-          <StyleComposer
-            categories={composerCategories}
-            fabrics={composerFabrics}
-            pricedPairs={pricedPairs}
-            locale={language}
-          />
-        </div>
       </OfficeDraftProvider>
     </section>
   );

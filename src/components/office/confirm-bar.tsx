@@ -15,6 +15,10 @@ export function ErrorText({ code, count }: { code: string; count?: number }) {
  * "Sin cambios" with a greyed Confirmar and no Descartar, in the same place
  * it will be when something is: a button she can always see is one she
  * never has to look for.
+ *
+ * It sits at z-[60]: above the sheet (z-50), which is above the sticky site
+ * header (z-40), so Confirmar cambios is tappable whether a sheet is open
+ * or not.
  */
 export function ConfirmBar({
   count,
@@ -35,7 +39,7 @@ export function ConfirmBar({
   return (
     <div
       role="status"
-      className="sticky bottom-0 z-30 mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-line bg-paper/95 py-3 backdrop-blur-md"
+      className="sticky bottom-0 z-[60] mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-line bg-paper/95 py-3 backdrop-blur-md"
     >
       <div>
         <p className={`text-sm font-semibold ${idle ? "text-ink-faint" : ""}`}>

@@ -22,6 +22,7 @@ describe("the confirm bar", () => {
     expect(source).not.toContain("if (count === 0) return null;");
     expect(source).toContain("const idle = count === 0;");
     expect(source).toContain('{idle ? t("noChanges") : t("changesPending", { count })}');
+    expect(source).toContain("z-[60]");
   });
 
   it("greys the confirm button and hides discard while there is nothing staged", () => {

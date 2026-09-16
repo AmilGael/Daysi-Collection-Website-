@@ -89,6 +89,12 @@ export type GarmentStyle = {
   readonly photos: readonly StylePhoto[];
   readonly customizationAvailable: boolean;
   readonly isPublished: boolean;
+  /**
+   * Offered in the design studio, where a fabric is shown beside its photo
+   * (office design, Amendment 4 §8). Unset on every coded garment: Daysi
+   * switches a piece on from the office.
+   */
+  readonly inStudio?: boolean;
   /** Set when the piece belongs to a limited-edition premiere. */
   readonly premiereId?: string;
 };
