@@ -8,11 +8,12 @@ import { buttonClass } from "@/components/ui";
  * A place to edit one thing, not a place that saves.
  *
  * Under 640 px it fills the screen; above, it is a panel on the right.
- * Either way it sits above the page and below the confirm bar, and leaves
- * the bar's height free at its foot, so Confirmar cambios is always there
- * (design, Amendment 4 §2). Every control inside stages into the tab's
- * draft, so closing loses nothing: Listo, Escape, the backdrop and the
- * phone's back gesture all just close.
+ * Either way it sits at z-50: above the page and the sticky site header
+ * (z-40), and below the confirm bar (z-[60]), and leaves the bar's height
+ * free at its foot, so Confirmar cambios is always there and always
+ * tappable (design, Amendment 4 §2). Every control inside stages into the
+ * tab's draft, so closing loses nothing: Listo, Escape, the backdrop and
+ * the phone's back gesture all just close.
  *
  * The back gesture works through one pushed history entry per open sheet.
  * The entry keeps Next's own state (spread first) so the router still
