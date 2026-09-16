@@ -12,6 +12,8 @@ Short words. No jargon. Read top to bottom.
 - **Manual for Daysi** (`docs/manual-del-taller.html`) names the tab for each task.
 - **Hub** (14 September 2026): Hoy and Trabajo are one tab. The old Trabajo address still works and lands on Hub.
 - **The confirm bar is always there** (14 September 2026): it reads "Sin cambios" with a greyed button until she changes something.
+- **Colección is cards and a sheet** (15 September 2026). Tap a garment to open it. Every photo can be added, removed, moved and made the cover. Daysi types Spanish only; the site writes the English when she confirms. Each garment has a switch "Se ofrece en el estudio"; the studio page that uses it is step 4.
+- **The English needs a key.** Without `ANTHROPIC_API_KEY` on Fly, the English is a copy of the Spanish and the sheet says "Inglés pendiente" with a Traducir link. To turn it on, from a machine with the Fly CLI: `fly secrets set -a daysicollectioninc ANTHROPIC_API_KEY="sk-ant-..."` (a key from console.anthropic.com; a busy month costs under a dollar). Locally, the same line goes in `.env.local`.
 
 ## Office steps 2 and 3: done
 
