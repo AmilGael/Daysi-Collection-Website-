@@ -525,6 +525,8 @@
     "confirming": "Confirming…",
     "discardChanges": "Discard",
     "noChanges": "No changes",
+    "sheetDone": "Done",
+    "sheetClose": "Close",
     "leaveUnconfirmed": "You have unconfirmed changes. Leave anyway?",
     "removePending": "Remove",
     "undo": "Undo",

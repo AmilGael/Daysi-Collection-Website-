@@ -525,6 +525,8 @@
     "confirming": "Confirmando…",
     "discardChanges": "Descartar",
     "noChanges": "Sin cambios",
+    "sheetDone": "Listo",
+    "sheetClose": "Cerrar",
     "leaveUnconfirmed": "Tiene cambios sin confirmar. ¿Salir de todos modos?",
     "removePending": "Quitar",
     "undo": "Deshacer",
