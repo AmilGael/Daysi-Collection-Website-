@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { categories, styles, translate } from "@/content";
+import { translationEnabled } from "@/lib/env";
 import { addedStyles, assembleStyles, manageableStyles } from "@/lib/live-catalog";
 import { liveFabrics, livePriceList } from "@/lib/live-pricing";
 import { undoableIds } from "@/lib/office-history";
@@ -95,6 +96,7 @@ export default async function OfficeCollectionPage({
           fabrics={composerFabrics}
           pricedPairs={pricedPairs}
           undoableTexts={undoableTexts}
+          translationEnabled={translationEnabled}
         />
       </OfficeDraftProvider>
     </section>

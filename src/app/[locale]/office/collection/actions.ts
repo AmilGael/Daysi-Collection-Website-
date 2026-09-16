@@ -15,6 +15,7 @@ import {
   TEXT_LIMITS,
   collectionChangeSchema,
   changesOf,
+  type CollectionChange,
 } from "@/lib/office-validation";
 import {
   CUSTOMIZATION_EXTRA,
@@ -32,21 +33,37 @@ import { translateToEnglish, withEnglish } from "@/lib/translate";
 type Field = "name" | "color" | "description" | "detail";
 
 /**
- * A Spanish correction carries its English with it: translated when the
- * service answers, a copy of the Spanish otherwise, which the office shows
- * as "Inglés pendiente" until she asks for it again.
+ * Every change applies in this order: photos and switches, then a retire or
+ * restore, then a new garment, all before any word is translated, so a
+ * Spanish correction is never lost under a photo upload; text changes come
+ * next; Traducir runs last, once the words it might read are already saved.
  */
-async function writeEnglishFor(id: string, spanish: Partial<Record<Field, string>>): Promise<void> {
-  const english = await translateToEnglish(spanish, "garment");
-  for (const [field, es] of Object.entries(spanish) as [Field, string][]) {
-    await saveTextOverride({ subject: "style", id, field, locale: "en", value: english?.[field] ?? es });
-  }
-}
+const CHANGE_RANK: Record<CollectionChange["type"], number> = {
+  "style-override": 0,
+  retire: 0,
+  restore: 0,
+  "style-create": 0,
+  "style-text": 1,
+  translate: 2,
+};
 
 export const applyCollectionChanges = ownerAction(
   changesOf(collectionChangeSchema),
-  async (changes) =>
-    applyEach(changes, async (change) => {
+  async (changes) => {
+    const ordered = [...changes].sort((a, b) => CHANGE_RANK[a.type] - CHANGE_RANK[b.type]);
+
+    // Every Spanish word she is correcting in this batch, grouped by
+    // garment, so a garment with several fields edited at once costs one
+    // translation call rather than one per field.
+    const esTextByGarment = new Map<string, Partial<Record<Field, string>>>();
+    for (const change of ordered) {
+      if (change.type === "style-text" && change.locale === "es" && change.value.length > 0) {
+        esTextByGarment.set(change.id, { ...esTextByGarment.get(change.id), [change.field]: change.value });
+      }
+    }
+    const englishCache = new Map<string, Record<string, string> | null>();
+
+    return applyEach(ordered, async (change) => {
       switch (change.type) {
         case "style-override": {
           const style = manageableStyles().find((candidate) => candidate.id === change.styleId);
@@ -95,7 +112,17 @@ export const applyCollectionChanges = ownerAction(
               // A cleared box returns both languages to the coded words.
               await saveTextOverride({ subject: "style", id: change.id, field: change.field, locale: "en", value: "" });
             } else {
-              await writeEnglishFor(change.id, { [change.field]: change.value });
+              if (!englishCache.has(change.id)) {
+                englishCache.set(change.id, await translateToEnglish(esTextByGarment.get(change.id) ?? {}, "garment"));
+              }
+              const english = englishCache.get(change.id);
+              await saveTextOverride({
+                subject: "style",
+                id: change.id,
+                field: change.field,
+                locale: "en",
+                value: english?.[change.field] ?? change.value,
+              });
             }
           }
           return;
@@ -204,7 +231,8 @@ export const applyCollectionChanges = ownerAction(
           await setRetired("style", change.id, false);
         }
       }
-    }),
+    });
+  },
   {
     revalidate: [
       "/[locale]/office/collection",

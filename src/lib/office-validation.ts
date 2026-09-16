@@ -39,7 +39,11 @@ export const styleOverrideSchema = z.object({
     .optional(),
   coverSrc: z.string().max(200).optional(),
   /** The full photo order, cover first: a coded src or an upload path each. Absent keeps the older rule. */
-  photos: z.array(z.string().trim().min(1).max(200)).min(1).max(12).optional(),
+  photos: z
+    .array(z.string().trim().min(1).max(200).regex(/^\/(images|uploads)\/[A-Za-z0-9._/-]+\.(jpg|jpeg|png|webp)$/))
+    .min(1)
+    .max(12)
+    .optional(),
   inStudio: z.boolean().optional(),
 });
 

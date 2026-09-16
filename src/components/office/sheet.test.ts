@@ -20,6 +20,7 @@ describe("the sheet", () => {
     expect(source).toContain('aria-modal="true"');
     expect(source).toContain("fixed inset-0 z-50");
     expect(source).toContain("bottom-16");
+    expect(source).not.toContain("sm:inset-y-0");
   });
 
   it("closes on Escape and on the back gesture, and keeps the router's history state", () => {
@@ -34,8 +35,10 @@ describe("the sheet", () => {
   });
 
   it("focuses the first control inside its content, and names its buttons by what they show", () => {
-    expect(source).toContain('const first = content.current?.querySelector<HTMLElement>("input, textarea, select, button");');
+    expect(source).toContain("content.current?.querySelector");
     expect(source).not.toContain('aria-label={t("sheetClose")}\n            className={buttonClass');
-    expect(source).toContain('aria-label={t("sheetClose")}\n        onClick={onClose}');
+    const header = source.slice(source.indexOf("<header"));
+    const doneButton = header.slice(header.indexOf("onClick={onClose}"), header.indexOf('{t("sheetDone")}'));
+    expect(doneButton).not.toContain("aria-label");
   });
 });

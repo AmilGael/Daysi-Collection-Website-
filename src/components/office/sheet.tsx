@@ -41,7 +41,7 @@ export function Sheet({
   useEffect(() => {
     if (!open) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const first = content.current?.querySelector<HTMLElement>("input, textarea, select, button");
+    const first = content.current?.querySelector<HTMLElement>('input:not([type="file"]), textarea, select, button');
     (first ?? panel.current?.querySelector<HTMLElement>("button"))?.focus();
 
     const key = (event: KeyboardEvent) => {
@@ -82,7 +82,7 @@ export function Sheet({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="absolute inset-x-0 top-0 bottom-16 flex flex-col bg-paper shadow-xl sm:inset-y-0 sm:left-auto sm:right-0 sm:w-[28rem] sm:border-l sm:border-line"
+        className="absolute inset-x-0 top-0 bottom-16 flex flex-col bg-paper shadow-xl sm:top-0 sm:left-auto sm:right-0 sm:w-[28rem] sm:border-l sm:border-line"
       >
         <header className="flex items-center justify-between gap-4 border-b border-line px-5 py-3">
           <h2 className="min-w-0 truncate font-display text-[1.25rem]">{title}</h2>

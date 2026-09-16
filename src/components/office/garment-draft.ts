@@ -60,7 +60,7 @@ export function viewOf(row: ManagedStyle, pending: DraftChange<CollectionChange>
     isPublished: wire?.isPublished ?? row.isPublished,
     inStudio: wire?.inStudio ?? row.inStudio,
     stock: { ...stockOf(row), ...(wire?.stock ?? {}) },
-    slots: slots ?? row.photos.map((src) => ({ kind: "src", src })),
+    slots: slots ?? (wire?.photos ?? row.photos).map((src) => ({ kind: "src", src })),
   };
 }
 

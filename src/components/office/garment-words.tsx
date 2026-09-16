@@ -30,9 +30,11 @@ const box = "w-full border border-line bg-paper px-3 py-2 text-[0.9375rem] text-
 export function GarmentWords({
   row,
   undoable,
+  translationEnabled,
 }: {
   row: ManagedStyle;
   undoable: ReadonlySet<string>;
+  translationEnabled: boolean;
 }): JSX.Element {
   const t = useTranslations("office");
   const draft = useOfficeDraft<CollectionChange>();
@@ -115,7 +117,7 @@ export function GarmentWords({
               <span className="font-semibold text-marigold-deep">{t("englishPending")}</span>
               {translating ? (
                 <Pending confirming={translating.confirming} error={translating.error} />
-              ) : (
+              ) : translationEnabled ? (
                 <button
                   type="button"
                   onClick={() =>
@@ -127,6 +129,8 @@ export function GarmentWords({
                 >
                   {t("translateNow")}
                 </button>
+              ) : (
+                <span>{t("error.translation-off")}</span>
               )}
             </span>
           ) : null}

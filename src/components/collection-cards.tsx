@@ -38,6 +38,7 @@ export function CollectionCards({
   fabrics,
   pricedPairs,
   undoableTexts,
+  translationEnabled,
 }: {
   styles: readonly ManagedStyle[];
   retired: readonly ManagedStyle[];
@@ -46,6 +47,7 @@ export function CollectionCards({
   fabrics: readonly Picker[];
   pricedPairs: Readonly<Record<string, number>>;
   undoableTexts: ReadonlySet<string>;
+  translationEnabled: boolean;
 }): JSX.Element {
   const t = useTranslations("office");
   const draft = useOfficeDraft<CollectionChange>();
@@ -54,6 +56,9 @@ export function CollectionCards({
   usePreviewCleanup(draft.entries);
 
   const opened = open !== null && open !== "new" ? (styles.find((row) => row.id === open) ?? null) : null;
+  useEffect(() => {
+    if (open !== null && open !== "new" && !opened) close();
+  }, [open, opened, close]);
   const pendingCreates = draft.entries.filter((entry) => entry.change.wire.type === "style-create");
   const shown = styles.filter((row) => viewOf(row, draft.pending(overrideKey(row.id))?.change).isPublished).length;
   const chip = "absolute top-2 px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-[0.14em]";
@@ -160,7 +165,7 @@ export function CollectionCards({
         {open === "new" ? (
           <NewGarmentSheet categories={categories} fabrics={fabrics} pricedPairs={pricedPairs} locale={locale} onDone={close} />
         ) : opened ? (
-          <GarmentSheet row={opened} undoableTexts={undoableTexts} />
+          <GarmentSheet row={opened} undoableTexts={undoableTexts} translationEnabled={translationEnabled} />
         ) : null}
       </Sheet>
     </div>

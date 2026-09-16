@@ -39,8 +39,9 @@ export function addFiles(
   slots: readonly PhotoSlot[],
   files: readonly File[],
   preview: (file: File) => string,
+  max: number = MAX_PHOTOS,
 ): PhotoSlot[] {
-  const room = Math.max(0, MAX_PHOTOS - slots.length);
+  const room = Math.max(0, max - slots.length);
   return [
     ...slots,
     ...files.slice(0, room).map((file): PhotoSlot => ({ kind: "file", file, preview: preview(file) })),

@@ -51,6 +51,17 @@ describe("viewOf", () => {
     const pending = overrideChange(row.id, { ...viewOf(row, undefined), inStudio: true });
     expect(viewOf(row, pending).inStudio).toBe(true);
   });
+
+  it("redraws a change that carries photos but no meta, as an undo does", () => {
+    const [first, second] = row.photos;
+    const undo = overrideChange(row.id, viewOf(row, undefined));
+    const override = undo.wire.type === "style-override" ? undo.wire : undefined;
+    const withoutMeta = { wire: { ...override!, photos: [second!, first!] } };
+    expect(viewOf(row, withoutMeta).slots).toEqual([
+      { kind: "src", src: second },
+      { kind: "src", src: first },
+    ]);
+  });
 });
 
 describe("overrideChange", () => {

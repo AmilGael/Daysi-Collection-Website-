@@ -37,9 +37,11 @@ const field = "w-full border border-line bg-paper px-3 py-2 text-[0.9375rem] tex
 export function GarmentSheet({
   row,
   undoableTexts,
+  translationEnabled,
 }: {
   row: ManagedStyle;
   undoableTexts: ReadonlySet<string>;
+  translationEnabled: boolean;
 }): JSX.Element {
   const t = useTranslations("office");
   const draft = useOfficeDraft<CollectionChange>();
@@ -69,7 +71,7 @@ export function GarmentSheet({
         <GarmentPhotos slots={view.slots} disabled={retiring} onChange={(slots) => update({ ...view, slots })} />
       </section>
 
-      <GarmentWords row={row} undoable={undoableTexts} />
+      <GarmentWords row={row} undoable={undoableTexts} translationEnabled={translationEnabled} />
 
       <section className="flex flex-col gap-1">
         <h3 className="text-[0.9375rem] font-medium">{t("sizesTitle")}</h3>
@@ -149,6 +151,17 @@ export function NewGarmentSheet({
   const existingPrice = pricedPairs[`${categoryId}--${fabricId}`];
   const needsPrice = existingPrice === undefined;
 
+  // A file dropped by a move, a removal, or a fresh choice that bumped an
+  // older one off the end releases its object URL right away, rather than
+  // waiting for the sheet to close.
+  function updateSlots(next: readonly PhotoSlot[]) {
+    const kept = new Set(next.flatMap((slot) => (slot.kind === "file" ? [slot.preview] : [])));
+    for (const slot of slots) {
+      if (slot.kind === "file" && !kept.has(slot.preview)) URL.revokeObjectURL(slot.preview);
+    }
+    setSlots(next);
+  }
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setProblem(null);
@@ -189,7 +202,7 @@ export function NewGarmentSheet({
 
       <section className="flex flex-col gap-3">
         <h3 className="text-[0.9375rem] font-medium">{t("photosTitle")}</h3>
-        <GarmentPhotos slots={slots} max={8} onChange={setSlots} />
+        <GarmentPhotos slots={slots} max={8} onChange={updateSlots} />
       </section>
 
       <section className="flex flex-col gap-4">

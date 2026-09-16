@@ -96,7 +96,7 @@ export function GarmentPhotos({
               onChange={(event) => {
                 const files = [...(event.target.files ?? [])];
                 if (files.length > 0) {
-                  onChange(addFiles(slots, files, (file) => URL.createObjectURL(file)).slice(0, max));
+                  onChange(addFiles(slots, files, (file) => URL.createObjectURL(file), max));
                 }
                 event.target.value = "";
               }}

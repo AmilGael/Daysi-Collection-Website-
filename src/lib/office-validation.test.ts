@@ -301,6 +301,16 @@ describe("the photo list and the studio switch on an override", () => {
       }).success,
     ).toBe(false);
   });
+
+  it("refuses a photo entry that is not a path to an image, and accepts a real one", () => {
+    expect(
+      styleOverrideSchema.safeParse({ styleId: "frutera", ...override, photos: ["/etc/passwd"] }).success,
+    ).toBe(false);
+    expect(
+      styleOverrideSchema.safeParse({ styleId: "frutera", ...override, photos: ["/images/real/frutera-capri.jpg"] })
+        .success,
+    ).toBe(true);
+  });
 });
 
 describe("a new garment is typed in Spanish only", () => {

@@ -34,6 +34,8 @@ describe("the photo list", () => {
     expect(next[1]).toMatchObject({ kind: "file", preview: "blob:p.jpg" });
     const full = Array.from({ length: 12 }, (_, index) => src(`s${index}`));
     expect(addFiles(full, [new File([], "extra.jpg")], () => "blob:extra")).toHaveLength(12);
+    const eight = Array.from({ length: 8 }, (_, index) => src(`e${index}`));
+    expect(addFiles(eight, [new File([], "extra.jpg")], () => "blob:extra", 8)).toHaveLength(8);
   });
 
   it("keys a slot by its src or its preview, so React can tell them apart", () => {
