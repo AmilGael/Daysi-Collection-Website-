@@ -32,6 +32,13 @@ export const env = {
   resendApiKey: optional("RESEND_API_KEY"),
 
   /**
+   * Turns Daysi's Spanish into the site's English at confirm time. Without
+   * it every form still works: the English is a copy of the Spanish, marked
+   * pending in the office until a key arrives (design, Amendment 4 §5).
+   */
+  anthropicApiKey: optional("ANTHROPIC_API_KEY"),
+
+  /**
    * "Continue with Google", for Daysi and for clients who prefer a tap over
    * an emailed link. Both values come from one OAuth client in Google Cloud
    * console; without them the button simply does not render and the email
@@ -70,6 +77,9 @@ export const emailEnabled = env.resendApiKey !== null && env.ownerEmails.length 
 
 /** Google sign-in is only offered when its OAuth client is actually configured. */
 export const googleAuthEnabled = env.googleClientId !== null && env.googleClientSecret !== null;
+
+/** English is written by the translation service only when its key is present. */
+export const translationEnabled = env.anthropicApiKey !== null;
 
 export const isProduction = process.env.NODE_ENV === "production";
 
