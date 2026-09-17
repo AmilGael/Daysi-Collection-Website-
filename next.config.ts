@@ -31,6 +31,29 @@ const config: NextConfig = {
    */
   output: "standalone",
   /**
+   * The office upload route writes to a directory read from the environment
+   * (the Fly volume in production), which Turbopack cannot resolve while it
+   * traces. Faced with a path it cannot see, Next.js 16 copies the whole
+   * project into the server bundle: `public/` a second time, `src/`, even
+   * `docs/`. That doubled the standalone output from 70 MB to 136 MB, and
+   * the image is rebuilt on every deploy onto one small machine. None of
+   * these directories is read at runtime by the server itself — the
+   * Dockerfile copies `public/` where the server expects it.
+   */
+  outputFileTracingExcludes: {
+    "**": [
+      "./public/**",
+      "./src/**",
+      "./docs/**",
+      "./scripts/**",
+      "./.git/**",
+      "./.github/**",
+      "./.data/**",
+      "./.claude/**",
+      "./*.tsbuildinfo",
+    ],
+  },
+  /**
    * The photographs are the merchandise, and they are resized on demand by
    * the smallest machine Fly sells: one shared CPU, half a gigabyte. That
    * machine decides these numbers, not taste. Measured on the live site on
@@ -51,6 +74,13 @@ const config: NextConfig = {
     formats: ["image/webp"],
     minimumCacheTTL: 30 * 24 * 60 * 60,
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    /**
+     * Next.js 16 refuses any quality not listed here. 85 is PHOTO_QUALITY
+     * (src/lib/images.ts); 75 is the next/image default, still used by the
+     * brand marks and the office thumbnails, and it stops being implicitly
+     * allowed the moment this list exists.
+     */
+    qualities: [75, 85],
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
