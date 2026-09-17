@@ -33,7 +33,8 @@ break in a way nothing else catches: next-intl reads `request.nextUrl` inside a
 object makes every redirect silently disappear. Types passed, unit tests passed,
 and every locale-prefixed page still returned 200 — but the bare `/` that people
 actually type returned a 404. Only a real request finds that, so run it before
-any deploy.
+any deploy. CI runs it too, on every push, against the same standalone server
+the Dockerfile runs.
 
 No environment variables are needed to run it. Copy `.env.example` to
 `.env.local` when you are ready to turn on card payments or email notifications.
@@ -189,7 +190,7 @@ raw body, checks the signature, and refuses everything if
 `STRIPE_WEBHOOK_SECRET` is not set. A forged "payment succeeded" cannot mark an
 order paid.
 
-**Content-Security-Policy is nonce-based**, set per request in `middleware.ts`
+**Content-Security-Policy is nonce-based**, set per request in `proxy.ts`
 with `strict-dynamic`. Scripts are limited to this origin and Stripe; frames to
 Stripe and the Google map; connections to this origin and Stripe. Plus
 `X-Frame-Options: DENY`, `nosniff`, a strict referrer policy, HSTS, and a

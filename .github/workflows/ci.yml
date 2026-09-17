@@ -1,6 +1,7 @@
-# The same gate `npm run deploy` applies locally, run on every push and once a
-# week with no push at all, so a newly published advisory turns the badge red
-# even when nobody has touched the code.
+# The gate `npm run deploy` applies locally, and then the build and the smoke
+# checks against it, run on every push and once a week with no push at all, so
+# a newly published advisory turns the badge red even when nobody has touched
+# the code.
 name: CI
 on:
   push:
@@ -21,3 +22,59 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+      # Smoke talks to a real server over HTTP, which is the only place some of
+      # this exists at all: the www redirect turns on the Host header rather
+      # than the URL, and the CSP nonce has to match the scripts that were
+      # actually rendered. Neither is visible to tsc or to vitest.
+      #
+      # Against the standalone server rather than `next start`: standalone is
+      # what the Dockerfile runs, so it is what production is, and `next start`
+      # says plainly that it does not support `output: "standalone"`. It also
+      # means the tracing exclusions in next.config.ts are under test — they
+      # decide what the standalone bundle contains, and a file excluded by
+      # mistake fails here and nowhere else.
+      - name: Smoke checks against the production server
+        env:
+          SMOKE_URL: http://localhost:3000
+          SITE_URL: http://localhost:3000
+          NODE_ENV: production
+          PORT: "3000"
+          HOSTNAME: 127.0.0.1
+          # Not a secret: it signs nothing that outlives the job. It has to be
+          # set all the same, because in production the app refuses to sign
+          # with a fallback key rather than downgrade quietly (src/lib/env.ts).
+          AUTH_SECRET: ci-only-ephemeral-signing-key
+          # Everything the run writes goes outside the checkout.
+          DATA_DIR: ${{ runner.temp }}/daysi-data
+        run: |
+          # The layout the Dockerfile assembles: public/ and .next/static sit
+          # beside server.js, which the standalone output does not copy itself.
+          cp -r public .next/standalone/public
+          cp -r .next/static .next/standalone/.next/static
+          node .next/standalone/server.js > server.log 2>&1 &
+          server=$!
+          for attempt in $(seq 1 60); do
+            # A server that dies on startup — a file the tracing exclusions
+            # dropped, say, which is one of the things this step is here to
+            # catch — would otherwise sit out the full sixty seconds and then
+            # report nothing but a timeout. Say so as soon as it happens, and
+            # print the reason it gave.
+            if ! kill -0 "$server" 2>/dev/null; then
+              echo "The server exited before it was ready:"
+              cat server.log
+              exit 1
+            fi
+            curl -sf -o /dev/null "$SMOKE_URL/es" && break
+            if [ "$attempt" -eq 60 ]; then
+              echo "The server never answered in 60s:"
+              cat server.log
+              exit 1
+            fi
+            sleep 1
+          done
+          npm run smoke || {
+            echo "--- server log ---"
+            cat server.log
+            exit 1
+          }
