@@ -1,7 +1,7 @@
 /**
  * Checks a running site end to end over HTTP.
  *
- * This exists because of a real failure: the middleware was handed a rebuilt
+ * This exists because of a real failure: the proxy was handed a rebuilt
  * request object, next-intl swallowed the resulting error in a try/catch, and
  * every redirect quietly stopped working. Type checks passed, tests passed, and
  * every locale-prefixed page still returned 200 — but the bare "/" that people

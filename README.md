@@ -189,7 +189,7 @@ raw body, checks the signature, and refuses everything if
 `STRIPE_WEBHOOK_SECRET` is not set. A forged "payment succeeded" cannot mark an
 order paid.
 
-**Content-Security-Policy is nonce-based**, set per request in `middleware.ts`
+**Content-Security-Policy is nonce-based**, set per request in `proxy.ts`
 with `strict-dynamic`. Scripts are limited to this origin and Stripe; frames to
 Stripe and the Google map; connections to this origin and Stripe. Plus
 `X-Frame-Options: DENY`, `nosniff`, a strict referrer policy, HSTS, and a

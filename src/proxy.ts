@@ -1,3 +1,7 @@
+// Next.js renamed this file convention from `middleware` to `proxy` in 16.0,
+// but the rename is Next's alone: next-intl 4.14.5 still ships its handler on
+// `next-intl/middleware` and exposes no `next-intl/proxy`, so this import is
+// current, not left behind.
 import createMiddleware from "next-intl/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "@/i18n/routing";
@@ -66,7 +70,7 @@ function bareHostRedirect(request: NextRequest): NextResponse | null {
   return NextResponse.redirect(url, 308);
 }
 
-export default function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   const canonical = bareHostRedirect(request);
   if (canonical) return canonical;
 
