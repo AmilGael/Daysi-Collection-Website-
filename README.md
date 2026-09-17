@@ -33,7 +33,8 @@ break in a way nothing else catches: next-intl reads `request.nextUrl` inside a
 object makes every redirect silently disappear. Types passed, unit tests passed,
 and every locale-prefixed page still returned 200 — but the bare `/` that people
 actually type returned a 404. Only a real request finds that, so run it before
-any deploy.
+any deploy. CI runs it too, on every push, against the same standalone server
+the Dockerfile runs.
 
 No environment variables are needed to run it. Copy `.env.example` to
 `.env.local` when you are ready to turn on card payments or email notifications.
