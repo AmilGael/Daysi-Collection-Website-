@@ -11,7 +11,65 @@
  *   npm run smoke        # in another
  */
 
+import { request as httpRequest } from "node:http";
+import { request as httpsRequest } from "node:https";
+
 const BASE = process.env.SMOKE_URL ?? "http://localhost:3000";
+const base = new URL(BASE);
+
+/**
+ * The two hosts the www redirect is checked with.
+ *
+ * `localhost` cannot stand in for the apex. Strip `www.` from
+ * `www.localhost:3000` and you land on the address the server is itself bound
+ * to, and Next answers with a *relative* Location — which a browser resolves
+ * against `www.` again, i.e. a redirect loop. That is an artefact of testing
+ * against localhost, not a fault in the redirect: in production the apex is
+ * never the address the container listens on. `localtest.me` resolves to
+ * 127.0.0.1, so it reaches the same server while keeping the two hosts
+ * genuinely different, the way `daysiscollectioninc.com` and its `www.` are.
+ */
+const APEX_HOST =
+  base.hostname === "localhost"
+    ? `localtest.me${base.port ? `:${base.port}` : ""}`
+    : base.host;
+const WWW_HOST = `www.${APEX_HOST}`;
+
+/**
+ * A GET carrying a Host header of our choosing.
+ *
+ * `fetch` cannot do this and does not say so: `host` is a forbidden header
+ * name in the fetch standard, and undici drops it without complaint. The
+ * request still goes out — as `localhost` — and still passes, having proved
+ * nothing at all. Hence one level down, to node:http.
+ */
+function getWithHost(path, hostHeader) {
+  const target = new URL(path, BASE);
+  const send = target.protocol === "https:" ? httpsRequest : httpRequest;
+  return new Promise((resolve, reject) => {
+    const request = send(
+      {
+        hostname: target.hostname,
+        port: target.port,
+        path: target.pathname + target.search,
+        method: "GET",
+        headers: { Host: hostHeader },
+        // TLS is negotiated with the host we dialled, not the one we claim to
+        // be, or a real deployment would refuse the handshake.
+        servername: target.hostname,
+      },
+      (response) => {
+        response.resume();
+        resolve({
+          status: response.statusCode,
+          location: response.headers.location ?? "",
+        });
+      },
+    );
+    request.on("error", reject);
+    request.end();
+  });
+}
 
 const LOCALES = ["es", "en"];
 
@@ -89,6 +147,33 @@ await check("an English browser is sent to /en", async () => {
   });
   const location = response.headers.get("location") ?? "";
   return { ok: location.endsWith("/en"), detail: location || "(none)" };
+});
+
+/**
+ * One host, so there is one cookie jar. This runs before locale routing in
+ * the proxy, and it is the only behaviour here that turns on the Host header
+ * rather than the URL, so it is the only one the checks above cannot see.
+ *
+ * Three things at once: 308 rather than 301 or 302, because that is the
+ * redirect that promises a POSTed form survives as a POST; the port intact,
+ * which is the bug the proxy's own comment is about — `nextUrl` carries the
+ * container's internal port, and a host set without clearing it first sent
+ * people to a port nothing answers on; and the path carried over, since a
+ * client following a link into www should arrive where she was going.
+ */
+await check("a www request is sent to the bare host", async () => {
+  const { status, location } = await getWithHost("/es/contact", WWW_HOST);
+  // Resolved the way the browser would: against the www address it asked for.
+  // A relative Location resolves straight back onto www, which is a loop, and
+  // this is where that would show up.
+  const resolved = location ? new URL(location, `${base.protocol}//${WWW_HOST}`) : null;
+  return {
+    ok:
+      status === 308 &&
+      resolved?.host === APEX_HOST &&
+      resolved?.pathname === "/es/contact",
+    detail: `${status} -> ${location || "(none)"}`,
+  };
 });
 
 for (const locale of LOCALES) {
