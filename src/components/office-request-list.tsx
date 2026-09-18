@@ -1,23 +1,31 @@
 "use client";
 
 import Image from "next/image";
+import { useCallback, useEffect, useState, type JSX } from "react";
 import { useTranslations } from "next-intl";
 import type { Locale } from "@/i18n/routing";
 import { formatMoney } from "@/lib/money";
 import type { StoredRequest } from "@/lib/request-store";
 import type { WorkChange } from "@/lib/office-validation";
+import { whatsappLink } from "@/lib/whatsapp";
 import { Pending } from "@/components/office/confirm-bar";
+import { OrderNoteCard } from "@/components/office/order-note-sheet";
 import { RetireButton } from "@/components/office/retired-group";
+import { Sheet } from "@/components/office/sheet";
 import { UndoLink } from "@/components/office/undo-link";
 import { Tag } from "@/components/ui";
 import { useOfficeDraft } from "@/components/office/use-office-draft";
 
 const STATUSES = ["new", "answered", "scheduled", "paid", "refunded", "closed"] as const;
 
+const card =
+  "flex h-full w-full flex-col gap-2 border border-line p-4 text-left transition-colors hover:border-ink";
+
 /**
- * The office's working copy of the request table: the same columns a client
- * sees in their own history, plus the editable status. Changes stay in the
- * tab draft until Daysi confirms them together.
+ * The office's working copy of the request table, as cards: the same
+ * information a client sees in their own history, plus the editable status.
+ * Tapping a card opens its sheet; changes stay in the tab draft until Daysi
+ * confirms them together.
  */
 export function OfficeRequestList({
   records,
@@ -30,19 +38,27 @@ export function OfficeRequestList({
   emptyMessage: string;
   /** Only the Trabajo list takes order notes; Citas and Mensajes never do. */
   showOrderNotes?: boolean;
-}) {
+}): JSX.Element {
   const t = useTranslations("account");
   const to = useTranslations("office");
   const draft = useOfficeDraft<WorkChange>();
+  const [open, setOpen] = useState<string | null>(null);
+  const close = useCallback(() => setOpen(null), []);
 
-  // A note staged from "+ Anotar un pedido" but not yet confirmed: shown at
-  // the top of this list until Confirmar, the same way Precios and Galería
-  // show what they have staged but not yet sent.
+  // A note staged from "+ Anotar un pedido" but not yet confirmed: shown in
+  // the grid until Confirmar, the same way Precios and Galería show what
+  // they have staged but not yet sent.
   const pendingNotes = showOrderNotes
     ? draft.entries.filter((entry) => entry.change.wire.type === "order-note")
     : [];
 
-  if (records.length === 0 && pendingNotes.length === 0) {
+  const opened = open !== null ? records.find((record) => record.reference === open) ?? null : null;
+  useEffect(() => {
+    if (open !== null && !opened) close();
+  }, [open, opened, close]);
+
+  const empty = records.length === 0 && pendingNotes.length === 0;
+  if (empty && !showOrderNotes) {
     return (
       <p className="border border-dashed border-line px-6 py-14 text-center text-[0.9375rem] text-ink-faint">
         {emptyMessage}
@@ -50,40 +66,29 @@ export function OfficeRequestList({
     );
   }
 
-  function setStatus(record: StoredRequest, status: StoredRequest["status"]) {
-    const key = `request:${record.reference}`;
-    if (status === record.status) {
-      draft.unstage(key);
-      return;
-    }
-    draft.stage(key, {
-      wire: {
-        type: "request-status",
-        key,
-        kind: record.kind,
-        reference: record.reference,
-        status,
-      },
-    });
-  }
-
   return (
-    <div className="flex flex-col border-t border-line">
-      {pendingNotes.map((entry) => {
-        const wire = entry.change.wire;
-        if (wire.type !== "order-note") return null;
-        return (
-          <article
-            key={entry.key}
-            className="grid gap-3 border-b border-line py-5 sm:grid-cols-[8rem_1fr_auto] sm:items-center sm:gap-6"
-          >
-            <div className="flex flex-col gap-1.5">
-              <span className="font-mono text-[0.75rem]">{t(`kind.${wire.kind}`)}</span>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <p className="text-[0.9375rem]">{wire.clientName}</p>
-              <p className="text-[0.8125rem] leading-relaxed text-ink-faint">{wire.description}</p>
-              <span className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-col gap-4">
+      <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        {showOrderNotes ? (
+          <li>
+            <OrderNoteCard />
+          </li>
+        ) : null}
+
+        {pendingNotes.map((entry) => {
+          const wire = entry.change.wire;
+          if (wire.type !== "order-note") return null;
+          return (
+            <li key={entry.key} className={card}>
+              <span className="truncate text-[0.6875rem] uppercase tracking-[0.14em] text-ink-faint">
+                {t(`kind.${wire.kind}`)}
+              </span>
+              <span className="truncate text-[0.9375rem]">{wire.clientName}</span>
+              <span className="line-clamp-2 flex-1 text-[0.8125rem] leading-relaxed text-ink-soft">
+                {wire.description}
+              </span>
+              <span className="text-[0.9375rem] tabular-nums">{formatMoney(wire.amount, locale)}</span>
+              <span className="mt-auto flex flex-wrap items-center gap-3">
                 <Pending confirming={draft.pending(entry.key)?.confirming} error={entry.error} count={entry.count} />
                 <button
                   type="button"
@@ -93,110 +98,217 @@ export function OfficeRequestList({
                   {to("removePending")}
                 </button>
               </span>
-            </div>
-            <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-2">
-              <span className="text-[0.9375rem] tabular-nums">{formatMoney(wire.amount, locale)}</span>
-            </div>
-          </article>
-        );
-      })}
-      {records.map((record) => {
-        const pending = draft.pending(`request:${record.reference}`);
-        const status = pending?.change.wire.type === "request-status"
-          ? pending.change.wire.status
-          : record.status;
-        const retiring = pending?.change.wire.type === "retire";
-        const key = `request:${record.reference}`;
-        return (
-        <article
-          key={record.reference}
-          className={`grid gap-3 border-b border-line py-5 sm:grid-cols-[8rem_1fr_auto] sm:items-center sm:gap-6 ${retiring ? "opacity-50" : ""}`}
+            </li>
+          );
+        })}
+
+        {records.map((record) => {
+          const key = `request:${record.reference}`;
+          const pending = draft.pending(key);
+          const status = pending?.change.wire.type === "request-status" ? pending.change.wire.status : record.status;
+          const retiring = pending?.change.wire.type === "retire";
+          const summary = summarise(record);
+
+          let chipLabel: string;
+          let chipTone: "quiet" | "marigold";
+          if (record.paymentFailed) {
+            chipLabel = t("paymentFailed");
+            chipTone = "quiet";
+          } else if (record.awaitingPayment && status !== "paid") {
+            chipLabel = t(record.awaitingPayment === "bank" ? "bankPending" : "awaitingPayment");
+            chipTone = "quiet";
+          } else {
+            chipLabel = t(`status.${status}`);
+            chipTone = status === "paid" ? "marigold" : "quiet";
+          }
+
+          return (
+            <li key={record.reference} className={retiring ? "opacity-50" : ""}>
+              <button type="button" onClick={() => setOpen(record.reference)} className={card}>
+                {record.photoFile ? (
+                  <span className="relative block h-24 w-full overflow-hidden bg-paper-warm">
+                    <Image
+                      src={photoHref(record)}
+                      alt=""
+                      fill
+                      unoptimized
+                      sizes="(min-width: 1024px) 14rem, (min-width: 640px) 30vw, 45vw"
+                      className="object-cover"
+                    />
+                  </span>
+                ) : null}
+                <span className="flex items-center justify-between gap-2">
+                  <span className="truncate text-[0.6875rem] uppercase tracking-[0.14em] text-ink-faint">
+                    {t(`kind.${record.kind}`)}
+                  </span>
+                  <time className="shrink-0 text-[0.6875rem] text-ink-faint" dateTime={record.submittedAt}>
+                    {formatDay(record.submittedAt, locale)}
+                  </time>
+                </span>
+                <span className="truncate text-[0.9375rem]">{record.client.name || record.client.email}</span>
+                {summary ? (
+                  <span className="line-clamp-1 text-[0.8125rem] leading-relaxed text-ink-soft">{summary}</span>
+                ) : null}
+                <span className="mt-auto flex items-center justify-between gap-2">
+                  {record.estimate ? (
+                    <span className="text-[0.9375rem] tabular-nums">
+                      {formatMoney(record.estimate.total, locale)}
+                    </span>
+                  ) : (
+                    <span />
+                  )}
+                  <Tag tone={chipTone}>{chipLabel}</Tag>
+                </span>
+              </button>
+              {pending ? (
+                <div className="mt-2">
+                  <Pending confirming={pending.confirming} error={pending.error} count={pending.count} />
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+
+      {empty ? <p className="text-[0.9375rem] text-ink-faint">{emptyMessage}</p> : null}
+
+      <Sheet
+        open={open !== null}
+        title={opened ? `${t(`kind.${opened.kind}`)} · ${opened.client.name || opened.client.email}` : ""}
+        onClose={close}
+      >
+        {opened ? <RequestSheet record={opened} locale={locale} /> : null}
+      </Sheet>
+    </div>
+  );
+}
+
+/**
+ * One request, everything about it: the status, the photo or mockup when
+ * there is one, a WhatsApp link when the client left a phone, the details
+ * she'd otherwise have to open the record to read, and retire/undo.
+ */
+function RequestSheet({
+  record,
+  locale,
+}: {
+  record: StoredRequest & { undoable: boolean };
+  locale: Locale;
+}): JSX.Element {
+  const t = useTranslations("account");
+  const to = useTranslations("office");
+  const draft = useOfficeDraft<WorkChange>();
+  const key = `request:${record.reference}`;
+  const pending = draft.pending(key);
+  const status = pending?.change.wire.type === "request-status" ? pending.change.wire.status : record.status;
+  const retiring = pending?.change.wire.type === "retire";
+
+  function setStatus(next: StoredRequest["status"]) {
+    if (next === record.status) {
+      draft.unstage(key);
+      return;
+    }
+    draft.stage(key, {
+      wire: { type: "request-status", key, kind: record.kind, reference: record.reference, status: next },
+    });
+  }
+
+  const phoneDigits = record.client.phone ? record.client.phone.replace(/[^0-9]/g, "") : "";
+  const whatsappMessage =
+    record.locale === "en"
+      ? `Hi, about order ${record.reference}`
+      : `Hola, sobre el pedido ${record.reference}`;
+
+  return (
+    <div className={`flex flex-col gap-6 ${retiring ? "opacity-50" : ""}`}>
+      {pending ? (
+        <span className="flex items-center gap-3">
+          <Pending confirming={pending.confirming} error={pending.error} count={pending.count} />
+          <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">
+            {to("removePending")}
+          </button>
+        </span>
+      ) : null}
+
+      <div className="flex flex-col gap-1.5">
+        <span className="font-mono text-[0.75rem]">{record.reference}</span>
+        <time className="text-[0.75rem] text-ink-faint" dateTime={record.submittedAt}>
+          {formatDay(record.submittedAt, locale)}
+        </time>
+      </div>
+
+      <label className="grid gap-1 text-[0.75rem] text-ink-faint">
+        {to("statusLabel")}
+        <select
+          value={status}
+          disabled={retiring}
+          onChange={(event) => setStatus(event.target.value as StoredRequest["status"])}
+          className="border border-line bg-paper px-3 py-2 text-[0.9375rem] disabled:opacity-50"
         >
-          <div className="flex flex-col gap-1.5">
-            <span className="font-mono text-[0.75rem]">{record.reference}</span>
-            <time className="text-[0.75rem] text-ink-faint" dateTime={record.submittedAt}>
-              {new Intl.DateTimeFormat(locale === "es" ? "es-US" : "en-US", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              }).format(new Date(record.submittedAt))}
-            </time>
-            {/* The picture the client sent: a studio design's mockup, an
-                alteration's snapshot. The office route serves it only to
-                Daysi, and knows the request came from here by its Referer,
-                so the link must never be marked noreferrer. */}
-            {record.photoFile ? (
-              <a href={photoHref(record)} target="_blank" className="mt-1 block w-fit">
-                <Image
-                  src={photoHref(record)}
-                  alt={to("requestPhoto", { reference: record.reference })}
-                  unoptimized
-                  width={72}
-                  height={96}
-                  className="h-24 w-[4.5rem] border border-line object-cover"
-                />
-              </a>
-            ) : null}
-          </div>
+          {STATUSES.map((option) => (
+            <option key={option} value={option}>
+              {t(`status.${option}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+      {record.paymentFailed ? (
+        <Tag tone="quiet">{t("paymentFailed")}</Tag>
+      ) : record.awaitingPayment && status !== "paid" ? (
+        <Tag tone="quiet">{t(record.awaitingPayment === "bank" ? "bankPending" : "awaitingPayment")}</Tag>
+      ) : null}
+      {record.estimate ? (
+        <p className="text-[0.9375rem] tabular-nums text-ink-soft">{formatMoney(record.estimate.total, locale)}</p>
+      ) : null}
 
-          <div className="flex flex-col gap-1.5">
-            <p className="text-[0.9375rem]">
-              {t(`kind.${record.kind}`)} · {record.client.name || record.client.email}
-            </p>
-            <p className="text-[0.8125rem] leading-relaxed text-ink-faint">
-              {summarise(record)}
-            </p>
-            {pending ? (
-              <span className="flex flex-wrap items-center gap-3">
-                <Pending confirming={pending.confirming} error={pending.error} count={pending.count} />
-                <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">
-                  {to("removePending")}
-                </button>
-              </span>
-            ) : (
-              <RetireButton
-                name={record.reference}
-                prompt={to("retireRequestConfirm", { name: record.reference })}
-                onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: record.reference } })}
-              />
-            )}
-          </div>
+      {/* The picture the client sent: a studio design's mockup, an
+          alteration's snapshot. The office route serves it only to Daysi,
+          and knows the request came from here by its Referer, so the link
+          must never be marked noreferrer. */}
+      {record.photoFile ? (
+        <a href={photoHref(record)} target="_blank" className="block w-fit">
+          <Image
+            src={photoHref(record)}
+            alt={to("requestPhoto", { reference: record.reference })}
+            unoptimized
+            width={216}
+            height={288}
+            className="h-72 w-[13.5rem] border border-line object-cover"
+          />
+        </a>
+      ) : null}
 
-          <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-2">
-            {record.estimate ? (
-              <span className="text-[0.9375rem] tabular-nums">
-                {formatMoney(record.estimate.total, locale)}
-              </span>
-            ) : null}
-            {record.paymentFailed ? (
-              <Tag tone="quiet">{t("paymentFailed")}</Tag>
-            ) : record.awaitingPayment && status !== "paid" ? (
-              <Tag tone="quiet">
-                {t(record.awaitingPayment === "bank" ? "bankPending" : "awaitingPayment")}
-              </Tag>
-            ) : null}
-            <label className="flex items-center gap-2">
-              <span className="sr-only">{to("statusLabel")}</span>
-              <select
-                value={status}
-                disabled={retiring}
-                onChange={(event) =>
-                  setStatus(record, event.target.value as StoredRequest["status"])
-                }
-                className="border border-line bg-paper px-3 py-1.5 text-[0.8125rem] disabled:opacity-50"
-              >
-                {STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {t(`status.${status}`)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {record.undoable && !pending ? <UndoLink kind="request-status" id={record.reference} /> : null}
-          </div>
-        </article>
-        );
-      })}
+      {phoneDigits.length >= 7 ? (
+        <a
+          href={whatsappLink(whatsappMessage, record.client.phone)}
+          target="_blank"
+          rel="noopener"
+          className="link-underline w-fit text-[0.8125rem]"
+        >
+          {to("requestWhatsapp")}
+        </a>
+      ) : null}
+
+      {detailLines(record).length > 0 ? (
+        <div className="flex flex-col gap-1">
+          {detailLines(record).map((line) => (
+            <p key={line} className="text-[0.875rem] leading-relaxed text-ink-soft">
+              {line}
+            </p>
+          ))}
+        </div>
+      ) : null}
+
+      {!pending ? (
+        <span className="flex flex-wrap items-center gap-4 border-t border-line pt-4">
+          <RetireButton
+            name={record.reference}
+            prompt={to("retireRequestConfirm", { name: record.reference })}
+            onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: record.reference } })}
+          />
+          {record.undoable ? <UndoLink kind="request-status" id={record.reference} /> : null}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -205,9 +317,22 @@ function photoHref(record: StoredRequest): string {
   return `/api/office/photos/${encodeURIComponent(record.reference)}`;
 }
 
-function summarise(record: StoredRequest): string {
-  const values = Object.values(record.details)
+function formatDay(iso: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale === "es" ? "es-US" : "en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(iso));
+}
+
+/** Every non-empty detail, in the order the record carries them. */
+function detailLines(record: StoredRequest): string[] {
+  return Object.values(record.details)
     .map((value) => (Array.isArray(value) ? value.join(", ") : String(value)))
     .filter((value) => value.length > 0 && value !== "false");
-  return values.slice(0, 2).join(" · ");
+}
+
+/** The one line of detail worth showing without opening the sheet. */
+function summarise(record: StoredRequest): string {
+  return detailLines(record).slice(0, 2).join(" · ");
 }
