@@ -80,9 +80,9 @@ function PieceCount({
 /**
  * A dollar amount typed in a box, the same box the Prices tab uses. Focus
  * selects what is there, a frame late so the tap that focused it on iOS
- * does not put the caret back.
+ * does not put the caret back. The Prices tab's add sheets use it too.
  */
-function MoneyBox({
+export function MoneyBox({
   label,
   value,
   placeholder,

@@ -137,6 +137,11 @@ describe("pricing an added garment", () => {
 
 const client = { name: "Ana", email: "ana@example.com", phone: "9175550100", preferredContact: "email", locale: "en" };
 
+async function POST_requests(request: Request): Promise<Response> {
+  const { POST } = await import("@/app/api/requests/route");
+  return POST(request);
+}
+
 function post(url: string, body: unknown): Request {
   return new Request(`http://localhost:3000${url}`, {
     method: "POST",
@@ -210,6 +215,56 @@ describe("the request form", () => {
     );
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: "phone-required" });
+  });
+
+  const alterationRequest = (alterationIds: string[]) =>
+    post("/api/requests", {
+      kind: "alteration",
+      website: "",
+      renderedAt: Date.now() - 10_000,
+      client,
+      garmentDescription: "A linen shirt whose cuffs have frayed through at the edge.",
+      alterationIds,
+      rush: true,
+      preferredTiming: "Next week",
+      notes: "",
+      acceptedTerms: true,
+    });
+  const cuffs = {
+    id: "alt-cuffs",
+    name: { es: "Poner puños nuevos", en: "Put on new cuffs" },
+    description: { es: "Puños nuevos en una manga sencilla.", en: "New cuffs on a plain sleeve." },
+    fixedPrice: 3200,
+    rushSurcharge: 2400,
+    turnaround: { es: "4–6 días", en: "4–6 days" },
+  };
+
+  it("prices an alteration Daysi added, and names it in the request she reads", async () => {
+    const { saveAddedAlteration } = await import("./live-pricing");
+    const { findRequest } = await import("./request-store");
+    await saveAddedAlteration(cuffs);
+    const response = await POST_requests(alterationRequest(["alt-cuffs", "hem-pants"]));
+    expect(response.status).toBe(200);
+    const { reference, estimate } = (await response.json()) as { reference: string; estimate: { subtotal: number } };
+    expect(estimate.subtotal).toBe(3200 + 2400 + 2000 + 2000);
+    expect(findRequest(reference)?.details.Work).toEqual(["Put on new cuffs", "Hem pants"]);
+  });
+
+  it("refuses an alteration that is not on the live list, or that Daysi retired", async () => {
+    const { saveAddedAlteration } = await import("./live-pricing");
+    const { setRetired } = await import("./retired");
+    const { listRequests } = await import("./request-store");
+
+    const unknown = await POST_requests(alterationRequest(["hem-dress", "gold-plating"]));
+    expect(unknown.status).toBe(400);
+    expect(await unknown.json()).toEqual({ error: "unknown-alteration" });
+
+    await saveAddedAlteration(cuffs);
+    await setRetired("alteration", "alt-cuffs", true);
+    const retired = await POST_requests(alterationRequest(["alt-cuffs"]));
+    expect(retired.status).toBe(400);
+    expect(await retired.json()).toEqual({ error: "unknown-alteration" });
+    expect(listRequests("alteration")).toEqual([]);
   });
 
   it("takes no garment from the collection: that is bought through the cart", async () => {

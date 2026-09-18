@@ -41,6 +41,17 @@ describe("translateToEnglish", () => {
     expect(requests[0]!.system).toContain("Garífuna");
   });
 
+  it("tells the model an added alteration or session is a line on the price list", async () => {
+    const requests: TranslationRequest[] = [];
+    const call: TranslationCall = async (request) => {
+      requests.push(request);
+      return Object.fromEntries(request.keys.map((key) => [key, `en ${key}`]));
+    };
+    await translateToEnglish({ name: "Poner puños", turnaround: "4–6 días" }, "alteration", call);
+    expect(requests[0]!.prompt).toContain("Context: a service on the atelier's price list");
+    expect(requests[0]!.prompt).not.toContain("a garment for sale");
+  });
+
   it("returns null, and makes no call, when there is nothing to translate or no service", async () => {
     const call = vi.fn(async () => ({}));
     expect(await translateToEnglish({ detail: "  " }, "garment", call)).toBeNull();

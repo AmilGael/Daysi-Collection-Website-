@@ -160,16 +160,19 @@ export type AlterationService = {
   readonly fixedPrice: Cents;
   readonly rushSurcharge: Cents;
   readonly turnaround: Localized;
+  /** An upload Daysi gave an alteration she added; it stands in for the drawn mark. */
+  readonly photo?: string;
 };
 
 /**
- * A bookable consultation. Sessions are 30 or 60 minutes; anything past the
- * booked length is billed at `overtimeRatePerHalfHour`, which the terms make
- * explicit before a client confirms.
+ * A bookable consultation. The coded sessions are 30 or 60 minutes; one Daysi
+ * adds from the office runs anywhere from 15 to 180. Anything past the booked
+ * length is billed at `overtimeRatePerHalfHour`, which the terms make explicit
+ * before a client confirms.
  */
 export type AppointmentType = {
   readonly id: string;
-  readonly minutes: 30 | 60;
+  readonly minutes: number;
   readonly name: Localized;
   readonly description: Localized;
   readonly fee: Cents;

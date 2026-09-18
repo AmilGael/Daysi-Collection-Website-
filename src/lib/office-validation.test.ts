@@ -409,3 +409,58 @@ describe("asking for a translation", () => {
     ).toBe(false);
   });
 });
+
+describe("adding an alteration or a session from Precios", () => {
+  const alterationAdd = {
+    type: "alteration-add",
+    key: "alteration-add:one",
+    name: "Poner puños",
+    description: "Puños nuevos en una manga sencilla.",
+    fixedPrice: 3200,
+    rushSurcharge: 2000,
+    turnaround: "4–6 días",
+  };
+  const appointmentAdd = {
+    type: "appointment-add",
+    key: "appointment-add:one",
+    name: "Prueba de novia",
+    minutes: 45,
+    fee: 9000,
+    suitedFor: "Una novia a dos semanas de la boda",
+  };
+
+  it("accepts an alteration typed in Spanish, with or without its own photo", () => {
+    expect(priceChangeSchema.safeParse(alterationAdd).success).toBe(true);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, photo: "/uploads/cuff-one.jpg" }).success).toBe(true);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, description: "", turnaround: "" }).success).toBe(true);
+  });
+
+  it("refuses an alteration with no name, words past their limits, a bad price or a photo from outside uploads", () => {
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, name: "P" }).success).toBe(false);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, name: "x".repeat(61) }).success).toBe(false);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, description: "x".repeat(161) }).success).toBe(false);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, turnaround: "x".repeat(31) }).success).toBe(false);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, fixedPrice: 5_000_01 }).success).toBe(false);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, rushSurcharge: -1 }).success).toBe(false);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, photo: "/images/real/craft-detail.jpg" }).success).toBe(false);
+  });
+
+  it("accepts a session of 15 to 180 minutes, and refuses one outside that", () => {
+    expect(priceChangeSchema.safeParse(appointmentAdd).success).toBe(true);
+    expect(priceChangeSchema.safeParse({ ...appointmentAdd, minutes: 15 }).success).toBe(true);
+    expect(priceChangeSchema.safeParse({ ...appointmentAdd, minutes: 180 }).success).toBe(true);
+    for (const minutes of [14, 181, 30.5]) {
+      expect(priceChangeSchema.safeParse({ ...appointmentAdd, minutes }).success, String(minutes)).toBe(false);
+    }
+    expect(priceChangeSchema.safeParse({ ...appointmentAdd, suitedFor: "x".repeat(121) }).success).toBe(false);
+    expect(priceChangeSchema.safeParse({ ...appointmentAdd, name: "" }).success).toBe(false);
+  });
+
+  it("retires and restores a price, an alteration or a session, and nothing else", () => {
+    for (const kind of ["price-entry", "alteration", "appointment-type"]) {
+      expect(priceChangeSchema.safeParse({ type: "retire", key: "alteration:x", id: "x", kind }).success, kind).toBe(true);
+      expect(priceChangeSchema.safeParse({ type: "restore", key: "alteration:x", id: "x", kind }).success, kind).toBe(true);
+    }
+    expect(priceChangeSchema.safeParse({ type: "retire", key: "style:x", id: "x", kind: "style" }).success).toBe(false);
+  });
+});

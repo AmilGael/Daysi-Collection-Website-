@@ -23,7 +23,10 @@ import { retiredSet } from "./retired";
  *
  * Custom fabrics ride the same layer: a fabric Daysi adds from the office
  * carries its own per-category prices, which surface as generated price list
- * entries beside the coded ones.
+ * entries beside the coded ones. So do the alterations and sessions she adds:
+ * each is listed after the coded ones, takes her later price edits like any
+ * other, and leaves every public list when she retires it. The coded ones
+ * cannot be retired, only repriced.
  */
 
 export type PriceEntryOverride = {
@@ -58,6 +61,11 @@ export type CustomFabric = {
   readonly updatedAt: string;
 };
 
+/** An alteration Daysi added from the office, as it was typed and translated. */
+export type AddedAlteration = AlterationService & { readonly addedAt: string };
+/** A session Daysi added from the office. */
+export type AddedAppointmentType = AppointmentType & { readonly addedAt: string };
+
 export type { PricedStyle, StylePrice } from "@/content";
 
 const ENTRY_OVERRIDES = "price-overrides";
@@ -65,6 +73,8 @@ const ALTERATION_OVERRIDES = "alteration-overrides";
 const APPOINTMENT_OVERRIDES = "appointment-overrides";
 const CUSTOM_FABRICS = "custom-fabrics";
 const CUSTOM_ENTRIES = "price-entries";
+const ADDED_ALTERATIONS = "added-alterations";
+const ADDED_APPOINTMENT_TYPES = "added-appointment-types";
 
 /** The coded per-category customization charges, reused for custom fabrics. */
 export const CUSTOMIZATION_EXTRA: Record<string, number> = {
@@ -119,6 +129,19 @@ export function applyAppointmentOverrides(
     // The whole fee holds the slot, so the deposit follows the fee.
     return { ...type, fee: override.fee, depositDue: override.fee };
   });
+}
+
+/**
+ * One published list of services: the coded ones, then the ones Daysi added,
+ * with her price edits applied over the lot and her retirements taken out.
+ */
+export function assembleServices<T extends { readonly id: string }>(
+  coded: readonly T[],
+  added: readonly T[],
+  applyOverrides: (all: readonly T[]) => T[],
+  retired: ReadonlySet<string> = new Set(),
+): T[] {
+  return applyOverrides([...coded, ...added]).filter((service) => !retired.has(service.id));
 }
 
 export function fabricFromCustom(custom: CustomFabric): Fabric {
@@ -241,24 +264,56 @@ export async function saveCustomEntry(entry: PriceListEntry): Promise<void> {
   await appendRecord(CUSTOM_ENTRIES, entry);
 }
 
+export function addedAlterations(): AddedAlteration[] {
+  return latestBy(readRecords<AddedAlteration>(ADDED_ALTERATIONS), (record) => record.id);
+}
+
+export function addedAppointmentTypes(): AddedAppointmentType[] {
+  return latestBy(readRecords<AddedAppointmentType>(ADDED_APPOINTMENT_TYPES), (record) => record.id);
+}
+
+function alterationOverrides(): AlterationOverride[] {
+  return latestBy(readRecords<AlterationOverride>(ALTERATION_OVERRIDES), (record) => record.alterationId);
+}
+
+function appointmentOverrides(): AppointmentOverride[] {
+  return latestBy(readRecords<AppointmentOverride>(APPOINTMENT_OVERRIDES), (record) => record.typeId);
+}
+
 export function liveAlterations(): AlterationService[] {
-  return applyAlterationOverrides(
+  return assembleServices<AlterationService>(
     alterationServices,
-    latestBy(
-      readRecords<AlterationOverride>(ALTERATION_OVERRIDES),
-      (record) => record.alterationId,
-    ),
+    addedAlterations(),
+    (all) => applyAlterationOverrides(all, alterationOverrides()),
+    retiredSet("alteration"),
   );
 }
 
 export function liveAppointmentTypes(): AppointmentType[] {
-  return applyAppointmentOverrides(
+  return assembleServices<AppointmentType>(
     appointmentTypes,
-    latestBy(
-      readRecords<AppointmentOverride>(APPOINTMENT_OVERRIDES),
-      (record) => record.typeId,
-    ),
+    addedAppointmentTypes(),
+    (all) => applyAppointmentOverrides(all, appointmentOverrides()),
+    retiredSet("appointment-type"),
   );
+}
+
+/** Every alteration the office can price, retired ones marked, coded ones marked as such. */
+export function manageableAlterations(): (AlterationService & { retired: boolean; coded: boolean })[] {
+  const retired = retiredSet("alteration");
+  const coded = new Set(alterationServices.map((alteration) => alteration.id));
+  return assembleServices<AlterationService>(alterationServices, addedAlterations(), (all) =>
+    applyAlterationOverrides(all, alterationOverrides()),
+  ).map((alteration) => ({ ...alteration, retired: retired.has(alteration.id), coded: coded.has(alteration.id) }));
+}
+
+/** Every session the office can price, retired ones marked, coded ones marked as such. */
+export function manageableAppointmentTypes(): (AppointmentType & { retired: boolean; coded: boolean })[] {
+  const retired = retiredSet("appointment-type");
+  const coded = new Set(appointmentTypes.map((type) => type.id));
+  return assembleServices<AppointmentType>(appointmentTypes, addedAppointmentTypes(), (all) =>
+    applyAppointmentOverrides(all, appointmentOverrides()),
+  ).map((type) => ({ ...type, retired: retired.has(type.id), coded: coded.has(type.id) }));
 }
 
 export function liveFindPriceEntry(id: string): PriceListEntry | undefined {
@@ -318,4 +373,12 @@ export async function saveCustomFabric(
   fabric: Omit<CustomFabric, "updatedAt">,
 ): Promise<void> {
   await appendRecord(CUSTOM_FABRICS, { ...fabric, updatedAt: new Date().toISOString() });
+}
+
+export async function saveAddedAlteration(alteration: AlterationService): Promise<void> {
+  await appendRecord(ADDED_ALTERATIONS, { ...alteration, addedAt: new Date().toISOString() });
+}
+
+export async function saveAddedAppointmentType(type: AppointmentType): Promise<void> {
+  await appendRecord(ADDED_APPOINTMENT_TYPES, { ...type, addedAt: new Date().toISOString() });
 }

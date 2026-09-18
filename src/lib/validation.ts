@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { alterationServices, appointmentTypes } from "@/content";
 
 /**
  * One schema per form. Every route handler parses its body through the schema
@@ -40,8 +39,14 @@ const botCheck = z.object({
   renderedAt: z.coerce.number().int().nonnegative(),
 });
 
-const alterationIds = alterationServices.map((item) => item.id) as [string, ...string[]];
-const appointmentIds = appointmentTypes.map((item) => item.id) as [string, ...string[]];
+/**
+ * An alteration or a session named by id. Bounded here and nothing more:
+ * Daysi adds and retires both from the office, so whether an id is on the
+ * list today is the live list's question, asked in the route
+ * (`unknown-alteration`, `unknown-appointment`), the same way the office
+ * schemas leave a garment's id to the catalog.
+ */
+const serviceId = z.string().min(1).max(60);
 
 /**
  * Who a request or an order comes from. Only the email is required — an
@@ -68,7 +73,7 @@ export const alterationRequestSchema = botCheck.extend({
   kind: z.literal("alteration"),
   client: clientSchema,
   garmentDescription: trimmed(500).min(10, "too-short"),
-  alterationIds: z.array(z.enum(alterationIds)).min(1).max(8),
+  alterationIds: z.array(serviceId).min(1).max(8),
   rush: z.boolean().default(false),
   preferredTiming: trimmed(120),
   notes: message.optional().default(""),
@@ -103,7 +108,7 @@ export type ClientRequest = z.infer<typeof requestSchema>;
 
 export const appointmentSchema = botCheck.extend({
   client: clientSchema,
-  appointmentTypeId: z.enum(appointmentIds),
+  appointmentTypeId: serviceId,
   /** ISO date, validated against real availability in the route handler. */
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "invalid-date"),
   startTime: z.string().regex(/^\d{2}:\d{2}$/, "invalid-time"),

@@ -170,9 +170,12 @@ export function AppointmentBooking({
 
         {selectedType ? (
           <div className="flex flex-col gap-3 border-l-2 border-marigold pl-5">
-            <p className="leading-relaxed text-ink-soft">
-              {translate(selectedType.description, locale)}
-            </p>
+            {/* A session Daysi added carries only what it is for, below. */}
+            {translate(selectedType.description, locale) ? (
+              <p className="leading-relaxed text-ink-soft">
+                {translate(selectedType.description, locale)}
+              </p>
+            ) : null}
             <ul className="flex flex-col gap-1.5">
               {selectedType.suitedFor.map((item) => (
                 <li key={item.en} className="flex items-start gap-2.5 text-[0.875rem] text-ink-faint">

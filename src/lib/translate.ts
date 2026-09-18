@@ -23,7 +23,7 @@ import { env } from "./env";
  * fallback, so no server-side fallback model is configured.
  */
 
-export type TranslationContext = "garment" | "photo";
+export type TranslationContext = "garment" | "photo" | "alteration";
 
 export type TranslationRequest = {
   readonly system: string;
@@ -42,7 +42,11 @@ const SYSTEM = [
 
 function promptFor(fields: Readonly<Record<string, string>>, keys: readonly string[], context: TranslationContext): string {
   const picked = Object.fromEntries(keys.map((key) => [key, fields[key]]));
-  const what = context === "garment" ? "a garment for sale" : "a caption under a finished piece in the gallery";
+  const what = {
+    garment: "a garment for sale",
+    photo: "a caption under a finished piece in the gallery",
+    alteration: "a service on the atelier's price list, an alteration or a booked session",
+  }[context];
   return `Context: ${what}.\nTranslate each field from Spanish to English:\n${JSON.stringify(picked)}`;
 }
 

@@ -9,6 +9,8 @@ import {
 } from "./live-catalog";
 import { manageableGallery, type GalleryVisibility } from "./live-gallery";
 import {
+  addedAlterations,
+  addedAppointmentTypes,
   assemblePriceList,
   customEntries,
   customFabrics,
@@ -153,7 +155,8 @@ const alteration = recordStream<AlterationOverride>(
   "alteration-overrides",
   (record) => record.alterationId,
   (id) => {
-    const item = alterationServices.find((candidate) => candidate.id === id);
+    // An alteration she added comes back to the price she added it at.
+    const item = [...alterationServices, ...addedAlterations()].find((candidate) => candidate.id === id);
     return item ? {
       type: "alteration",
       key: `alteration:${id}`,
@@ -175,7 +178,7 @@ const appointment = recordStream<AppointmentOverride>(
   "appointment-overrides",
   (record) => record.typeId,
   (id) => {
-    const item = appointmentTypes.find((candidate) => candidate.id === id);
+    const item = [...appointmentTypes, ...addedAppointmentTypes()].find((candidate) => candidate.id === id);
     return item ? { type: "appointment", key: `appointment:${id}`, id, fee: item.fee } : undefined;
   },
   (record, id) => ({ type: "appointment", key: `appointment:${id}`, id, fee: record.fee }),

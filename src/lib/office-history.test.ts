@@ -139,6 +139,52 @@ describe("office undo history", () => {
     });
   });
 
+  it("returns an added alteration's and an added session's own price as the baseline for their first edit", async () => {
+    const { previousChangeFor, undoableIds } = await import("./office-history");
+    const {
+      saveAddedAlteration,
+      saveAddedAppointmentType,
+      saveAlterationOverride,
+      saveAppointmentOverride,
+    } = await import("./live-pricing");
+    await saveAddedAlteration({
+      id: "alt-cuffs",
+      name: { es: "Poner puños", en: "Add cuffs" },
+      description: { es: "", en: "" },
+      fixedPrice: 3200,
+      rushSurcharge: 2000,
+      turnaround: { es: "", en: "" },
+    });
+    await saveAddedAppointmentType({
+      id: "ses-fitting",
+      minutes: 45,
+      name: { es: "Prueba", en: "Fitting" },
+      description: { es: "", en: "" },
+      fee: 9000,
+      depositDue: 9000,
+      overtimeRatePerHalfHour: 4000,
+      suitedFor: [],
+    });
+
+    await saveAlterationOverride({ alterationId: "alt-cuffs", fixedPrice: 3600, rushSurcharge: 2400 });
+    await saveAppointmentOverride({ typeId: "ses-fitting", fee: 11000 });
+    expect(previousChangeFor("alteration", "alt-cuffs")).toEqual({
+      type: "alteration",
+      key: "alteration:alt-cuffs",
+      id: "alt-cuffs",
+      fixedPrice: 3200,
+      rushSurcharge: 2000,
+    });
+    expect(previousChangeFor("appointment", "ses-fitting")).toEqual({
+      type: "appointment",
+      key: "appointment:ses-fitting",
+      id: "ses-fitting",
+      fee: 9000,
+    });
+    expect(undoableIds("alteration")).toContain("alt-cuffs");
+    expect(undoableIds("appointment")).toContain("ses-fitting");
+  });
+
   it("uses the empty notice floor and then the prior notice", async () => {
     const { previousChangeFor } = await import("./office-history");
     const { saveNotice } = await import("./live-catalog");

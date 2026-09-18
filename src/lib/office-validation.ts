@@ -189,6 +189,35 @@ export const fabricChangeSchema = z.discriminatedUnion("type", [
   restoreChangeSchema,
 ]);
 
+/**
+ * Which list a retire or restore on Precios means. Absent is a garment price,
+ * which is all the tab could retire before alterations and sessions could be
+ * added (and retired) there too.
+ */
+const priceRetireKind = z.enum(["price-entry", "alteration", "appointment-type"]).optional();
+
+/** An alteration Daysi adds, typed in Spanish only; the action writes the English. */
+export const alterationAddSchema = z.object({
+  type: z.literal("alteration-add"),
+  key: changeKey,
+  name: z.string().trim().min(2).max(60),
+  description: z.string().trim().max(160),
+  fixedPrice: cents,
+  rushSurcharge: cents,
+  turnaround: z.string().trim().max(30),
+  photo: uploadPath.optional(),
+});
+
+/** A session Daysi adds, typed in Spanish only; the action writes the English. */
+export const appointmentAddSchema = z.object({
+  type: z.literal("appointment-add"),
+  key: changeKey,
+  name: z.string().trim().min(2).max(60),
+  minutes: z.number().int().min(15).max(180),
+  fee: cents,
+  suitedFor: z.string().trim().max(120),
+});
+
 export const priceChangeSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("entry"),
@@ -210,8 +239,10 @@ export const priceChangeSchema = z.discriminatedUnion("type", [
     id: z.string().max(80),
     fee: cents,
   }),
-  retireChangeSchema,
-  restoreChangeSchema,
+  alterationAddSchema,
+  appointmentAddSchema,
+  retireChangeSchema.extend({ kind: priceRetireKind }),
+  restoreChangeSchema.extend({ kind: priceRetireKind }),
 ]);
 
 export const shopfrontChangeSchema = z.discriminatedUnion("type", [

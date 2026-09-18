@@ -1,13 +1,18 @@
 import Image from "next/image";
-import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
-import { alterationServices, translate } from "@/content";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { liveAlterations } from "@/lib/live-pricing";
 import type { Locale } from "@/i18n/routing";
-import { formatMoney } from "@/lib/money";
+import { AlterationCards } from "@/components/alteration-cards";
 import { PageHeader } from "@/components/page-header";
 import { ButtonLink, SectionHeading } from "@/components/ui";
 import { PHOTO_QUALITY } from "@/lib/images";
 
+/**
+ * A clothing page, not a price sheet: the alterations as cards with a drawing
+ * each, the one note that a price can grow once the garment is on the table,
+ * how a request goes in three steps, and the guarantee. The list is the live
+ * one, so an alteration Daysi adds from the office is a card here too.
+ */
 export default async function AlterationsPage({
   params,
 }: {
@@ -17,53 +22,33 @@ export default async function AlterationsPage({
   setRequestLocale(locale);
   const language = locale as Locale;
   const t = await getTranslations("alterations");
+  const steps = [t("stepTell"), t("stepPrice"), t("stepCollect")];
 
   return (
     <>
-      <PageHeader title={t("title")} lead={t("lead")} />
+      <PageHeader title={t("title")} lead={t("variesNote")} />
 
-      <section className="shell pb-20">
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-b border-ink">
-              <th className="py-4 text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-ink-faint">
-                {t("tableService")}
-              </th>
-              <th className="hidden py-4 text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-ink-faint sm:table-cell">
-                {t("tableTurnaround")}
-              </th>
-              <th className="py-4 text-right text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-ink-faint">
-                {t("tablePrice")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {liveAlterations().map((alteration) => (
-              <tr key={alteration.id} className="border-b border-line align-top">
-                <td className="py-5 pr-6">
-                  <p className="text-[1.0625rem]">{translate(alteration.name, language)}</p>
-                  <p className="mt-1 max-w-md text-[0.875rem] leading-relaxed text-ink-faint">
-                    {translate(alteration.description, language)}
-                  </p>
-                </td>
-                <td className="hidden py-5 pr-6 text-[0.875rem] text-ink-faint sm:table-cell">
-                  {translate(alteration.turnaround, language)}
-                </td>
-                <td className="py-5 text-right">
-                  <p className="tabular-nums">{formatMoney(alteration.fixedPrice, language)}</p>
-                  <p className="mt-1 text-[0.75rem] text-ink-faint">
-                    + {formatMoney(alteration.rushSurcharge, language)} {t("rushTitle")}
-                  </p>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <section className="shell pb-16">
+        <AlterationCards alterations={liveAlterations()} locale={language} />
+      </section>
 
-        <p className="mt-8 max-w-2xl text-[0.9375rem] leading-relaxed text-ink-soft">
-          {t("variesNote")}
-        </p>
-        <p className="mt-6 max-w-2xl border-l-2 border-marigold pl-4 text-[0.9375rem] leading-relaxed text-ink-soft">
+      <section className="shell flex flex-col gap-8 pb-20">
+        <ol aria-label={t("stepsLabel")} className="grid grid-cols-3 gap-3 border-t border-line pt-8 sm:gap-6">
+          {steps.map((step, index) => (
+            <li key={step} className="flex items-start gap-2 sm:gap-3">
+              <span aria-hidden className="font-display text-[1.5rem] leading-none tabular-nums text-ink-faint sm:text-[2rem]">
+                {index + 1}
+              </span>
+              <span className="text-[0.8125rem] leading-snug sm:text-[0.9375rem]">{step}</span>
+              {index < steps.length - 1 ? (
+                <span aria-hidden className="ml-auto hidden text-ink-faint sm:inline">
+                  →
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ol>
+        <p className="max-w-2xl border-l-2 border-marigold pl-4 text-[0.9375rem] leading-relaxed text-ink-soft">
           {t("guarantee")}
         </p>
       </section>

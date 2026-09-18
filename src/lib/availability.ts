@@ -1,4 +1,5 @@
-import { business, findAppointmentType } from "@/content";
+import { business } from "@/content";
+import { liveFindAppointmentType } from "./live-pricing";
 import { activeRequests, owesNothing, type StoredRequest } from "./request-store";
 
 /**
@@ -166,7 +167,7 @@ export async function availableDays(
   appointmentTypeId: string,
   now: Date = new Date(),
 ): Promise<readonly DaySlots[]> {
-  const type = findAppointmentType(appointmentTypeId);
+  const type = liveFindAppointmentType(appointmentTypeId);
   if (!type) return [];
 
   const taken = await bookedSlots(now);
