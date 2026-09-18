@@ -48,6 +48,13 @@ export function checkRateLimit(
  * let a script hand itself a fresh identity, and so a fresh budget, on
  * every request. Locally, where neither header exists, there is only ever
  * one caller.
+ *
+ * `Fly-Client-IP` is only the visitor's own address while the domain's DNS
+ * points straight at Fly (Cloudflare's grey cloud, no proxying). Turning on
+ * Cloudflare's orange-cloud proxy would make Fly see Cloudflare's edge as
+ * "the address that actually connected" for every visitor, so every one of
+ * these limiters would share a single budget site-wide — `CF-Connecting-IP`
+ * would have to be read first, ahead of `Fly-Client-IP`, if that ever changes.
  */
 export function callerKey(
   request: { readonly headers: { get(name: string): string | null } },
