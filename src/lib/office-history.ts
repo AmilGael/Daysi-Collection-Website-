@@ -222,9 +222,13 @@ const promotion = recordStream<Promotion>(
 );
 
 /**
- * A premiere's own words, dates, numbers and cover — never its style
- * checklist, which the sheet saves but does not offer for undo. The
- * baseline is the season as seeded or added, before any override.
+ * A premiere's own words, dates, numbers, cover and style checklist,
+ * together: every save (whether it touched the words or only the
+ * checklist) writes a full snapshot of the override as it stood after that
+ * save (see `previousOverrideFields` in the office action), so the record
+ * before the newest one is already everything to go back to. The baseline
+ * is the season as seeded or added, before any override, checklist
+ * included.
  */
 const premiere = recordStream<PremiereOverride>(
   "premiere-overrides",
@@ -245,6 +249,7 @@ const premiere = recordStream<PremiereOverride>(
       piecesPlanned: seeded.piecesPlanned,
       editionSize: seeded.editionSize,
       coverImage: seeded.coverImage,
+      styleIds: [...seeded.styleIds],
     };
   },
   (record, id) => ({
@@ -260,6 +265,7 @@ const premiere = recordStream<PremiereOverride>(
     ...(record.piecesPlanned === undefined ? {} : { piecesPlanned: record.piecesPlanned }),
     ...(record.editionSize === undefined ? {} : { editionSize: record.editionSize }),
     ...(record.coverImage === undefined ? {} : { coverImage: record.coverImage }),
+    ...(record.styleIds === undefined ? {} : { styleIds: [...record.styleIds] }),
   }),
 );
 

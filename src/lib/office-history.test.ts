@@ -261,6 +261,7 @@ describe("office undo history", () => {
       piecesPlanned: autumn.piecesPlanned,
       editionSize: autumn.editionSize,
       coverImage: autumn.coverImage,
+      styleIds: [...autumn.styleIds],
     });
     expect(undoableIds("premiere")).toContain("otono-2026");
 
@@ -271,6 +272,27 @@ describe("office undo history", () => {
       premiereId: "otono-2026",
       piecesPlanned: 5,
     });
+  });
+
+  it("premiere undo restores the checklist together with words, dates, numbers and cover", async () => {
+    const { previousChangeFor } = await import("./office-history");
+    const { savePremiereOverride } = await import("./live-premieres");
+    const { premieres } = await import("@/content");
+    const autumn = premieres.find((premiere) => premiere.id === "otono-2026")!;
+
+    // A checklist save alone: undo goes back to the seeded checklist, which
+    // the baseline now carries alongside the seeded words.
+    await savePremiereOverride({ premiereId: "otono-2026", styleIds: ["frutera"] });
+    expect(previousChangeFor("premiere", "otono-2026")).toMatchObject({ styleIds: [...autumn.styleIds] });
+
+    // The action writes a full snapshot on every save (see
+    // `previousOverrideFields`), so a words edit after a checklist save
+    // still carries that checklist forward; undoing the words edit gives
+    // back the checklist-save snapshot, not an empty or wrong checklist.
+    await savePremiereOverride({ premiereId: "otono-2026", styleIds: ["frutera"], piecesPlanned: 5 });
+    const previous = previousChangeFor("premiere", "otono-2026");
+    expect(previous).toMatchObject({ styleIds: ["frutera"] });
+    expect(previous).not.toHaveProperty("piecesPlanned");
   });
 
   it("only makes request status undoable after a second line", async () => {

@@ -682,6 +682,16 @@ describe("a premiere announced from the office", () => {
     expect(premiereChangeSchema.safeParse({ ...update, editionSize: 501 }).success).toBe(false);
   });
 
+  it("accepts an update that also carries the checklist, so an undo can restore it, up to the same bound", () => {
+    const update = { type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026" };
+    expect(premiereChangeSchema.safeParse({ ...update, styleIds: ["sirena", "frutera"] }).success).toBe(true);
+    expect(premiereChangeSchema.safeParse({ ...update, styleIds: [] }).success).toBe(true);
+    expect(
+      premiereChangeSchema.safeParse({ ...update, styleIds: Array.from({ length: 41 }, (_, index) => `sty-${index}`) })
+        .success,
+    ).toBe(false);
+  });
+
   it("accepts the styles change naming the whole checklist", () => {
     const styles = { type: "premiere-styles", key: "premiere-styles:otono-2026", premiereId: "otono-2026" };
     expect(premiereChangeSchema.safeParse({ ...styles, styleIds: ["sirena", "frutera"] }).success).toBe(true);

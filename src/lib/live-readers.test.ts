@@ -773,4 +773,80 @@ describe("a premiere announced from the office", () => {
     await apply({ type: "restore", key: "premiere:otono-2026", id: "otono-2026" });
     expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.retired).toBe(false);
   });
+
+  it("keeps every earlier correction: a pieces edit, then a checklist save, then a title edit all survive together", async () => {
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 });
+    await apply({
+      type: "premiere-styles",
+      key: "premiere-styles:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["frutera"],
+    });
+    const { livePremieres } = await import("./live-premieres");
+    // The checklist save alone must not have put pieces back to the seed's 6.
+    expect(livePremieres().find((premiere) => premiere.id === "otono-2026")).toMatchObject({
+      piecesPlanned: 5,
+      styleIds: ["frutera"],
+    });
+
+    await apply({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      title: "Yurumein, corregido",
+    });
+    expect(livePremieres().find((premiere) => premiere.id === "otono-2026")).toMatchObject({
+      piecesPlanned: 5,
+      styleIds: ["frutera"],
+      title: { es: "Yurumein, corregido", en: "Yurumein, corregido" },
+    });
+  });
+
+  it("keeps the current English when the Spanish sent back is unchanged (an undo, most often), and only translates what actually changed", async () => {
+    const { manageablePremieres } = await import("./live-premieres");
+    const seeded = manageablePremieres().find((premiere) => premiere.id === "otono-2026")!;
+
+    // An unrelated edit first, so there is an override for the season to
+    // undo against, then a change sending the season back exactly as it
+    // already reads — the shape an undo to the seeded words takes.
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 });
+    await apply({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      season: seeded.season.es,
+    });
+
+    const after = manageablePremieres().find((premiere) => premiere.id === "otono-2026");
+    // Not { es: seeded.season.es, en: seeded.season.es } — the English a
+    // no-op translation call would have copied the Spanish into.
+    expect(after?.season).toEqual(seeded.season);
+  });
+
+  it("accepts an undo that restores the seeded cover, not only an upload path", async () => {
+    const { manageablePremieres } = await import("./live-premieres");
+    const seeded = manageablePremieres().find((premiere) => premiere.id === "otono-2026")!;
+
+    await apply({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      coverImage: "/uploads/new-cover.jpg",
+    });
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.coverImage).toBe(
+      "/uploads/new-cover.jpg",
+    );
+
+    // The undo sends the season's own seeded cover back: a coded
+    // /images/real/… path, not an upload.
+    await apply({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      coverImage: seeded.coverImage,
+    });
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.coverImage).toBe(
+      seeded.coverImage,
+    );
+  });
 });

@@ -346,8 +346,14 @@ export const premiereChangeSchema = z.discriminatedUnion("type", [
     piecesPlanned: premiereNumbers.piecesPlanned.optional(),
     editionSize: premiereNumbers.editionSize.optional(),
     // An upload path or a coded /images/real/… path; checked in the action
-    // against uploadPath or the premiere's own current cover.
+    // against uploadPath, the premiere's own current cover, or its seeded
+    // or added one (an undo may send any of those three).
     coverImage: z.string().max(200).optional(),
+    // Carried by an undo that lands on a version which also touched the
+    // checklist, so one snapshot can restore words, dates, numbers, cover
+    // and checklist together; a live edit of the checklist alone still
+    // stages its own premiere-styles instead (see premiere-manager.tsx).
+    styleIds: premiereStyleIds.optional(),
   }),
   z.object({
     type: z.literal("premiere-styles"),
