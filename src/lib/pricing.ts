@@ -357,3 +357,36 @@ export function estimateDesign(): Estimate {
     es: "Se paga ahora. Se descuenta de su pedido si lo hace dentro de treinta días.",
   });
 }
+
+// ── Orders noted from the office ────────────────────────────────────────────
+
+export type NotedOrderKind = "order" | "alteration" | "commission";
+
+const NOTED_LABELS: Record<NotedOrderKind, Localized> = {
+  order: { en: "Order", es: "Pedido" },
+  alteration: { en: "Alteration", es: "Arreglo" },
+  commission: { en: "Custom piece", es: "Pieza a medida" },
+};
+
+/**
+ * An order, alteration or custom piece Daysi took off-site — in person or
+ * over WhatsApp — and notes from the office rather than prices from the
+ * catalog: one line, for the amount she names. An alteration noted this way
+ * carries no garment price to check against the clothing exemption, so it is
+ * left untaxed as her time; an order or a commission is a garment sold
+ * outright, taxed like every other one.
+ */
+export function estimateNoted(amount: Cents, kind: NotedOrderKind): Estimate {
+  const lines: EstimateLine[] = [
+    {
+      label: NOTED_LABELS[kind],
+      amount,
+      taxBasis: kind === "alteration" ? "service" : "clothing",
+    },
+  ];
+
+  return build(lines, (total) => total, {
+    en: "Noted from the office; already settled outside the site.",
+    es: "Anotado desde la oficina; ya se resolvió fuera del sitio.",
+  });
+}

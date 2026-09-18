@@ -266,6 +266,37 @@ export const shopfrontChangeSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
+/** A phone Daysi jots down by hand: permissive on format, strict on the
+ *  characters allowed, as everywhere else a client's number is taken. */
+const notedPhone = z
+  .string()
+  .trim()
+  .min(7)
+  .max(30)
+  .regex(/^[0-9+()\-.\s]+$/)
+  .optional();
+const notedEmail = z.string().trim().max(160).email().optional();
+
+/**
+ * An order, alteration or custom piece that never touched the site: Daysi
+ * took it in person or over WhatsApp, and this is how it still reaches her
+ * Hub, her figures and her books. Unlike every other request, the client's
+ * name is what she has to give — she typed it herself — while the email
+ * that makes an account is the one thing that may be missing.
+ */
+export const orderNoteSchema = z.object({
+  type: z.literal("order-note"),
+  key: changeKey,
+  kind: z.enum(["order", "alteration", "commission"]),
+  clientName: z.string().trim().min(2).max(80),
+  phone: notedPhone,
+  email: notedEmail,
+  description: z.string().trim().max(400),
+  amount: cents,
+  paid: z.boolean(),
+  notes: z.string().trim().max(400).optional(),
+});
+
 export const workChangeSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("request-status"),
@@ -282,6 +313,7 @@ export const workChangeSchema = z.discriminatedUnion("type", [
     reference: z.string().trim().min(1).max(40),
     status: z.enum(["new", "answered", "scheduled", "paid", "refunded", "closed"]),
   }),
+  orderNoteSchema,
   retireChangeSchema,
   restoreChangeSchema,
 ]);

@@ -105,8 +105,13 @@ export type StoredRequest = {
    * and the office shows it as such.
    */
   readonly awaitingPayment?: true | "bank";
-  /** How Stripe confirmed the money; written on the paid line by the webhook. */
-  readonly paidVia?: "card" | "bank";
+  /**
+   * How the money came in: Stripe's own mark on a line it wrote, or `"office"`
+   * on a line Daysi wrote herself for an order that never touched Stripe —
+   * paid in cash, or already settled before she noted it. See `order-note`
+   * in `office-validation.ts`.
+   */
+  readonly paidVia?: "card" | "bank" | "office";
   /** When Stripe confirmed it. Earnings count the money in this month, not the order's. */
   readonly paidAt?: string;
   /**

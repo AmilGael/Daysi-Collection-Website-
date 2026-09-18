@@ -176,6 +176,19 @@ describe.each([
   ["price restore", priceChangeSchema, { type: "restore", key: "entry:x", id: "x" }],
   ["shopfront notice", shopfrontChangeSchema, { type: "notice", key: "notice:site", message: "Open", visible: true }],
   ["work request status", workChangeSchema, { type: "request-status", key: "request:ALT-1", kind: "alteration", reference: "ALT-1", status: "answered" }],
+  [
+    "work order note",
+    workChangeSchema,
+    {
+      type: "order-note",
+      key: "order-note:one",
+      kind: "order",
+      clientName: "Rosa Martínez",
+      description: "Vestido azul, talla M",
+      amount: 15000,
+      paid: true,
+    },
+  ],
   ["work retire", workChangeSchema, { type: "retire", key: "request:CIT-1", id: "CIT-1" }],
   ["work restore", workChangeSchema, { type: "restore", key: "request:CIT-1", id: "CIT-1" }],
 ] as const)("%s change", (_name, schema, valid) => {
@@ -494,5 +507,41 @@ describe("adding an alteration or a session from Precios", () => {
       expect(priceChangeSchema.safeParse({ type: "restore", key: "alteration:x", id: "x", kind }).success, kind).toBe(true);
     }
     expect(priceChangeSchema.safeParse({ type: "retire", key: "style:x", id: "x", kind: "style" }).success).toBe(false);
+  });
+});
+
+describe("noting an order that never came through the site", () => {
+  const orderNote = {
+    type: "order-note",
+    key: "order-note:one",
+    kind: "order",
+    clientName: "Rosa Martínez",
+    description: "Vestido azul, talla M",
+    amount: 15000,
+    paid: true,
+  };
+
+  it("accepts the bare minimum, and with a phone, an email and notes besides", () => {
+    expect(workChangeSchema.safeParse(orderNote).success).toBe(true);
+    expect(
+      workChangeSchema.safeParse({
+        ...orderNote,
+        phone: "917-555-0100",
+        email: "rosa@example.com",
+        notes: "Pidió que se lo entreguen envuelto.",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("refuses a name too short, an amount past the cap, and a kind outside the three", () => {
+    expect(workChangeSchema.safeParse({ ...orderNote, clientName: "R" }).success).toBe(false);
+    expect(workChangeSchema.safeParse({ ...orderNote, amount: 5_000_01 }).success).toBe(false);
+    expect(workChangeSchema.safeParse({ ...orderNote, kind: "appointment" }).success).toBe(false);
+  });
+
+  it("refuses a phone or an email that is not one, but accepts leaving both out", () => {
+    expect(workChangeSchema.safeParse({ ...orderNote, phone: "abc" }).success).toBe(false);
+    expect(workChangeSchema.safeParse({ ...orderNote, email: "not-an-email" }).success).toBe(false);
+    expect(workChangeSchema.safeParse({ ...orderNote, phone: undefined, email: undefined }).success).toBe(true);
   });
 });

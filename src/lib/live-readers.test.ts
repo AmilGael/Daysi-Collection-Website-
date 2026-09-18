@@ -27,6 +27,9 @@ vi.mock("@/lib/auth/session", () => ({ currentViewer: vi.fn(async () => null) })
 vi.mock("@/lib/payments", () => ({
   createCheckoutSession: vi.fn(async () => ({ url: "https://checkout.stripe.test/session" })),
 }));
+// Only the office action tests below reach `ownerAction`, which revalidates
+// paths outside a request's render lifecycle; nothing here checks the call.
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 let dir: string;
 
@@ -319,5 +322,84 @@ describe("the premiere list", () => {
     const premiere = premieres.find((candidate) => candidate.styleIds.includes("frutera"))!;
     const names = liveStylesInPremiere(premiere).map((style) => style.name.en);
     expect(names).toContain("Frutera, corrected");
+  });
+});
+
+describe("noting an order the office took off-site", () => {
+  async function apply(change: Record<string, unknown>) {
+    const { headers } = await import("next/headers");
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({ origin: "http://localhost:3000", host: "localhost:3000" }),
+    );
+    const { currentViewer } = await import("@/lib/auth/session");
+    vi.mocked(currentViewer).mockResolvedValue({ role: "owner" } as Awaited<ReturnType<typeof currentViewer>>);
+    const { applyWorkChanges } = await import("@/app/[locale]/office/work/actions");
+    const result = await applyWorkChanges([change]);
+    if (!result.ok) throw new Error(result.error);
+    return result.results;
+  }
+
+  it("writes a paid order the Hub's ledger and the books both read back", async () => {
+    // Under the $110 clothing exemption, so the total is the amount she typed.
+    await apply({
+      type: "order-note",
+      key: "order-note:one",
+      kind: "order",
+      clientName: "Rosa Martínez",
+      email: "rosa@example.com",
+      description: "Vestido azul, talla M",
+      amount: 9500,
+      paid: true,
+    });
+
+    const { loadLedger, monthlyReceived } = await import("./earnings");
+    const ledger = loadLedger();
+    const written = ledger.find((record) => record.client.name === "Rosa Martínez");
+    expect(written).toMatchObject({
+      kind: "order",
+      source: "office",
+      status: "paid",
+      paidVia: "office",
+      client: { name: "Rosa Martínez", email: "rosa@example.com" },
+    });
+    expect(written?.reference).toMatch(/^ORD-/);
+    expect(written?.estimate?.total).toBe(9500);
+    expect(written?.paidAt).toBeTruthy();
+
+    // Paid the moment she noted it, so this month's trend already carries it.
+    const months = monthlyReceived(ledger, 1, new Date());
+    expect(months[0]?.total).toBe(9500);
+
+    const { salesRows } = await import("./books");
+    const rows = salesRows([written!], "es");
+    expect(rows[0]?.[1]).toBe("Rosa Martínez");
+    expect(rows[0]?.[6]).toBe("Pedido");
+    expect(rows[0]?.[8]).toBe("95.00");
+    expect(rows[0]?.[11]).toBe("order");
+  });
+
+  it("counts an unpaid note as outstanding, not received, with its own ALT- reference", async () => {
+    await apply({
+      type: "order-note",
+      key: "order-note:two",
+      kind: "alteration",
+      clientName: "Cliente sin pagar",
+      description: "Bastilla de pantalón",
+      amount: 3200,
+      paid: false,
+    });
+
+    const { loadLedger, earningsFrom } = await import("./earnings");
+    const ledger = loadLedger();
+    const written = ledger.find((record) => record.client.name === "Cliente sin pagar")!;
+    expect(written.reference).toMatch(/^ALT-/);
+    expect(written.status).toBe("new");
+    expect(written.paidAt).toBeUndefined();
+    // No email given, so the record cannot silently attach to someone else's account.
+    expect(written.client.email).toBe("");
+
+    const earnings = earningsFrom(ledger);
+    expect(earnings.outstanding).toBe(3200);
+    expect(earnings.received).toBe(0);
   });
 });

@@ -273,6 +273,18 @@ function whatsNext(request: StoredRequest): string {
 }
 
 /**
+ * How the receipt names the way it was paid. A receipt is never sent for an
+ * order Daysi noted herself — she wrote it, so there is nobody to mail — but
+ * this stays truthful about `"office"` rather than call it a card, in case a
+ * record is ever read through here some other way.
+ */
+function paidViaLabel(request: StoredRequest, locale: "es" | "en"): string {
+  if (request.paidVia === "office") return locale === "es" ? "en persona" : "in person";
+  if (request.paidVia === "bank") return locale === "es" ? "banco" : "bank";
+  return locale === "es" ? "tarjeta" : "card";
+}
+
+/**
  * The client's own receipt: every line they are being charged for, what was
  * paid now and what is still owed, and what happens next. Split from
  * `notifyClientPaid` so the tests can check the words without going through
@@ -295,8 +307,7 @@ export function receiptMessage(request: StoredRequest): { subject: string; text:
   const total = estimate?.total ?? 0;
   const dueNow = estimate?.dueNow ?? 0;
   const dueOnCollection = estimate?.dueOnCollection ?? 0;
-  const byBank = request.paidVia === "bank";
-  const via = locale === "es" ? (byBank ? "banco" : "tarjeta") : byBank ? "bank" : "card";
+  const via = paidViaLabel(request, locale);
 
   const whatsapp = whatsappLink(
     locale === "es"
