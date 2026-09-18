@@ -10,6 +10,7 @@ import { Pending } from "./office/confirm-bar";
 import { GarmentPhotos } from "./office/garment-photos";
 import { RetireButton, RetiredGroup } from "./office/retired-group";
 import { Sheet } from "./office/sheet";
+import { Switch } from "./office/switch";
 import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft, type DraftChange } from "./office/use-office-draft";
 import { Tag, buttonClass } from "./ui";
@@ -138,7 +139,7 @@ function sameIds(a: readonly string[], b: readonly string[]): boolean {
   return b.every((id) => set.has(id));
 }
 
-/** One garment on the checklist: a small thumbnail, its name, a checkbox. */
+/** One garment on the checklist: a small thumbnail, its name, the office's own Switch. */
 function StyleRow({
   style,
   checked,
@@ -151,20 +152,13 @@ function StyleRow({
   onToggle(): void;
 }): JSX.Element {
   return (
-    <li>
-      <label className="flex min-h-11 cursor-pointer items-center gap-3 border-b border-line text-[0.875rem]">
-        <input
-          type="checkbox"
-          checked={checked}
-          disabled={disabled}
-          onChange={onToggle}
-          className="h-4 w-4 accent-ink"
-        />
-        {style.photo ? (
-          <Image src={style.photo} alt="" width={36} height={36} sizes="2.25rem" className="h-9 w-9 object-cover" />
-        ) : null}
-        <span className="min-w-0 flex-1">{style.label}</span>
-      </label>
+    <li className="flex items-center gap-3 border-b border-line">
+      {style.photo ? (
+        <Image src={style.photo} alt="" width={36} height={36} sizes="2.25rem" className="h-9 w-9 shrink-0 object-cover" />
+      ) : null}
+      <div className="min-w-0 flex-1">
+        <Switch label={style.label} checked={checked} disabled={disabled} onChange={onToggle} />
+      </div>
     </li>
   );
 }
