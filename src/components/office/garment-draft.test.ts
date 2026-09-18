@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PhotoSlot } from "@/lib/photo-order";
-import { overrideChange, unchanged, viewOf, type ManagedStyle, type OverrideView } from "./garment-draft";
+import { overrideChange, unchanged, viewOf, withCount, type ManagedStyle, type OverrideView } from "./garment-draft";
 
 const row: ManagedStyle = {
   id: "frutera",
@@ -48,13 +48,13 @@ describe("viewOf", () => {
   });
 
   it("redraws a pending change from its meta", () => {
-    const pending = overrideChange(row.id, { ...viewOf(row, undefined), inStudio: true });
+    const pending = overrideChange(row, { ...viewOf(row, undefined), inStudio: true });
     expect(viewOf(row, pending).inStudio).toBe(true);
   });
 
   it("redraws a change that carries photos but no meta, as an undo does", () => {
     const [first, second] = row.photos;
-    const undo = overrideChange(row.id, viewOf(row, undefined));
+    const undo = overrideChange(row, viewOf(row, undefined));
     const override = undo.wire.type === "style-override" ? undo.wire : undefined;
     const withoutMeta = { wire: { ...override!, photos: [second!, first!] } };
     expect(viewOf(row, withoutMeta).slots).toEqual([
@@ -66,13 +66,13 @@ describe("viewOf", () => {
 
 describe("overrideChange", () => {
   it("lists only srcs on the wire and carries no files when there are none", () => {
-    const change = overrideChange(row.id, viewOf(row, undefined));
+    const change = overrideChange(row, viewOf(row, undefined));
     expect(change.wire).toEqual({
       type: "style-override",
       key: "style:frutera",
       styleId: "frutera",
       isPublished: true,
-      stock: { s: true, m: true, l: false },
+      stock: {},
       photos: row.photos,
       inStudio: false,
     });
@@ -86,7 +86,7 @@ describe("overrideChange", () => {
       ...viewOf(row, undefined),
       slots: [fileSlot("new"), { kind: "src", src: row.photos[0]! }, { kind: "src", src: row.photos[1]! }],
     };
-    const change = overrideChange(row.id, view);
+    const change = overrideChange(row, view);
     expect(change.files?.map((file) => file.name)).toEqual(["new.jpg"]);
     expect(change.wire.type === "style-override" && change.wire.photos).toEqual(row.photos);
     const uploaded = change.withUploads!(["/uploads/img-new12345.jpg"]);
@@ -95,6 +95,60 @@ describe("overrideChange", () => {
       row.photos[0],
       row.photos[1],
     ]);
+  });
+});
+
+describe("counted pieces on the sheet", () => {
+  const counted: ManagedStyle = {
+    ...row,
+    sizes: [
+      { sizeId: "s", inStock: true, count: 2 },
+      { sizeId: "m", inStock: false, count: 0 },
+      { sizeId: "l", inStock: false },
+    ],
+  };
+
+  it("shows the pieces left, and the switch for a size never counted", () => {
+    expect(viewOf(counted, undefined).stock).toEqual({ s: 2, m: 0, l: false });
+  });
+
+  it("sends only the sizes she changed, so an untouched size keeps its count", () => {
+    const view = viewOf(counted, undefined);
+    const change = overrideChange(counted, { ...view, stock: { ...view.stock, m: 3 } });
+    expect(change.wire.type === "style-override" && change.wire.stock).toEqual({ m: 3 });
+  });
+
+  it("keeps the moment an undo brings back until she types over that size", () => {
+    const undo = {
+      wire: {
+        type: "style-override" as const,
+        key: "style:frutera",
+        styleId: "frutera",
+        isPublished: true,
+        stock: { s: 4, m: 0, l: false },
+        countedAt: { s: "2026-09-01T12:00:00.000Z", m: "2026-09-01T12:00:00.000Z" },
+      },
+    };
+    const view = viewOf(counted, undo);
+    const kept = overrideChange(counted, { ...view, inStudio: true });
+    expect(kept.wire.type === "style-override" && kept.wire.countedAt).toEqual({
+      s: "2026-09-01T12:00:00.000Z",
+      m: "2026-09-01T12:00:00.000Z",
+    });
+    expect(kept.wire.type === "style-override" && kept.wire.stock).toEqual({ s: 4, m: 0 });
+  });
+});
+
+describe("typing a count", () => {
+  it("counts that size now, dropping the moment an undo had brought back for it only", () => {
+    const view: OverrideView = {
+      ...viewOf(row, undefined),
+      stock: { s: 4, m: 1, l: false },
+      countedAt: { s: "2026-09-01T12:00:00.000Z", m: "2026-09-01T12:00:00.000Z" },
+    };
+    const typed = withCount(view, "s", 6);
+    expect(typed.stock.s).toBe(6);
+    expect(typed.countedAt).toEqual({ m: "2026-09-01T12:00:00.000Z" });
   });
 });
 

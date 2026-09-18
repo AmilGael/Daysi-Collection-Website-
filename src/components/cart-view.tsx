@@ -63,6 +63,9 @@ export function CartView({
         const result = (await response.json()) as { cart: Cart; estimate: Estimate | null };
         setCart(result.cart);
         setEstimate(result.estimate);
+        setError(null);
+      } else if (response.status === 409) {
+        setError(t("soldOut"));
       }
     } finally {
       setBusy(false);
@@ -89,7 +92,7 @@ export function CartView({
       });
 
       if (!response.ok) {
-        setError(tc("somethingWentWrong"));
+        setError(response.status === 409 ? t("soldOut") : tc("somethingWentWrong"));
         return;
       }
 

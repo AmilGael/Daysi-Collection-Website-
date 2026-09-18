@@ -18,6 +18,7 @@ import type {
   PriceListEntry,
   Service,
   SizeId,
+  StyleSize,
 } from "./types";
 
 export * from "./types";
@@ -103,6 +104,15 @@ export function stylesInPremiere(premiere: Premiere): readonly GarmentStyle[] {
   return premiere.styleIds
     .map((id) => styles.find((style) => style.id === id))
     .filter((style): style is GarmentStyle => style !== undefined);
+}
+
+/**
+ * What a size says beside it. A counted size with none left is sold out
+ * ready-made; a size never counted and switched off is made for the order.
+ */
+export function sizeState(size: StyleSize): "inStock" | "soldOut" | "madeToOrder" {
+  if (size.count === 0) return "soldOut";
+  return size.inStock ? "inStock" : "madeToOrder";
 }
 
 export function primaryPhoto(style: GarmentStyle) {

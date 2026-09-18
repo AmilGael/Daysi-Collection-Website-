@@ -9,6 +9,8 @@ import {
   manageableStyles,
   saveAddedStyle,
   saveStyleOverride,
+  styleOverrides,
+  type StyleOverride,
 } from "@/lib/live-catalog";
 import { saveTextOverride } from "@/lib/live-text";
 import {
@@ -31,6 +33,32 @@ import { slugify } from "@/lib/slugify";
 import { translateToEnglish, withEnglish } from "@/lib/translate";
 
 type Field = "name" | "color" | "description" | "detail";
+type SizeKey = "s" | "m" | "l";
+
+/**
+ * The stock to write: the sizes she changed on top of the ones she did not.
+ * The draft sends only what she touched, so a size left alone keeps its
+ * number and the moment it was counted, and a sale made while her page was
+ * open is still taken off it. A typed count is counted now; an undo brings
+ * the moment back with it.
+ */
+function mergedStock(
+  previous: StyleOverride | undefined,
+  sent: StyleOverride["stock"],
+  sentCountedAt: StyleOverride["countedAt"],
+  now: string,
+): Pick<StyleOverride, "stock" | "countedAt"> {
+  const stock: Partial<Record<SizeKey, boolean | number>> = { ...previous?.stock };
+  const countedAt: Partial<Record<SizeKey, string>> = { ...previous?.countedAt };
+  for (const size of ["s", "m", "l"] as const) {
+    const value = sent[size];
+    if (value === undefined) continue;
+    stock[size] = value;
+    if (typeof value === "number") countedAt[size] = sentCountedAt?.[size] ?? now;
+    else delete countedAt[size];
+  }
+  return Object.keys(countedAt).length > 0 ? { stock, countedAt } : { stock };
+}
 
 /**
  * Every change applies in this order: photos and switches, then a retire or
@@ -84,8 +112,11 @@ export const applyCollectionChanges = ownerAction(
               throw new ChangeRefused("unknown-photo");
             }
           }
+          const previous = styleOverrides().find((record) => record.styleId === change.styleId);
+          const { countedAt: sentCountedAt, ...rest } = override;
           await saveStyleOverride({
-            ...override,
+            ...rest,
+            ...mergedStock(previous, override.stock, sentCountedAt, new Date().toISOString()),
             // Readers of older records, and undo, still look at addedPhotos.
             ...(override.photos
               ? { addedPhotos: override.photos.filter((src) => src.startsWith("/uploads/")) }
@@ -145,7 +176,8 @@ export const applyCollectionChanges = ownerAction(
           if (!liveFabrics().some((fabric) => fabric.id === draft.fabricId)) {
             throw new ChangeRefused("unknown-fabric");
           }
-          if (!Object.values(draft.sizes).some(Boolean)) {
+          // Something to sell in some size: a switch left on, or a count above none.
+          if (!Object.values(draft.sizes).some((value) => value === true || (typeof value === "number" && value > 0))) {
             throw new ChangeRefused("no-sizes");
           }
 
@@ -193,8 +225,9 @@ export const applyCollectionChanges = ownerAction(
           let slug = base;
           for (let n = 2; taken.has(slug); n += 1) slug = `${base}-${n}`;
 
+          const styleId = newReference("STY").toLowerCase();
           await saveAddedStyle({
-            id: newReference("STY").toLowerCase(),
+            id: styleId,
             slug,
             name: words.name,
             categoryId: draft.categoryId,
@@ -202,10 +235,10 @@ export const applyCollectionChanges = ownerAction(
             color: words.color,
             description: words.description,
             detail: words.detail,
-            sizes: (["s", "m", "l"] as const).map((sizeId) => ({
-              sizeId,
-              inStock: draft.sizes[sizeId],
-            })),
+            sizes: (["s", "m", "l"] as const).map((sizeId) => {
+              const value = draft.sizes[sizeId];
+              return { sizeId, inStock: typeof value === "number" ? value > 0 : value };
+            }),
             photos: draft.photos.map((src, index) => ({
               src,
               alt: words.name,
@@ -215,6 +248,15 @@ export const applyCollectionChanges = ownerAction(
             isPublished: true,
             inStudio: draft.inStudio,
           });
+          // The counts live where every later count does, so a sale is taken
+          // off from the moment the garment goes up.
+          if (Object.values(draft.sizes).some((value) => typeof value === "number")) {
+            await saveStyleOverride({
+              styleId,
+              isPublished: true,
+              ...mergedStock(undefined, draft.sizes, undefined, new Date().toISOString()),
+            });
+          }
           return;
         }
         case "retire":

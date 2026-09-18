@@ -48,6 +48,7 @@ export default async function OfficeCollectionPage({
     sizes: style.sizes.map((size) => ({
       sizeId: size.sizeId as "s" | "m" | "l",
       inStock: size.inStock,
+      ...(size.count === undefined ? {} : { count: size.count }),
     })),
     retired: style.retired,
     undoable: undoable.has(style.id),

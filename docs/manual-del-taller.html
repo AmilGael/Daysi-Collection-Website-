@@ -334,7 +334,7 @@
       <li><a href="#entrar">Cómo entrar</a></li>
       <li><a href="#precios">Cambiar un precio</a></li>
       <li><a href="#prenda">Poner una prenda nueva en la colección</a></li>
-      <li><a href="#perchero">Esconder una pieza, o marcar las tallas que le quedan</a></li>
+      <li><a href="#perchero">Esconder una pieza, o poner cuántas le quedan</a></li>
       <li><a href="#palabras">Corregir las palabras de una prenda o una foto</a></li>
       <li><a href="#telas">Poner un rollo de tela en la pared</a></li>
       <li><a href="#trabajo">Agregar una pieza terminada a su trabajo</a></li>
@@ -456,8 +456,9 @@
         <span class="label">Prenda</span> y <span class="label">Tela</span>: de dónde sale el precio.
       </li>
       <li>
-        <span class="label">Tallas que tiene</span>: deje encendidas solamente
-        las que tiene hechas. Las demás salen agotadas.
+        <span class="label">Piezas que tiene por talla</span>: escriba cuántas
+        tiene hechas de cada talla, por ejemplo 1 S, 2 M, 0 L. Una talla en 0
+        sale agotada, y la clienta la puede seguir pidiendo hecha a su medida.
       </li>
       <li>
         <span class="label">Se ofrece en el estudio</span>: enciéndalo si quiere
@@ -485,7 +486,7 @@
 
   <!-- 04 ------------------------------------------------------------- -->
   <section class="task" id="perchero">
-    <h2><span class="n">04</span>Esconder una pieza, cambiar sus fotos, o marcar las tallas que le quedan</h2>
+    <h2><span class="n">04</span>Esconder una pieza, cambiar sus fotos, o poner cuántas le quedan</h2>
     <p>
       Se vendió la última mediana, quiere otra foto de portada, o quiere sacar
       una pieza del sitio por un tiempo sin borrarla. Todo se hace desde la
@@ -494,11 +495,17 @@
     <ol class="steps">
       <li>En la oficina, toque la pestaña <span class="label">Colección</span> (<span class="path">/es/office/collection</span>).</li>
       <li>
-        Para las tallas no hace falta abrir nada: en la tarjeta, toque la letra
-        de la talla que se acabó y queda tachada. La pieza se queda en el sitio
-        y esa talla sale agotada.
+        La tarjeta muestra cuántas le quedan de cada talla, por ejemplo
+        <span class="label">S 2</span>. Una talla en 0 sale tachada, y en el
+        sitio sale agotada. Toque la tarjeta y se abre la hoja de esa prenda.
       </li>
-      <li>Para todo lo demás, toque la tarjeta y se abre la hoja de esa prenda.</li>
+      <li>
+        <span class="label">Piezas por talla</span>: escriba cuántas tiene. No
+        hace falta bajarla cuando vende por el sitio: cada venta pagada la baja
+        sola. Sí vuelva a escribirla cuando venda una en persona, cuando
+        devuelva el dinero de una y la pieza vuelva al perchero, o después de
+        usar <span class="btn">Deshacer</span>.
+      </li>
       <li>
         <span class="label">Las fotos</span>: <span class="btn">Hacer portada</span>
         pone una foto de primera, las flechas la mueven,
@@ -795,7 +802,7 @@
       <li>
         <strong>Subió la pieza y no la ve en el sitio.</strong> Recargue la
         página. Si sigue sin salir, mire que esté en
-        <span class="label">Visible</span> y que tenga al menos una talla marcada.
+        <span class="label">Visible</span> y que tenga al menos una pieza en alguna talla.
       </li>
       <li>
         <strong>Se equivocó en algo.</strong> Toque <a href="#deshacer"><span class="btn">Deshacer</span></a>

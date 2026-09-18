@@ -8,7 +8,9 @@ import type { DraftChange } from "./use-office-draft";
  */
 
 export type SizeId = "s" | "m" | "l";
-export type Stock = Record<SizeId, boolean>;
+const SIZES: readonly SizeId[] = ["s", "m", "l"];
+/** Pieces left per size once counted; the older on/off switch for a size never counted. */
+export type Stock = Record<SizeId, boolean | number>;
 
 export type ManagedStyle = {
   readonly id: string;
@@ -21,7 +23,7 @@ export type ManagedStyle = {
   readonly photos: readonly string[];
   readonly isPublished: boolean;
   readonly inStudio: boolean;
-  readonly sizes: readonly { readonly sizeId: SizeId; readonly inStock: boolean }[];
+  readonly sizes: readonly { readonly sizeId: SizeId; readonly inStock: boolean; readonly count?: number }[];
   readonly retired: boolean;
   readonly undoable: boolean;
   readonly texts: {
@@ -37,6 +39,8 @@ export type OverrideView = {
   readonly isPublished: boolean;
   readonly inStudio: boolean;
   readonly stock: Stock;
+  /** Counts an undo is bringing back, with the moment each was taken. */
+  readonly countedAt?: Readonly<Partial<Record<SizeId, string>>>;
   readonly slots: readonly PhotoSlot[];
 };
 
@@ -48,8 +52,14 @@ export function overrideKey(styleId: string): string {
 
 function stockOf(row: ManagedStyle): Stock {
   const stock: Stock = { s: false, m: false, l: false };
-  for (const size of row.sizes) stock[size.sizeId] = size.inStock;
+  for (const size of row.sizes) stock[size.sizeId] = size.count ?? size.inStock;
   return stock;
+}
+
+/** She typed a count for one size: it is counted now, whatever an undo had brought back. */
+export function withCount(view: OverrideView, size: SizeId, count: number): OverrideView {
+  const { [size]: _dropped, ...countedAt } = view.countedAt ?? {};
+  return { ...view, stock: { ...view.stock, [size]: count }, countedAt };
 }
 
 /** The sheet's state: the pending change if there is one, otherwise the saved row. */
@@ -60,18 +70,37 @@ export function viewOf(row: ManagedStyle, pending: DraftChange<CollectionChange>
     isPublished: wire?.isPublished ?? row.isPublished,
     inStudio: wire?.inStudio ?? row.inStudio,
     stock: { ...stockOf(row), ...(wire?.stock ?? {}) },
+    ...(wire?.countedAt ? { countedAt: wire.countedAt } : {}),
     slots: slots ?? (wire?.photos ?? row.photos).map((src) => ({ kind: "src", src })),
   };
 }
 
+/**
+ * Only the sizes she changed, or whose count an undo is bringing back: the
+ * rest stay off the wire, so the server keeps their number and the moment
+ * it was counted, and a sale made while this page was open still counts.
+ */
+function changedStock(row: ManagedStyle, view: OverrideView): Pick<OverrideWire, "stock" | "countedAt"> {
+  const saved = stockOf(row);
+  const stock: Partial<Stock> = {};
+  const countedAt: Partial<Record<SizeId, string>> = {};
+  for (const size of SIZES) {
+    const at = view.countedAt?.[size];
+    if (view.stock[size] === saved[size] && at === undefined) continue;
+    stock[size] = view.stock[size];
+    if (at !== undefined && typeof view.stock[size] === "number") countedAt[size] = at;
+  }
+  return Object.keys(countedAt).length > 0 ? { stock, countedAt } : { stock };
+}
+
 /** One draft change for the garment: srcs on the wire now, files uploaded at confirm and put back in slot order. */
-export function overrideChange(styleId: string, view: OverrideView): DraftChange<CollectionChange> {
+export function overrideChange(row: ManagedStyle, view: OverrideView): DraftChange<CollectionChange> {
   const wire: OverrideWire = {
     type: "style-override",
-    key: overrideKey(styleId),
-    styleId,
+    key: overrideKey(row.id),
+    styleId: row.id,
     isPublished: view.isPublished,
-    stock: view.stock,
+    ...changedStock(row, view),
     photos: view.slots.flatMap((slot) => (slot.kind === "src" ? [slot.src] : [])),
     inStudio: view.inStudio,
   };
@@ -97,9 +126,7 @@ export function unchanged(view: OverrideView, row: ManagedStyle): boolean {
   return (
     view.isPublished === row.isPublished &&
     view.inStudio === row.inStudio &&
-    view.stock.s === saved.s &&
-    view.stock.m === saved.m &&
-    view.stock.l === saved.l &&
+    SIZES.every((size) => view.stock[size] === saved[size] && view.countedAt?.[size] === undefined) &&
     view.slots.length === row.photos.length &&
     view.slots.every((slot, index) => slot.kind === "src" && slot.src === row.photos[index])
   );

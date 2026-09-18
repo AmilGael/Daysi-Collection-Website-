@@ -73,6 +73,13 @@ export type StylePhoto = {
 export type StyleSize = {
   readonly sizeId: SizeId;
   readonly inStock: boolean;
+  /**
+   * Pieces left to sell ready-made, once Daysi has counted this size: her
+   * count less what has sold or is held since (see `lib/stock.ts`). Absent
+   * on a size she has not counted, which never runs out; at 0 the size is
+   * sold out ready-made and can still be made to measure.
+   */
+  readonly count?: number;
 };
 
 /** ERD: GARMENT_STYLE — one card in the gallery. */

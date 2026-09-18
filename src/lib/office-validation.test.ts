@@ -42,6 +42,27 @@ describe("what the office accepts for a style override", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("accepts a count of pieces per size beside the older switches", () => {
+    expect(styleOverrideSchema.safeParse({ styleId: "frutera", ...override, stock: { s: 2, m: 0, l: true } }).success).toBe(true);
+  });
+
+  it("refuses a count that is not a whole number of pieces", () => {
+    for (const count of [-1, 1.5, 100]) {
+      expect(styleOverrideSchema.safeParse({ styleId: "frutera", ...override, stock: { s: count } }).success).toBe(false);
+    }
+  });
+
+  it("carries when a count was taken, as an undo restores it", () => {
+    const result = styleOverrideSchema.safeParse({
+      styleId: "frutera",
+      ...override,
+      stock: { s: 2 },
+      countedAt: { s: "2026-09-20T12:00:00.000Z" },
+    });
+    expect(result.success).toBe(true);
+    expect(styleOverrideSchema.safeParse({ styleId: "frutera", ...override, countedAt: { s: "yesterday" } }).success).toBe(false);
+  });
 });
 
 describe("what the office accepts for a new garment", () => {
@@ -70,6 +91,11 @@ describe("what the office accepts for a new garment", () => {
 
   it("refuses a price nobody could have meant", () => {
     expect(styleCreateSchema.safeParse({ ...draft, fixedPrice: 900_000_00 }).success).toBe(false);
+  });
+
+  it("accepts how many pieces of each size she has", () => {
+    expect(styleCreateSchema.safeParse({ ...draft, sizes: { s: 1, m: 0, l: 2 } }).success).toBe(true);
+    expect(styleCreateSchema.safeParse({ ...draft, sizes: { s: -1, m: 0, l: 2 } }).success).toBe(false);
   });
 });
 

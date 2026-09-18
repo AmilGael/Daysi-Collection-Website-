@@ -91,6 +91,9 @@ const styleOverride = recordStream<StyleOverride>(
       styleId: id,
       isPublished: record.isPublished,
       stock: record.stock,
+      // A count comes back with the moment it was taken, so every sale since
+      // is still taken off it.
+      ...(record.countedAt ? { countedAt: { ...record.countedAt } } : {}),
       ...(record.photos ? { photos: [...record.photos] } : {}),
       ...(legacy === undefined ? {} : { addedPhotos: [...legacy] }),
       ...(record.coverSrc === undefined || record.photos ? {} : { coverSrc: record.coverSrc }),

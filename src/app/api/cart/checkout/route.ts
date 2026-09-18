@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { translate } from "@/content";
-import { liveStyleBySlug as findStyle } from "@/lib/live-catalog";
+import { liveStyleBySlug as findStyle, liveStyles } from "@/lib/live-catalog";
+import { stockShortfall } from "@/lib/stock";
 import { CHECKOUT_HOLD_MINUTES } from "@/lib/availability";
 import { emptyCart, readCart, writeCart } from "@/lib/cart";
 import { estimateCart } from "@/lib/pricing";
@@ -25,6 +26,18 @@ import type { StoredRequest } from "@/lib/request-store";
 
 const CHECKOUTS_PER_HOUR = 8;
 const ONE_HOUR = 3600;
+
+/**
+ * One checkout at a time between reading the rack and holding its pieces, so
+ * two clients reaching for the last one cannot both have it. The site runs on
+ * one machine, so a lock in this module is the whole of it.
+ */
+let rack: Promise<unknown> = Promise.resolve();
+function oneAtATime<T>(task: () => Promise<T>): Promise<T> {
+  const turn = rack.then(task);
+  rack = turn.catch(() => undefined);
+  return turn;
+}
 
 const schema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -72,42 +85,61 @@ export async function POST(request: Request) {
       locale: details.locale,
     }));
 
-  const reference = newReference("ORD");
-  // With Stripe configured and money due, the client is about to be sent to
-  // pay. Daysi must not hear about the order until that payment is confirmed,
-  // or a checkout abandoned on the card page reads exactly like a sale.
-  const awaitingPayment = paymentsEnabled && estimate.dueNow > 0;
-  const record: StoredRequest = {
-    reference,
-    kind: "order",
-    submittedAt: new Date().toISOString(),
-    locale: details.locale,
-    accountId: account.id,
-    client: {
-      name: viewer ? viewer.account.name || details.name : details.name,
-      email: account.email,
-      phone: details.phone,
-      preferredContact: details.preferredContact,
-    },
-    details: {
-      Pieces: cart.lines.map((line) => {
-        const style = findStyle(line.styleSlug);
-        const name = style ? translate(style.name, "en") : line.styleSlug;
-        return `${name} · ${line.sizeId.toUpperCase()} × ${line.quantity}${
-          line.customize ? " · made to measure" : ""
-        }`;
-      }),
-      Notes: details.notes,
-    },
-    estimate,
-    ...(awaitingPayment ? { awaitingPayment: true as const } : {}),
-    status: "new",
-  };
+  const outcome = await oneAtATime(async () => {
+    // Read again at the till: a piece may have sold while it sat in the cart.
+    // Recording the order is what holds its pieces, so both happen in one turn.
+    if (stockShortfall(cart.lines, liveStyles())) return null;
 
-  const delivered = await recordRequest(record);
-  if (!delivered) {
+    const reference = newReference("ORD");
+    // With Stripe configured and money due, the client is about to be sent to
+    // pay. Daysi must not hear about the order until that payment is confirmed,
+    // or a checkout abandoned on the card page reads exactly like a sale.
+    const awaitingPayment = paymentsEnabled && estimate.dueNow > 0;
+    const record: StoredRequest = {
+      reference,
+      kind: "order",
+      submittedAt: new Date().toISOString(),
+      locale: details.locale,
+      accountId: account.id,
+      client: {
+        name: viewer ? viewer.account.name || details.name : details.name,
+        email: account.email,
+        phone: details.phone,
+        preferredContact: details.preferredContact,
+      },
+      details: {
+        Pieces: cart.lines.map((line) => {
+          const style = findStyle(line.styleSlug);
+          const name = style ? translate(style.name, "en") : line.styleSlug;
+          return `${name} · ${line.sizeId.toUpperCase()} × ${line.quantity}${
+            line.customize ? " · made to measure" : ""
+          }`;
+        }),
+        Notes: details.notes,
+      },
+      estimate,
+      // Garment by size, for the stock: held while the payment is on its way,
+      // sold once Stripe says so.
+      pieces: cart.lines.flatMap((line) => {
+        const style = findStyle(line.styleSlug);
+        return style
+          ? [{ styleId: style.id, sizeId: line.sizeId, quantity: line.quantity, madeToMeasure: line.customize }]
+          : [];
+      }),
+      ...(awaitingPayment ? { awaitingPayment: true as const } : {}),
+      status: "new",
+    };
+
+    return { reference, awaitingPayment, delivered: await recordRequest(record) };
+  });
+
+  if (!outcome) {
+    return NextResponse.json({ error: "sold-out" }, { status: 409 });
+  }
+  if (!outcome.delivered) {
     return NextResponse.json({ error: "not-recorded" }, { status: 500 });
   }
+  const { reference, awaitingPayment } = outcome;
 
   // The cart is emptied only once the order is safely recorded.
   await writeCart(emptyCart);

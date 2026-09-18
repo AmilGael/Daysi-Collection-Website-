@@ -3,6 +3,7 @@ import { styles } from "@/content";
 import type { GarmentStyle, Premiere, StylePhoto } from "@/content/types";
 import { retiredSet } from "./retired";
 import { applyStyleText, textOverrides, type TextOverride } from "./live-text";
+import { availableCount, takenFromOrders, type TakenPiece } from "./stock";
 
 /**
  * The live layer over the static catalog.
@@ -15,12 +16,18 @@ import { applyStyleText, textOverrides, type TextOverride } from "./live-text";
  * `.data` folder simply returns the site to the catalog as coded.
  */
 
-export type SizeStock = Readonly<Partial<Record<"s" | "m" | "l", boolean>>>;
+/**
+ * Per size: a number is the pieces Daysi counted on the rack; true or false
+ * is the older switch, for a size she has not counted, which never runs out.
+ */
+export type SizeStock = Readonly<Partial<Record<"s" | "m" | "l", boolean | number>>>;
 
 export type StyleOverride = {
   readonly styleId: string;
   readonly isPublished: boolean;
   readonly stock: SizeStock;
+  /** When each counted size was counted; a sale is taken off only if paid after this. */
+  readonly countedAt?: Readonly<Partial<Record<"s" | "m" | "l", string>>>;
   /** Photos Daysi has added from the office, shown after the coded ones. */
   readonly addedPhotos?: readonly string[];
   /** When set, the photo with this src leads the style's gallery. */
@@ -64,6 +71,7 @@ export async function saveStyleOverride(
 export function applyOverrides(
   catalog: readonly GarmentStyle[],
   overrides: readonly StyleOverride[],
+  taken: readonly TakenPiece[] = [],
 ): GarmentStyle[] {
   const byId = new Map(overrides.map((override) => [override.styleId, override]));
   return catalog.map((style) => {
@@ -107,8 +115,12 @@ export function applyOverrides(
       isPublished: override.isPublished,
       photos,
       sizes: style.sizes.map((offered) => {
-        const stocked = override.stock[offered.sizeId as keyof SizeStock];
-        return stocked === undefined ? offered : { ...offered, inStock: stocked };
+        const sizeId = offered.sizeId as keyof SizeStock;
+        const stocked = override.stock[sizeId];
+        if (stocked === undefined) return offered;
+        if (typeof stocked === "boolean") return { sizeId: offered.sizeId, inStock: stocked };
+        const count = availableCount(stocked, override.countedAt?.[sizeId], taken, style.id, sizeId);
+        return { sizeId: offered.sizeId, inStock: count > 0, count };
       }),
       ...(override.inStudio === undefined ? {} : { inStudio: override.inStudio }),
     };
@@ -131,6 +143,7 @@ export function assembleStyles(
   overrides: readonly StyleOverride[],
   retired: ReadonlySet<string> = new Set(),
   texts: readonly TextOverride[] = [],
+  taken: readonly TakenPiece[] = [],
 ): GarmentStyle[] {
   const newest = new Map(added.map((style) => [style.id, style]));
   const seeded = new Set(seed.map((style) => style.id));
@@ -139,7 +152,7 @@ export function assembleStyles(
     ...seed.map((style) => newest.get(style.id) ?? style),
   ];
   // Words first: applyOverrides builds alt text for added photos out of the name.
-  return applyOverrides(applyStyleText(catalog, texts), overrides).filter(
+  return applyOverrides(applyStyleText(catalog, texts), overrides, taken).filter(
     (style) => !retired.has(style.id),
   );
 }
@@ -173,15 +186,21 @@ export function allLiveStyles(): GarmentStyle[] {
     styleOverrides(),
     retiredSet("style"),
     textOverrides(),
+    takenFromOrders(),
   );
 }
 
 /** Every style including retired ones, each flagged for the office view. */
 export function manageableStyles(): (GarmentStyle & { retired: boolean })[] {
   const retired = retiredSet("style");
-  return assembleStyles(styles, addedStyles(), styleOverrides(), new Set(), textOverrides()).map(
-    (style) => ({ ...style, retired: retired.has(style.id) }),
-  );
+  return assembleStyles(
+    styles,
+    addedStyles(),
+    styleOverrides(),
+    new Set(),
+    textOverrides(),
+    takenFromOrders(),
+  ).map((style) => ({ ...style, retired: retired.has(style.id) }));
 }
 
 export function liveStyleBySlug(slug: string): GarmentStyle | undefined {
