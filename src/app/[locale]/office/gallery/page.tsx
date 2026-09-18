@@ -7,18 +7,13 @@ import {
   assembleGallery,
   manageableGallery,
   manageableGallerySections,
-  type SectionView,
+  sectionLabel,
 } from "@/lib/live-gallery";
 import { undoableIds } from "@/lib/office-history";
 import { GalleryManager, type ManagedWork } from "@/components/gallery-manager";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { officeViewer } from "../_lib/viewer";
 import { applyGalleryChanges } from "./actions";
-
-/** A coded section's label lives in `gallery.category.*`; one Daysi added carries its own. */
-function sectionLabel(section: SectionView, tg: (key: string) => string, locale: Locale): string {
-  return section.coded ? tg(`category.${section.id}`) : translate(section.name!, locale);
-}
 
 /** Gallery: the portfolio photographs, and a place to add one. */
 export default async function OfficeGalleryPage({

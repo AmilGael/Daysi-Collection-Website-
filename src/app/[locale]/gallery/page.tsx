@@ -1,15 +1,10 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { translate } from "@/content";
-import { liveGallerySections, liveGallery, type SectionView } from "@/lib/live-gallery";
+import { liveGallerySections, liveGallery, sectionLabel } from "@/lib/live-gallery";
 import type { Locale } from "@/i18n/routing";
 import { PageHeader } from "@/components/page-header";
 import { GalleryWall, type WallWork } from "@/components/gallery-wall";
-
-/** A coded section's label lives in `gallery.category.*`; one Daysi added carries its own. */
-function sectionLabel(section: SectionView, t: (key: string) => string, locale: Locale): string {
-  return section.coded ? t(`category.${section.id}`) : translate(section.name!, locale);
-}
 
 export async function generateMetadata({
   params,

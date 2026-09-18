@@ -1,5 +1,6 @@
 import { galleryWorks } from "@/content/gallery";
-import type { GalleryWork, Localized } from "@/content/types";
+import { translate, type GalleryWork, type Localized } from "@/content/types";
+import type { Locale } from "@/i18n/routing";
 import { appendRecord, readRecords } from "./records";
 import { retiredSet } from "./retired";
 import { applyGalleryText, textOverrides, type TextOverride } from "./live-text";
@@ -119,6 +120,17 @@ export type GallerySection = { readonly id: string; readonly name: Localized; re
  * lives in `gallery.category.*`, or one Daysi added, which carries its own.
  */
 export type SectionView = { readonly id: string; readonly coded: boolean; readonly name?: Localized };
+
+/**
+ * A section's label, however a reader gets there: a coded section's lives
+ * in `gallery.category.*` (the caller's own translator, so a public and an
+ * office reader can each pass their own); one Daysi added carries its own
+ * bilingual name instead. Shared so the two gallery pages don't each keep
+ * their own copy of this one line.
+ */
+export function sectionLabel(section: SectionView, t: (key: string) => string, locale: Locale): string {
+  return section.coded ? t(`category.${section.id}`) : translate(section.name!, locale);
+}
 
 const SECTIONS = "gallery-sections";
 

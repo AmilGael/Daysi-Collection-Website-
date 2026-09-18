@@ -7,6 +7,7 @@ import {
   assembleSections,
   galleryByCategory,
   sectionId,
+  sectionLabel,
   type GallerySection,
   type GalleryVisibility,
 } from "./live-gallery";
@@ -169,6 +170,21 @@ describe("assembling gallery sections", () => {
   it("slugs an accented Spanish name to sec-…", () => {
     expect(sectionId("Quinceañeras")).toBe("sec-quinceaneras");
     expect(sectionId("Otra")).toBe("sec-otra");
+  });
+});
+
+describe("sectionLabel", () => {
+  it("reads a coded section's label from the caller's translator", () => {
+    const t = (key: string) => (key === "category.runway" ? "Pasarela" : `missing:${key}`);
+    expect(sectionLabel({ id: "runway", coded: true }, t, "es")).toBe("Pasarela");
+  });
+
+  it("reads an added section's own name, in the given locale", () => {
+    const added = section("sec-a", { name: { es: "Especial", en: "Special" } });
+    const view = assembleSections([added], new Set()).find((s) => s.id === "sec-a")!;
+    const t = () => "unused";
+    expect(sectionLabel(view, t, "es")).toBe("Especial");
+    expect(sectionLabel(view, t, "en")).toBe("Special");
   });
 });
 
