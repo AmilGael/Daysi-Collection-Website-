@@ -55,4 +55,22 @@ describe("the site helper", () => {
     expect(afterForm).toContain("ExternalButtonLink");
     expect(afterForm).toContain('whatsappLink(t("whatsappMessage"))');
   });
+
+  /**
+   * The model's own words are never markup (RULES tells it to write plain
+   * text, `lib/site-helper.test.ts`), so a path it quotes is turned into a
+   * `Link` by building elements from `tokenizeAnswer`'s segments — never by
+   * handing the model's text to `dangerouslySetInnerHTML`. Only an answer is
+   * tokenized; the visitor's own question renders as plain text.
+   */
+  it("turns an answer's own quoted path into a real Link, never by trusting the model's text as markup", () => {
+    expect(source).toContain("import { tokenizeAnswer } from \"@/lib/answer-links\"");
+    expect(source).not.toContain("dangerouslySetInnerHTML={");
+    expect(source).toContain('turn.role === "assistant" ? renderAnswer(turn.text) : turn.text');
+
+    const renderAnswer = source.slice(source.indexOf("function renderAnswer"), source.indexOf("const SUGGESTIONS"));
+    expect(renderAnswer).toContain("tokenizeAnswer(text)");
+    expect(renderAnswer).toContain('segment.type === "link"');
+    expect(renderAnswer).toMatch(/<Link key=\{index\} href=\{segment\.href\}/);
+  });
 });

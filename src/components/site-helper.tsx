@@ -1,13 +1,34 @@
 "use client";
 
-import { useCallback, useState, type JSX } from "react";
+import { Fragment, useCallback, useState, type JSX, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { usePathname } from "@/i18n/routing";
+import { Link, usePathname } from "@/i18n/routing";
 import type { Locale } from "@/i18n/routing";
+import { tokenizeAnswer } from "@/lib/answer-links";
 import { whatsappLink } from "@/lib/whatsapp";
 import { ExternalButtonLink, buttonClass } from "./ui";
 
 type Turn = { readonly role: "user" | "assistant"; readonly text: string };
+
+/**
+ * An answer is plain text with, at most, a bare page path the model was told
+ * to quote (RULES, `site-helper.ts`) — never Markdown, never HTML. This
+ * turns that path into a real `<Link>` by building elements from
+ * `tokenizeAnswer`'s segments; it never reaches for
+ * `dangerouslySetInnerHTML`, since the model's own words are not markup. The
+ * visitor's own question is shown as plain text — only an answer is tokenized.
+ */
+function renderAnswer(text: string): ReactNode {
+  return tokenizeAnswer(text).map((segment, index) =>
+    segment.type === "link" ? (
+      <Link key={index} href={segment.href} className="underline underline-offset-4 hover:text-ink">
+        {segment.label}
+      </Link>
+    ) : (
+      <Fragment key={index}>{segment.value}</Fragment>
+    ),
+  );
+}
 
 /** Keys in the "helper" namespace, in the order the panel offers them. */
 const SUGGESTIONS = ["suggestPrice", "suggestAlteration", "suggestSession"] as const;
@@ -150,7 +171,7 @@ function HelperPanel({ onClose }: { onClose(): void }): JSX.Element {
                     : "text-[0.9375rem] leading-relaxed text-ink-soft"
                 }
               >
-                {turn.text}
+                {turn.role === "assistant" ? renderAnswer(turn.text) : turn.text}
               </p>
             ))}
           </div>

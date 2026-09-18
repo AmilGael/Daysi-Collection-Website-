@@ -42,7 +42,11 @@ export function HelperSwitch({
   return (
     <div className="flex max-w-xl flex-col gap-2">
       <Switch
-        checked={visible}
+        // Without the key the panel never shows itself, whatever this
+        // record says (`helperEnabled` gates it in `layout.tsx`), so the
+        // switch has to draw off rather than show a "visible" it cannot
+        // deliver on.
+        checked={visible && !disabled}
         disabled={disabled}
         label={t("helperVisibleLabel")}
         onChange={(next) => {
@@ -54,7 +58,7 @@ export function HelperSwitch({
       {disabled ? <p className="text-[0.8125rem] text-ink-faint">{t("helperNeedsKey")}</p> : null}
       <div className="flex items-center gap-3">
         {pending ? <Pending confirming={pending.confirming} error={pending.error} count={pending.count} /> : null}
-        {undoable && !pending ? <UndoLink kind="helper" id="site" /> : null}
+        {undoable && !pending && !disabled ? <UndoLink kind="helper" id="site" /> : null}
       </div>
     </div>
   );

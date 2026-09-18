@@ -31,10 +31,10 @@ describe("helperData", () => {
     const { formatMoney } = await import("./money");
 
     const es = helperData("es");
-    expect(es).toContain(`Camisa campera Yurumein [/es/collection/yurumein]: ${formatMoney(12000, "es")} (Algodón wax)`);
+    expect(es).toContain(`Camisa campera Yurumein, /es/collection/yurumein: ${formatMoney(12000, "es")} (Algodón wax)`);
 
     const en = helperData("en");
-    expect(en).toContain(`Yurumein camp shirt [/en/collection/yurumein]: ${formatMoney(12000, "en")} (Wax print cotton)`);
+    expect(en).toContain(`Yurumein camp shirt, /en/collection/yurumein: ${formatMoney(12000, "en")} (Wax print cotton)`);
   });
 
   it("carries the general price list by category and fabric, the alterations, and the sessions", async () => {
@@ -49,13 +49,14 @@ describe("helperData", () => {
     expect(state).toContain(`Consulta de 30 minutos: ${formatMoney(8000, "es")}`);
   });
 
-  it("carries the hours and the WhatsApp contact, and a short terms summary — never a client's data", async () => {
+  it("carries the hours and a WhatsApp fact with no address — the panel's own button is that step", async () => {
     const { helperData } = await import("./site-helper");
 
     const state = helperData("es");
     expect(state).toContain("Lunes: 10:00–18:00");
     expect(state).toContain("Domingo: cerrado");
-    expect(state).toContain("wa.me/19176887260");
+    expect(state).toContain("- WhatsApp");
+    expect(state).not.toContain("wa.me");
     expect(state).toContain("no se negocian");
   });
 
@@ -76,7 +77,7 @@ describe("helperData", () => {
 
     expect(es).toContain(`${formatMoney(10200, "es")} (Algodón wax), promoción Venta de otoño`);
     // The list price on its own, undiscounted, should not stand in for it.
-    expect(es).not.toContain(`Camisa campera Yurumein [/es/collection/yurumein]: ${formatMoney(12000, "es")}`);
+    expect(es).not.toContain(`Camisa campera Yurumein, /es/collection/yurumein: ${formatMoney(12000, "es")}`);
   });
 });
 
@@ -128,6 +129,25 @@ describe("askSiteHelper", () => {
     expect(cached).toHaveLength(1);
     expect(cached[0]!.cache_control).toEqual({ type: "ephemeral", ttl: "1h" });
     expect(String(cached[0]!.text)).toContain("Camisas en Algodón wax");
+  });
+
+  it("tells the model to name the fabric with a price, write plain text, give bare paths, and say WhatsApp with no address", async () => {
+    const { askSiteHelper } = await import("./site-helper");
+    let rules = "";
+    const fakeCall: HelperCall = async ({ system }) => {
+      rules = String(system[0]!.text);
+      return "ok";
+    };
+
+    await askSiteHelper({ question: "hola", locale: "es", history: [] }, fakeCall);
+
+    expect(rules).toContain("name the");
+    expect(rules).toContain("fabric");
+    expect(rules).toContain("plain text only");
+    expect(rules).toContain("never Markdown");
+    expect(rules).toContain("bare path");
+    expect(rules).toContain('just say "WhatsApp"');
+    expect(rules).toContain("never a wa.me address");
   });
 
   it("drops a leading assistant turn, so a rolled-back thread still starts with the visitor", async () => {

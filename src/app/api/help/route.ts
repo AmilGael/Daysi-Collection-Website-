@@ -14,6 +14,8 @@ import { askSiteHelper, helperVisible } from "@/lib/site-helper";
  */
 
 const QUESTIONS_PER_HOUR = 10;
+/** A ceiling across every visitor together, so no per-caller identity — however it is derived — can be multiplied into an unbounded bill. */
+const QUESTIONS_PER_HOUR_SITE_WIDE = 200;
 const ONE_HOUR = 3600;
 
 const helpSchema = z.object({
@@ -45,6 +47,14 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "rate-limited" },
       { status: 429, headers: { "retry-after": String(limit.retryAfterSeconds) } },
+    );
+  }
+
+  const siteWide = checkRateLimit("help:all", QUESTIONS_PER_HOUR_SITE_WIDE, ONE_HOUR);
+  if (!siteWide.allowed) {
+    return NextResponse.json(
+      { error: "rate-limited" },
+      { status: 429, headers: { "retry-after": String(siteWide.retryAfterSeconds) } },
     );
   }
 

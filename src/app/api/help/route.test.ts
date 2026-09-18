@@ -142,4 +142,23 @@ describe("the public help route", () => {
     );
     expect(response.status).toBe(200);
   });
+
+  it("refuses the 201st question site-wide, even across many callers each under their own budget", async () => {
+    for (let caller = 0; caller < 20; caller += 1) {
+      for (let i = 0; i < 10; i += 1) {
+        const response = await post(
+          { question: `pregunta ${caller}-${i}`, locale: "es", history: [] },
+          { "x-forwarded-for": `198.51.100.${caller}` },
+        );
+        expect(response.status).toBe(200);
+      }
+    }
+
+    const over = await post(
+      { question: "una más", locale: "es", history: [] },
+      { "x-forwarded-for": "198.51.100.99" },
+    );
+    expect(over.status).toBe(429);
+    expect(await over.json()).toEqual({ error: "rate-limited" });
+  });
 });

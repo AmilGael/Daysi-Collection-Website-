@@ -40,16 +40,27 @@ export function checkRateLimit(
 }
 
 /**
- * The best available identifier for the caller. Behind Vercel this is the real
- * client address; locally it falls back to a constant, which is fine because
- * there is only ever one caller.
+ * The best available identifier for the caller. Fly sets `Fly-Client-IP` to
+ * the address that actually connected, so that wins whenever it is present.
+ * Failing that, `X-Forwarded-For` is trusted only from the right: Fly's own
+ * edge appends the real address as the last entry, while everything to its
+ * left is whatever the client claimed — trusting the leftmost entry would
+ * let a script hand itself a fresh identity, and so a fresh budget, on
+ * every request. Locally, where neither header exists, there is only ever
+ * one caller.
  */
 export function callerKey(
   request: { readonly headers: { get(name: string): string | null } },
   scope: string,
 ): string {
+  const flyClientIp = request.headers.get("fly-client-ip")?.trim();
   const forwarded = request.headers.get("x-forwarded-for");
-  const address = forwarded?.split(",")[0]?.trim() ?? "local";
+  const rightmost = forwarded
+    ?.split(",")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .at(-1);
+  const address = flyClientIp || rightmost || "local";
   return `${scope}:${address}`;
 }
 
