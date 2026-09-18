@@ -156,3 +156,31 @@ export function unchanged(view: OverrideView, row: ManagedStyle): boolean {
     view.ownPrice?.customizationExtra === row.ownPrice?.customizationExtra
   );
 }
+
+/** Cents as a price box shows them, the way the Prices tab does: 295.00. */
+export function inBox(cents: number): string {
+  return (cents / 100).toFixed(2);
+}
+
+/**
+ * The new-garment sheet's price, as typed: the own-price switch and its two
+ * boxes (the price box doubles as the list price for a pair with none).
+ */
+export type NewPriceBoxes = { readonly own: boolean; readonly price: string; readonly extra: string };
+
+/**
+ * Where the boxes start, and where a change of garment or cloth puts them
+ * back: a number typed for one pair is never another pair's price, on the
+ * list or on this garment.
+ */
+export const clearedPrice: NewPriceBoxes = { own: false, price: "", extra: "" };
+
+/**
+ * The own-price switch on a priced pair. On, the price box starts from the
+ * list price of the pair on screen, for her to change, and the extra box is
+ * empty, which keeps the list's charge (shown as its placeholder), as on an
+ * existing garment's sheet. Off, both boxes empty.
+ */
+export function ownPriceSwitched(on: boolean, listPrice: number): NewPriceBoxes {
+  return on ? { own: true, price: inBox(listPrice), extra: "" } : clearedPrice;
+}

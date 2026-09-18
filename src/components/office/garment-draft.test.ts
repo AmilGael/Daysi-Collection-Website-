@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { PhotoSlot } from "@/lib/photo-order";
-import { overrideChange, unchanged, viewOf, withCount, type ManagedStyle, type OverrideView } from "./garment-draft";
+import {
+  clearedPrice,
+  inBox,
+  ownPriceSwitched,
+  overrideChange,
+  unchanged,
+  viewOf,
+  withCount,
+  type ManagedStyle,
+  type OverrideView,
+} from "./garment-draft";
 
 const row: ManagedStyle = {
   id: "frutera",
@@ -209,5 +219,25 @@ describe("a garment's own price on the sheet", () => {
     expect(unchanged({ ...view, ownPrice: { fixedPrice: 25100, customizationExtra: null } }, owned)).toBe(false);
     expect(unchanged({ ...view, ownPrice: { fixedPrice: 25000, customizationExtra: 9000 } }, owned)).toBe(false);
     expect(unchanged({ ...viewOf(row, undefined), ownPrice: { fixedPrice: 29500, customizationExtra: null } }, row)).toBe(false);
+  });
+});
+
+describe("the new garment's price boxes", () => {
+  it("start empty with the switch off, which is also where a change of pair leaves them", () => {
+    expect(clearedPrice).toEqual({ own: false, price: "", extra: "" });
+  });
+
+  it("start from this pair's list price when the switch goes on, whatever was typed for another pair", () => {
+    // Pair A was $295 and she had typed over it; pair B is $400.
+    expect(ownPriceSwitched(true, 40000)).toEqual({ own: true, price: "400.00", extra: "" });
+  });
+
+  it("empty when the switch goes off, so nothing typed for this garment reaches the list", () => {
+    expect(ownPriceSwitched(false, 40000)).toEqual(clearedPrice);
+  });
+
+  it("show cents the way the Prices tab does", () => {
+    expect(inBox(29500)).toBe("295.00");
+    expect(inBox(10550)).toBe("105.50");
   });
 });

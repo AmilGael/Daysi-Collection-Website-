@@ -9,11 +9,15 @@ import type { PhotoSlot } from "@/lib/photo-order";
 import { buttonClass } from "@/components/ui";
 import { Pending } from "./confirm-bar";
 import {
+  clearedPrice,
+  inBox,
   overrideChange,
   overrideKey,
+  ownPriceSwitched,
   unchanged,
   viewOf,
   type ManagedStyle,
+  type NewPriceBoxes,
   type OverrideView,
   type SizeId,
   withCount,
@@ -71,11 +75,6 @@ function PieceCount({
       />
     </label>
   );
-}
-
-/** Cents as the box shows them, the way the Prices tab does: 295.00. */
-function inBox(cents: number): string {
-  return (cents / 100).toFixed(2);
 }
 
 /**
@@ -296,9 +295,8 @@ export function NewGarmentSheet({
   const [detail, setDetail] = useState("");
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
   const [fabricId, setFabricId] = useState(fabrics[0]?.id ?? "");
-  const [price, setPrice] = useState("");
-  const [ownPrice, setOwnPrice] = useState(false);
-  const [extra, setExtra] = useState("");
+  const [priceBoxes, setPriceBoxes] = useState<NewPriceBoxes>(clearedPrice);
+  const { own: ownPrice, price, extra } = priceBoxes;
   const [stock, setStock] = useState<Record<SizeId, number>>({ s: 0, m: 0, l: 0 });
   const [inStudio, setInStudio] = useState(false);
   const [slots, setSlots] = useState<readonly PhotoSlot[]>([]);
@@ -406,19 +404,33 @@ export function NewGarmentSheet({
       <section className="grid gap-4 sm:grid-cols-2">
         <label className="grid gap-1 text-[0.75rem] text-ink-faint">
           {t("styleCategory")}
-          <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)} className={field}>
+          <select
+            value={categoryId}
+            onChange={(event) => {
+              setCategoryId(event.target.value);
+              setPriceBoxes(clearedPrice);
+            }}
+            className={field}
+          >
             {categories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}
           </select>
         </label>
         <label className="grid gap-1 text-[0.75rem] text-ink-faint">
           {t("styleFabric")}
-          <select value={fabricId} onChange={(event) => setFabricId(event.target.value)} className={field}>
+          <select
+            value={fabricId}
+            onChange={(event) => {
+              setFabricId(event.target.value);
+              setPriceBoxes(clearedPrice);
+            }}
+            className={field}
+          >
             {fabrics.map((fabric) => <option key={fabric.id} value={fabric.id}>{fabric.label}</option>)}
           </select>
         </label>
         <div className="flex flex-col gap-2 sm:col-span-2">
           {needsPrice ? (
-            <MoneyBox label={t("stylePrice")} value={price} onChange={setPrice} />
+            <MoneyBox label={t("stylePrice")} value={price} onChange={(text) => setPriceBoxes({ ...priceBoxes, price: text })} />
           ) : (
             <>
               <p className="grid gap-1 text-[0.75rem] text-ink-faint">
@@ -431,23 +443,19 @@ export function NewGarmentSheet({
               <Switch
                 label={t("ownPriceSwitch")}
                 checked={ownPrice}
-                onChange={(on) => {
-                  setOwnPrice(on);
-                  // Starts from the list price, for her to change.
-                  if (on && price.trim() === "") setPrice(inBox(listed.fixedPrice));
-                }}
+                onChange={(on) => setPriceBoxes(ownPriceSwitched(on, listed.fixedPrice))}
               />
               {ownPrice ? (
                 <>
                   <p className="text-[0.8125rem] leading-relaxed text-ink-faint">{t("ownPriceNote")}</p>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <MoneyBox label={t("stylePrice")} value={price} onChange={setPrice} />
+                    <MoneyBox label={t("stylePrice")} value={price} onChange={(text) => setPriceBoxes({ ...priceBoxes, price: text })} />
                     <MoneyBox
                       label={t("pricesExtra")}
                       value={extra}
                       // Left empty, the garment keeps the list's made-to-measure charge.
                       placeholder={inBox(listed.customizationExtra)}
-                      onChange={setExtra}
+                      onChange={(text) => setPriceBoxes({ ...priceBoxes, extra: text })}
                     />
                   </div>
                 </>

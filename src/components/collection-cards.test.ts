@@ -71,6 +71,16 @@ describe("a garment's own price", () => {
     expect(sheet).toContain('t("stylePriceFromList")');
   });
 
+  it("never carries a price typed for one pair over to another on the new-garment sheet", () => {
+    const sheet = read("src/components/office/garment-sheet.tsx");
+    // Both pickers start the price over, switch off and boxes empty.
+    expect(sheet).toContain("setCategoryId(event.target.value);\n              setPriceBoxes(clearedPrice);");
+    expect(sheet).toContain("setFabricId(event.target.value);\n              setPriceBoxes(clearedPrice);");
+    // The switch starts from the pair on screen now, and empties when it goes off.
+    expect(sheet).toContain("onChange={(on) => setPriceBoxes(ownPriceSwitched(on, listed.fixedPrice))}");
+    expect(sheet).not.toContain('price.trim() === ""');
+  });
+
   it("is counted on its entry's row in Precios", () => {
     expect(read("src/components/price-manager.tsx")).toContain('t("entryOwnPriced", { count: entry.ownPriced })');
   });
