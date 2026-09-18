@@ -22,7 +22,9 @@ export default async function RequestPage({
   const t = await getTranslations("request");
 
   const requested = first(query.kind);
-  const kind = KINDS.includes(requested as Kind) ? (requested as Kind) : "alteration";
+  const locked = KINDS.includes(requested as Kind);
+  const kind = locked ? (requested as Kind) : "alteration";
+  const initialAlterationId = first(query.alteration);
 
   return (
     <>
@@ -30,6 +32,8 @@ export default async function RequestPage({
       <div className="shell pb-28">
         <RequestForm
           initialKind={kind}
+          lockedKind={locked ? kind : null}
+          initialAlterationId={initialAlterationId}
           alterations={liveAlterations()}
           categories={categories}
           fabrics={liveFabrics()}

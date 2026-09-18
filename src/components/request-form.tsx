@@ -13,6 +13,7 @@ import { formatMoney } from "@/lib/money";
 import type { Estimate } from "@/lib/pricing";
 import { Link, type Locale } from "@/i18n/routing";
 import { whatsappLink } from "@/lib/whatsapp";
+import { TextLink } from "@/components/ui";
 import {
   BotTrap,
   Checkbox,
@@ -44,11 +45,15 @@ const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
  */
 export function RequestForm({
   initialKind,
+  lockedKind,
+  initialAlterationId,
   alterations,
   categories,
   fabrics,
 }: {
   initialKind: Kind;
+  lockedKind: Kind | null;
+  initialAlterationId?: string;
   alterations: readonly AlterationService[];
   categories: readonly DesignCategory[];
   fabrics: readonly Fabric[];
@@ -70,7 +75,12 @@ export function RequestForm({
 
   // Alteration
   const [garmentDescription, setGarmentDescription] = useState("");
-  const [alterationIds, setAlterationIds] = useState<string[]>([]);
+  const [alterationIds, setAlterationIds] = useState<string[]>(
+    initialAlterationId &&
+      alterations.some((alteration) => alteration.id === initialAlterationId)
+      ? [initialAlterationId]
+      : [],
+  );
   const [rush, setRush] = useState(false);
   const [preferredTiming, setPreferredTiming] = useState("");
   const [photo, setPhoto] = useState<{ dataUrl: string; name: string } | null>(null);
@@ -154,16 +164,28 @@ export function RequestForm({
     <form onSubmit={onSubmit} className="relative flex max-w-2xl flex-col gap-10">
       <BotTrap renderedAt={renderedAt} />
 
-      <ChoiceGroup
-        legend={t("title")}
-        columns
-        value={kind}
-        onChange={setKind}
-        options={[
-          { value: "alteration", label: t("kindAlteration") },
-          { value: "commission", label: t("kindCommission") },
-        ]}
-      />
+      {lockedKind ? (
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <div>
+            <p className="eyebrow mb-2">{t("title")}</p>
+            <h2 className="text-heading">
+              {t(kind === "alteration" ? "kindAlteration" : "kindCommission")}
+            </h2>
+          </div>
+          <TextLink href="/request">{t("changeKind")}</TextLink>
+        </div>
+      ) : (
+        <ChoiceGroup
+          legend={t("title")}
+          columns
+          value={kind}
+          onChange={setKind}
+          options={[
+            { value: "alteration", label: t("kindAlteration") },
+            { value: "commission", label: t("kindCommission") },
+          ]}
+        />
+      )}
 
       {kind === "alteration" ? (
         <section className="flex flex-col gap-6">
