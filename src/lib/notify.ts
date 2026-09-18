@@ -94,6 +94,28 @@ function subjectPrefix(request: StoredRequest): string {
 }
 
 /**
+ * How a message to the client opens: a name, when there is one — nothing
+ * invented when there is not. "Hola," and "Hello," read as complete
+ * sentences on their own; a stand-in word ("client", "cliente") would be
+ * worse than leaving it out, since it announces that the name was missing
+ * rather than just not mentioning one.
+ */
+function greeting(name: string, locale: "es" | "en"): string {
+  const word = locale === "es" ? "Hola" : "Hello";
+  return name ? `${word} ${name},` : `${word},`;
+}
+
+/**
+ * The name slot in the owner's subject line: the client's name, or their
+ * email when they left none, so the line never reads with a gap ("Order —
+ *  (ORD-1)") where a name should be — an email is still a way to tell one
+ * guest from the next at a glance.
+ */
+function subjectName(request: StoredRequest): string {
+  return request.client.name || request.client.email;
+}
+
+/**
  * The one place mail leaves this application. Never throws: a message that
  * could not be sent is logged, and the caller decides what that means for the
  * client in front of them.
@@ -142,7 +164,7 @@ export async function notifyOwner(request: StoredRequest): Promise<void> {
   await sendEmail({
     to: env.ownerEmails,
     replyTo: request.client.email,
-    subject: `${subjectPrefix(request)}${KIND_LABELS[request.kind]} — ${request.client.name} (${request.reference})`,
+    subject: `${subjectPrefix(request)}${KIND_LABELS[request.kind]} — ${subjectName(request)} (${request.reference})`,
     text: summarise(request),
   });
 }
@@ -166,7 +188,7 @@ export async function notifyClientPaymentFailed(request: StoredRequest): Promise
       ? {
           subject: `Su pago no llegó · ${request.reference}`,
           text: [
-            `Hola ${name},`,
+            greeting(name, "es"),
             "",
             `Su banco no envió el pago de ${amount} de la solicitud ${request.reference}, así que no se cobró nada.`,
             "",
@@ -178,7 +200,7 @@ export async function notifyClientPaymentFailed(request: StoredRequest): Promise
       : {
           subject: `Your payment did not go through · ${request.reference}`,
           text: [
-            `Hello ${name},`,
+            greeting(name, "en"),
             "",
             `Your bank did not send the payment of ${amount} for request ${request.reference}, so nothing was charged.`,
             "",
@@ -254,7 +276,7 @@ export function receiptMessage(request: StoredRequest): { subject: string; text:
   const text =
     locale === "es"
       ? [
-          `Hola ${name},`,
+          greeting(name, "es"),
           "",
           ...itemLines,
           "",
@@ -276,7 +298,7 @@ export function receiptMessage(request: StoredRequest): { subject: string; text:
           "Daysi Collection",
         ].join("\n")
       : [
-          `Hello ${name},`,
+          greeting(name, "en"),
           "",
           ...itemLines,
           "",

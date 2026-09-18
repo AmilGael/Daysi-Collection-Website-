@@ -106,6 +106,51 @@ describe("summarise", () => {
   });
 });
 
+describe("greeting a guest who left no name", () => {
+  it("opens the receipt with a bare greeting when there is no name", async () => {
+    const { receiptMessage } = await import("./notify");
+
+    const { text } = receiptMessage(record({ locale: "es", client: { name: "", email: "ana@example.com" } }));
+
+    expect(text.startsWith("Hola,\n")).toBe(true);
+  });
+
+  it("still greets a client by name when one was given", async () => {
+    const { receiptMessage } = await import("./notify");
+
+    const { text } = receiptMessage(record({ locale: "es" }));
+
+    expect(text.startsWith("Hola Ana,\n")).toBe(true);
+  });
+
+  it("opens the failed-payment message with a bare greeting when there is no name", async () => {
+    const { notifyClientPaymentFailed } = await import("./notify");
+
+    await notifyClientPaymentFailed(
+      record({
+        locale: "en",
+        status: "closed",
+        source: "stripe",
+        paymentFailed: true,
+        client: { name: "", email: "ana@example.com" },
+      }),
+    );
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as { text: string };
+    expect(body.text.startsWith("Hello,")).toBe(true);
+  });
+
+  it("puts the client's email in the owner subject's name slot when there is no name", async () => {
+    const { notifyOwner } = await import("./notify");
+
+    await notifyOwner(record({ client: { name: "", email: "ana@example.com" } }));
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as { subject: string };
+    expect(body.subject).toContain("ana@example.com");
+    expect(body.subject).not.toContain("  ");
+  });
+});
+
 describe("notifyOwner", () => {
   it("says in the subject and the body that a card payment came in", async () => {
     const { notifyOwner } = await import("./notify");
