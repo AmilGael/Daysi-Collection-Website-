@@ -27,12 +27,21 @@ const pair = (min: number, max: number) =>
     en: z.string().trim().min(min).max(max),
   });
 
+/** Pieces of one size on the rack, or the older on/off switch for a size never counted. */
+const sizeStock = z.union([z.boolean(), z.number().int().min(0).max(99)]);
+const countedAt = z.string().datetime();
+
 export const styleOverrideSchema = z.object({
   styleId: z.string().trim().min(1).max(60),
   isPublished: z.boolean(),
   stock: z
-    .object({ s: z.boolean().optional(), m: z.boolean().optional(), l: z.boolean().optional() })
+    .object({ s: sizeStock.optional(), m: sizeStock.optional(), l: sizeStock.optional() })
     .strict(),
+  /** When each count was taken. Only an undo sends it; a typed count is stamped on arrival. */
+  countedAt: z
+    .object({ s: countedAt.optional(), m: countedAt.optional(), l: countedAt.optional() })
+    .strict()
+    .optional(),
   addedPhotos: z
     .array(uploadPath)
     .max(12)
@@ -57,7 +66,7 @@ export const styleCreateSchema = z.object({
   fabricId: z.string().trim().min(1).max(60),
   /** Only consulted when the garment-and-cloth pair has no published price. */
   fixedPrice: z.number().int().min(0).max(5_000_00).optional(),
-  sizes: z.object({ s: z.boolean(), m: z.boolean(), l: z.boolean() }).strict(),
+  sizes: z.object({ s: sizeStock, m: sizeStock, l: sizeStock }).strict(),
   photos: z
     .array(uploadPath)
     .min(1)

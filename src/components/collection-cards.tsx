@@ -85,7 +85,7 @@ export function CollectionCards({
           const cover = view.slots[0];
           const update = (next: OverrideView) => {
             if (unchanged(next, row)) draft.unstage(key);
-            else draft.stage(key, overrideChange(row.id, next));
+            else draft.stage(key, overrideChange(row, next));
           };
           return (
             <li key={row.id} className={`flex flex-col gap-2 ${retiring ? "opacity-50" : ""}`}>
@@ -107,22 +107,40 @@ export function CollectionCards({
               </button>
               <fieldset className="flex items-center gap-2">
                 <legend className="sr-only">{t("stockLegend", { name: row.name })}</legend>
-                {SIZES.map((size) => (
-                  <button
-                    key={size}
-                    type="button"
-                    role="switch"
-                    aria-checked={view.stock[size]}
-                    aria-label={size.toUpperCase()}
-                    disabled={retiring}
-                    onClick={() => update({ ...view, stock: { ...view.stock, [size]: !view.stock[size] } })}
-                    className={`min-h-9 min-w-9 border text-[0.75rem] font-semibold uppercase disabled:opacity-60 ${
-                      view.stock[size] ? "border-ink bg-ink text-paper" : "border-line text-ink-faint line-through"
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
+                {SIZES.map((size) => {
+                  const stocked = view.stock[size];
+                  // A counted size shows what is left and is changed in the
+                  // sheet; a size never counted keeps its quick switch.
+                  if (typeof stocked === "number") {
+                    return (
+                      <span
+                        key={size}
+                        className={`inline-flex min-h-9 min-w-9 items-center justify-center gap-1 border px-2 text-[0.75rem] font-semibold uppercase ${
+                          stocked > 0 ? "border-ink text-ink" : "border-line text-ink-faint line-through"
+                        }`}
+                      >
+                        {size}
+                        <span className="tabular-nums">{stocked}</span>
+                      </span>
+                    );
+                  }
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      role="switch"
+                      aria-checked={stocked}
+                      aria-label={size.toUpperCase()}
+                      disabled={retiring}
+                      onClick={() => update({ ...view, stock: { ...view.stock, [size]: !stocked } })}
+                      className={`min-h-9 min-w-9 border text-[0.75rem] font-semibold uppercase disabled:opacity-60 ${
+                        stocked ? "border-ink bg-ink text-paper" : "border-line text-ink-faint line-through"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  );
+                })}
               </fieldset>
               {entry ? <Pending confirming={entry.confirming} error={entry.error} count={entry.count} /> : null}
             </li>

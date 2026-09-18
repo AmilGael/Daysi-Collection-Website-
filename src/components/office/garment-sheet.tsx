@@ -16,6 +16,7 @@ import {
   type ManagedStyle,
   type OverrideView,
   type SizeId,
+  withCount,
 } from "./garment-draft";
 import { GarmentPhotos } from "./garment-photos";
 import { GarmentWords } from "./garment-words";
@@ -27,6 +28,50 @@ import { useOfficeDraft } from "./use-office-draft";
 export type Picker = { readonly id: string; readonly label: string };
 const SIZES: readonly SizeId[] = ["s", "m", "l"];
 const field = "w-full border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink";
+
+/**
+ * How many pieces of one size are on the rack. Empty while the size has
+ * never been counted; the first number she types makes it counted. Focus
+ * selects what is there, so typing replaces it rather than adding digits.
+ */
+function PieceCount({
+  size,
+  value,
+  placeholder,
+  disabled,
+  onChange,
+}: {
+  size: SizeId;
+  value: number | boolean;
+  placeholder: string;
+  disabled?: boolean;
+  onChange(count: number): void;
+}): JSX.Element {
+  return (
+    <label className="flex min-h-11 items-center justify-between gap-4 border-b border-line text-[0.9375rem]">
+      <span className="font-semibold uppercase">{size}</span>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        max={99}
+        value={typeof value === "number" ? value : ""}
+        placeholder={placeholder}
+        aria-label={size.toUpperCase()}
+        disabled={disabled}
+        onFocus={(event) => {
+          const box = event.currentTarget;
+          requestAnimationFrame(() => box.select());
+        }}
+        onChange={(event) => {
+          const count = Number.parseInt(event.target.value, 10);
+          if (Number.isInteger(count)) onChange(Math.min(99, Math.max(0, count)));
+        }}
+        className="w-24 border border-line bg-paper px-3 py-1.5 text-right tabular-nums text-ink placeholder:text-[0.75rem] placeholder:text-ink-faint focus:border-ink disabled:opacity-60"
+      />
+    </label>
+  );
+}
 
 /**
  * One garment, everything about it: the photos, the words, the sizes, shown,
@@ -52,7 +97,7 @@ export function GarmentSheet({
 
   function update(next: OverrideView) {
     if (unchanged(next, row)) draft.unstage(key);
-    else draft.stage(key, overrideChange(row.id, next));
+    else draft.stage(key, overrideChange(row, next));
   }
 
   return (
@@ -73,17 +118,21 @@ export function GarmentSheet({
 
       <GarmentWords row={row} undoable={undoableTexts} translationEnabled={translationEnabled} />
 
-      <section className="flex flex-col gap-1">
+      <section className="flex flex-col gap-2">
         <h3 className="text-[0.9375rem] font-medium">{t("sizesTitle")}</h3>
-        {SIZES.map((size) => (
-          <Switch
-            key={size}
-            label={size.toUpperCase()}
-            checked={view.stock[size]}
-            disabled={retiring}
-            onChange={(on) => update({ ...view, stock: { ...view.stock, [size]: on } })}
-          />
-        ))}
+        <p className="text-[0.8125rem] leading-relaxed text-ink-faint">{t("sizesCountHint")}</p>
+        <div className="flex flex-col">
+          {SIZES.map((size) => (
+            <PieceCount
+              key={size}
+              size={size}
+              value={view.stock[size]}
+              placeholder={t("sizeUncounted")}
+              disabled={retiring}
+              onChange={(count) => update(withCount(view, size, count))}
+            />
+          ))}
+        </div>
       </section>
 
       <section className="flex flex-col gap-1 border-t border-line pt-4">
@@ -131,7 +180,7 @@ export function NewGarmentSheet({
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
   const [fabricId, setFabricId] = useState(fabrics[0]?.id ?? "");
   const [price, setPrice] = useState("");
-  const [stock, setStock] = useState<Record<SizeId, boolean>>({ s: true, m: true, l: true });
+  const [stock, setStock] = useState<Record<SizeId, number>>({ s: 0, m: 0, l: 0 });
   const [inStudio, setInStudio] = useState(false);
   const [slots, setSlots] = useState<readonly PhotoSlot[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
@@ -167,7 +216,7 @@ export function NewGarmentSheet({
     setProblem(null);
     const files = slots.flatMap((slot) => (slot.kind === "file" ? [slot.file] : []));
     if (files.length === 0) return setProblem(t("stylePhotoRequired"));
-    if (!SIZES.some((size) => stock[size])) return setProblem(t("styleSizeRequired"));
+    if (!SIZES.some((size) => stock[size] > 0)) return setProblem(t("styleSizeRequired"));
     const cents = needsPrice ? centsFromInput(price) : null;
     if (needsPrice && !(cents !== null && cents > 0)) return setProblem(t("stylePriceRequired"));
 
@@ -266,11 +315,14 @@ export function NewGarmentSheet({
         </label>
       </section>
 
-      <section className="flex flex-col gap-1">
+      <section className="flex flex-col gap-2">
         <h3 className="text-[0.9375rem] font-medium">{t("styleSizes")}</h3>
-        {SIZES.map((size) => (
-          <Switch key={size} label={size.toUpperCase()} checked={stock[size]} onChange={(on) => setStock({ ...stock, [size]: on })} />
-        ))}
+        <p className="text-[0.8125rem] leading-relaxed text-ink-faint">{t("sizesCountHint")}</p>
+        <div className="flex flex-col">
+          {SIZES.map((size) => (
+            <PieceCount key={size} size={size} value={stock[size]} placeholder="0" onChange={(count) => setStock({ ...stock, [size]: count })} />
+          ))}
+        </div>
       </section>
 
       <section className="border-t border-line pt-4">

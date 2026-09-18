@@ -60,6 +60,19 @@ describe("office undo history", () => {
     });
   });
 
+  it("brings back a count with the moment it was counted", async () => {
+    const { previousChangeFor } = await import("./office-history");
+    const { saveStyleOverride } = await import("./live-catalog");
+
+    await saveStyleOverride({ styleId: "frutera", isPublished: true, stock: { s: 2 }, countedAt: { s: "2026-09-01T12:00:00.000Z" } });
+    await saveStyleOverride({ styleId: "frutera", isPublished: true, stock: { s: 5 }, countedAt: { s: "2026-09-10T12:00:00.000Z" } });
+
+    expect(previousChangeFor("style-override", "frutera")).toMatchObject({
+      stock: { s: 2 },
+      countedAt: { s: "2026-09-01T12:00:00.000Z" },
+    });
+  });
+
   it("keeps the newest photos when undoing to the baseline and to the earlier line", async () => {
     const { previousChangeFor } = await import("./office-history");
     const { saveStyleOverride } = await import("./live-catalog");
