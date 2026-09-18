@@ -4,6 +4,7 @@ import { premiereListing, services, translate } from "@/content";
 import { liveStyles } from "@/lib/live-catalog";
 import { liveAlterations } from "@/lib/live-pricing";
 import { SiteNoticeBar } from "@/components/site-notice";
+import { DesignStrip } from "@/components/design-strip";
 import { Link, type Locale } from "@/i18n/routing";
 import { ButtonLink, SectionHeading, Tag, TextLink } from "@/components/ui";
 import { LookbookGrid, StyleCard } from "@/components/style-card";
@@ -24,6 +25,7 @@ export default async function HomePage({
       <Hero />
       <SiteNoticeBar />
       <TrustStrip />
+      <DesignStrip />
       <Story />
       <BrandPromise />
       <Services />
