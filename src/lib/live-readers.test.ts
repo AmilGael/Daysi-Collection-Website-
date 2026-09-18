@@ -568,6 +568,40 @@ describe("a promotion run from the shop window", () => {
     expect(manageablePromotions()).toEqual([]);
   });
 
+  it("never gives a piece away: −$110 on everything charges a $105 shirt $10.50, and the till sends it to Stripe", async () => {
+    await apply({ ...onSirena, scope: { type: "all" }, kind: "amount", value: 11000 });
+
+    const { estimateCart } = await import("./pricing");
+    const cart = estimateCart([{ styleSlug: "amapola", sizeId: "s", customize: false, quantity: 1 }]);
+    expect(cart?.lines[0]).toMatchObject({ amount: 1050, unitAmount: 1050, listAmount: 10500 });
+    expect(cart?.dueNow).toBe(1050);
+
+    // A guest at the till, not Daysi in the office.
+    const { currentViewer } = await import("@/lib/auth/session");
+    vi.mocked(currentViewer).mockResolvedValue(null);
+    const { writeCart } = await import("./cart");
+    await writeCart({ lines: [{ styleSlug: "amapola", sizeId: "s", customize: false, quantity: 1 }] });
+    const { POST } = await import("@/app/api/cart/checkout/route");
+    const { findRequest } = await import("./request-store");
+    const { createCheckoutSession } = await import("@/lib/payments");
+    const response = await POST(
+      post("/api/cart/checkout", {
+        name: client.name,
+        email: client.email,
+        phone: client.phone,
+        preferredContact: client.preferredContact,
+        locale: client.locale,
+        notes: "",
+        acceptedTerms: true,
+      }),
+    );
+    expect(response.status).toBe(200);
+    const { reference, checkoutUrl } = (await response.json()) as { reference: string; checkoutUrl?: string };
+    expect(checkoutUrl).toBe("https://checkout.stripe.test/session");
+    expect(findRequest(reference)).toMatchObject({ awaitingPayment: true, estimate: { dueNow: 1050 } });
+    expect(vi.mocked(createCheckoutSession)).toHaveBeenCalled();
+  });
+
   it("keeps the English it already has when a saved promotion comes back with the same Spanish", async () => {
     const { manageablePromotions, savePromotion } = await import("./live-promotions");
     const saved = {

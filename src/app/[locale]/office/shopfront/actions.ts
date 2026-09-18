@@ -4,15 +4,11 @@ import type { Localized } from "@/content";
 import { ChangeRefused, applyEach, ownerAction } from "@/lib/action-guard";
 import { manageableStyles, saveNotice } from "@/lib/live-catalog";
 import { manageablePromotions, promotionVersions, savePromotion } from "@/lib/live-promotions";
+import { LEAST_AMOUNT, MOST_PERCENT } from "@/lib/promotions";
 import { changesOf, shopfrontChangeSchema, type ShopfrontChange } from "@/lib/office-validation";
 import { setRetired } from "@/lib/retired";
 import { newReference } from "@/lib/security";
 import { translateToEnglish, withEnglish } from "@/lib/translate";
-
-/** A percent past this would be giving the garment away; below it the site takes any. */
-const MOST_PERCENT = 90;
-/** The least an amount may take off: a dollar, like the least a price may be. */
-const LEAST_AMOUNT = 100;
 
 /**
  * The two words of a promotion's name. When this promotion has carried the

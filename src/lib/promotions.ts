@@ -17,6 +17,19 @@ export type { Promotion, PromotionScope } from "@/content/types";
 
 type Reachable = Pick<GarmentStyle, "id" | "categoryId">;
 
+/**
+ * The most a promotion ever takes off a piece, as a percent. A set amount
+ * stops there too, so no promotion gives a garment away: a $0 line would
+ * skip the payment and reach Daysi as an order nobody paid for, and a few
+ * cents would fall under Stripe's smallest charge. The office refuses a
+ * percent past it; an amount past it is taken as this much.
+ */
+export const MOST_PERCENT = 90;
+/** The least a set amount may take off: a dollar, like the least a price may be. */
+export const LEAST_AMOUNT = 100;
+/** The most a set amount may be, as anywhere else she types a price. */
+export const MOST_AMOUNT = 500_000;
+
 export function promotionApplies(promotion: Promotion, style: Reachable, day: string): boolean {
   if (!promotion.active) return false;
   if (promotion.startsAt !== undefined && day < promotion.startsAt) return false;
@@ -58,9 +71,16 @@ export function pickPromotion(
   return best;
 }
 
-/** One piece's price once the promotion is taken off: to the cent, never below nothing. */
+/**
+ * One piece's price once the promotion is taken off, to the cent. A set
+ * amount never takes more than `MOST_PERCENT` of the piece, so a positive
+ * price never goes below a tenth of itself.
+ */
 export function discountedAmount(amount: Cents, promotion: Promotion): Cents {
-  const off = promotion.kind === "percent" ? applyRate(amount, promotion.value / 100) : promotion.value;
+  const off =
+    promotion.kind === "percent"
+      ? applyRate(amount, promotion.value / 100)
+      : Math.min(promotion.value, applyRate(amount, MOST_PERCENT / 100));
   return Math.min(amount, Math.max(0, amount - off));
 }
 

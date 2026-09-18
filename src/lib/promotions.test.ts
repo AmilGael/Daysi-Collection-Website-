@@ -97,9 +97,12 @@ describe("what a promotion takes off", () => {
     expect(discountedAmount(10599, promotion({ value: 15 }))).toBe(9009);
   });
 
-  it("takes a set amount off, and never below nothing", () => {
+  it("takes a set amount off, and never more than 90 % of the piece", () => {
     expect(discountedAmount(29500, promotion({ kind: "amount", value: 2000 }))).toBe(27500);
-    expect(discountedAmount(1500, promotion({ kind: "amount", value: 2000 }))).toBe(0);
+    // −$110 on a $105 shirt stops at 90 % off: $10.50, never a piece given away.
+    expect(discountedAmount(10500, promotion({ kind: "amount", value: 11000 }))).toBe(1050);
+    expect(discountedAmount(10500, promotion({ kind: "amount", value: 9450 }))).toBe(1050);
+    expect(discountedAmount(10500, promotion({ kind: "amount", value: 9449 }))).toBe(1051);
   });
 });
 

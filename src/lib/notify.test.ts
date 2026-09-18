@@ -436,7 +436,7 @@ describe("notifyClientPaid", () => {
     );
   });
 
-  it("still counts the pieces on a line a promotion took down to nothing", async () => {
+  it("counts the pieces on a promoted line by its list figures, whatever the lowered piece comes to", async () => {
     const { receiptMessage } = await import("./notify");
     const { text } = receiptMessage(
       record({

@@ -6,7 +6,7 @@ import { translate, type Promotion, type PromotionScope } from "@/content";
 import type { Locale } from "@/i18n/routing";
 import { centsFromInput } from "@/lib/money";
 import type { ShopfrontChange } from "@/lib/office-validation";
-import { promotionBadge } from "@/lib/promotions";
+import { LEAST_AMOUNT, MOST_AMOUNT, MOST_PERCENT, promotionBadge } from "@/lib/promotions";
 import { ChoiceGroup } from "./form";
 import { Pending } from "./office/confirm-bar";
 import { MoneyBox } from "./office/garment-sheet";
@@ -24,9 +24,6 @@ export type ScopeOption = { readonly id: string; readonly name: string; readonly
 type PromotionWire = Extract<ShopfrontChange, { type: "promotion" }>;
 
 const field = "w-full border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink";
-const MOST_PERCENT = 90;
-const LEAST_AMOUNT = 100;
-const MOST_AMOUNT = 500_000;
 
 const keyFor = (id: string) => `promotion:${id}`;
 

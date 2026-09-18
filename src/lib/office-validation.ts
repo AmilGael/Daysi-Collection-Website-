@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { categories, shopDay } from "@/content";
+import { MOST_AMOUNT } from "./promotions";
 import type { ZodTypeAny } from "zod";
 
 /**
@@ -262,8 +263,9 @@ const calendarDay = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01
 
 /**
  * A promotion, typed in Spanish; the action writes the English. No id is a
- * new one. How far each kind may go (a percent up to 90, an amount from a
- * dollar) and an end before the start are refused in the action, like every
+ * new one. How far each kind may go (a percent up to `MOST_PERCENT`, an
+ * amount from `LEAST_AMOUNT`) and an end before the start are refused in the
+ * action, like every
  * other rule that reads two fields at once: a refinement here would make the
  * member a `ZodEffects`, which `z.discriminatedUnion` refuses.
  */
@@ -272,7 +274,7 @@ export const promotionSchema = z.object({
   label: z.string().trim().min(2).max(60),
   kind: z.enum(["percent", "amount"]),
   /** A whole percent, or cents off each piece. */
-  value: z.number().int().min(1).max(5_000_00),
+  value: z.number().int().min(1).max(MOST_AMOUNT),
   scope: z.discriminatedUnion("type", [
     z.object({ type: z.literal("all") }),
     z.object({
