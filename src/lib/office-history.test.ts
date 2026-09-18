@@ -265,16 +265,31 @@ describe("office undo history", () => {
     });
     expect(undoableIds("premiere")).toContain("otono-2026");
 
+    // Whatever record comes back, `previousChangeFor` returns the *whole*
+    // snapshot — the seeded words, dates, numbers, cover and checklist —
+    // with only piecesPlanned actually overridden by this one record, not
+    // a bare `{ piecesPlanned: 5 }`: a record earlier in the history can
+    // predate a field a later save introduced (see the checklist test
+    // below), so it is never trusted to carry the whole truth on its own.
     await savePremiereOverride({ premiereId: "otono-2026", piecesPlanned: 4 });
     expect(previousChangeFor("premiere", "otono-2026")).toEqual({
       type: "premiere-update",
       key: "premiere:otono-2026",
       premiereId: "otono-2026",
+      season: autumn.season.es,
+      title: autumn.title.es,
+      story: autumn.story.es,
+      inspiration: autumn.inspiration.es,
+      revealDate: autumn.revealDate,
+      releaseDate: autumn.releaseDate,
       piecesPlanned: 5,
+      editionSize: autumn.editionSize,
+      coverImage: autumn.coverImage,
+      styleIds: [...autumn.styleIds],
     });
   });
 
-  it("premiere undo restores the checklist together with words, dates, numbers and cover", async () => {
+  it("premiere undo rebuilds the whole snapshot, so a field a record never touched comes back to the seed rather than to whatever a later save carried forward", async () => {
     const { previousChangeFor } = await import("./office-history");
     const { savePremiereOverride } = await import("./live-premieres");
     const { premieres } = await import("@/content");
@@ -285,14 +300,15 @@ describe("office undo history", () => {
     await savePremiereOverride({ premiereId: "otono-2026", styleIds: ["frutera"] });
     expect(previousChangeFor("premiere", "otono-2026")).toMatchObject({ styleIds: [...autumn.styleIds] });
 
-    // The action writes a full snapshot on every save (see
-    // `previousOverrideFields`), so a words edit after a checklist save
-    // still carries that checklist forward; undoing the words edit gives
-    // back the checklist-save snapshot, not an empty or wrong checklist.
+    // The action merges every save's own fields forward over the last
+    // (see `previousOverrideFields`), so this second record carries the
+    // checklist too, even though only pieces was named here. The record
+    // *before* this one (the checklist-only save) never named pieces at
+    // all — undoing to it must still read pieces as the seed's 6, not
+    // silently keep whatever this newer record now carries for it.
     await savePremiereOverride({ premiereId: "otono-2026", styleIds: ["frutera"], piecesPlanned: 5 });
     const previous = previousChangeFor("premiere", "otono-2026");
-    expect(previous).toMatchObject({ styleIds: ["frutera"] });
-    expect(previous).not.toHaveProperty("piecesPlanned");
+    expect(previous).toMatchObject({ styleIds: ["frutera"], piecesPlanned: autumn.piecesPlanned });
   });
 
   it("only makes request status undoable after a second line", async () => {

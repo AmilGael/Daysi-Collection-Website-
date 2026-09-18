@@ -87,6 +87,14 @@ describe("choosing which premiere is next", () => {
     // actually released does, and `sooner`, being next, is not in it either.
     expect(listing.past.map((premiere) => premiere.id)).toEqual(["otono-2026", "verano-2026"]);
   });
+
+  it("features the same season as next, not the furthest-out one, so the cover and the words never disagree", () => {
+    // `later` is listed first (newest-first), yet `sooner` is next; the
+    // photograph a page shows next to next's words has to be sooner's.
+    const listing = premiereListingFrom([later, sooner, ...premieres], new Date("2026-10-07T12:00:00Z"));
+    expect(listing.featured).toBe(listing.next);
+    expect(listing.featured?.id).toBe("sooner");
+  });
 });
 
 describe("the between-seasons copy", () => {

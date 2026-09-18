@@ -168,14 +168,18 @@ export function upcomingPremiere(today: Date): Premiere | undefined {
 /**
  * What the premiere pages have to show on a given day, from a list that
  * already runs newest first. `next` is the season still to be released that
- * releases soonest, if one is written down; `featured` is the newest season
- * either way, the one whose photograph the pages show, defined as long as
- * any season has ever been written down; `past` is every season already
- * released, newest first. A season written down ahead of "next" (Daysi
- * planning two seasons at once) is neither next nor past, and so is not
- * shown here — the day after a release there may also be no next season
- * yet, and that gap is Daysi's to fill, not a fault in the code, so both
- * pages read from here and stand on their own.
+ * releases soonest, if one is written down; `featured` is that same season
+ * whenever there is one, so the cover photograph and the words next to it
+ * are never two different seasons — a season written down ahead of "next"
+ * (Daysi planning two at once) has the furthest-out release and so must
+ * never be the one pictured. Between seasons, with no next one written
+ * down yet, `featured` falls back to the newest season either way, the one
+ * whose photograph the pages then show; `past` is every season already
+ * released, newest first. A season written down ahead of "next" is itself
+ * neither next nor past, and so is not shown here — the day after a
+ * release there may also be no next season yet, and that gap is Daysi's to
+ * fill, not a fault in the code, so both pages read from here and stand on
+ * their own.
  *
  * Pulled out of `premiereListing` so `lib/live-premieres.ts` can run the same
  * rule over the seed with Daysi's additions and corrections on top, without
@@ -191,9 +195,10 @@ export function premiereListingFrom(
   past: readonly Premiere[];
 } {
   const day = shopDay(today);
+  const next = upcomingIn(list, today);
   return {
-    next: upcomingIn(list, today),
-    featured: list[0],
+    next,
+    featured: next ?? list[0],
     past: list.filter((premiere) => premiere.releaseDate < day),
   };
 }

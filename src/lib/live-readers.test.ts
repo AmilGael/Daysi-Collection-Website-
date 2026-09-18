@@ -675,6 +675,14 @@ describe("a premiere announced from the office", () => {
     return result.results;
   }
 
+  /** The change `UndoLink` would stage next for this premiere, applied the same way it would be. */
+  async function undo(premiereId: string) {
+    const { previousChangeFor } = await import("./office-history");
+    const change = previousChangeFor("premiere", premiereId);
+    if (!change) throw new Error("nothing to undo");
+    return apply(change as unknown as Record<string, unknown>);
+  }
+
   const create = {
     type: "premiere-create",
     key: "premiere-create:new",
@@ -848,5 +856,63 @@ describe("a premiere announced from the office", () => {
     expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.coverImage).toBe(
       seeded.coverImage,
     );
+  });
+
+  it("undo after a checklist save on top of a pieces edit restores the checklist, not just whatever the pieces edit carried forward", async () => {
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 });
+    await apply({
+      type: "premiere-styles",
+      key: "premiere-styles:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["frutera"],
+    });
+
+    await undo("otono-2026");
+
+    const { manageablePremieres } = await import("./live-premieres");
+    // Undoing the checklist save goes back to the state right before it:
+    // pieces still at 5 (that edit came earlier and stands), but the
+    // checklist back to the seed's own ["sirena"], not left at ["frutera"].
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")).toMatchObject({
+      piecesPlanned: 5,
+      styleIds: ["sirena"],
+    });
+  });
+
+  it("undo after a pieces edit on top of a checklist save restores the pieces, not just whatever the checklist save carried forward", async () => {
+    await apply({
+      type: "premiere-styles",
+      key: "premiere-styles:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["frutera"],
+    });
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 });
+
+    await undo("otono-2026");
+
+    const { manageablePremieres } = await import("./live-premieres");
+    // Pieces back to the seed's own 6, checklist still ["frutera"] from
+    // the edit that came before the one just undone.
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")).toMatchObject({
+      piecesPlanned: 6,
+      styleIds: ["frutera"],
+    });
+  });
+
+  it("undo after a title edit on top of a pieces edit restores the title, not just whatever the pieces edit carried forward", async () => {
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 });
+    await apply({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      title: "Yurumein, corregido",
+    });
+
+    await undo("otono-2026");
+
+    const { manageablePremieres } = await import("./live-premieres");
+    const otono = manageablePremieres().find((premiere) => premiere.id === "otono-2026");
+    expect(otono?.title.es).toBe("Yurumein");
+    expect(otono?.piecesPlanned).toBe(5);
   });
 });

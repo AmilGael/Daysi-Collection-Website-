@@ -1,4 +1,12 @@
-import { alterationServices, appointmentTypes, premieres, priceList, styles, type Promotion } from "@/content";
+import {
+  alterationServices,
+  appointmentTypes,
+  premieres,
+  priceList,
+  styles,
+  type Premiere,
+  type Promotion,
+} from "@/content";
 import type { OfficeChange, UndoKind } from "./office-validation";
 import {
   addedStyles,
@@ -223,50 +231,59 @@ const promotion = recordStream<Promotion>(
 
 /**
  * A premiere's own words, dates, numbers, cover and style checklist,
- * together: every save (whether it touched the words or only the
- * checklist) writes a full snapshot of the override as it stood after that
- * save (see `previousOverrideFields` in the office action), so the record
- * before the newest one is already everything to go back to. The baseline
- * is the season as seeded or added, before any override, checklist
- * included.
+ * together. Each saved override record is only a partial diff — the
+ * fields that one save actually touched, not a running total — because a
+ * field a save never named keeps whatever the office action's own
+ * forward-merge (`previousOverrideFields`) already had for it. That means
+ * a record earlier in the history can be missing a field a later save
+ * introduced, so `toChange`/`baseline` cannot return a record as-is: each
+ * rebuilds the *whole* snapshot by taking the season as seeded or added
+ * and overlaying only the fields that one record itself set. Undoing to
+ * that snapshot then correctly puts back a field the very next save never
+ * touched (the checklist, say, when the newest save only changed pieces),
+ * rather than leaving it at whatever the newest save happened to carry
+ * forward.
  */
+function premiereSnapshot(
+  id: string,
+  seeded: Premiere,
+  override: Partial<Omit<PremiereOverride, "premiereId" | "updatedAt">>,
+): OfficeChange {
+  return {
+    type: "premiere-update",
+    key: `premiere:${id}`,
+    premiereId: id,
+    season: (override.season ?? seeded.season).es,
+    title: (override.title ?? seeded.title).es,
+    story: (override.story ?? seeded.story).es,
+    inspiration: (override.inspiration ?? seeded.inspiration).es,
+    revealDate: override.revealDate ?? seeded.revealDate,
+    releaseDate: override.releaseDate ?? seeded.releaseDate,
+    piecesPlanned: override.piecesPlanned ?? seeded.piecesPlanned,
+    editionSize: override.editionSize ?? seeded.editionSize,
+    coverImage: override.coverImage ?? seeded.coverImage,
+    styleIds: [...(override.styleIds ?? seeded.styleIds)],
+  };
+}
+
+function seededPremiere(id: string): Premiere | undefined {
+  return assemblePremieres(premieres, addedPremieres(), []).find((candidate) => candidate.id === id);
+}
+
 const premiere = recordStream<PremiereOverride>(
   "premiere-overrides",
   (record) => record.premiereId,
   (id) => {
-    const seeded = assemblePremieres(premieres, addedPremieres(), []).find((candidate) => candidate.id === id);
-    if (!seeded) return undefined;
-    return {
-      type: "premiere-update",
-      key: `premiere:${id}`,
-      premiereId: id,
-      season: seeded.season.es,
-      title: seeded.title.es,
-      story: seeded.story.es,
-      inspiration: seeded.inspiration.es,
-      revealDate: seeded.revealDate,
-      releaseDate: seeded.releaseDate,
-      piecesPlanned: seeded.piecesPlanned,
-      editionSize: seeded.editionSize,
-      coverImage: seeded.coverImage,
-      styleIds: [...seeded.styleIds],
-    };
+    const seeded = seededPremiere(id);
+    return seeded ? premiereSnapshot(id, seeded, {}) : undefined;
   },
-  (record, id) => ({
-    type: "premiere-update",
-    key: `premiere:${id}`,
-    premiereId: id,
-    ...(record.season ? { season: record.season.es } : {}),
-    ...(record.title ? { title: record.title.es } : {}),
-    ...(record.story ? { story: record.story.es } : {}),
-    ...(record.inspiration ? { inspiration: record.inspiration.es } : {}),
-    ...(record.revealDate === undefined ? {} : { revealDate: record.revealDate }),
-    ...(record.releaseDate === undefined ? {} : { releaseDate: record.releaseDate }),
-    ...(record.piecesPlanned === undefined ? {} : { piecesPlanned: record.piecesPlanned }),
-    ...(record.editionSize === undefined ? {} : { editionSize: record.editionSize }),
-    ...(record.coverImage === undefined ? {} : { coverImage: record.coverImage }),
-    ...(record.styleIds === undefined ? {} : { styleIds: [...record.styleIds] }),
-  }),
+  (record, id) => {
+    // A saved record only ever exists for a premiere that exists (the
+    // action refuses `unknown-premiere` otherwise), so this is never
+    // undefined in practice.
+    const seeded = seededPremiere(id)!;
+    return premiereSnapshot(id, seeded, record);
+  },
 );
 
 const requestStatus: Stream<StoredRequest> = {

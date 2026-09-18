@@ -59,9 +59,13 @@ function bare(premiere: AddedPremiere): Premiere {
 /**
  * Pure: seed plus what Daysi has added, her overrides on top field by field,
  * retired seasons dropped, sorted by release date so the newest is always
- * first — the order `premiereListingFrom` depends on to call the first
- * still-to-be-released entry "next". An added season sharing a seed id
- * replaces it outright, the way an added garment does in `assembleStyles`.
+ * first — the order `featured` (in `premiereListingFrom`) depends on to
+ * fall back to the newest season between releases. `next` itself is found
+ * by release date directly (`upcomingIn`), not by this order, since Daysi
+ * can have more than one season written down ahead of time and the
+ * soonest of those is not necessarily the one listed first. An added
+ * season sharing a seed id replaces it outright, the way an added garment
+ * does in `assembleStyles`.
  */
 export function assemblePremieres(
   seed: readonly Premiere[],
