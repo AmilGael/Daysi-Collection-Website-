@@ -658,7 +658,9 @@
     <p>
       Todo lo que entra por el sitio aparece en <span class="label">Pedidos y
       arreglos</span>, lo más reciente primero, con el nombre y el correo de
-      quien lo pidió.
+      quien lo pidió. Un pedido o una cita con tarjeta aparece aquí cuando el
+      pago se confirma, al mismo tiempo que le llega el correo. Si la clienta
+      deja la página de pago sin pagar, no aparece nada.
     </p>
     <p>Cada uno lleva un estado, y usted lo va moviendo conforme avanza el trabajo:</p>
     <ol class="steps">
@@ -667,11 +669,10 @@
       <li><span class="label">Reservado</span>: tiene día y hora en el calendario.</li>
       <li><span class="label">Pagado</span>: ya cobró. Si la clienta pagó desde su banco y no con tarjeta, el sitio lo pone en Pagado solo cuando el dinero llega, unos días después.</li>
       <li><span class="label">Reembolsado</span>: devolvió el dinero. Si lo devuelve con tarjeta desde Stripe, el sitio lo marca solo; si fue en efectivo, márquelo usted.</li>
-      <li><span class="label">Cerrado</span>: se entregó y se acabó. El sitio también pone en Cerrado, solo, una fila cuya página de pago se venció sin que nadie pagara.</li>
+      <li><span class="label">Cerrado</span>: se entregó y se acabó.</li>
     </ol>
     <p>
       Junto al estado puede aparecer una etiqueta sobre el pago.
-      <span class="label">Pago pendiente</span>: la clienta llegó a la página de pago y todavía no ha pagado.
       <span class="label">Pago en camino desde el banco</span>: sí pagó, desde su banco, y el dinero tarda unos días en llegar; déjela quieta.
       <span class="label">Pago rechazado por el banco</span>: el banco no envió el dinero. La fila se queda abierta y el dinero sigue debiéndose, porque la clienta todavía no ha pagado; usted y ella reciben un correo para acordar otra forma de pagar. Cuando usted cambia el estado, la etiqueta se quita.
     </p>

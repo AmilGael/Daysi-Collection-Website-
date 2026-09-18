@@ -1,5 +1,10 @@
 import type { Cents } from "@/content";
-import { activeRequests, owesNothing, type StoredRequest } from "./request-store";
+import {
+  activeRequests,
+  owesNothing,
+  unfinishedCheckout,
+  type StoredRequest,
+} from "./request-store";
 
 /**
  * What Daysi has actually earned, and what is still owed to her.
@@ -20,10 +25,15 @@ export type Earnings = {
 
 const BILLABLE = ["order", "alteration", "commission", "appointment"] as const;
 
+/**
+ * Every job the office shows and the books count. A card page the client
+ * never paid is left out: Daysi hears of an order when the money is in, so
+ * it reaches her list, her figures and her export at the same moment.
+ */
 export function loadLedger(): StoredRequest[] {
-  return BILLABLE.flatMap(activeRequests).sort((a, b) =>
-    b.submittedAt.localeCompare(a.submittedAt),
-  );
+  return BILLABLE.flatMap(activeRequests)
+    .filter((record) => !unfinishedCheckout(record))
+    .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
 }
 
 export function earningsFrom(records: readonly StoredRequest[]): Earnings {
