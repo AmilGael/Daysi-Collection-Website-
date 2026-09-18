@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { translate } from "@/content";
-import type { GalleryCategoryId } from "@/content/types";
-import { GALLERY_ORDER, liveGallery } from "@/lib/live-gallery";
+import { liveGallerySections, liveGallery, type SectionView } from "@/lib/live-gallery";
 import type { Locale } from "@/i18n/routing";
 import { PageHeader } from "@/components/page-header";
 import { GalleryWall, type WallWork } from "@/components/gallery-wall";
+
+/** A coded section's label lives in `gallery.category.*`; one Daysi added carries its own. */
+function sectionLabel(section: SectionView, t: (key: string) => string, locale: Locale): string {
+  return section.coded ? t(`category.${section.id}`) : translate(section.name!, locale);
+}
 
 export async function generateMetadata({
   params,
@@ -42,10 +46,9 @@ export default async function GalleryPage({
   }));
 
   const present = new Set(works.map((work) => work.category));
-  const categories = GALLERY_ORDER.filter((id) => present.has(id)).map((id) => ({
-    id: id as GalleryCategoryId,
-    label: t(`category.${id}`),
-  }));
+  const categories = liveGallerySections()
+    .filter((section) => present.has(section.id))
+    .map((section) => ({ id: section.id, label: sectionLabel(section, t, language) }));
 
   return (
     <>

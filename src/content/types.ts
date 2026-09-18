@@ -245,14 +245,15 @@ export type BusinessInfo = {
 /**
  * ERD: GALLERY_WORK. A finished piece Daysi has made, shown as portfolio
  * rather than stock — no size, no price, nothing to add to a basket.
+ *
+ * The section a piece belongs to ("Dónde va") used to be a closed list of
+ * six. It is a plain string now: the six coded ids (`lib/live-gallery.ts`'s
+ * `CODED_SECTIONS`) plus whatever Daysi names herself through "Otra…".
+ * Whether an id names a real, live section is a question for the live
+ * layer, not this type — the same reasoning `office-validation.ts`'s
+ * comment gives for a garment's id.
  */
-export type GalleryCategoryId =
-  | "runway"
-  | "commissions"
-  | "bridal"
-  | "accessories"
-  | "press"
-  | "workroom";
+export type GalleryCategoryId = string;
 
 export type GalleryWork = {
   readonly id: string;

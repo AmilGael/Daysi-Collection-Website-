@@ -3,8 +3,8 @@
 import Image from "next/image";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
-import type { GalleryCategoryId } from "@/content/types";
 import type { GalleryChange } from "@/lib/office-validation";
+import { sectionId } from "@/lib/slugify";
 import { ErrorText, Pending } from "./office/confirm-bar";
 import { readImageSize } from "./office/image-reads";
 import { RetiredGroup, RetireButton } from "./office/retired-group";
@@ -13,12 +13,15 @@ import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft } from "./office/use-office-draft";
 import { buttonClass } from "./ui";
 
+/** Selected in "Dónde va" to reveal the text box for a section Daysi names herself. */
+const OTHER = "__other";
+
 export type ManagedWork = {
   readonly id: string;
   readonly src: string;
   readonly width: number;
   readonly height: number;
-  readonly category: GalleryCategoryId;
+  readonly category: string;
   readonly caption: string;
   readonly texts: {
     readonly caption: { readonly es: string; readonly en: string };
@@ -29,10 +32,15 @@ export type ManagedWork = {
   readonly undoable: boolean;
 };
 
-export function GalleryManager({ works, retired, categories, undoableTexts }: {
+/** One option in "Dónde va": the six coded sections, plus whatever Daysi has added. */
+export type GallerySectionOption = { readonly id: string; readonly label: string; readonly coded: boolean };
+export type RetiredSection = { readonly id: string; readonly name: string };
+
+export function GalleryManager({ works, retired, categories, retiredSections, undoableTexts }: {
   works: readonly ManagedWork[];
   retired: readonly ManagedWork[];
-  categories: readonly { readonly id: GalleryCategoryId; readonly label: string }[];
+  categories: readonly GallerySectionOption[];
+  retiredSections: readonly RetiredSection[];
   undoableTexts: ReadonlySet<string>;
 }) {
   const t = useTranslations("office");
@@ -43,7 +51,8 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
   const [captionEs, setCaptionEs] = useState("");
   const [captionEn, setCaptionEn] = useState("");
   const [captionTouched, setCaptionTouched] = useState(false);
-  const [category, setCategory] = useState<GalleryCategoryId>(categories[0]?.id ?? "commissions");
+  const [category, setCategory] = useState<string>(categories[0]?.id ?? OTHER);
+  const [sectionName, setSectionName] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const [pendingPreviews, setPendingPreviews] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -80,20 +89,46 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
     if (!captionTouched) setCaptionEn(value);
   }
 
+  // A section she is naming in this same draft, staged but not yet confirmed:
+  // shown as a normal option so a second photo can join it without typing
+  // "Otra…" again, which would only stage a second, redundant section-add
+  // the server refuses as section-exists.
+  const pendingSections = draft.entries.flatMap((entry) => {
+    const wire = entry.change.wire;
+    return wire.type === "section-add" ? [{ id: sectionId(wire.name), label: wire.name }] : [];
+  });
+  const options = [...categories, ...pendingSections];
+  const addedSections = categories.filter((section) => !section.coded);
+
   async function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const file = fileRef.current?.files?.[0];
     if (!file) return;
+    if (category === OTHER && sectionName.trim().length < 2) {
+      setFormError("section-name-required");
+      return;
+    }
     const size = await readImageSize(file);
     if (!size) {
       setFormError("upload-failed");
       return;
     }
     setFormError(null);
+
+    let categoryId = category;
+    if (category === OTHER) {
+      const name = sectionName.trim();
+      categoryId = sectionId(name);
+      const sectionKey = `section-add:${categoryId}`;
+      if (!draft.pending(sectionKey)) {
+        draft.stage(sectionKey, { wire: { type: "section-add", key: sectionKey, name } });
+      }
+    }
+
     const key = `work-add:${crypto.randomUUID()}`;
     const wire: GalleryChange = {
       type: "work-add", key, src: "", width: size.width, height: size.height,
-      category, caption: { es: captionEs.trim(), en: captionEn.trim() },
+      category: categoryId, caption: { es: captionEs.trim(), en: captionEn.trim() },
     };
     const objectUrl = preview ?? URL.createObjectURL(file);
     selectedPreviewRef.current = null;
@@ -103,10 +138,31 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
     setCaptionEn("");
     setCaptionTouched(false);
     setPreview(null);
+    setSectionName("");
+    // Stay on the section she just used: it is now a normal option (either
+    // already in `categories`, or offered through `pendingSections` above),
+    // ready for another photo without typing "Otra…" a second time.
+    setCategory(categoryId);
     if (fileRef.current) fileRef.current.value = "";
   }
 
   const pendingAdds = draft.entries.filter((entry) => entry.change.wire.type === "work-add");
+
+  // Removing the photo that named a new section should take the section
+  // with it, unless another pending photo still carries the same category —
+  // otherwise confirming would leave behind a section with nothing filed
+  // under it.
+  function removePendingWork(entryKey: string, category: string) {
+    draft.unstage(entryKey);
+    const stillNamed = pendingAdds.some(
+      (other) => other.key !== entryKey && other.change.wire.type === "work-add" && other.change.wire.category === category,
+    );
+    if (stillNamed) return;
+    const section = draft.entries.find(
+      (candidate) => candidate.change.wire.type === "section-add" && sectionId(candidate.change.wire.name) === category,
+    );
+    if (section) draft.unstage(section.key);
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -167,7 +223,7 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
             </span>
             <p className="truncate text-[0.6875rem] text-ink-faint">{wire.caption.es}</p>
             <Pending confirming={draft.pending(entry.key)?.confirming} error={entry.error} count={entry.count} />
-            <button type="button" onClick={() => draft.unstage(entry.key)} className="text-left text-xs underline underline-offset-4">{t("removePending")}</button>
+            <button type="button" onClick={() => removePendingWork(entry.key, wire.category)} className="text-left text-xs underline underline-offset-4">{t("removePending")}</button>
           </li>;
               })}
             </ul>
@@ -199,10 +255,23 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
           </label>
           <label className="flex flex-col gap-1.5 text-[0.75rem] text-ink-faint">
             {t("galleryCategory")}
-            <select value={category} onChange={(event) => setCategory(event.target.value as GalleryCategoryId)} className="border border-line bg-paper px-3 py-2 text-[0.875rem] text-ink focus:border-ink">
-              {categories.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+            <select value={category} onChange={(event) => setCategory(event.target.value)} className="border border-line bg-paper px-3 py-2 text-[0.875rem] text-ink focus:border-ink">
+              {options.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+              <option value={OTHER}>{t("galleryOtherSection")}</option>
             </select>
           </label>
+          {category === OTHER ? (
+            <label className="flex flex-col gap-1.5 text-[0.75rem] text-ink-faint">
+              {t("gallerySectionName")}
+              <input
+                value={sectionName}
+                onChange={(event) => setSectionName(event.target.value)}
+                maxLength={40}
+                placeholder={t("gallerySectionNamePlaceholder")}
+                className="border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink"
+              />
+            </label>
+          ) : null}
         </div>
         <fieldset className="grid gap-2">
           <legend className="text-[0.75rem] text-ink-faint">{t("galleryCaption")}</legend>
@@ -220,6 +289,41 @@ export function GalleryManager({ works, retired, categories, undoableTexts }: {
         <div><button type="submit" className={buttonClass({ size: "small", tone: "solid" })}>{t("gallerySave")}</button></div>
         {formError ? <p role="alert" className="text-[0.8125rem] text-ink"><ErrorText code={formError} /></p> : null}
       </form>
+
+      {addedSections.length > 0 ? (
+        <div className="flex flex-col gap-3 border-t border-line pt-6">
+          <p className="text-[0.9375rem] font-medium">{t("gallerySections")}</p>
+          <ul className="divide-y divide-line">
+            {addedSections.map((section) => {
+              const key = `section:${section.id}`;
+              const entry = draft.pending(key);
+              const retiring = entry?.change.wire.type === "section-retire";
+              return (
+                <li key={section.id} className="flex min-h-11 items-center justify-between gap-3 py-2">
+                  <span className={`text-sm ${retiring ? "opacity-50" : ""}`}>{section.label}</span>
+                  {entry ? (
+                    <span className="flex items-center gap-2">
+                      <Pending confirming={entry.confirming} error={entry.error} count={entry.count} />
+                      <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">{t("removePending")}</button>
+                    </span>
+                  ) : (
+                    <RetireButton
+                      name={section.label}
+                      onConfirm={() => draft.stage(key, { wire: { type: "section-retire", key, id: section.id } })}
+                    />
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+
+      <RetiredGroup
+        items={retiredSections.map((section) => ({ id: section.id, name: section.name }))}
+        restoreKey={(id) => `section:${id}`}
+        onRestore={(id) => { const key = `section:${id}`; draft.stage(key, { wire: { type: "section-restore", key, id } }); }}
+      />
     </div>
   );
 }

@@ -158,7 +158,13 @@ export const galleryWorkSchema = z.object({
   src: uploadPath,
   width: z.number().int().min(1).max(20000),
   height: z.number().int().min(1).max(20000),
-  category: z.enum(["runway", "commissions", "bridal", "accessories", "press", "workroom"]),
+  /**
+   * A section id, not an enum: the six coded ones plus whatever Daysi has
+   * named through "Otra…". Whether it names a live section is a question
+   * for the action, at apply time, the same way a garment's id is (see the
+   * comment on `styleOverrideSchema` above).
+   */
+  category: z.string().trim().min(1).max(60),
   caption: pair(0, 200),
 });
 export const galleryChangeSchema = z.discriminatedUnion("type", [
@@ -167,6 +173,12 @@ export const galleryChangeSchema = z.discriminatedUnion("type", [
   workTextSchema,
   retireChangeSchema,
   restoreChangeSchema,
+  /** Typed in Spanish only; the action writes the English and the id. Its
+   *  own members, distinct from `retire`/`restore` above, because those two
+   *  already mean a work on this tab. */
+  z.object({ type: z.literal("section-add"), key: changeKey, name: z.string().trim().min(2).max(40) }),
+  z.object({ type: z.literal("section-retire"), key: changeKey, id }),
+  z.object({ type: z.literal("section-restore"), key: changeKey, id }),
 ]);
 
 export const fabricSchema = z.object({

@@ -2,12 +2,23 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { translate } from "@/content";
 import { galleryWorks } from "@/content/gallery";
-import { addedGalleryWorks, assembleGallery, GALLERY_ORDER, manageableGallery } from "@/lib/live-gallery";
+import {
+  addedGalleryWorks,
+  assembleGallery,
+  manageableGallery,
+  manageableGallerySections,
+  type SectionView,
+} from "@/lib/live-gallery";
 import { undoableIds } from "@/lib/office-history";
 import { GalleryManager, type ManagedWork } from "@/components/gallery-manager";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { officeViewer } from "../_lib/viewer";
 import { applyGalleryChanges } from "./actions";
+
+/** A coded section's label lives in `gallery.category.*`; one Daysi added carries its own. */
+function sectionLabel(section: SectionView, tg: (key: string) => string, locale: Locale): string {
+  return section.coded ? tg(`category.${section.id}`) : translate(section.name!, locale);
+}
 
 /** Gallery: the portfolio photographs, and a place to add one. */
 export default async function OfficeGalleryPage({
@@ -47,7 +58,14 @@ export default async function OfficeGalleryPage({
   }));
   const active = galleryWorksManaged.filter((work) => !work.retired);
   const retired = galleryWorksManaged.filter((work) => work.retired);
-  const galleryCategories = GALLERY_ORDER.map((id) => ({ id, label: tg(`category.${id}`) }));
+
+  const sections = manageableGallerySections();
+  const galleryCategories = sections
+    .filter((section) => !section.retired)
+    .map((section) => ({ id: section.id, label: sectionLabel(section, tg, language), coded: section.coded }));
+  const retiredSections = sections
+    .filter((section) => section.retired)
+    .map((section) => ({ id: section.id, name: sectionLabel(section, tg, language) }));
 
   return (
     <section className="flex flex-col gap-6">
@@ -62,6 +80,7 @@ export default async function OfficeGalleryPage({
           works={active}
           retired={retired}
           categories={galleryCategories}
+          retiredSections={retiredSections}
           undoableTexts={undoableTexts}
         />
       </OfficeDraftProvider>

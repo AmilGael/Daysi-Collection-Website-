@@ -163,6 +163,9 @@ describe.each([
   ["gallery visibility", galleryChangeSchema, { type: "work-visibility", key: "gallery:x", id: "x", hidden: true }],
   ["gallery retire", galleryChangeSchema, { type: "retire", key: "gallery:x", id: "x" }],
   ["gallery restore", galleryChangeSchema, { type: "restore", key: "gallery:x", id: "x" }],
+  ["gallery section add", galleryChangeSchema, { type: "section-add", key: "section-add:one", name: "Quinceañeras" }],
+  ["gallery section retire", galleryChangeSchema, { type: "section-retire", key: "section:sec-otra", id: "sec-otra" }],
+  ["gallery section restore", galleryChangeSchema, { type: "section-restore", key: "section:sec-otra", id: "sec-otra" }],
   ["fabric add", fabricChangeSchema, fabricAdd],
   ["fabric retire", fabricChangeSchema, { type: "retire", key: "fabric:x", id: "x" }],
   ["fabric restore", fabricChangeSchema, { type: "restore", key: "fabric:x", id: "x" }],
@@ -322,6 +325,35 @@ describe("bilingual gallery captions", () => {
         caption: { es: "Un vestido marfil.", en: "An ivory dress." },
       }).success,
     ).toBe(true);
+  });
+});
+
+describe("a gallery photo's section is a string, not a fixed enum", () => {
+  it("accepts a section she named herself, and refuses one past 60 characters", () => {
+    expect(galleryChangeSchema.safeParse({ ...workAdd, category: "sec-otra" }).success).toBe(true);
+    expect(galleryChangeSchema.safeParse({ ...workAdd, category: "x".repeat(61) }).success).toBe(false);
+  });
+
+  it("refuses an empty section", () => {
+    expect(galleryChangeSchema.safeParse({ ...workAdd, category: "" }).success).toBe(false);
+  });
+});
+
+describe("naming a new gallery section, or retiring one she added", () => {
+  const sectionAdd = { type: "section-add", key: "section-add:one", name: "Quinceañeras" };
+
+  it("accepts a name from 2 to 40 characters", () => {
+    expect(galleryChangeSchema.safeParse(sectionAdd).success).toBe(true);
+    expect(galleryChangeSchema.safeParse({ ...sectionAdd, name: "Q" }).success).toBe(false);
+    expect(galleryChangeSchema.safeParse({ ...sectionAdd, name: "x".repeat(41) }).success).toBe(false);
+  });
+
+  it("accepts a retire or a restore by the section's id, refusing an empty one", () => {
+    const retire = { type: "section-retire", key: "section:sec-otra", id: "sec-otra" };
+    const restore = { type: "section-restore", key: "section:sec-otra", id: "sec-otra" };
+    expect(galleryChangeSchema.safeParse(retire).success).toBe(true);
+    expect(galleryChangeSchema.safeParse(restore).success).toBe(true);
+    expect(galleryChangeSchema.safeParse({ ...retire, id: "" }).success).toBe(false);
   });
 });
 

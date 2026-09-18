@@ -8,7 +8,8 @@ export type RetiredKind =
   | "price-entry"
   | "request"
   | "alteration"
-  | "appointment-type";
+  | "appointment-type"
+  | "gallery-section";
 export type RetiredRecord = {
   readonly kind: RetiredKind;
   readonly id: string;

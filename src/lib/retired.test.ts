@@ -45,7 +45,7 @@ describe("retired records", () => {
     expect(retiredSet("style")).toEqual(new Set());
   });
 
-  it.each(["fabric", "price-entry", "request", "alteration", "appointment-type"] as const)(
+  it.each(["fabric", "price-entry", "request", "alteration", "appointment-type", "gallery-section"] as const)(
     "retires and restores a %s",
     async (kind) => {
       const { retiredSet, setRetired } = await import("./retired");

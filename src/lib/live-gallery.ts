@@ -1,8 +1,10 @@
 import { galleryWorks } from "@/content/gallery";
-import type { GalleryCategoryId, GalleryWork } from "@/content/types";
+import type { GalleryWork, Localized } from "@/content/types";
 import { appendRecord, readRecords } from "./records";
 import { retiredSet } from "./retired";
 import { applyGalleryText, textOverrides, type TextOverride } from "./live-text";
+
+export { sectionId } from "./slugify";
 
 /**
  * The live layer over the gallery, same shape as lib/live-catalog: the works
@@ -84,29 +86,92 @@ export function manageableGallery(): (GalleryWork & { hidden: boolean; retired: 
   }));
 }
 
-/** The categories that actually have something in them, in display order. */
-export const GALLERY_ORDER: readonly GalleryCategoryId[] = [
-  "runway",
-  "commissions",
-  "bridal",
-  "accessories",
-  "workroom",
-  "press",
-];
-
-export function galleryByCategory(
-  works: readonly GalleryWork[],
-): { category: GalleryCategoryId; works: GalleryWork[] }[] {
-  return GALLERY_ORDER.map((category) => ({
-    category,
-    works: works.filter((work) => work.category === category),
-  })).filter((group) => group.works.length > 0);
-}
-
 export async function addGalleryWork(work: GalleryWork): Promise<void> {
   await appendRecord(ADDED, work);
 }
 
 export async function setGalleryVisibility(id: string, hidden: boolean): Promise<void> {
   await appendRecord(VISIBILITY, { id, hidden } satisfies GalleryVisibility);
+}
+
+// ── Gallery sections ("Dónde va") ───────────────────────────────────────────
+
+/**
+ * The six sections the site shipped with, in the order the gallery and the
+ * office both show them. Their labels come from `gallery.category.*`; a
+ * section Daysi names herself through "Otra…" carries its own bilingual
+ * name instead, and joins the list after these, oldest first.
+ */
+export const CODED_SECTIONS = [
+  "runway",
+  "commissions",
+  "bridal",
+  "accessories",
+  "workroom",
+  "press",
+] as const;
+
+/** A section Daysi named herself: one line in gallery-sections.jsonl. */
+export type GallerySection = { readonly id: string; readonly name: Localized; readonly addedAt: string };
+
+/**
+ * One row of "Dónde va" as a reader shows it: a coded section, whose label
+ * lives in `gallery.category.*`, or one Daysi added, which carries its own.
+ */
+export type SectionView = { readonly id: string; readonly coded: boolean; readonly name?: Localized };
+
+const SECTIONS = "gallery-sections";
+
+export function addedGallerySections(): GallerySection[] {
+  return readRecords<GallerySection>(SECTIONS);
+}
+
+/**
+ * Pure, so it can be tested without the filesystem: the six coded sections
+ * first, in their fixed order, then whatever Daysi has added, oldest first.
+ * A coded section is filtered out of `ordered`'s map, never out of
+ * `CODED_SECTIONS` itself, so it can never be dropped by `retired` even if
+ * that set somehow named one — office/gallery/actions.ts never lets a
+ * coded section be retired in the first place.
+ */
+export function assembleSections(
+  added: readonly GallerySection[],
+  retired: ReadonlySet<string>,
+): SectionView[] {
+  const newest = new Map(added.map((section) => [section.id, section]));
+  const ordered = [...newest.values()].sort((a, b) => a.addedAt.localeCompare(b.addedAt));
+  return [
+    ...CODED_SECTIONS.map((id): SectionView => ({ id, coded: true })),
+    ...ordered
+      .filter((section) => !retired.has(section.id))
+      .map((section): SectionView => ({ id: section.id, coded: false, name: section.name })),
+  ];
+}
+
+/** "Dónde va" as a visitor's filter sees it: nothing retired. */
+export function liveGallerySections(): SectionView[] {
+  return assembleSections(addedGallerySections(), retiredSet("gallery-section"));
+}
+
+/** Every section, retired ones flagged too — the office's picker and its Secciones list. */
+export function manageableGallerySections(): (SectionView & { retired: boolean })[] {
+  const retired = retiredSet("gallery-section");
+  return assembleSections(addedGallerySections(), new Set()).map((section) => ({
+    ...section,
+    retired: retired.has(section.id),
+  }));
+}
+
+/** The sections that actually have something in them, in `sections`' order. */
+export function galleryByCategory(
+  works: readonly GalleryWork[],
+  sections: readonly SectionView[],
+): { section: SectionView; works: GalleryWork[] }[] {
+  return sections
+    .map((section) => ({ section, works: works.filter((work) => work.category === section.id) }))
+    .filter((group) => group.works.length > 0);
+}
+
+export async function addGallerySection(section: GallerySection): Promise<void> {
+  await appendRecord(SECTIONS, section);
 }

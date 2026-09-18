@@ -52,6 +52,17 @@ describe("translateToEnglish", () => {
     expect(requests[0]!.prompt).not.toContain("a garment for sale");
   });
 
+  it("tells the model a new gallery section is a section name, not a garment", async () => {
+    const requests: TranslationRequest[] = [];
+    const call: TranslationCall = async (request) => {
+      requests.push(request);
+      return Object.fromEntries(request.keys.map((key) => [key, `en ${key}`]));
+    };
+    await translateToEnglish({ name: "Quinceañeras" }, "section", call);
+    expect(requests[0]!.prompt).toContain("Context: a section name in the gallery of finished work");
+    expect(requests[0]!.prompt).not.toContain("a garment for sale");
+  });
+
   it("returns null, and makes no call, when there is nothing to translate or no service", async () => {
     const call = vi.fn(async () => ({}));
     expect(await translateToEnglish({ detail: "  " }, "garment", call)).toBeNull();
