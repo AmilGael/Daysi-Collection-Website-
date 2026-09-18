@@ -24,13 +24,20 @@ const SLOT_STEP_MINUTES = 30;
 const BUFFER_MINUTES = 15;
 
 /**
- * How long a booking keeps its slot while the client is still on Stripe's
- * payment page. The Checkout session is told to expire at this age plus a
- * small margin, since Stripe rejects an expiry under thirty minutes measured
- * on its own clock; the grace below covers the difference, so once the hold
- * has run out nobody can pay for an hour offered to somebody else.
+ * How long a Stripe payment page stays open, for a booking and a cart alike.
+ * The Checkout session is told to expire at this age plus a small margin,
+ * since Stripe rejects an expiry under thirty minutes measured on its own
+ * clock. A cart that runs out is closed by the webhook instead of sitting
+ * half-bought for Stripe's default of a day.
  */
-export const BOOKING_PAYMENT_HOLD_MINUTES = 30;
+export const CHECKOUT_HOLD_MINUTES = 30;
+/**
+ * How long a booking keeps its slot while the client is still on the payment
+ * page: exactly as long as the page is open. The grace below covers the
+ * margin, so once the hold has run out nobody can pay for an hour offered to
+ * somebody else.
+ */
+export const BOOKING_PAYMENT_HOLD_MINUTES = CHECKOUT_HOLD_MINUTES;
 /**
  * The calendar waits this much longer before letting the slot go: a payment
  * made in the hold's last minute reaches the webhook a little after it.

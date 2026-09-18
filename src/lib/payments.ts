@@ -34,9 +34,9 @@ export type CheckoutRequest = {
   readonly customerEmail: string;
   readonly locale: Locale;
   /**
-   * Closes the payment page after this long. Set for bookings, whose slot is
-   * only held that long (see `BOOKING_PAYMENT_HOLD_MINUTES`); left unset for
-   * orders, which hold nothing and keep Stripe's own default of a day.
+   * Closes the payment page after this long (`CHECKOUT_HOLD_MINUTES`). A
+   * booking's slot is only held that long; an order's page closes on the same
+   * clock so a cart nobody paid for is closed within the hour, not the day.
    */
   readonly expiresInMinutes?: number;
   /**

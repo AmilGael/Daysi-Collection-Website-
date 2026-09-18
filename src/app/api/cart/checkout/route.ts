@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { translate } from "@/content";
 import { liveStyleBySlug as findStyle } from "@/lib/live-catalog";
+import { CHECKOUT_HOLD_MINUTES } from "@/lib/availability";
 import { emptyCart, readCart, writeCart } from "@/lib/cart";
 import { estimateCart } from "@/lib/pricing";
 import { callerKey, checkRateLimit, pruneRateLimits } from "@/lib/rate-limit";
@@ -118,6 +119,9 @@ export async function POST(request: Request) {
         estimate,
         customerEmail: account.email,
         locale: details.locale,
+        // Closed after half an hour, so an abandoned cart is closed too. Bank
+        // debits stay on offer: they finish the page at once and settle later.
+        expiresInMinutes: CHECKOUT_HOLD_MINUTES,
       })
     : null;
 
