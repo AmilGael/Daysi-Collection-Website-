@@ -100,7 +100,7 @@ function CustomBookCard({ initialFrom, initialTo }: { initialFrom: string; initi
   }
 
   return (
-    <li className="flex h-full flex-col gap-3 border border-line p-5 sm:col-span-2">
+    <li className="flex h-full flex-col gap-3 border border-line p-5 col-span-2">
       <span className="font-display text-[1.0625rem] leading-tight">{t("booksCustomRange")}</span>
       <div className="flex flex-wrap gap-4">
         <label className="flex flex-col gap-1.5 text-[0.75rem] text-ink-faint">
