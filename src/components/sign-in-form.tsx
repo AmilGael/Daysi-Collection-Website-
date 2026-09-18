@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { Locale } from "@/i18n/routing";
 import { BotTrap, Field, TextInput, useRenderedAt } from "./form";
+import { buttonClass } from "./ui";
 
 /**
  * Asking for a sign-in link. One field, because there is no password to ask
@@ -35,7 +36,7 @@ export function SignInForm({ googleAuthEnabled = false }: { googleAuthEnabled?: 
 
   if (state === "sent") {
     return (
-      <div className="flex max-w-lg flex-col gap-4 bg-paper-warm p-8">
+      <div className="flex flex-col items-center gap-4 text-center">
         <h2 className="text-heading">{t("linkSentTitle")}</h2>
         <p className="leading-relaxed text-ink-soft">{t("linkSentBody", { email })}</p>
         <p className="text-[0.8125rem] text-ink-faint">{t("linkSentNote")}</p>
@@ -44,7 +45,7 @@ export function SignInForm({ googleAuthEnabled = false }: { googleAuthEnabled?: 
   }
 
   return (
-    <form onSubmit={onSubmit} className="relative flex max-w-lg flex-col gap-6">
+    <form onSubmit={onSubmit} className="relative mt-8 flex flex-col gap-6">
       <BotTrap renderedAt={renderedAt} />
       <Field label={t("email")} hint={t("signInHint")}>
         {({ id, describedBy }) => (
@@ -71,7 +72,7 @@ export function SignInForm({ googleAuthEnabled = false }: { googleAuthEnabled?: 
       <button
         type="submit"
         disabled={state === "sending"}
-        className="inline-flex w-fit items-center justify-center rounded-[2px] bg-ink px-8 py-4 text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-paper transition-colors hover:bg-ink-soft disabled:opacity-45"
+        className={buttonClass({ tone: "solid", className: "w-full" })}
       >
         {state === "sending" ? t("sending") : t("sendLink")}
       </button>
@@ -80,10 +81,18 @@ export function SignInForm({ googleAuthEnabled = false }: { googleAuthEnabled?: 
           account. A plain anchor: the route redirects to Google, and a
           navigation is exactly what an OAuth flow is. */}
       {googleAuthEnabled ? (
-        <div className="flex flex-col gap-4 border-t border-line pt-6">
+        <div className="flex flex-col gap-4">
+          <div
+            aria-hidden
+            className="flex items-center gap-4 text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-ink-faint"
+          >
+            <span className="h-px flex-1 bg-line" />
+            {t("orDivider")}
+            <span className="h-px flex-1 bg-line" />
+          </div>
           <a
             href={`/api/auth/google?locale=${locale}`}
-            className="inline-flex w-fit items-center gap-3 rounded-[2px] border border-line px-8 py-4 text-[0.6875rem] font-medium uppercase tracking-[0.16em] transition-colors hover:border-ink/50 hover:bg-paper-warm"
+            className={buttonClass({ tone: "outline", className: "w-full" })}
           >
             <svg aria-hidden viewBox="0 0 18 18" className="h-4 w-4">
               <path

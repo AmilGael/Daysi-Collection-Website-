@@ -418,6 +418,7 @@
     "signInHint": "The same address you use when you write to Daysi.",
     "signInBlurb": "See your orders, your sessions and everything you have asked for.",
     "sendLink": "Send me a link",
+    "orDivider": "or",
     "continueWithGoogle": "Continue with Google",
     "sending": "Sending…",
     "signInError": "That did not go through. Please try again.",
