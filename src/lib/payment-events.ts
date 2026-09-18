@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { notifyClientPaymentFailed, notifyOwner } from "./notify";
+import { notifyClientPaid, notifyClientPaymentFailed, notifyOwner } from "./notify";
 import { referenceOf } from "./payments";
 import { listRequests, owesNothing, saveRequest, type StoredRequest } from "./request-store";
 import { retiredSet, setRetired } from "./retired";
@@ -76,6 +76,7 @@ export async function markPaid(
   await saveRequest(paid);
   await restore(reference, "the payment is seen");
   await notifyOwner(paid);
+  await notifyClientPaid(paid);
   return "marked";
 }
 

@@ -196,3 +196,151 @@ describe("notifyClientPaymentFailed", () => {
     expect(body.text).toContain("ORD-1");
   });
 });
+
+describe("notifyClientPaid", () => {
+  const twoLines = [
+    { label: { en: "Amapola dress", es: "Vestido Amapola" }, amount: 10500, unitAmount: 10500, taxBasis: "clothing" as const },
+    {
+      label: { en: "Made to your measurements", es: "Hecho a su medida" },
+      amount: 4000,
+      unitAmount: 2000,
+      taxBasis: "clothing" as const,
+    },
+  ];
+
+  it("sends the client every line, the total, tarjeta, the reference, a WhatsApp link and the orders page, in Spanish", async () => {
+    const { notifyClientPaid } = await import("./notify");
+
+    await notifyClientPaid(
+      record({
+        locale: "es",
+        status: "paid",
+        source: "stripe",
+        estimate: {
+          lines: twoLines,
+          subtotal: 14500,
+          salesTax: 0,
+          total: 14500,
+          dueNow: 14500,
+          dueOnCollection: 0,
+          dueNowReason: { en: "Paid in full.", es: "Pagado por completo." },
+        },
+      }),
+    );
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as {
+      to: string[];
+      reply_to?: string;
+      subject: string;
+      text: string;
+    };
+    expect(body.to).toEqual(["ana@example.com"]);
+    // The receipt invites a reply, so it has to reach Daysi and not no-reply@.
+    expect(body.reply_to).toBe("daysi@example.com");
+    expect(body.subject).toBe("Su recibo · ORD-1");
+    expect(body.text).toContain("Vestido Amapola × 1 — $105");
+    expect(body.text).toContain("Hecho a su medida × 2 — $40");
+    expect(body.text).toContain("Total: $145");
+    expect(body.text).toContain("tarjeta");
+    expect(body.text).toContain("ORD-1");
+    expect(body.text).toContain("wa.me/");
+    expect(body.text).toContain("/es/account/orders");
+  });
+
+  it("says the deposit was paid by banco and what is still due on collection", async () => {
+    const { notifyClientPaid } = await import("./notify");
+
+    await notifyClientPaid(
+      record({
+        locale: "es",
+        status: "paid",
+        source: "stripe",
+        paidVia: "bank",
+        estimate: {
+          lines: [{ label: { en: "Wedding gown", es: "Vestido de novia" }, amount: 20000, taxBasis: "clothing" }],
+          subtotal: 20000,
+          salesTax: 1775,
+          total: 21775,
+          dueNow: 10888,
+          dueOnCollection: 10887,
+          dueNowReason: { en: "Half now.", es: "La mitad ahora." },
+        },
+      }),
+    );
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as { text: string };
+    expect(body.text).toContain("banco");
+    expect(body.text).toContain("Pendiente al recoger: $108.87");
+  });
+
+  it("writes an English subject and body for an English-speaking client", async () => {
+    const { notifyClientPaid } = await import("./notify");
+
+    await notifyClientPaid(record({ locale: "en", status: "paid", source: "stripe" }));
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as { subject: string; text: string };
+    expect(body.subject).toBe("Your receipt · ORD-1");
+    expect(body.text).toContain("Paid now (card)");
+  });
+
+  it("leaves out the tax line when nothing on the order was taxed", async () => {
+    const { notifyClientPaid } = await import("./notify");
+
+    await notifyClientPaid(
+      record({
+        status: "paid",
+        source: "stripe",
+        estimate: {
+          lines: [{ label: { en: "Consultation", es: "Consulta" }, amount: 5000, taxBasis: "service" }],
+          subtotal: 5000,
+          salesTax: 0,
+          total: 5000,
+          dueNow: 5000,
+          dueOnCollection: 0,
+          dueNowReason: { en: "Paid in full.", es: "Pagado por completo." },
+        },
+      }),
+    );
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as { text: string };
+    expect(body.text).not.toContain("Tax:");
+    expect(body.text).not.toContain("Impuesto:");
+  });
+
+  it("tells the client the day and time when what's next is an appointment", async () => {
+    const { notifyClientPaid } = await import("./notify");
+
+    await notifyClientPaid(
+      record({
+        kind: "appointment",
+        locale: "es",
+        status: "paid",
+        source: "stripe",
+        details: { date: "2026-10-02", startTime: "14:00" },
+        estimate: {
+          lines: [{ label: { en: "Consultation", es: "Consulta" }, amount: 5000, taxBasis: "service" }],
+          subtotal: 5000,
+          salesTax: 0,
+          total: 5000,
+          dueNow: 5000,
+          dueOnCollection: 0,
+          dueNowReason: { en: "Should not appear.", es: "No debería aparecer." },
+        },
+      }),
+    );
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as { text: string };
+    expect(body.text).toContain("Su cita es el");
+    expect(body.text).toContain("14:00");
+    expect(body.text).not.toContain("No debería aparecer");
+  });
+
+  it("does not send a receipt when email is not configured", async () => {
+    vi.stubEnv("RESEND_API_KEY", "");
+    const { notifyClientPaid } = await import("./notify");
+
+    await notifyClientPaid(record({ status: "paid", source: "stripe" }));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});

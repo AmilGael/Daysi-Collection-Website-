@@ -1,7 +1,9 @@
+import { translate } from "@/content";
 import { emailEnabled, env } from "./env";
 import { formatMoney } from "./money";
 import { forNotification } from "./security";
 import { saveRequest, type StoredRequest } from "./request-store";
+import { whatsappLink } from "./whatsapp";
 
 /**
  * How Daysi hears that something came in. Email if a key is configured;
@@ -187,6 +189,135 @@ export async function notifyClientPaymentFailed(request: StoredRequest): Promise
     to: request.client.email,
     ...(env.ownerEmails[0] ? { replyTo: env.ownerEmails[0] } : {}),
     ...message,
+  });
+}
+
+/**
+ * What comes next, in the client's own words: an appointment names the day
+ * and the hour that was booked; everything else falls back to the reason the
+ * estimate itself gives for what was charged now.
+ */
+function whatsNext(request: StoredRequest): string {
+  const { locale } = request;
+  if (request.kind === "appointment") {
+    const date = request.details.date;
+    const startTime = request.details.startTime;
+    if (typeof date === "string" && typeof startTime === "string") {
+      const when = new Intl.DateTimeFormat(locale === "es" ? "es-US" : "en-US", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      }).format(new Date(`${date}T12:00:00`));
+      return locale === "es"
+        ? `Su cita es el ${when} a las ${startTime}.`
+        : `Your appointment is on ${when} at ${startTime}.`;
+    }
+  }
+  return request.estimate ? translate(request.estimate.dueNowReason, locale) : "";
+}
+
+/**
+ * The client's own receipt: every line they are being charged for, what was
+ * paid now and what is still owed, and what happens next. Split from
+ * `notifyClientPaid` so the tests can check the words without going through
+ * `sendEmail`.
+ */
+export function receiptMessage(request: StoredRequest): { subject: string; text: string } {
+  const { locale } = request;
+  const name = forNotification(request.client.name);
+  const estimate = request.estimate;
+  const lines = estimate?.lines ?? [];
+
+  const itemLines = lines.map((line) => {
+    const qty = line.unitAmount ? Math.round(line.amount / line.unitAmount) : 1;
+    return `${translate(line.label, locale)} × ${qty} — ${formatMoney(line.amount, locale)}`;
+  });
+
+  const subtotal = estimate?.subtotal ?? 0;
+  const salesTax = estimate?.salesTax ?? 0;
+  const total = estimate?.total ?? 0;
+  const dueNow = estimate?.dueNow ?? 0;
+  const dueOnCollection = estimate?.dueOnCollection ?? 0;
+  const byBank = request.paidVia === "bank";
+  const via = locale === "es" ? (byBank ? "banco" : "tarjeta") : byBank ? "bank" : "card";
+
+  const whatsapp = whatsappLink(
+    locale === "es"
+      ? `Hola Daysi, sobre mi pedido ${request.reference}`
+      : `Hi Daysi, about my order ${request.reference}`,
+  );
+  const ordersUrl = `${env.siteUrl}/${locale}/account/orders`;
+
+  const text =
+    locale === "es"
+      ? [
+          `Hola ${name},`,
+          "",
+          ...itemLines,
+          "",
+          `Subtotal: ${formatMoney(subtotal, "es")}`,
+          ...(salesTax > 0 ? [`Impuesto: ${formatMoney(salesTax, "es")}`] : []),
+          `Total: ${formatMoney(total, "es")}`,
+          "",
+          `Pagado ahora (${via}): ${formatMoney(dueNow, "es")}`,
+          ...(dueOnCollection > 0 ? [`Pendiente al recoger: ${formatMoney(dueOnCollection, "es")}`] : []),
+          "",
+          `Referencia: ${request.reference}`,
+          "",
+          "Qué sigue",
+          whatsNext(request),
+          "",
+          `¿Preguntas? Escríbanos por WhatsApp: ${whatsapp}`,
+          `Vea sus pedidos: ${ordersUrl}`,
+          "",
+          "Daysi Collection",
+        ].join("\n")
+      : [
+          `Hello ${name},`,
+          "",
+          ...itemLines,
+          "",
+          `Subtotal: ${formatMoney(subtotal, "en")}`,
+          ...(salesTax > 0 ? [`Tax: ${formatMoney(salesTax, "en")}`] : []),
+          `Total: ${formatMoney(total, "en")}`,
+          "",
+          `Paid now (${via}): ${formatMoney(dueNow, "en")}`,
+          ...(dueOnCollection > 0 ? [`Due on collection: ${formatMoney(dueOnCollection, "en")}`] : []),
+          "",
+          `Reference: ${request.reference}`,
+          "",
+          "What's next",
+          whatsNext(request),
+          "",
+          `Questions? Reach us on WhatsApp: ${whatsapp}`,
+          `See your orders: ${ordersUrl}`,
+          "",
+          "Daysi Collection",
+        ].join("\n");
+
+  return {
+    subject: locale === "es" ? `Su recibo · ${request.reference}` : `Your receipt · ${request.reference}`,
+    text,
+  };
+}
+
+/**
+ * The receipt Stripe's confirmation buys the client: the thank-you page
+ * promises it is "on its way to your inbox", and this is what makes that
+ * true. Sent once, from `markPaid`, never from the form itself — a client who
+ * only reached the payment page has not paid, and must not be told they were
+ * charged.
+ */
+export async function notifyClientPaid(request: StoredRequest): Promise<void> {
+  if (!emailEnabled) {
+    console.info(`[notify] ${request.reference} paid; client receipt not sent, email not configured.`);
+    return;
+  }
+
+  await sendEmail({
+    to: request.client.email,
+    ...(env.ownerEmails[0] ? { replyTo: env.ownerEmails[0] } : {}),
+    ...receiptMessage(request),
   });
 }
 
