@@ -6,8 +6,7 @@ import { liveAlterations, liveAppointmentTypes, liveFabrics, livePriceList, with
 import { promotedPrice } from "./promotions";
 import { formatMoney } from "./money";
 import { appendRecord, readRecords } from "./records";
-import { defaultHelperCall, type HelperCall, type HelperTurn } from "./claude-helper";
-import { dropLeadingAssistant } from "./office-helper";
+import { defaultHelperCall, dropLeadingAssistant, type HelperCall, type HelperTurn } from "./claude-helper";
 
 /**
  * The visitor-facing "¿Preguntas?" panel's own system prompt: what a
@@ -85,6 +84,14 @@ function garmentLines(locale: Locale): string[] {
 /** The general list of what a garment costs by category and fabric. */
 function pairLines(locale: Locale): string[] {
   const lines = [locale === "es" ? "Lista de precios por tela:" : "Price list by fabric:"];
+  // These are the list prices: a garment already on sale above quotes for
+  // less, so the model must read that garment's own line under a
+  // promotion rather than this one.
+  lines.push(
+    locale === "es"
+      ? "(precio de lista; las prendas de arriba muestran el precio de hoy)"
+      : "(list price; the garments above show today's price)",
+  );
   const joiner = locale === "es" ? "en" : "in";
   const customNote = locale === "es" ? "a medida" : "made to measure";
   for (const entry of livePriceList()) {
@@ -176,7 +183,7 @@ export async function askSiteHelper(
     { role: "user" as const, content: `[${input.locale}] ${input.question}` },
   ];
 
-  return call({ system, messages, maxTokens: 600 });
+  return call({ system, messages, maxTokens: 1500 });
 }
 
 /* ------------------------------------------------------------ visibility -- */

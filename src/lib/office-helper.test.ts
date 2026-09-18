@@ -152,6 +152,19 @@ describe("askOfficeHelper", () => {
     expect(String(cached[0]!.text)).toContain("Cómo entrar");
   });
 
+  it("raises the ceiling to 2048, so thinking never eats the whole answer", async () => {
+    const { askOfficeHelper } = await import("./office-helper");
+    let seenMaxTokens = 0;
+    const fakeCall: HelperCall = async ({ maxTokens }) => {
+      seenMaxTokens = maxTokens;
+      return "ok";
+    };
+
+    await askOfficeHelper({ question: "hola", tab: "hub", history: [] }, fakeCall);
+
+    expect(seenMaxTokens).toBe(2048);
+  });
+
   it("returns null when the call does — a refusal answers the same as silence", async () => {
     const { askOfficeHelper } = await import("./office-helper");
     const refuses: HelperCall = async () => null;

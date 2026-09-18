@@ -49,6 +49,16 @@ describe("helperData", () => {
     expect(state).toContain(`Consulta de 30 minutos: ${formatMoney(8000, "es")}`);
   });
 
+  it("labels the pair list as list prices, so a sale garment is quoted from its own line above", async () => {
+    const { helperData } = await import("./site-helper");
+
+    const es = helperData("es");
+    expect(es).toContain("precio de lista; las prendas de arriba muestran el precio de hoy");
+
+    const en = helperData("en");
+    expect(en).toContain("list price; the garments above show today's price");
+  });
+
   it("carries the hours and a WhatsApp fact with no address — the panel's own button is that step", async () => {
     const { helperData } = await import("./site-helper");
 
@@ -175,6 +185,19 @@ describe("askSiteHelper", () => {
       { role: "user", content: "la siguiente pregunta" },
       { role: "user", content: "[es] ¿y ahora?" },
     ]);
+  });
+
+  it("raises the ceiling to 1500, so thinking never eats the whole answer", async () => {
+    const { askSiteHelper } = await import("./site-helper");
+    let seenMaxTokens = 0;
+    const fakeCall: HelperCall = async ({ maxTokens }) => {
+      seenMaxTokens = maxTokens;
+      return "ok";
+    };
+
+    await askSiteHelper({ question: "hola", locale: "es", history: [] }, fakeCall);
+
+    expect(seenMaxTokens).toBe(1500);
   });
 
   it("returns null when the call refuses — a refusal answers the same as silence", async () => {

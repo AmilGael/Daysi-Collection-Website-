@@ -17,11 +17,43 @@ import { env } from "./env";
 
 export type HelperTurn = { readonly role: "user" | "assistant"; readonly text: string };
 
+/**
+ * A conversation the Claude API accepts starts with a user turn. A sheet
+ * that rolls a failed question back out of its thread (see `help-sheet.tsx`)
+ * can still hand this an earlier assistant turn with nothing before it — the
+ * question that opened it never landed — so any leading assistant turns are
+ * dropped rather than sent.
+ *
+ * Shared by both helpers (`office-helper.ts` for Daysi, `site-helper.ts` for
+ * a visitor), since a thread rolled back the same way needs the same fix
+ * either side, and lives beside `HelperTurn` rather than in either helper so
+ * neither has to import the other.
+ */
+export function dropLeadingAssistant(history: readonly HelperTurn[]): readonly HelperTurn[] {
+  const start = history.findIndex((turn) => turn.role !== "assistant");
+  return start === -1 ? [] : history.slice(start);
+}
+
 export type HelperCall = (input: {
   readonly system: Anthropic.Beta.Messages.BetaTextBlockParam[];
   readonly messages: Anthropic.Beta.Messages.BetaMessageParam[];
   readonly maxTokens: number;
 }) => Promise<string | null>;
+
+/**
+ * What the failure is worth logging, and nothing more: an `Anthropic.APIError`
+ * carries the HTTP status and a subclass name (`RateLimitError`,
+ * `AuthenticationError`…) that `.name` itself never sets — every one of the
+ * SDK's error classes inherits the plain "Error" from `Error.prototype`, so
+ * the constructor's own name is the only useful one. Anything else thrown
+ * (a timeout, an abort) keeps whatever name it already has.
+ */
+function failureDetails(error: unknown): { readonly name: string; readonly status?: number } {
+  if (error instanceof Anthropic.APIError) {
+    return { name: error.constructor.name, status: error.status };
+  }
+  return { name: error instanceof Error ? error.name : "unknown" };
+}
 
 /** The real SDK call. Never a date-suffixed model id; see global constraints. */
 export function claudeHelperCall(apiKey: string): HelperCall {
@@ -44,11 +76,20 @@ export function claudeHelperCall(apiKey: string): HelperCall {
         .filter((block): block is Anthropic.Beta.Messages.BetaTextBlock => block.type === "text")
         .map((block) => block.text)
         .join("");
-      return text.length > 0 ? text : null;
-    } catch {
+      if (text.length > 0) return text;
+
+      // Thinking counts against max_tokens too, so a low ceiling can end the
+      // turn before a single word of the answer is written — worth telling
+      // apart from every other reason a reply might come back empty.
+      if (response.stop_reason === "max_tokens") {
+        console.warn("[claude-helper] max_tokens with no text");
+      }
+      return null;
+    } catch (error) {
       // Never the question itself: it may be about a client's order, and a
       // log is not the place for that.
-      console.warn("[claude-helper] the call failed");
+      const { name, status } = failureDetails(error);
+      console.warn("[claude-helper] the call failed:", status !== undefined ? `${status} ${name}` : name);
       return null;
     }
   };
