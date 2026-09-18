@@ -50,6 +50,12 @@ describe("the site helper", () => {
     expect(body).toContain("setQuestion(trimmed);");
   });
 
+  it("sits below the phone nav overlay (z-30) rather than over it, but still above plain page content", () => {
+    const button = source.slice(source.indexOf("!open ? ("), source.indexOf("<HelperPanel"));
+    expect(button).toContain("z-20");
+    expect(button).not.toContain("z-40");
+  });
+
   it("keeps the WhatsApp button outside the form, so it stays visible whatever the thread shows", () => {
     const afterForm = source.slice(source.indexOf("</form>"));
     expect(afterForm).toContain("ExternalButtonLink");

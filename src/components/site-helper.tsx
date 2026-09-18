@@ -65,7 +65,10 @@ export function SiteHelper(): JSX.Element | null {
           className={buttonClass({
             tone: "marigold",
             size: "small",
-            className: "fixed right-4 z-40 bottom-[calc(1.25rem+env(safe-area-inset-bottom))]",
+            // Below the phone nav overlay (site-header.tsx, z-30) so it
+            // never sits over its own close/back gesture; still above plain
+            // page content, which carries no z-index of its own.
+            className: "fixed right-4 z-20 bottom-[calc(1.25rem+env(safe-area-inset-bottom))]",
           })}
         >
           {t("button")}
