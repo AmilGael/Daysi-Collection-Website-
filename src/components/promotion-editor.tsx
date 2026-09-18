@@ -12,45 +12,20 @@ import { Pending } from "./office/confirm-bar";
 import { MoneyBox } from "./office/garment-sheet";
 import { RetireButton, RetiredGroup } from "./office/retired-group";
 import { Sheet } from "./office/sheet";
+import {
+  formatDay,
+  promotionKeyFor,
+  promotionWireOf,
+  scopeFromChoice,
+  type ManagedPromotion,
+  type ScopeOption,
+} from "./office/shopfront-draft";
 import { Switch } from "./office/switch";
 import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft } from "./office/use-office-draft";
 import { Tag, buttonClass } from "./ui";
 
-export type ManagedPromotion = Promotion & { readonly undoable: boolean };
-/** A name to show for a category or a garment; `retired` garments stay nameable but are not offered. */
-export type ScopeOption = { readonly id: string; readonly name: string; readonly retired?: boolean };
-
-type PromotionWire = Extract<ShopfrontChange, { type: "promotion" }>;
-
 const field = "w-full border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink";
-
-const keyFor = (id: string) => `promotion:${id}`;
-
-/** A promotion as the change that saves it again, with the switch where she put it. */
-function wireOf(promotion: Promotion, active: boolean): PromotionWire {
-  return {
-    type: "promotion",
-    key: keyFor(promotion.id),
-    id: promotion.id,
-    label: promotion.label.es,
-    kind: promotion.kind,
-    value: promotion.value,
-    scope: promotion.scope,
-    ...(promotion.startsAt ? { startsAt: promotion.startsAt } : {}),
-    ...(promotion.endsAt ? { endsAt: promotion.endsAt } : {}),
-    active,
-  };
-}
-
-function formatDay(day: string, locale: Locale): string {
-  return new Intl.DateTimeFormat(locale === "es" ? "es-US" : "en-US", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(`${day}T12:00:00Z`));
-}
 
 /**
  * The promotions on the shop window: each one's name, what it takes off,
@@ -115,12 +90,13 @@ export function PromotionEditor({
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
+      <p className="text-[0.875rem] leading-relaxed text-ink-faint">{t("promoLead")}</p>
       <ul className="flex flex-col border-t border-line">
         {promotions.length === 0 && pendingAdds.length === 0 ? (
           <li className="border-b border-line py-4 text-[0.875rem] text-ink-faint">{t("promoEmpty")}</li>
         ) : null}
         {promotions.map((promotion) => {
-          const key = keyFor(promotion.id);
+          const key = promotionKeyFor(promotion.id);
           const pending = draft.pending(key);
           const wire = pending?.change.wire;
           const retiring = wire?.type === "retire";
@@ -147,7 +123,7 @@ export function PromotionEditor({
                   label={t("promoActive")}
                   onChange={(next) => {
                     if (next === promotion.active) draft.unstage(key);
-                    else draft.stage(key, { wire: wireOf(promotion, next) });
+                    else draft.stage(key, { wire: promotionWireOf(promotion, next) });
                   }}
                 />
               </div>
@@ -208,8 +184,8 @@ export function PromotionEditor({
 
       <RetiredGroup
         items={retired.map((promotion) => ({ id: promotion.id, name: translate(promotion.label, locale) }))}
-        restoreKey={keyFor}
-        onRestore={(id) => draft.stage(keyFor(id), { wire: { type: "restore", key: keyFor(id), id } })}
+        restoreKey={promotionKeyFor}
+        onRestore={(id) => draft.stage(promotionKeyFor(id), { wire: { type: "restore", key: promotionKeyFor(id), id } })}
       />
 
       <Sheet open={adding} title={t("promoAdd")} onClose={close}>
@@ -221,15 +197,6 @@ export function PromotionEditor({
       </Sheet>
     </div>
   );
-}
-
-/** "all", "category:<id>" or "style:<id>": one select for the three reaches. */
-function scopeFromChoice(choice: string): PromotionScope {
-  const [type, ...rest] = choice.split(":");
-  const id = rest.join(":");
-  if (type === "category") return { type: "category", categoryId: id };
-  if (type === "style") return { type: "style", styleId: id };
-  return { type: "all" };
 }
 
 /**

@@ -4,13 +4,16 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ShopfrontChange } from "@/lib/office-validation";
 import { Pending } from "./office/confirm-bar";
+import { NOTICE_KEY } from "./office/shopfront-draft";
+import { Switch } from "./office/switch";
 import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft } from "./office/use-office-draft";
 
 /**
  * The one line Daysi can pin to the site herself — vacation dates, a delayed
- * week, a premiere reminder. Saving with the box unchecked takes it down
- * without losing the wording.
+ * week, a premiere reminder. Saving with the switch off takes it down
+ * without losing the wording. Lives in the Aviso sheet, opened from its card
+ * on the Vitrina grid.
  */
 export function NoticeEditor({
   initialMessage,
@@ -25,8 +28,7 @@ export function NoticeEditor({
   const draft = useOfficeDraft<ShopfrontChange>();
   const [message, setMessage] = useState(initialMessage);
   const [visible, setVisible] = useState(initialVisible);
-  const key = "notice:site";
-  const pending = draft.pending(key);
+  const pending = draft.pending(NOTICE_KEY);
 
   useEffect(() => {
     if (draft.count === 0) {
@@ -45,16 +47,17 @@ export function NoticeEditor({
 
   function stage(nextMessage: string, nextVisible: boolean) {
     if (nextMessage === initialMessage && nextVisible === initialVisible) {
-      draft.unstage(key);
+      draft.unstage(NOTICE_KEY);
       return;
     }
-    draft.stage(key, {
-      wire: { type: "notice", key, message: nextMessage, visible: nextVisible },
+    draft.stage(NOTICE_KEY, {
+      wire: { type: "notice", key: NOTICE_KEY, message: nextMessage, visible: nextVisible },
     });
   }
 
   return (
-    <div className="flex max-w-xl flex-col gap-4">
+    <div className="flex flex-col gap-6">
+      <p className="text-[0.875rem] leading-relaxed text-ink-faint">{t("noticeLead")}</p>
       <textarea
         value={message}
         onChange={(event) => {
@@ -67,20 +70,15 @@ export function NoticeEditor({
         placeholder={t("noticePlaceholder")}
         className="w-full resize-none border border-line bg-paper px-4 py-3 text-[0.9375rem] leading-relaxed placeholder:text-ink-faint focus:border-ink"
       />
+      <Switch
+        checked={visible}
+        onChange={(next) => {
+          setVisible(next);
+          stage(message, next);
+        }}
+        label={t("noticeVisible")}
+      />
       <div className="flex flex-wrap items-center gap-5">
-        <label className="flex cursor-pointer items-center gap-2 text-[0.875rem]">
-          <input
-            type="checkbox"
-            checked={visible}
-            onChange={(event) => {
-              const nextVisible = event.target.checked;
-              setVisible(nextVisible);
-              stage(message, nextVisible);
-            }}
-            className="h-4 w-4 accent-ink"
-          />
-          {t("noticeVisible")}
-        </label>
         {pending ? <Pending confirming={pending.confirming} error={pending.error} count={pending.count} /> : null}
         {undoable && !pending ? <UndoLink kind="notice" id="site" /> : null}
       </div>
