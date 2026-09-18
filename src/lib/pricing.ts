@@ -1,4 +1,4 @@
-import { commissionDepositRate, findCategory, type Cents, type Localized } from "@/content";
+import { commissionDepositRate, designFee, findCategory, type Cents, type Localized } from "@/content";
 // The live catalog, never the coded one: a garment Daysi added from the office
 // has to be priceable, and one she corrected has to be named as she wrote it.
 import { liveStyleBySlug as findStyle } from "./live-catalog";
@@ -329,5 +329,31 @@ export function estimateCommission(request: CommissionEstimate): Estimate | null
   return build(lines, (total) => applyRate(total, commissionDepositRate), {
     en: "Half now to reserve the cloth and the calendar, half when the piece is ready.",
     es: "La mitad ahora para reservar la tela y la fecha, la mitad cuando la pieza esté lista.",
+  });
+}
+
+// ── Studio designs ─────────────────────────────────────────────────────────
+
+/**
+ * The fee for sending Daysi a sketch from the design studio. Her time, so a
+ * `service` line and untaxed, as a consultation is; paid in full before the
+ * sketch reaches her, and credited to an order placed within thirty days.
+ */
+export function estimateDesign(): Estimate {
+  const lines: EstimateLine[] = [
+    {
+      label: { en: "Design fee", es: "Tarifa de diseño" },
+      note: {
+        en: "Daysi receives your mockup and replies with a quote.",
+        es: "Daysi recibe su boceto y le responde con una cotización.",
+      },
+      amount: designFee,
+      taxBasis: "service",
+    },
+  ];
+
+  return build(lines, (total) => total, {
+    en: "Paid now. It comes off your order if you place one within thirty days.",
+    es: "Se paga ahora. Se descuenta de su pedido si lo hace dentro de treinta días.",
   });
 }

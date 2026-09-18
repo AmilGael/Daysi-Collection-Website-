@@ -4,6 +4,7 @@ import {
   appointmentTypes,
   commissionDepositRate,
   consultationCreditDays,
+  designFee,
   priceList,
 } from "./price-list";
 import { premieres, services } from "./premieres";
@@ -29,6 +30,7 @@ export {
   categories,
   commissionDepositRate,
   consultationCreditDays,
+  designFee,
   fabrics,
   premieres,
   priceList,

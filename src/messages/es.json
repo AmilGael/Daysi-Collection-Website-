@@ -183,7 +183,10 @@
     "sendToDaysi": "Enviarle esta idea a Daysi",
     "disclaimer": "El boceto es el punto de partida de la conversación, no una promesa de la pieza terminada. La colocación del estampado se decide en la mesa, con la tela en la mano.",
     "estimateFor": "Una pieza así, en {fabric}, empieza en {price}.",
-    "estimateFrom": "Una pieza así, en {fabric}, se estima desde {price}. El precio exacto se acuerda con Daysi antes de cortar nada."
+    "estimateFrom": "Una pieza así, en {fabric}, se estima desde {price}. El precio exacto se acuerda con Daysi antes de cortar nada.",
+    "sendFee": "Enviar y pagar la tarifa de diseño de {price}",
+    "feeNote": "Se paga ahora y se descuenta de su pedido si lo hace en los próximos treinta días.",
+    "paymentsOff": "Por ahora los diseños no se pueden enviar ni pagar desde aquí. Descargue su boceto y mándeselo a Daysi por WhatsApp."
   },
   "premieres": {
     "title": "Estrenos",
@@ -314,6 +317,7 @@
     "cancelledTitle": "Pago cancelado.",
     "cancelledLead": "No se cobró nada y el pedido {reference} quedó cancelado. Vuelva a la colección cuando quiera.",
     "cancelledBookingLead": "No se cobró nada y la reserva {reference} quedó cancelada. Puede elegir otra hora cuando quiera.",
+    "cancelledDesignLead": "No se cobró nada y el diseño {reference} no se envió. Puede volver al estudio cuando quiera.",
     "backHome": "Volver al sitio",
     "secureNote": "Los datos de la tarjeta los maneja Stripe en su propia página segura. Este sitio nunca los ve."
   },
@@ -452,7 +456,8 @@
       "commission": "Pieza a medida",
       "appointment": "Cita",
       "contact": "Mensaje",
-      "premiere-signup": "Lista de estreno"
+      "premiere-signup": "Lista de estreno",
+      "design": "Diseño del taller"
     },
     "awaitingPayment": "Pago pendiente",
     "bankPending": "Pago en camino desde el banco",
@@ -602,6 +607,7 @@
     "retiredGroup": "{count, plural, =0 {Retirados} other {Retirados (#)}}",
     "retiredEmpty": "No hay nada retirado.",
     "statusLabel": "Estado",
+    "requestPhoto": "Foto de {reference}",
     "shown": "Visible",
     "hidden": "Oculto",
     "collectionNote": "{count, plural, one {# pieza está} other {# piezas están}} en el sitio ahora mismo. Los cambios entran al sitio cuando usted los confirma en la barra de abajo.",

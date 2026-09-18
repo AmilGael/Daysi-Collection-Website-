@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { Locale } from "@/i18n/routing";
 import { formatMoney } from "@/lib/money";
@@ -79,6 +80,22 @@ export function OfficeRequestList({
                 year: "numeric",
               }).format(new Date(record.submittedAt))}
             </time>
+            {/* The picture the client sent: a studio design's mockup, an
+                alteration's snapshot. The office route serves it only to
+                Daysi, and knows the request came from here by its Referer,
+                so the link must never be marked noreferrer. */}
+            {record.photoFile ? (
+              <a href={photoHref(record)} target="_blank" className="mt-1 block w-fit">
+                <Image
+                  src={photoHref(record)}
+                  alt={to("requestPhoto", { reference: record.reference })}
+                  unoptimized
+                  width={72}
+                  height={96}
+                  className="h-24 w-[4.5rem] border border-line object-cover"
+                />
+              </a>
+            ) : null}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -141,6 +158,10 @@ export function OfficeRequestList({
       })}
     </div>
   );
+}
+
+function photoHref(record: StoredRequest): string {
+  return `/api/office/photos/${encodeURIComponent(record.reference)}`;
 }
 
 function summarise(record: StoredRequest): string {

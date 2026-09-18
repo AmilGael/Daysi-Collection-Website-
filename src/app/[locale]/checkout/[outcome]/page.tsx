@@ -76,14 +76,21 @@ export default async function CheckoutOutcomePage({
             : "unknown";
   const note = state === "pending" ? t("bankNote") : state === "failed" ? null : t("secureNote");
 
-  // A booking deposit reaches this same cancelled page as an order's
-  // checkout, but "order {reference}" is wrong for a client who never
-  // bought a garment. The lead and the way back both follow the record's
-  // own kind; an unknown reference falls back to the order copy and home.
-  const cancelledBooking =
-    copy === "cancelled" && reference !== undefined && findRequest(reference)?.kind === "appointment";
-  const leadKey = cancelledBooking ? "cancelledBookingLead" : `${copy}Lead`;
-  const backHref = cancelledBooking ? "/appointments" : "/";
+  // A booking deposit and a studio design's fee reach this same cancelled
+  // page as an order's checkout, but "order {reference}" is wrong for a
+  // client who never bought a garment. The lead and the way back both follow
+  // the record's own kind; an unknown reference falls back to the order copy
+  // and home.
+  const cancelledKind =
+    copy === "cancelled" && reference !== undefined ? findRequest(reference)?.kind : undefined;
+  const cancelledBooking = cancelledKind === "appointment";
+  const cancelledDesign = cancelledKind === "design";
+  const leadKey = cancelledBooking
+    ? "cancelledBookingLead"
+    : cancelledDesign
+      ? "cancelledDesignLead"
+      : `${copy}Lead`;
+  const backHref = cancelledBooking ? "/appointments" : cancelledDesign ? "/design-studio" : "/";
 
   return (
     <div className="shell flex min-h-[60svh] items-center py-24">

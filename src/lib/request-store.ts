@@ -45,7 +45,14 @@ export type OrderPiece = {
   readonly madeToMeasure: boolean;
 };
 
-export type StoredRequestKind = "alteration" | "order" | "commission" | "appointment" | "contact" | "premiere-signup";
+export type StoredRequestKind =
+  | "alteration"
+  | "order"
+  | "commission"
+  | "appointment"
+  | "contact"
+  | "premiere-signup"
+  | "design";
 
 export const REQUEST_KINDS = [
   "alteration",
@@ -54,6 +61,7 @@ export const REQUEST_KINDS = [
   "appointment",
   "contact",
   "premiere-signup",
+  "design",
 ] as const satisfies readonly StoredRequestKind[];
 
 export type StoredRequest = {
@@ -161,6 +169,41 @@ export async function saveRequestPhoto(
   const filename = `${reference}.${extension}`;
   await writeFile(path.join(photoDirectory, filename), bytes, { mode: OWNER_ONLY_FILE });
   return filename;
+}
+
+/** Where a record's `photoFile` sits on disk. Only ever a name inside `photos`. */
+export function requestPhotoPath(photoFile: string): string {
+  return path.join(DATA_DIRECTORY, "photos", path.basename(photoFile));
+}
+
+/** The types `saveRequestPhoto` writes, by the extension it gives them. */
+const PHOTO_TYPES = {
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+} as const;
+
+/** `newReference(...)` plus one of those extensions: the only names `saveRequestPhoto` issues. */
+const ISSUED_PHOTO = /^([A-Z]+-[A-Z0-9]{8})\.(jpeg|png|webp)$/;
+
+/**
+ * The photo stored with a request — an alteration's snapshot, a design's
+ * mockup — or null. The office serves it by reference, so a reference off
+ * the network is what arrives here; it only ever selects a record, and the
+ * file is the one that record names, accepted only when it is the name
+ * `saveRequestPhoto` gave that very record. A traversal, a name the server
+ * did not issue, or another record's photo cannot match, so there is no
+ * separate "is it still inside the directory" check to get subtly wrong.
+ */
+export function resolveRequestPhoto(reference: string): { file: string; contentType: string } | null {
+  const photoFile = findRequest(reference)?.photoFile;
+  if (!photoFile) return null;
+  const match = ISSUED_PHOTO.exec(photoFile);
+  if (!match || match[1] !== reference) return null;
+  return {
+    file: requestPhotoPath(photoFile),
+    contentType: PHOTO_TYPES[match[2] as keyof typeof PHOTO_TYPES],
+  };
 }
 
 /** Synchronous for the reason given on `readRecords` in lib/records.ts. */

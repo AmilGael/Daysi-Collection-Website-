@@ -6,8 +6,10 @@ import {
   estimateAppointment,
   estimateCart,
   estimateCommission,
+  estimateDesign,
   estimateReadyMade,
 } from "./pricing";
+import { designFee } from "@/content";
 
 /**
  * These cover the promises the site makes out loud: that the published price is
@@ -197,6 +199,20 @@ describe("commissions", () => {
   });
 });
 
+describe("a design sent from the studio", () => {
+  it("is one untaxed service line of the design fee, paid in full now", () => {
+    const estimate = estimateDesign();
+
+    expect(designFee).toBe(2000);
+    expect(estimate.lines).toHaveLength(1);
+    expect(estimate.lines[0]).toMatchObject({ amount: designFee, taxBasis: "service" });
+    expect(estimate.salesTax).toBe(0);
+    expect(estimate.total).toBe(designFee);
+    expect(estimate.dueNow).toBe(estimate.total);
+    expect(estimate.dueOnCollection).toBe(0);
+  });
+});
+
 describe("every estimate", () => {
   it("adds up: the lines make the subtotal, and the split makes the total", () => {
     const estimates = [
@@ -204,6 +220,7 @@ describe("every estimate", () => {
       estimateAlteration({ alterationIds: ["resize", "sleeves"], rush: true }),
       estimateCommission({ categoryId: "dresses", fabricId: "medallon-print", customize: true }),
       estimateAppointment("consultation-60"),
+      estimateDesign(),
     ];
 
     for (const estimate of estimates) {

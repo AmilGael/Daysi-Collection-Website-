@@ -183,7 +183,10 @@
     "sendToDaysi": "Send this idea to Daysi",
     "disclaimer": "A mockup is a starting point for the conversation, not a promise of the finished piece. Print placement is decided on the table, with the cloth in hand.",
     "estimateFor": "A piece like this, in {fabric}, starts at {price}.",
-    "estimateFrom": "A piece like this, in {fabric}, is estimated from {price}. The exact price is agreed with Daysi before anything is cut."
+    "estimateFrom": "A piece like this, in {fabric}, is estimated from {price}. The exact price is agreed with Daysi before anything is cut.",
+    "sendFee": "Send and pay the {price} design fee",
+    "feeNote": "Paid now, and it comes off your order if you place one within the next thirty days.",
+    "paymentsOff": "Designs cannot be sent or paid for from here right now. Download your mockup and send it to Daysi on WhatsApp."
   },
   "premieres": {
     "title": "Premieres",
@@ -314,6 +317,7 @@
     "cancelledTitle": "Payment cancelled.",
     "cancelledLead": "Nothing was charged, and order {reference} has been cancelled. Come back to the collection whenever you like.",
     "cancelledBookingLead": "Nothing was charged and booking {reference} was cancelled. You can choose another time whenever you like.",
+    "cancelledDesignLead": "Nothing was charged and design {reference} was not sent. You can go back to the studio whenever you like.",
     "backHome": "Back to the site",
     "secureNote": "Card details are handled by Stripe on their own secure page. This site never sees them."
   },
@@ -452,7 +456,8 @@
       "commission": "Custom piece",
       "appointment": "Session",
       "contact": "Message",
-      "premiere-signup": "Premiere list"
+      "premiere-signup": "Premiere list",
+      "design": "Studio design"
     },
     "awaitingPayment": "Awaiting payment",
     "bankPending": "Bank payment on its way",
@@ -602,6 +607,7 @@
     "retiredGroup": "{count, plural, =0 {Retired} other {Retired (#)}}",
     "retiredEmpty": "Nothing is retired.",
     "statusLabel": "Status",
+    "requestPhoto": "Photo for {reference}",
     "shown": "Shown",
     "hidden": "Hidden",
     "collectionNote": "{count, plural, one {# piece is} other {# pieces are}} live on the site right now. Changes reach the site when you confirm them in the bar below.",

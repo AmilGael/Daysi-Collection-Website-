@@ -1,8 +1,9 @@
+import { readFileSync } from "node:fs";
 import { translate } from "@/content";
 import { emailEnabled, env } from "./env";
 import { formatMoney } from "./money";
 import { forNotification } from "./security";
-import { saveRequest, type StoredRequest } from "./request-store";
+import { requestPhotoPath, saveRequest, type StoredRequest } from "./request-store";
 import { whatsappLink } from "./whatsapp";
 
 /**
@@ -19,6 +20,7 @@ const KIND_LABELS: Record<StoredRequest["kind"], string> = {
   appointment: "Appointment booking",
   contact: "Message",
   "premiere-signup": "Premiere sign-up",
+  design: "Design request",
 };
 
 export function summarise(request: StoredRequest): string {
@@ -115,6 +117,9 @@ function subjectName(request: StoredRequest): string {
   return request.client.name || request.client.email;
 }
 
+/** A file sent with a message: its name, and its bytes as base64, as Resend takes them. */
+export type EmailAttachment = { readonly filename: string; readonly content: string };
+
 /**
  * The one place mail leaves this application. Never throws: a message that
  * could not be sent is logged, and the caller decides what that means for the
@@ -125,6 +130,7 @@ export async function sendEmail(message: {
   subject: string;
   text: string;
   replyTo?: string;
+  attachments?: readonly EmailAttachment[];
 }): Promise<boolean> {
   if (!emailEnabled) return false;
 
@@ -141,6 +147,7 @@ export async function sendEmail(message: {
         ...(message.replyTo ? { reply_to: message.replyTo } : {}),
         subject: message.subject,
         text: message.text,
+        ...(message.attachments?.length ? { attachments: message.attachments } : {}),
       }),
     });
 
@@ -155,6 +162,23 @@ export async function sendEmail(message: {
   }
 }
 
+/**
+ * The photo stored with a request, ready to travel with Daysi's email: a
+ * design's mockup is the whole of what the client sent, and an alteration's
+ * snapshot saves her asking for one. A file that cannot be read costs the
+ * attachment, never the message — she can still open the photo in the Hub.
+ */
+function photoAttachment(request: StoredRequest): EmailAttachment[] {
+  if (!request.photoFile) return [];
+  try {
+    const content = readFileSync(requestPhotoPath(request.photoFile)).toString("base64");
+    return [{ filename: request.photoFile, content }];
+  } catch (error) {
+    console.error(`[notify] Could not attach the photo for ${request.reference}`, error);
+    return [];
+  }
+}
+
 export async function notifyOwner(request: StoredRequest): Promise<void> {
   if (!emailEnabled) {
     console.info(`[notify] ${request.kind} ${request.reference} saved; email not configured.`);
@@ -166,6 +190,7 @@ export async function notifyOwner(request: StoredRequest): Promise<void> {
     replyTo: request.client.email,
     subject: `${subjectPrefix(request)}${KIND_LABELS[request.kind]} — ${subjectName(request)} (${request.reference})`,
     text: summarise(request),
+    attachments: photoAttachment(request),
   });
 }
 
@@ -219,11 +244,17 @@ export async function notifyClientPaymentFailed(request: StoredRequest): Promise
 
 /**
  * What comes next, in the client's own words: an appointment names the day
- * and the hour that was booked; everything else falls back to the reason the
- * estimate itself gives for what was charged now.
+ * and the hour that was booked; a studio design says Daysi will answer with
+ * a quote; everything else falls back to the reason the estimate itself
+ * gives for what was charged now.
  */
 function whatsNext(request: StoredRequest): string {
   const { locale } = request;
+  if (request.kind === "design") {
+    return locale === "es"
+      ? "Daysi revisa su diseño y le escribe con una cotización."
+      : "Daysi will look at your design and write to you with a quote.";
+  }
   if (request.kind === "appointment") {
     const date = request.details.date;
     const startTime = request.details.startTime;

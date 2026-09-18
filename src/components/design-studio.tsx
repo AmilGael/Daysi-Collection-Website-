@@ -1,13 +1,26 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { translate, type Fabric, type PriceListEntry } from "@/content";
+import { translate, type Cents, type Fabric, type PriceListEntry } from "@/content";
 import type { Silhouette } from "@/content/silhouettes";
 import { formatMoney } from "@/lib/money";
 import { drawMockup, MOCKUP_HEIGHT, MOCKUP_WIDTH } from "@/lib/mockup";
+import { whatsappLink } from "@/lib/whatsapp";
 import { Link, type Locale } from "@/i18n/routing";
-import { buttonClass } from "./ui";
+import {
+  BotTrap,
+  Checkbox,
+  Field,
+  FormError,
+  SubmitButton,
+  TextArea,
+  TextInput,
+  useRenderedAt,
+  useSubmit,
+  type SubmitState,
+} from "./form";
+import { buttonClass, ExternalButtonLink } from "./ui";
 
 const TRIM_COLORS = [
   { id: "ink", value: "#14110d" },
@@ -15,26 +28,46 @@ const TRIM_COLORS = [
   { id: "paper", value: "#fbf8f2" },
 ] as const;
 
+const BACKGROUND = "#f2ebdd";
+
 /**
  * The design studio: pick a shape, lay a cloth over it, and see roughly what
  * the piece would look like — the idea Daysi described as superimposing her
  * fabrics onto a drawing before anything is cut.
  *
- * It renders to a canvas so the result can be downloaded as a real image and
- * sent back to Daysi with a request.
+ * It renders to a canvas so the result can be downloaded as a real image, or
+ * sent to Daysi with the design fee: the picture travels with the request,
+ * and the client pays the fee on Stripe's page before it reaches her.
  */
 export function DesignStudio({
   silhouettes,
   fabrics,
   priceList,
+  fee,
+  paymentsEnabled,
 }: {
   silhouettes: readonly Silhouette[];
   fabrics: readonly Fabric[];
   priceList: readonly PriceListEntry[];
+  /** What sending a design costs, as `estimateDesign` charges it. */
+  fee: Cents;
+  paymentsEnabled: boolean;
 }) {
   const t = useTranslations("studio");
+  const tr = useTranslations("request");
+  const tc = useTranslations("common");
   const locale = useLocale() as Locale;
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const renderedAt = useRenderedAt();
+  const { state, submit } = useSubmit("/api/design-requests");
+
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [notes, setNotes] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [exportFailed, setExportFailed] = useState(false);
 
   const [silhouetteId, setSilhouetteId] = useState(silhouettes[0]?.id ?? "");
   const [fabricId, setFabricId] = useState(fabrics[0]?.id ?? "");
@@ -78,7 +111,7 @@ export function DesignStudio({
         fabric: swatch,
         printScale,
         trimColor,
-        background: "#f2ebdd",
+        background: BACKGROUND,
       });
     };
 
@@ -98,6 +131,65 @@ export function DesignStudio({
     link.href = canvas.toDataURL("image/png");
     link.click();
   }
+
+  /**
+   * The picture Daysi receives, drawn again at 600 × 820 on a canvas of its
+   * own. The one on screen is scaled up for a sharp display, which would
+   * quadruple the file for no gain in the email; this keeps the upload far
+   * under the server's image limit on any device.
+   */
+  async function exportMockup(): Promise<string> {
+    if (!silhouette || !fabric) throw new Error("Nothing to draw.");
+    const canvas = document.createElement("canvas");
+    canvas.width = MOCKUP_WIDTH;
+    canvas.height = MOCKUP_HEIGHT;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("No 2D context.");
+
+    const swatch = new Image();
+    swatch.src = fabric.swatchImage;
+    await swatch.decode();
+    drawMockup(context, { silhouette, fabric: swatch, printScale, trimColor, background: BACKGROUND });
+    return canvas.toDataURL("image/png");
+  }
+
+  async function send(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!silhouette || !fabric) return;
+
+    setExportFailed(false);
+    setPreparing(true);
+    const mockupDataUrl = await exportMockup().catch(() => null);
+    setPreparing(false);
+    if (!mockupDataUrl) {
+      setExportFailed(true);
+      return;
+    }
+
+    const result = await submit({
+      website: "",
+      renderedAt,
+      email,
+      name: name.trim() ? name : undefined,
+      phone: phone.trim() ? phone : undefined,
+      notes,
+      silhouetteId: silhouette.id,
+      fabricId: fabric.id,
+      trimColor,
+      printScale,
+      mockupDataUrl,
+      locale,
+      acceptedTerms: true,
+    });
+
+    // The design reaches Daysi once the fee is paid, so the client goes
+    // straight on to Stripe's page.
+    if (result?.checkoutUrl) window.location.assign(result.checkoutUrl);
+  }
+
+  const shownState: SubmitState = exportFailed
+    ? { status: "error", message: tc("somethingWentWrong") }
+    : state;
 
   if (!silhouette || !fabric) return null;
 
@@ -204,16 +296,105 @@ export function DesignStudio({
         ) : null}
 
         <div className="flex flex-wrap gap-3">
-          <button type="button" onClick={download} className={buttonClass({ size: "small" })}>
-            {t("download")}
-          </button>
-          <Link
-            href="/request?kind=commission"
+          <button
+            type="button"
+            onClick={download}
             className={buttonClass({ size: "small", tone: "outline" })}
           >
-            {t("sendToDaysi")}
-          </Link>
+            {t("download")}
+          </button>
         </div>
+
+        <section className="flex flex-col gap-5 border-t border-line pt-8">
+          <h2 className="text-heading">{t("sendToDaysi")}</h2>
+          {paymentsEnabled ? (
+            <form onSubmit={send} className="relative flex flex-col gap-5">
+              <BotTrap renderedAt={renderedAt} />
+              <Field label={tr("email")}>
+                {({ id }) => (
+                  <TextInput
+                    id={id}
+                    required
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                  />
+                )}
+              </Field>
+              <Field label={tr("name")} optional>
+                {({ id }) => (
+                  <TextInput
+                    id={id}
+                    autoComplete="name"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                  />
+                )}
+              </Field>
+              <Field label={tr("phone")} optional hint={tr("whatsappHint")}>
+                {({ id, describedBy }) => (
+                  <TextInput
+                    id={id}
+                    aria-describedby={describedBy}
+                    type="tel"
+                    autoComplete="tel"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                  />
+                )}
+              </Field>
+              <Field label={tr("notes")} optional>
+                {({ id }) => (
+                  <TextArea
+                    id={id}
+                    rows={3}
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                  />
+                )}
+              </Field>
+
+              <Checkbox checked={acceptedTerms} onChange={setAcceptedTerms}>
+                {tr.rich("terms", {
+                  link: (chunks) => (
+                    <Link href="/terms" className="link-underline">
+                      {chunks}
+                    </Link>
+                  ),
+                })}
+              </Checkbox>
+
+              <FormError state={shownState} />
+
+              {/* Held while the picture is drawn and once the payment page is
+                  on its way, so a second press cannot send the design, and
+                  its fee, twice. */}
+              <SubmitButton
+                state={state}
+                disabled={!acceptedTerms || preparing || state.status === "done"}
+              >
+                {t("sendFee", { price: formatMoney(fee, locale) })}
+              </SubmitButton>
+              <p className="text-[0.8125rem] leading-relaxed text-ink-faint">{t("feeNote")}</p>
+            </form>
+          ) : (
+            <>
+              <p className="text-[0.875rem] leading-relaxed text-ink-soft">{t("paymentsOff")}</p>
+              <ExternalButtonLink
+                href={whatsappLink(
+                  locale === "es"
+                    ? "Hola Daysi, le quiero mandar un diseño del taller."
+                    : "Hi Daysi, I'd like to send you a design from the studio.",
+                )}
+                size="small"
+                className="w-fit"
+              >
+                {tc("whatsapp")}
+              </ExternalButtonLink>
+            </>
+          )}
+        </section>
       </div>
 
       <figure className="flex flex-col gap-4">

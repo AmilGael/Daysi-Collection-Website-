@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { silhouettes } from "@/content/silhouettes";
 
 /**
  * One schema per form. Every route handler parses its body through the schema
@@ -117,6 +118,32 @@ export const appointmentSchema = botCheck.extend({
 });
 
 export type AppointmentBooking = z.infer<typeof appointmentSchema>;
+
+const silhouetteIds = silhouettes.map((silhouette) => silhouette.id) as [string, ...string[]];
+
+/**
+ * A sketch from the design studio, sent to Daysi with its fee. The client is
+ * a guest by the same rules as every billing form: the email is required, a
+ * name and a phone are welcome. The silhouettes are coded, so the enum is the
+ * check; the cloth is one Daysi may have added or retired, so whether it is
+ * on the wall today is asked in the route, and the picture is checked there
+ * for really being an image.
+ */
+export const designRequestSchema = botCheck.extend({
+  email,
+  name: name.optional().transform((value) => value ?? ""),
+  phone: phone.optional(),
+  notes: message.optional().default(""),
+  silhouetteId: z.enum(silhouetteIds),
+  fabricId: trimmed(60).min(1),
+  trimColor: z.string().regex(/^#[0-9a-f]{6}$/i),
+  printScale: z.number().min(0.5).max(2.2),
+  mockupDataUrl: z.string().max(6_000_000),
+  locale,
+  acceptedTerms: z.literal(true),
+});
+
+export type DesignRequest = z.infer<typeof designRequestSchema>;
 
 export const premiereSignupSchema = botCheck.extend({
   email,

@@ -1,7 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { officeDenial } from "./api-guard";
+import { officeDenial, ownerRequest } from "./api-guard";
+
+const viewer = vi.hoisted(() => ({ role: "owner" as string | null }));
+vi.mock("./auth/session", () => ({
+  currentViewer: vi.fn(async () => (viewer.role ? { role: viewer.role } : null)),
+}));
 
 /**
  * Every route under /api/office repeated the same three checks by hand: the
@@ -84,18 +89,53 @@ describe("the order the checks run in", () => {
   });
 });
 
+/**
+ * A route with a dynamic segment reads it off the second argument Next hands
+ * the handler. The guard stands in front of that handler, so it has to pass
+ * the argument on untouched, or the route behind it never learns which
+ * record it was asked for.
+ */
+describe("ownerRequest", () => {
+  const sameSite = () =>
+    new Request("http://localhost:3000/api/office/photos/DSN-1", {
+      headers: { origin: "http://localhost:3000", host: "localhost:3000" },
+    });
+
+  it("hands the route's context to the handler unchanged", async () => {
+    viewer.role = "owner";
+    const context = { params: Promise.resolve({ reference: "DSN-1" }) };
+    const handle = vi.fn(async () => new Response("ok"));
+
+    const response = await ownerRequest(handle)(sameSite(), context);
+
+    expect(response.status).toBe(200);
+    expect(handle).toHaveBeenCalledWith(expect.any(Request), context);
+  });
+
+  it("never reaches the handler for anyone but Daysi", async () => {
+    viewer.role = "client";
+    const handle = vi.fn(async () => new Response("ok"));
+
+    const response = await ownerRequest(handle)(sameSite(), { params: Promise.resolve({}) });
+
+    expect(response.status).toBe(404);
+    expect(handle).not.toHaveBeenCalled();
+  });
+});
+
 describe("the office routes", () => {
   const officeRoot = path.join(process.cwd(), "src/app/api/office");
-  const routes = fs
-    .readdirSync(officeRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => ({
-      name: entry.name,
-      source: fs.readFileSync(path.join(officeRoot, entry.name, "route.ts"), "utf8"),
+  // A route may sit under a dynamic segment (`photos/[reference]`), so every
+  // `route.ts` below the root is found, not just the first level.
+  const routes = (fs.readdirSync(officeRoot, { recursive: true }) as string[])
+    .filter((file) => path.basename(file) === "route.ts")
+    .map((file) => ({
+      name: path.dirname(file).split(path.sep).join("/"),
+      source: fs.readFileSync(path.join(officeRoot, file), "utf8"),
     }));
 
   it("has routes to check", () => {
-    expect(routes.map((route) => route.name).sort()).toEqual(["books", "uploads"]);
+    expect(routes.map((route) => route.name).sort()).toEqual(["books", "photos/[reference]", "uploads"]);
   });
 
   /**

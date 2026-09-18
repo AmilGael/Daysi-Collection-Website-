@@ -24,6 +24,7 @@ export default async function OrdersPage({
     "alteration",
     "commission",
     "appointment",
+    "design",
   ]);
 
   return (

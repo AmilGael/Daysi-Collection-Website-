@@ -30,6 +30,7 @@ export default async function AccountPage({
     "alteration",
     "commission",
     "appointment",
+    "design",
   ]);
   const recent = records.slice(0, 5);
 

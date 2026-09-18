@@ -277,6 +277,7 @@ export const workChangeSchema = z.discriminatedUnion("type", [
       "appointment",
       "contact",
       "premiere-signup",
+      "design",
     ]),
     reference: z.string().trim().min(1).max(40),
     status: z.enum(["new", "answered", "scheduled", "paid", "refunded", "closed"]),
