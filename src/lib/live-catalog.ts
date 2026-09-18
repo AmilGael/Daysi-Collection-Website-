@@ -119,6 +119,11 @@ export function applyOverrides(
 /**
  * Seed plus the garments Daysi has added, with her overrides applied to both.
  * A garment she edits twice is one garment: the newest record wins.
+ *
+ * Her own garments lead, the one she added last first: a piece she has just
+ * put up is the one the collection and the homepage should show. A garment
+ * keeps the place its first record gave it, so editing an older piece never
+ * moves it back to the front.
  */
 export function assembleStyles(
   seed: readonly GarmentStyle[],
@@ -130,8 +135,8 @@ export function assembleStyles(
   const newest = new Map(added.map((style) => [style.id, style]));
   const seeded = new Set(seed.map((style) => style.id));
   const catalog = [
+    ...[...newest.values()].filter((style) => !seeded.has(style.id)).reverse(),
     ...seed.map((style) => newest.get(style.id) ?? style),
-    ...[...newest.values()].filter((style) => !seeded.has(style.id)),
   ];
   // Words first: applyOverrides builds alt text for added photos out of the name.
   return applyOverrides(applyStyleText(catalog, texts), overrides).filter(

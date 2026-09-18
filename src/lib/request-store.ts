@@ -107,6 +107,18 @@ export function owesNothing(status: StoredRequest["status"]): boolean {
   return status === "closed" || status === "refunded";
 }
 
+/**
+ * A card page the client opened and never paid: still open, or closed by
+ * Stripe when it ran out (`markExpired` is the only writer of a Stripe
+ * "closed"). Daysi was never told about it and it is not an order, so her
+ * office leaves it out. A bank payment on its way, a refusal, and any row
+ * she has touched herself are all something that happened, and stay.
+ */
+export function unfinishedCheckout(record: StoredRequest): boolean {
+  if (record.awaitingPayment === true && record.source === undefined) return true;
+  return record.status === "closed" && record.source === "stripe";
+}
+
 async function ensureDirectory(directory: string): Promise<void> {
   await mkdir(directory, { recursive: true, mode: OWNER_ONLY_DIRECTORY });
 }
