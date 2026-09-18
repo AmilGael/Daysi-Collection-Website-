@@ -10,7 +10,7 @@ import {
   translate,
 } from "@/content";
 import { liveStyles } from "@/lib/live-catalog";
-import { liveFindPremiere } from "@/lib/live-premieres";
+import { livePremieres } from "@/lib/live-premieres";
 import { liveFindFabric, priceFor, withPrices } from "@/lib/live-pricing";
 import { promotedPrice, promotionBadge } from "@/lib/promotions";
 import { routing, type Locale } from "@/i18n/routing";
@@ -68,7 +68,10 @@ export default async function StylePage({
   const shown = promotedPrice(price);
   const category = findCategory(style.categoryId);
   const fabric = liveFindFabric(price.fabricId);
-  const premiere = style.premiereId ? liveFindPremiere(style.premiereId) : undefined;
+  // From the live checklist, not the garment's own coded premiere field:
+  // adding a garment to a season from Estrenos stages a `premiere-styles`
+  // change, never a garment's own record, so only the checklist stays current.
+  const premiere = livePremieres().find((candidate) => candidate.styleIds.includes(style.id));
 
   const related = withPrices(
     liveStyles()

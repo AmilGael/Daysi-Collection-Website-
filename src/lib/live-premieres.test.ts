@@ -130,6 +130,29 @@ describe("the live premieres", () => {
     expect(liveFindPremiere("est-a1b2c3d4")).toBeUndefined();
   });
 
+  it("livePremieres reflects a garment ticked onto a season's checklist, by that season's own styleIds", async () => {
+    // The other half of the "Parte del estreno" tag fix
+    // (`collection/[slug]/page.test.ts`): the page finds a garment's season
+    // by scanning `livePremieres()` for one whose `styleIds` includes it, so
+    // this layer has to actually carry a checklist edit through.
+    const { saveAddedPremiere, livePremieres } = await import("./live-premieres");
+
+    const added: AddedPremiere = {
+      ...fixture("est-checklist", "2026-12-01", { styleIds: [] }),
+      added: true,
+      addedAt: new Date().toISOString(),
+    };
+    await saveAddedPremiere(added);
+    // Not on either seeded season's checklist (otono-2026 has only "sirena";
+    // verano-2026 has the other five), so this is a clean starting point.
+    expect(livePremieres().find((premiere) => premiere.styleIds.includes("yurumein"))).toBeUndefined();
+
+    const { savePremiereOverride } = await import("./live-premieres");
+    await savePremiereOverride({ premiereId: "est-checklist", styleIds: ["yurumein"] });
+
+    expect(livePremieres().find((premiere) => premiere.styleIds.includes("yurumein"))?.id).toBe("est-checklist");
+  });
+
   it("manageablePremieres marks a season she added and a season she retired, without dropping either", async () => {
     const { saveAddedPremiere, manageablePremieres } = await import("./live-premieres");
     const { setRetired } = await import("./retired");
