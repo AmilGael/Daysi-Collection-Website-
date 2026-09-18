@@ -52,12 +52,13 @@ const HOLD_GRACE_MINUTES = 15;
 const BANK_SETTLEMENT_DAYS = 7;
 
 /**
- * An unpaid booking older than this no longer holds its slot. A deposit the
+ * An unpaid booking older than this no longer holds its slot, and an unpaid
+ * cart no longer holds its pieces (see `stock.ts`). A deposit the
  * bank is still sending (`awaitingPayment: "bank"`) is a payment made, not a
  * page abandoned, so it keeps the hour while the bank could still answer; a
  * deposit the bank refused holds nothing at all.
  */
-function holdExpired(appointment: StoredRequest, now: Date): boolean {
+export function holdExpired(appointment: StoredRequest, now: Date): boolean {
   // The refusal is read before the status, which it may have carried forward.
   if (appointment.paymentFailed) return true;
   if (appointment.status === "paid") return false;

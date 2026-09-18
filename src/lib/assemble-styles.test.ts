@@ -153,3 +153,49 @@ describe("assembleStyles with text overrides", () => {
     expect(added!.alt.es).toContain("Nombre corregido");
   });
 });
+
+describe("counted pieces per size", () => {
+  const counted = "2026-09-20T12:00:00.000Z";
+  const sizeOf = (result: GarmentStyle[], sizeId: string) =>
+    result[0]?.sizes.find((size) => size.sizeId === sizeId);
+
+  it("gives a counted size its number, and says it is ready while any are left", () => {
+    const result = assembleStyles([style("a")], [], [override({ stock: { s: 2, m: 0 }, countedAt: { s: counted, m: counted } })]);
+    expect(sizeOf(result, "s")).toEqual({ sizeId: "s", inStock: true, count: 2 });
+    expect(sizeOf(result, "m")).toEqual({ sizeId: "m", inStock: false, count: 0 });
+    expect(sizeOf(result, "l")).toEqual({ sizeId: "l", inStock: true });
+  });
+
+  it("takes off what has sold since she counted and what is held in a checkout", () => {
+    const result = assembleStyles(
+      [style("a")],
+      [],
+      [override({ stock: { s: 3 }, countedAt: { s: counted } })],
+      new Set(),
+      [],
+      [
+        { styleId: "a", sizeId: "s", quantity: 1, soldAt: "2026-09-20T13:00:00.000Z" },
+        { styleId: "a", sizeId: "s", quantity: 1 },
+        { styleId: "a", sizeId: "s", quantity: 1, soldAt: "2026-09-20T11:00:00.000Z" },
+      ],
+    );
+    expect(sizeOf(result, "s")).toEqual({ sizeId: "s", inStock: true, count: 1 });
+  });
+
+  it("says a size is not ready once the last piece has gone", () => {
+    const result = assembleStyles(
+      [style("a")],
+      [],
+      [override({ stock: { s: 1 }, countedAt: { s: counted } })],
+      new Set(),
+      [],
+      [{ styleId: "a", sizeId: "s", quantity: 1, soldAt: "2026-09-20T13:00:00.000Z" }],
+    );
+    expect(sizeOf(result, "s")).toEqual({ sizeId: "s", inStock: false, count: 0 });
+  });
+
+  it("leaves a size switched on or off, as before counting, without a number", () => {
+    const result = assembleStyles([style("a")], [], [override({ stock: { s: false } })]);
+    expect(sizeOf(result, "s")).toEqual({ sizeId: "s", inStock: false });
+  });
+});

@@ -33,6 +33,18 @@ const DATA_DIRECTORY = env.dataDirectory;
 const OWNER_ONLY_DIRECTORY = 0o700;
 const OWNER_ONLY_FILE = 0o600;
 
+/**
+ * One line of a cart order, as the stock reads it. Written by the cart
+ * checkout only: an enquiry sold nothing, and an order from before this
+ * existed has none, so neither takes anything off the rack.
+ */
+export type OrderPiece = {
+  readonly styleId: string;
+  readonly sizeId: "s" | "m" | "l";
+  readonly quantity: number;
+  readonly madeToMeasure: boolean;
+};
+
 export type StoredRequestKind = "alteration" | "order" | "commission" | "appointment" | "contact" | "premiere-signup";
 
 export const REQUEST_KINDS = [
@@ -63,6 +75,8 @@ export type StoredRequest = {
   };
   readonly details: Readonly<Record<string, string | number | boolean | readonly string[]>>;
   readonly estimate?: Estimate;
+  /** What a cart order took, garment by size; see `OrderPiece`. */
+  readonly pieces?: readonly OrderPiece[];
   readonly photoFile?: string;
   /**
    * Who appended this line when it was not the client: the office changing a
