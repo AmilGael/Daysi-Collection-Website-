@@ -68,6 +68,18 @@ export default async function PricesPage({
     <>
       <PageHeader title={t("title")} lead={t("lead")} />
 
+      {/* How to read the lists, then what the listed price covers: a visitor
+          reading "Vestidos" and then "Algodón wax" needs telling that the
+          second is the cloth, and that a lining or a rush is agreed apart. */}
+      <section className="shell pb-14">
+        <div className="flex max-w-3xl flex-col gap-5">
+          <p className="leading-relaxed text-ink-soft">{t("howToRead")}</p>
+          <p className="border-l-2 border-marigold pl-4 text-[0.9375rem] leading-relaxed text-ink-soft">
+            {t("variesNote")}
+          </p>
+        </div>
+      </section>
+
       <section className="shell grid gap-x-16 gap-y-14 pb-8 md:grid-cols-2">
         {groups.map((group) => (
           <div key={group.category.id} className="flex flex-col gap-4">
@@ -97,35 +109,46 @@ export default async function PricesPage({
               </div>
             </div>
 
-            <dl className="flex flex-col border-t border-ink">
-              {group.rows.map((row) => (
-                <div
-                  key={row.id}
-                  className="flex items-center justify-between gap-6 border-b border-line py-2.5"
-                >
-                  <dt className="flex items-center gap-3 text-[0.9375rem] text-ink-soft">
-                    {row.swatch ? (
-                      <span className="relative block h-9 w-9 shrink-0 overflow-hidden rounded-[2px]">
-                        {/* Decorative: the row already names the cloth. */}
-                        <Image src={row.swatch} alt="" fill sizes="36px" className="object-cover" />
-                      </span>
-                    ) : null}
-                    {translate(row.fabric, language)}
-                  </dt>
-                  <dd className="shrink-0 text-[0.9375rem] tabular-nums">
-                    {formatMoney(row.price, language)}
+            <div>
+              {/* Names the columns, so the rows read as cloths of this garment.
+                  Outside the list: a dl holds only its terms and descriptions. */}
+              <div
+                aria-hidden
+                className="flex items-baseline justify-between gap-6 border-y border-t-ink border-b-line py-2 text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-ink-faint"
+              >
+                <span>{t("tableFabric")}</span>
+                <span>{t("tablePrice")}</span>
+              </div>
+              <dl className="flex flex-col">
+                {group.rows.map((row) => (
+                  <div
+                    key={row.id}
+                    className="flex items-center justify-between gap-6 border-b border-line py-2.5"
+                  >
+                    <dt className="flex items-center gap-3 text-[0.9375rem] text-ink-soft">
+                      {row.swatch ? (
+                        <span className="relative block h-9 w-9 shrink-0 overflow-hidden rounded-[2px]">
+                          {/* Decorative: the row already names the cloth. */}
+                          <Image src={row.swatch} alt="" fill sizes="36px" className="object-cover" />
+                        </span>
+                      ) : null}
+                      {translate(row.fabric, language)}
+                    </dt>
+                    <dd className="shrink-0 text-[0.9375rem] tabular-nums">
+                      {formatMoney(row.price, language)}
+                    </dd>
+                  </div>
+                ))}
+                {/* Said once per garment rather than repeated on every row: the
+                    made-to-measure charge is set per category, not per cloth. */}
+                <div className="flex items-baseline justify-between gap-6 py-3">
+                  <dt className="text-[0.8125rem] text-ink-faint">{t("tableCustom")}</dt>
+                  <dd className="shrink-0 text-[0.8125rem] tabular-nums text-ink-faint">
+                    + {formatMoney(group.rows[0]?.extra ?? 0, language)}
                   </dd>
                 </div>
-              ))}
-              {/* Said once per garment rather than repeated on every row: the
-                  made-to-measure charge is set per category, not per cloth. */}
-              <div className="flex items-baseline justify-between gap-6 py-3">
-                <dt className="text-[0.8125rem] text-ink-faint">{t("tableCustom")}</dt>
-                <dd className="shrink-0 text-[0.8125rem] tabular-nums text-ink-faint">
-                  + {formatMoney(group.rows[0]?.extra ?? 0, language)}
-                </dd>
-              </div>
-            </dl>
+              </dl>
+            </div>
           </div>
         ))}
       </section>

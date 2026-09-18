@@ -244,6 +244,23 @@
     }
   }
 
+  /**
+   * A row that starts where .shell's content starts and runs off the right
+   * edge, for a strip the eye should read as continuing. The percentage is
+   * the section's own width, so the page's scrollbar never shifts it.
+   */
+  .bleed-row {
+    --bleed: max(1.5rem, calc((100% - 84rem) / 2 + 1.5rem));
+    padding-inline: var(--bleed);
+    scroll-padding-inline: var(--bleed);
+  }
+
+  @media (min-width: 768px) {
+    .bleed-row {
+      --bleed: max(3rem, calc((100% - 84rem) / 2 + 3rem));
+    }
+  }
+
   .rule {
     border-top: 1px solid var(--color-line);
   }

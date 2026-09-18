@@ -64,7 +64,7 @@
     "plateBasketCaption": "Frutera, con la canasta del mercado",
     "trust": {
       "one": "Trabajando desde 2008",
-      "two": "Precios fijos, sin regateo",
+      "two": "Precios publicados, sin regateo",
       "three": "Arreglos listos en una semana",
       "four": "Español e inglés",
       "five": "Hecho a mano en el Bronx"
@@ -78,8 +78,9 @@
     "collectionTitle": "La colección",
     "collectionLead": "Series cortas, precios publicados, tallas de S a L.",
     "collectionLink": "Ver todas las piezas",
+    "stripLabel": "Lo más reciente del taller",
     "pricesTitle": "El precio es el precio.",
-    "pricesLead": "Los precios se fijan una sola vez, con el costo de la tela ya incluido, y no se negocian. Eso es lo que protege el trabajo y lo que lo hace justo para todo el que entra por la puerta.",
+    "pricesLead": "Los precios se publican una sola vez, con el costo de la tela ya incluido, y no se negocian; lo que una pieza pida de más se acuerda con usted antes de cortar. Eso es lo que protege el trabajo y lo que lo hace justo para todo el que entra por la puerta.",
     "pricesLink": "Ver la lista completa",
     "alterationsTitle": "Ese arreglo que lleva meses posponiendo.",
     "alterationsLead": "Ruedos, cinturas, mangas, cierres y cambios de talla, cada uno con su precio publicado. Mande una foto y reciba respuesta, sin tener que llamar.",
@@ -96,7 +97,7 @@
   },
   "collection": {
     "title": "La colección",
-    "lead": "Filtre por diseño y por talla. Cada precio que ve es el precio fijo, y cada pieza se puede hacer a su medida.",
+    "lead": "Filtre por diseño y por talla. Cada precio que ve es el precio publicado, y cada pieza se puede hacer a su medida.",
     "filterDesign": "Diseño",
     "filterSize": "Talla",
     "all": "Todo",
@@ -128,7 +129,8 @@
   },
   "alterations": {
     "title": "Arreglos",
-    "lead": "La lista publicada. Nada de esto necesita estimado: esto es lo que cuesta.",
+    "lead": "La lista publicada: esto es lo que cuesta cada arreglo.",
+    "variesNote": "Si al ver la prenda hace falta más trabajo del que se veía, Daysi se lo dice y usted lo aprueba antes de empezar; esa diferencia se paga al recoger.",
     "tableService": "Arreglo",
     "tablePrice": "Precio",
     "tableTurnaround": "De vuelta en",
@@ -140,12 +142,14 @@
   },
   "prices": {
     "title": "Precios",
-    "lead": "Una sola lista alimenta todo el sitio. Los precios se fijan por prenda y por tela, con el costo del material ya incluido, y son fijos.",
-    "why": "Por qué los precios no se mueven",
+    "lead": "Una sola lista alimenta todo el sitio. Los precios se fijan por prenda y por tela, con el costo del material ya incluido.",
+    "howToRead": "Cada prenda tiene un precio según la tela: busque la prenda y luego la tela. Ese es el precio de la pieza lista; hecha a su medida suma el cargo al final de cada lista.",
+    "variesNote": "El precio de la lista es el de la pieza tal como se muestra. Un forro, trabajo adicional o una fecha urgente pueden subirlo: Daysi se lo dice y usted lo aprueba antes de cortar, y esa diferencia se paga aparte, al recoger. Lo que paga en el sitio es siempre el total que ve.",
+    "why": "Por qué el precio no cambia según quién lo pide",
     "whyBody": "Un precio que cambia según el cliente es un precio que castiga a quien menos pide. Fijarlo una vez, en público, con un margen para el costo de la tela, es lo que mantiene el trabajo en pie y lo que hace que todos paguen igual.",
     "tableGarment": "Prenda",
     "tableFabric": "Tela",
-    "tablePrice": "Precio fijo",
+    "tablePrice": "Precio",
     "tableCustom": "A la medida",
     "estimateTitle": "Arme un estimado",
     "estimateLead": "Escoja lo que necesita y vea exactamente qué debe pagar, y cuándo, antes de comprometerse a nada.",
@@ -325,7 +329,7 @@
       },
       "prices": {
         "title": "3. Precios",
-        "body": "Los precios publicados en este sitio son fijos y no se negocian. Incluyen el costo de la tela a los valores vigentes cuando se fijaron. Un estimado por escrito vale treinta días. Si el trabajo que usted pide cambia después de darle un estimado, se emite un estimado nuevo antes de continuar: el precio nunca cambia sin que usted lo vea primero."
+        "body": "Los precios publicados en este sitio no se negocian. Incluyen el costo de la tela a los valores vigentes cuando se fijaron. El precio de la lista es el de la pieza tal como se muestra: un forro, trabajo adicional o una fecha urgente pueden subirlo, y esa diferencia se le dice y usted la aprueba antes de empezar, y se paga al recoger. Un estimado por escrito vale treinta días. Si el trabajo que usted pide cambia después de darle un estimado, se emite un estimado nuevo antes de continuar: el precio nunca cambia sin que usted lo vea primero."
       },
       "deposits": {
         "title": "4. Depósitos y pagos",
@@ -460,7 +464,7 @@
   },
   "cart": {
     "title": "Su carrito",
-    "lead": "Los precios son los precios fijos publicados. No se cobra nada hasta que usted confirme.",
+    "lead": "Los precios son los precios publicados. No se cobra nada hasta que usted confirme.",
     "empty": "Su carrito está vacío.",
     "browse": "Ver la colección",
     "quantity": "Cantidad",
