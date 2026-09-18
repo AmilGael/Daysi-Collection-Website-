@@ -2,6 +2,7 @@
 
 import { premieres, type Premiere } from "@/content";
 import { ChangeRefused, applyEach, ownerAction } from "@/lib/action-guard";
+import { translationEnabled } from "@/lib/env";
 import { manageableStyles } from "@/lib/live-catalog";
 import {
   addedPremieres,
@@ -166,7 +167,10 @@ export const applyPremiereChanges = ownerAction(
           // would otherwise get is translated. A field sent back exactly as
           // it was seeded, added, or saved at any earlier point — most
           // often an undo — reuses that pairing's English instead of a
-          // fresh call copying the Spanish over good English.
+          // fresh call copying the Spanish over good English. A pairing
+          // whose English is only a copy of the Spanish — saved with no key
+          // present — is the one exception: once a key arrives, that copy
+          // is translated for real rather than followed forever.
           const versions = premiereOverrideVersions(change.premiereId);
           const toTranslate: Record<string, string> = {};
           const reused: Partial<Record<Field, { es: string; en: string }>> = {};
@@ -174,7 +178,7 @@ export const applyPremiereChanges = ownerAction(
             const value = change[field];
             if (value === undefined) continue;
             const known = knownPairings(field, seeded, versions).findLast((pair) => pair.es === value);
-            if (known) reused[field] = known;
+            if (known && !(translationEnabled && known.en === known.es)) reused[field] = known;
             else toTranslate[field] = value;
           }
           const translated =

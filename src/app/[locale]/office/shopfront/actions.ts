@@ -2,6 +2,7 @@
 
 import type { Localized } from "@/content";
 import { ChangeRefused, applyEach, ownerAction } from "@/lib/action-guard";
+import { translationEnabled } from "@/lib/env";
 import { manageableStyles, saveNotice } from "@/lib/live-catalog";
 import { manageablePromotions, promotionVersions, savePromotion } from "@/lib/live-promotions";
 import { LEAST_AMOUNT, MOST_PERCENT } from "@/lib/promotions";
@@ -16,10 +17,14 @@ import { translateToEnglish, withEnglish } from "@/lib/translate";
  * same Spanish before (a switch turned off, an undo), that line's English
  * comes back with it rather than a fresh translation; otherwise the English
  * is written now, or copied from the Spanish when there is none to be had.
+ *
+ * A pairing whose English is only a copy of the Spanish — saved with no key
+ * present — is not reused once a key arrives: that copy would otherwise
+ * follow the label forever, since nothing else ever asks for it again.
  */
 async function labelFor(id: string | undefined, spanish: string): Promise<Localized> {
   const known = id ? promotionVersions(id).findLast((version) => version.label.es === spanish) : undefined;
-  if (known) return known.label;
+  if (known && !(translationEnabled && known.label.en === known.label.es)) return known.label;
   return withEnglish({ label: spanish }, await translateToEnglish({ label: spanish }, "promotion")).label!;
 }
 
