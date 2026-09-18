@@ -10,7 +10,8 @@ import { buttonClass } from "@/components/ui";
  * Under 640 px it fills the screen; above, it is a panel on the right.
  * Either way it sits at z-50: above the page and the sticky site header
  * (z-40), and below the confirm bar (z-[60]), and leaves the bar's height
- * free at its foot, so Confirmar cambios is always there and always
+ * free at its foot via the shared `--office-bar` custom property (see
+ * `globals.css`), so Confirmar cambios is always there and always
  * tappable (design, Amendment 4 §2). Every control inside stages into the
  * tab's draft, so closing loses nothing: Listo, Escape, the backdrop and
  * the phone's back gesture all just close.
@@ -82,7 +83,7 @@ export function Sheet({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="absolute inset-x-0 top-0 bottom-16 flex flex-col bg-paper shadow-xl sm:top-0 sm:left-auto sm:right-0 sm:w-[28rem] sm:border-l sm:border-line"
+        className="absolute inset-x-0 top-0 bottom-[var(--office-bar)] flex flex-col bg-paper shadow-xl sm:top-0 sm:left-auto sm:right-0 sm:w-[28rem] sm:border-l sm:border-line"
       >
         <header className="flex items-center justify-between gap-4 border-b border-line px-5 py-3">
           <h2 className="min-w-0 truncate font-display text-[1.25rem]">{title}</h2>

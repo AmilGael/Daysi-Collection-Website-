@@ -14,8 +14,28 @@ const source = readFileSync(
   path.join(process.cwd(), "src/components/office/confirm-bar.tsx"),
   "utf8",
 );
+const sheetSource = readFileSync(
+  path.join(process.cwd(), "src/components/office/sheet.tsx"),
+  "utf8",
+);
+const globalsSource = readFileSync(
+  path.join(process.cwd(), "src/app/globals.css"),
+  "utf8",
+);
 
 const officeMessages = (bundle: { office: object }) => bundle.office as Record<string, string>;
+
+/**
+ * Only the class strings, not the whole file: a docstring is free to say
+ * "sticky" about something else (the site header genuinely is), so the
+ * "not sticky" check below reads just the className attributes rather than
+ * scanning every line as prose.
+ */
+function classNamesIn(fileSource: string): string {
+  return [...fileSource.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)]
+    .map(([, plain, template]) => plain ?? template ?? "")
+    .join(" ");
+}
 
 describe("the confirm bar", () => {
   it("never leaves the page", () => {
@@ -42,11 +62,33 @@ describe("the confirm bar", () => {
    * with its own `.shell` row inside so the content still lines up.
    */
   it("is a fixed, full-width bar, not a sticky one clipped by the shell", () => {
-    expect(source).not.toContain("sticky");
+    expect(classNamesIn(source)).not.toContain("sticky");
     expect(source).toContain("fixed inset-x-0 bottom-0");
     expect(source).toContain("bg-paper");
     expect(source).not.toContain("bg-paper/95");
     expect(source).toContain("shell");
     expect(source).toContain("z-[60]");
+  });
+
+  /**
+   * At 375px the status text and two uppercase buttons don't fit on one
+   * line ("5 cambios sin confirmar" beside Descartar and Confirmar
+   * overflows), so below 640px they stack into two rows inside one fixed
+   * height instead of a `min-h` that lets the bar grow past what the sheet
+   * (sheet.tsx) reserves for it underneath.
+   */
+  it("holds one fixed height on every width, so it never overlaps the sheet", () => {
+    expect(source).toContain("h-[var(--office-bar)]");
+    expect(source).toContain("truncate");
+    expect(source).toContain("whitespace-nowrap");
+    expect(sheetSource).toContain("bottom-[var(--office-bar)]");
+    expect(sheetSource).not.toContain("bottom-16");
+    expect(globalsSource).toContain("--office-bar: 6rem");
+    expect(globalsSource).toContain("--office-bar: 4rem");
+  });
+
+  it("labels the region in both languages", () => {
+    expect(officeMessages(es).confirmBarLabel).toBe("Cambios");
+    expect(officeMessages(en).confirmBarLabel).toBe("Changes");
   });
 });

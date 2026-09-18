@@ -76,6 +76,22 @@
   --default-transition-duration: 150ms;
 }
 
+/**
+ * The office confirm bar's fixed height, read by both the bar itself
+ * (`confirm-bar.tsx`) and the sheet's bottom offset (`sheet.tsx`), so the
+ * sheet always stops exactly where the bar begins, at every width. Taller
+ * under 640px, where the bar's text and buttons stack into two rows.
+ */
+:root {
+  --office-bar: 6rem;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --office-bar: 4rem;
+  }
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;

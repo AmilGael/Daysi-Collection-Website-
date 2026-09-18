@@ -22,6 +22,16 @@ export function ErrorText({ code, count }: { code: string; count?: number }) {
  * bar on every tab, regardless of which flex parent staged it. The `.shell`
  * row inside keeps its content lined up with the rest of the page.
  *
+ * Its height is the `--office-bar` custom property (`globals.css`), which
+ * `sheet.tsx` reads too, so the sheet always stops exactly where the bar
+ * begins. Under 640 px the status text and the buttons don't fit on one
+ * line — "5 cambios sin confirmar" beside two uppercase buttons overflows a
+ * phone width — so below that breakpoint they stack into two rows inside
+ * that same fixed height: the text truncates to one line, and the buttons
+ * split the second row evenly (just Confirmar, full width, while idle).
+ * From 640 px up they sit on one row, text on the left, buttons on the
+ * right.
+ *
  * It sits at z-[60]: above the sheet (z-50), which is above the site header
  * that pins to the top (z-40), so Confirmar cambios is tappable whether a
  * sheet is open or not.
@@ -48,22 +58,27 @@ export function ConfirmBar({
       aria-label={t("confirmBarLabel")}
       className="fixed inset-x-0 bottom-0 z-[60] border-t border-line bg-paper shadow-[0_-12px_32px_-20px_rgb(20_17_13/0.35)]"
     >
-      <div className="shell flex min-h-16 items-center justify-between gap-4 py-3">
-        <div>
-          <p aria-live="polite" className={`text-sm font-semibold ${idle ? "text-ink-faint" : ""}`}>
-            {idle ? t("noChanges") : t("changesPending", { count })}
-          </p>
+      <div className="shell flex h-[var(--office-bar)] flex-col justify-center gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p
+          aria-live="polite"
+          className={`min-w-0 truncate text-sm font-semibold sm:flex-1 ${idle ? "text-ink-faint" : ""}`}
+        >
+          {idle ? t("noChanges") : t("changesPending", { count })}
           {status === "failed" && error ? (
-            <p className="mt-1 text-[0.8125rem] text-ink"><ErrorText code={error} /></p>
+            <span className="font-normal text-ink"> · <ErrorText code={error} /></span>
           ) : null}
-        </div>
+        </p>
         <div className="flex items-center gap-3">
           {idle ? null : (
             <button
               type="button"
               onClick={onDiscard}
               disabled={status === "confirming"}
-              className={buttonClass({ tone: "outline", size: "small" })}
+              className={buttonClass({
+                tone: "outline",
+                size: "small",
+                className: "flex-1 whitespace-nowrap sm:flex-none",
+              })}
             >
               {t("discardChanges")}
             </button>
@@ -72,7 +87,11 @@ export function ConfirmBar({
             type="button"
             onClick={onConfirm}
             disabled={idle || status === "confirming"}
-            className={buttonClass({ tone: "solid", size: "small" })}
+            className={buttonClass({
+              tone: "solid",
+              size: "small",
+              className: "flex-1 whitespace-nowrap sm:flex-none",
+            })}
           >
             {status === "confirming" ? t("confirming") : t("confirmChanges")}
           </button>
