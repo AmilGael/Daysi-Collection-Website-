@@ -128,8 +128,11 @@ export function helperSystem(): { manual: string; state: string } {
  * can still hand this an earlier assistant turn with nothing before it — the
  * question that opened it never landed — so any leading assistant turns are
  * dropped rather than sent.
+ *
+ * Exported because the visitor-facing helper (`site-helper.ts`) rolls its
+ * thread back the same way and needs the same fix.
  */
-function dropLeadingAssistant(history: readonly HelperTurn[]): readonly HelperTurn[] {
+export function dropLeadingAssistant(history: readonly HelperTurn[]): readonly HelperTurn[] {
   const start = history.findIndex((turn) => turn.role !== "assistant");
   return start === -1 ? [] : history.slice(start);
 }

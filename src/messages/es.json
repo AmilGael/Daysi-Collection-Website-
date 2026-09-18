@@ -578,6 +578,10 @@
     "promoPercentRange": "Escriba un porcentaje entero de 1 a 90.",
     "promoAmountRange": "Escriba una cantidad de $1 a $5,000.",
     "promoDatesOrder": "La fecha final tiene que ser el mismo día que la inicial o después.",
+    "helperTitle": "El asistente para clientes",
+    "helperLead": "El botón «¿Preguntas?» que ven sus visitantes en el sitio, y que contesta desde su lista de precios, sus arreglos, sus citas, su horario y sus términos. Nunca toma pedidos ni promete fechas.",
+    "helperVisibleLabel": "Asistente para clientes",
+    "helperNeedsKey": "Necesita la clave de Anthropic para activarse.",
     "updateFailed": "Ese cambio no se guardó. Intente una vez más.",
     "pendingMark": "pendiente",
     "textsEdit": "Editar textos",
@@ -802,5 +806,19 @@
       "press": "Prensa",
       "workroom": "En el taller"
     }
+  },
+  "helper": {
+    "button": "¿Preguntas?",
+    "title": "¿Preguntas?",
+    "close": "Cerrar",
+    "suggestPrice": "¿Cuánto cuesta un vestido a medida?",
+    "suggestAlteration": "¿Cuánto cuesta un ruedo de pantalón?",
+    "suggestSession": "¿Cómo reservo una cita?",
+    "questionLabel": "Su pregunta",
+    "ask": "Preguntar",
+    "asking": "Preguntando…",
+    "error": "No pude responder. Escríbanos por WhatsApp.",
+    "whatsapp": "Escribir por WhatsApp",
+    "whatsappMessage": "Hola, tengo una pregunta sobre Daysi Collection."
   }
 }

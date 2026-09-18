@@ -196,6 +196,7 @@ describe.each([
     shopfrontChangeSchema,
     { type: "promotion", key: "promotion:new", label: "Venta de otoño", kind: "percent", value: 15, scope: { type: "all" }, active: true },
   ],
+  ["shopfront helper", shopfrontChangeSchema, { type: "helper", key: "helper:site", visible: false }],
   ["shopfront retire", shopfrontChangeSchema, { type: "retire", key: "promotion:prm-aaaaaaaa", id: "prm-aaaaaaaa" }],
   ["shopfront restore", shopfrontChangeSchema, { type: "restore", key: "promotion:prm-aaaaaaaa", id: "prm-aaaaaaaa" }],
   ["premiere create", premiereChangeSchema, premiereCreateChange],
@@ -239,7 +240,7 @@ describe.each([
 
 describe("undo query", () => {
   it("accepts a named stream and non-empty id", () => {
-    expect([...UNDO_KINDS]).toEqual(["style-override", "work-visibility", "price-entry", "alteration", "appointment", "notice", "request-status", "style-text", "work-text", "promotion", "premiere"]);
+    expect([...UNDO_KINDS]).toEqual(["style-override", "work-visibility", "price-entry", "alteration", "appointment", "notice", "helper", "request-status", "style-text", "work-text", "promotion", "premiere"]);
     expect(undoQuerySchema.safeParse({ kind: "notice", id: "site" }).success).toBe(true);
     expect(undoQuerySchema.safeParse({ kind: "retired:style", id: "x" }).success).toBe(false);
   });

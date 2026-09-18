@@ -205,6 +205,26 @@ describe("office undo history", () => {
     });
   });
 
+  it("uses the shown-by-default floor and then the prior switch, for the visitor helper", async () => {
+    const { previousChangeFor, undoableIds } = await import("./office-history");
+    const { saveHelperVisibility } = await import("./site-helper");
+
+    await saveHelperVisibility(false);
+    expect(previousChangeFor("helper", "site")).toEqual({
+      type: "helper",
+      key: "helper:site",
+      visible: true,
+    });
+    expect(undoableIds("helper")).toContain("site");
+
+    await saveHelperVisibility(true);
+    expect(previousChangeFor("helper", "site")).toEqual({
+      type: "helper",
+      key: "helper:site",
+      visible: false,
+    });
+  });
+
   it("returns the earlier promotion after two saves, and nothing after one", async () => {
     const { previousChangeFor, undoableIds } = await import("./office-history");
     const { savePromotion } = await import("./live-promotions");

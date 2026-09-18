@@ -6,10 +6,12 @@ import { notFound } from "next/navigation";
 import { isSupportedLocale, routing } from "@/i18n/routing";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { SiteHelper } from "@/components/site-helper";
 import { Reveal } from "@/components/reveal";
 import { currentViewer } from "@/lib/auth/session";
 import { cartCount, readCart } from "@/lib/cart";
 import { helperEnabled } from "@/lib/env";
+import { helperVisible } from "@/lib/site-helper";
 import { HERO_IMAGE } from "@/content/photographs";
 import "../globals.css";
 
@@ -110,6 +112,7 @@ export default async function LocaleLayout({
           />
           <main id="main">{children}</main>
           <SiteFooter />
+          {helperEnabled && helperVisible() ? <SiteHelper /> : null}
           <Reveal />
         </NextIntlClientProvider>
       </body>

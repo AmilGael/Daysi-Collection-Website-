@@ -297,6 +297,12 @@ export const shopfrontChangeSchema = z.discriminatedUnion("type", [
     visible: z.boolean(),
   }),
   promotionSchema.extend({ type: z.literal("promotion"), key: changeKey }),
+  // The visitor-facing "¿Preguntas?" panel's own on/off switch.
+  z.object({
+    type: z.literal("helper"),
+    key: changeKey,
+    visible: z.boolean(),
+  }),
   // On this tab a retire or a restore always means a promotion.
   retireChangeSchema,
   restoreChangeSchema,
@@ -449,6 +455,7 @@ export const UNDO_KINDS = [
   "alteration",
   "appointment",
   "notice",
+  "helper",
   "request-status",
   "style-text",
   "work-text",

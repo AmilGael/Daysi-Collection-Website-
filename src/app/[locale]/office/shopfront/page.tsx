@@ -1,9 +1,12 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { categories, shopDay, translate } from "@/content";
 import type { Locale } from "@/i18n/routing";
+import { helperEnabled } from "@/lib/env";
 import { manageableStyles, storedNotice } from "@/lib/live-catalog";
 import { manageablePromotions } from "@/lib/live-promotions";
 import { undoableIds } from "@/lib/office-history";
+import { helperVisible } from "@/lib/site-helper";
+import { HelperSwitch } from "@/components/helper-switch";
 import { NoticeEditor } from "@/components/notice-editor";
 import { PromotionEditor } from "@/components/promotion-editor";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
@@ -73,6 +76,20 @@ export default async function OfficeShopfrontPage({
             retired: style.retired,
           }))}
           today={shopDay(new Date())}
+        />
+      </section>
+
+      <section className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-heading">{t("helperTitle")}</h2>
+          <p className="max-w-xl text-[0.875rem] leading-relaxed text-ink-faint">
+            {t("helperLead")}
+          </p>
+        </div>
+        <HelperSwitch
+          initialVisible={helperVisible()}
+          undoable={undoableIds("helper").has("site")}
+          disabled={!helperEnabled}
         />
       </section>
 

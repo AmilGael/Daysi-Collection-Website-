@@ -578,6 +578,10 @@
     "promoPercentRange": "Type a whole percent from 1 to 90.",
     "promoAmountRange": "Type an amount from $1 to $5,000.",
     "promoDatesOrder": "The end date has to be the start date or later.",
+    "helperTitle": "The visitor helper",
+    "helperLead": "The \"Questions?\" button your visitors see on the site, answering from your price list, your alterations, your sessions, your hours and your terms. It never takes an order or promises a date.",
+    "helperVisibleLabel": "Visitor helper",
+    "helperNeedsKey": "Needs the Anthropic key to switch on.",
     "updateFailed": "That change did not save. Try once more.",
     "pendingMark": "pending",
     "textsEdit": "Edit the words",
@@ -802,5 +806,19 @@
       "press": "Press",
       "workroom": "In the workroom"
     }
+  },
+  "helper": {
+    "button": "Questions?",
+    "title": "Questions?",
+    "close": "Close",
+    "suggestPrice": "How much does a made-to-measure dress cost?",
+    "suggestAlteration": "How much does hemming pants cost?",
+    "suggestSession": "How do I book a session?",
+    "questionLabel": "Your question",
+    "ask": "Ask",
+    "asking": "Asking…",
+    "error": "I could not answer. Message us on WhatsApp.",
+    "whatsapp": "Message on WhatsApp",
+    "whatsappMessage": "Hi, I have a question about Daysi Collection."
   }
 }

@@ -8,6 +8,7 @@ import { LEAST_AMOUNT, MOST_PERCENT } from "@/lib/promotions";
 import { changesOf, shopfrontChangeSchema, type ShopfrontChange } from "@/lib/office-validation";
 import { setRetired } from "@/lib/retired";
 import { newReference } from "@/lib/security";
+import { saveHelperVisibility } from "@/lib/site-helper";
 import { translateToEnglish, withEnglish } from "@/lib/translate";
 
 /**
@@ -57,6 +58,9 @@ export const applyShopfrontChanges = ownerAction(
           return;
         case "promotion":
           await savePromotionChange(change);
+          return;
+        case "helper":
+          await saveHelperVisibility(change.visible);
           return;
         // On this tab a retire or a restore always names a promotion.
         case "retire":

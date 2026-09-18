@@ -31,6 +31,7 @@ import {
 import { textKey, type TextField, type TextOverride, type TextSubject } from "./live-text";
 import { readRecords, versionsOf } from "./records";
 import { REQUEST_KINDS, listRequests, requestVersions, type StoredRequest } from "./request-store";
+import type { HelperVisibility } from "./site-helper";
 
 type Stream<R> = {
   readonly all: () => R[];
@@ -205,6 +206,14 @@ const notice = recordStream<SiteNotice>(
   }),
 );
 
+/** Never set at all means shown, so that is the baseline an undo returns to. */
+const helperSwitch = recordStream<HelperVisibility>(
+  "helper-visibility",
+  () => "site",
+  () => ({ type: "helper", key: "helper:site", visible: true }),
+  (record) => ({ type: "helper", key: "helper:site", visible: record.visible }),
+);
+
 /**
  * No baseline: a promotion did not exist before its first line, and a new
  * one is taken back by retiring it. Each line after that (a switch turned
@@ -361,6 +370,7 @@ function streamFor(kind: UndoKind): Stream<unknown> {
     case "alteration": return erased(alteration);
     case "appointment": return erased(appointment);
     case "notice": return erased(notice);
+    case "helper": return erased(helperSwitch);
     case "request-status": return erased(requestStatus);
     case "style-text": return erased(styleText);
     case "work-text": return erased(workText);
