@@ -176,6 +176,13 @@ describe.each([
   ["price retire", priceChangeSchema, { type: "retire", key: "entry:x", id: "x" }],
   ["price restore", priceChangeSchema, { type: "restore", key: "entry:x", id: "x" }],
   ["shopfront notice", shopfrontChangeSchema, { type: "notice", key: "notice:site", message: "Open", visible: true }],
+  [
+    "shopfront promotion",
+    shopfrontChangeSchema,
+    { type: "promotion", key: "promotion:new", label: "Venta de otoño", kind: "percent", value: 15, scope: { type: "all" }, active: true },
+  ],
+  ["shopfront retire", shopfrontChangeSchema, { type: "retire", key: "promotion:prm-aaaaaaaa", id: "prm-aaaaaaaa" }],
+  ["shopfront restore", shopfrontChangeSchema, { type: "restore", key: "promotion:prm-aaaaaaaa", id: "prm-aaaaaaaa" }],
   ["work request status", workChangeSchema, { type: "request-status", key: "request:ALT-1", kind: "alteration", reference: "ALT-1", status: "answered" }],
   [
     "work order note",
@@ -204,7 +211,7 @@ describe.each([
 
 describe("undo query", () => {
   it("accepts a named stream and non-empty id", () => {
-    expect([...UNDO_KINDS]).toEqual(["style-override", "work-visibility", "price-entry", "alteration", "appointment", "notice", "request-status", "style-text", "work-text"]);
+    expect([...UNDO_KINDS]).toEqual(["style-override", "work-visibility", "price-entry", "alteration", "appointment", "notice", "request-status", "style-text", "work-text", "promotion"]);
     expect(undoQuerySchema.safeParse({ kind: "notice", id: "site" }).success).toBe(true);
     expect(undoQuerySchema.safeParse({ kind: "retired:style", id: "x" }).success).toBe(false);
   });
@@ -570,5 +577,43 @@ describe("noting an order that never came through the site", () => {
     expect(workChangeSchema.safeParse({ ...orderNote, date: "2019-12-31" }).success).toBe(false);
     expect(workChangeSchema.safeParse({ ...orderNote, date: "2999-01-01" }).success).toBe(false);
     expect(workChangeSchema.safeParse({ ...orderNote, date: "08/20/2026" }).success).toBe(false);
+  });
+});
+
+describe("a promotion from the shop window", () => {
+  const promotion = {
+    type: "promotion",
+    key: "promotion:new",
+    label: "Venta de otoño",
+    kind: "percent",
+    value: 15,
+    scope: { type: "all" },
+    active: true,
+  };
+  const accepts = (over: Record<string, unknown>) => shopfrontChangeSchema.safeParse({ ...promotion, ...over }).success;
+
+  it("accepts everything, a category or one garment, with or without dates, new or by its id", () => {
+    expect(accepts({ scope: { type: "category", categoryId: "heritage" } })).toBe(true);
+    expect(accepts({ scope: { type: "style", styleId: "sty-nm9pfhxu" } })).toBe(true);
+    expect(accepts({ kind: "amount", value: 2000, startsAt: "2026-09-20", endsAt: "2026-09-27" })).toBe(true);
+    expect(accepts({ id: "prm-a3c4d6e7", active: false })).toBe(true);
+  });
+
+  it("refuses a kind that is neither, a date not shaped YYYY-MM-DD, and a category that does not exist", () => {
+    expect(accepts({ kind: "half" })).toBe(false);
+    expect(accepts({ startsAt: "2026-9-1" })).toBe(false);
+    expect(accepts({ endsAt: "2026-13-01" })).toBe(false);
+    expect(accepts({ scope: { type: "category", categoryId: "hats" } })).toBe(false);
+    expect(accepts({ scope: { type: "style", styleId: "" } })).toBe(false);
+    expect(accepts({ scope: { type: "everything" } })).toBe(false);
+  });
+
+  it("refuses a label shorter than 2 or longer than 60, a value outside 1 to $5,000, and an id that is not one", () => {
+    expect(accepts({ label: "V" })).toBe(false);
+    expect(accepts({ label: "x".repeat(61) })).toBe(false);
+    expect(accepts({ value: 0 })).toBe(false);
+    expect(accepts({ value: 15.5 })).toBe(false);
+    expect(accepts({ kind: "amount", value: 5_000_01 })).toBe(false);
+    expect(accepts({ id: "PRM-A3C4D6E7" })).toBe(false);
   });
 });

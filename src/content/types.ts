@@ -132,6 +132,40 @@ export type StylePrice = {
   readonly customizationNote: Localized;
   /** True when the numbers are the garment's own rather than the list's. */
   readonly own: boolean;
+  /**
+   * The promotion that lowers this garment today, when one does. The numbers
+   * above stay undiscounted: `lib/pricing.ts` applies it to the garment line
+   * alone, and `promotedPrice` in `lib/promotions.ts` works out what a card shows.
+   */
+  readonly promotion?: Promotion;
+};
+
+// ── Promotions ─────────────────────────────────────────────────────────────
+
+/** What a promotion lowers: everything, one category, or one garment. */
+export type PromotionScope =
+  | { readonly type: "all" }
+  | { readonly type: "category"; readonly categoryId: string }
+  | { readonly type: "style"; readonly styleId: string };
+
+/**
+ * A discount Daysi runs from the shop window. It applies by itself to every
+ * garment in its scope, no code typed at checkout; where several reach one
+ * garment, the most specific wins and they never stack (`lib/promotions.ts`).
+ */
+export type Promotion = {
+  readonly id: string;
+  readonly label: Localized;
+  readonly kind: "percent" | "amount";
+  /** A whole percent (1–90), or cents off each piece (100–500000). */
+  readonly value: number;
+  readonly scope: PromotionScope;
+  /** YYYY-MM-DD, the atelier's day it starts. Absent = already running. */
+  readonly startsAt?: string;
+  /** YYYY-MM-DD, the last atelier day it runs, inclusive. Absent = no end. */
+  readonly endsAt?: string;
+  readonly active: boolean;
+  readonly updatedAt: string;
 };
 
 /** A garment with its price resolved; null when its pair has no live entry. */

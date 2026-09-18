@@ -119,4 +119,18 @@ describe("a garment's own price", () => {
       expect(read(reader), reader).toContain("withPrices(");
     }
   });
+
+  it("shows a promotion from the resolved price: the lowered figure, the old one struck, the tag", () => {
+    const card = read("src/components/style-card.tsx");
+    expect(card).toContain("promotedPrice(style.price)");
+    expect(card).toContain("<s ");
+    expect(card).toContain("promotionBadge(");
+
+    const page = read("src/app/[locale]/collection/[slug]/page.tsx");
+    expect(page).toContain("fixedPrice={shown.amount}");
+    expect(page).toContain("listPrice={shown.listAmount}");
+    // The extra is never lowered, so the panel adds it to both figures.
+    expect(read("src/components/style-order-panel.tsx")).toContain("formatMoney(listPrice + extra, locale)");
+    expect(read("src/components/estimate-summary.tsx")).toContain("line.listAmount !== undefined");
+  });
 });

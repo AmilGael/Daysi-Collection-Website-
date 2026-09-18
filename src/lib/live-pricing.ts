@@ -3,14 +3,18 @@ import {
   appointmentTypes,
   fabrics,
   priceList,
+  shopDay,
   type AlterationService,
   type AppointmentType,
   type Fabric,
   type GarmentStyle,
   type PriceListEntry,
   type PricedStyle,
+  type Promotion,
   type StylePrice,
 } from "@/content";
+import { livePromotions } from "./live-promotions";
+import { pickPromotion } from "./promotions";
 import { appendRecord, latestBy, readRecords } from "./records";
 import { retiredSet } from "./retired";
 
@@ -198,14 +202,22 @@ export function assemblePriceList(
  * place of the entry's when Daysi set them. The entry has to be live either
  * way, so a retired or never-priced pair leaves the garment unpriced (and off
  * sale) whatever it carries, exactly as before own prices existed.
+ *
+ * The promotion that reaches the garment on `day` rides along, own price or
+ * list price alike; the numbers stay undiscounted, because only the garment
+ * line is lowered (`lib/pricing.ts`), never the made-to-measure extra. Pure
+ * once `promotions` is given; left out, it reads the live list.
  */
 export function resolveStylePrice(
-  style: Pick<GarmentStyle, "priceEntryId" | "ownPrice">,
+  style: Pick<GarmentStyle, "id" | "categoryId" | "priceEntryId" | "ownPrice">,
   entries: readonly PriceListEntry[],
+  promotions: readonly Promotion[] = livePromotions(),
+  day: string = shopDay(new Date()),
 ): StylePrice | null {
   const entry = entries.find((candidate) => candidate.id === style.priceEntryId);
   if (!entry) return null;
   const own = style.ownPrice;
+  const promotion = pickPromotion(promotions, style, day);
   return {
     entryId: entry.id,
     fabricId: entry.fabricId,
@@ -213,6 +225,7 @@ export function resolveStylePrice(
     customizationExtra: own?.customizationExtra ?? entry.customizationExtra,
     customizationNote: entry.customizationNote,
     own: own !== undefined,
+    ...(promotion ? { promotion } : {}),
   };
 }
 
@@ -321,14 +334,22 @@ export function liveFindPriceEntry(id: string): PriceListEntry | undefined {
 }
 
 /** The one way a garment is priced, on every card, page, estimate and cart. */
-export function priceFor(style: GarmentStyle): StylePrice | null {
-  return resolveStylePrice(style, livePriceList());
+export function priceFor(
+  style: GarmentStyle,
+  promotions: readonly Promotion[] = livePromotions(),
+  day: string = shopDay(new Date()),
+): StylePrice | null {
+  return resolveStylePrice(style, livePriceList(), promotions, day);
 }
 
 /** Garments with their prices worked out, for cards rendered inside client components. */
-export function withPrices(styles: readonly GarmentStyle[]): PricedStyle[] {
+export function withPrices(
+  styles: readonly GarmentStyle[],
+  promotions: readonly Promotion[] = livePromotions(),
+  day: string = shopDay(new Date()),
+): PricedStyle[] {
   const entries = livePriceList();
-  return styles.map((style) => ({ ...style, price: resolveStylePrice(style, entries) }));
+  return styles.map((style) => ({ ...style, price: resolveStylePrice(style, entries, promotions, day) }));
 }
 
 export function liveFindFabric(id: string): Fabric | undefined {

@@ -31,7 +31,16 @@ export function EstimateSummary({ estimate }: { estimate: Estimate }) {
                 </dd>
               ) : null}
             </div>
-            <dd className="shrink-0 tabular-nums">{formatMoney(line.amount, locale)}</dd>
+            <dd className="shrink-0 tabular-nums">
+              {/* A promotion lowered this line: what it came to before, struck. */}
+              {line.listAmount !== undefined ? (
+                <s className="mr-2 text-ink-faint">
+                  <span className="sr-only">{t("wasPrice")} </span>
+                  {formatMoney(line.listAmount, locale)}
+                </s>
+              ) : null}
+              {formatMoney(line.amount, locale)}
+            </dd>
           </div>
         ))}
       </dl>

@@ -89,6 +89,23 @@ describe("the sales file", () => {
     expect(column(salesRows([record()], "en")[0], "ItemDescription")).toBe("Frutera two-piece");
   });
 
+  it("notes the list price beside a line a promotion lowered, and taxes it by the lowered piece", () => {
+    // 65 % off a $295 set: $103.25 charged, under the $110 exemption.
+    const promoted = (amount: number, listAmount: number) =>
+      record({
+        estimate: {
+          ...estimate(amount),
+          lines: [{ label: { en: "Sirena shirt dress", es: "Vestido camisero Sirena" }, note: { en: "Size M", es: "Talla M" }, amount, listAmount, taxBasis: "clothing" }],
+        },
+      });
+    const [row] = salesRows([promoted(10325, 29500)], "en");
+    expect(column(row, "ItemDescription")).toBe("Sirena shirt dress — Size M (list 295.00)");
+    expect(column(row, "ItemAmount")).toBe("103.25");
+    expect(column(row, "ItemTaxCode")).toBe("NON");
+    // 60 % off leaves $118 a piece, which is taxed.
+    expect(column(salesRows([promoted(11800, 29500)], "en")[0], "ItemTaxCode")).toBe("TAX");
+  });
+
   it("leads with a header row so the importer can map the columns", () => {
     const csv = salesCsv([record()], "en", "2026-01-01", "2026-12-31");
     expect(csv.split("\r\n")[0]).toContain('"InvoiceNo"');

@@ -23,7 +23,7 @@ import { env } from "./env";
  * fallback, so no server-side fallback model is configured.
  */
 
-export type TranslationContext = "garment" | "photo" | "alteration" | "section";
+export type TranslationContext = "garment" | "photo" | "alteration" | "section" | "promotion";
 
 export type TranslationRequest = {
   readonly system: string;
@@ -40,15 +40,18 @@ const SYSTEM = [
   "No quotation marks, no added claims, no explanations: return only the fields asked for.",
 ].join(" ");
 
+/** What the words are, for the model: one phrase per context. */
+const WHAT: Record<TranslationContext, string> = {
+  garment: "a garment for sale",
+  photo: "a caption under a finished piece in the gallery",
+  alteration: "a service on the atelier's price list, an alteration or a booked session",
+  section: "a section name in the gallery of finished work, next to ones like Runway or Bridal",
+  promotion: "the name of a sale, shown beside the lowered prices on the shop's garments, like Autumn sale",
+};
+
 function promptFor(fields: Readonly<Record<string, string>>, keys: readonly string[], context: TranslationContext): string {
   const picked = Object.fromEntries(keys.map((key) => [key, fields[key]]));
-  const what = {
-    garment: "a garment for sale",
-    photo: "a caption under a finished piece in the gallery",
-    alteration: "a service on the atelier's price list, an alteration or a booked session",
-    section: "a section name in the gallery of finished work, next to ones like Runway or Bridal",
-  }[context];
-  return `Context: ${what}.\nTranslate each field from Spanish to English:\n${JSON.stringify(picked)}`;
+  return `Context: ${WHAT[context]}.\nTranslate each field from Spanish to English:\n${JSON.stringify(picked)}`;
 }
 
 function sdkCall(apiKey: string): TranslationCall {

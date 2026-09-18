@@ -68,6 +68,8 @@ beforeEach(async () => {
   vi.stubEnv("SITE_URL", "http://localhost:3000");
   // Read once, when `env` first loads: the cart checkout refuses outright without it.
   vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_placeholder");
+  // No translation service: the office actions copy the Spanish, never call out.
+  vi.stubEnv("ANTHROPIC_API_KEY", "");
 
   const { saveAddedStyle } = await import("./live-catalog");
   const { saveCustomEntry } = await import("./live-pricing");
@@ -478,5 +480,109 @@ describe("noting an order the office took off-site", () => {
 
     const months = monthlyReceived(ledger, 1, new Date());
     expect(months[0]?.total).toBe(5000);
+  });
+});
+
+describe("a promotion run from the shop window", () => {
+  async function apply(...changes: Record<string, unknown>[]) {
+    const { headers } = await import("next/headers");
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({ origin: "http://localhost:3000", host: "localhost:3000" }),
+    );
+    const { currentViewer } = await import("@/lib/auth/session");
+    vi.mocked(currentViewer).mockResolvedValue({ role: "owner" } as Awaited<ReturnType<typeof currentViewer>>);
+    const { applyShopfrontChanges } = await import("@/app/[locale]/office/shopfront/actions");
+    const result = await applyShopfrontChanges(changes);
+    if (!result.ok) throw new Error(result.error);
+    return result.results;
+  }
+
+  // 65 % off the $295 Sirena set is $103.25 a piece: under the $110 exemption.
+  const onSirena = {
+    type: "promotion",
+    key: "promotion:new",
+    label: "Sirena rebajada",
+    kind: "percent",
+    value: 65,
+    scope: { type: "style", styleId: "sirena" },
+    active: true,
+  };
+
+  it("lowers that garment in the cart, taxes the lowered piece, and leaves the made-to-measure extra and every other garment alone", async () => {
+    expect(await apply(onSirena)).toEqual([{ key: "promotion:new", ok: true }]);
+
+    const { estimateCart, estimateReadyMade } = await import("./pricing");
+    const cart = estimateCart([{ styleSlug: "sirena", sizeId: "s", customize: false, quantity: 2 }]);
+    expect(cart?.lines[0]).toMatchObject({ amount: 20650, unitAmount: 10325, listAmount: 59000, listUnitAmount: 29500 });
+    expect(cart?.salesTax).toBe(0);
+    expect(cart?.total).toBe(20650);
+
+    const measured = estimateReadyMade({ styleSlug: "sirena", sizeId: "m", customize: true });
+    expect(measured?.lines[0]).toMatchObject({ amount: 10325, listAmount: 29500 });
+    expect(measured?.lines[1]?.amount).toBe(9600);
+    expect(measured?.lines[1]).not.toHaveProperty("listAmount");
+
+    const frutera = estimateReadyMade({ styleSlug: "frutera", sizeId: "m", customize: false });
+    expect(frutera?.lines[0]).not.toHaveProperty("listAmount");
+
+    const { manageablePromotions } = await import("./live-promotions");
+    const [saved] = manageablePromotions();
+    expect(saved?.id).toMatch(/^prm-[a-z0-9]{8}$/);
+    // No translation service here, so the English is the Spanish until she asks.
+    expect(saved?.label).toEqual({ es: "Sirena rebajada", en: "Sirena rebajada" });
+  });
+
+  it("stops lowering it once retired, and lowers it again once restored", async () => {
+    await apply(onSirena);
+    const { manageablePromotions } = await import("./live-promotions");
+    const id = manageablePromotions()[0]!.id;
+    const { estimateCart } = await import("./pricing");
+    const sirena = [{ styleSlug: "sirena", sizeId: "s", customize: false, quantity: 1 }];
+
+    expect(await apply({ type: "retire", key: `promotion:${id}`, id })).toEqual([{ key: `promotion:${id}`, ok: true }]);
+    expect(estimateCart(sirena)?.lines[0]).not.toHaveProperty("listAmount");
+    expect(estimateCart(sirena)?.salesTax).toBeGreaterThan(0);
+
+    await apply({ type: "restore", key: `promotion:${id}`, id });
+    expect(estimateCart(sirena)?.lines[0]?.amount).toBe(10325);
+  });
+
+  it("refuses a percent past 90, an amount under a dollar, an end before its start, a garment not on the rack, and an id it never saved", async () => {
+    const results = await apply(
+      { ...onSirena, key: "promotion:a", value: 91 },
+      { ...onSirena, key: "promotion:b", kind: "amount", value: 99 },
+      { ...onSirena, key: "promotion:c", startsAt: "2026-09-27", endsAt: "2026-09-20" },
+      { ...onSirena, key: "promotion:d", scope: { type: "style", styleId: "nobody" } },
+      { ...onSirena, key: "promotion:e", id: "prm-a3c4d6e7" },
+      { type: "retire", key: "promotion:f", id: "prm-a3c4d6e7" },
+    );
+    expect(results.map((result) => result.error)).toEqual([
+      "bad-value",
+      "bad-value",
+      "bad-dates",
+      "unknown-style",
+      "unknown-promotion",
+      "unknown-promotion",
+    ]);
+    const { manageablePromotions } = await import("./live-promotions");
+    expect(manageablePromotions()).toEqual([]);
+  });
+
+  it("keeps the English it already has when a saved promotion comes back with the same Spanish", async () => {
+    const { manageablePromotions, savePromotion } = await import("./live-promotions");
+    const saved = {
+      id: "prm-a3c4d6e7",
+      label: { es: "Venta de otoño", en: "Autumn sale" },
+      kind: "percent" as const,
+      value: 15,
+      scope: { type: "all" as const },
+      active: true,
+    };
+    await savePromotion(saved);
+    await savePromotion({ ...saved, label: { es: "Rebaja", en: "Markdown" } });
+
+    // An undo brings back the earlier Spanish; its English comes back with it.
+    await apply({ ...onSirena, ...saved, scope: { type: "all" }, label: "Venta de otoño", active: false });
+    expect(manageablePromotions()[0]).toMatchObject({ label: { es: "Venta de otoño", en: "Autumn sale" }, active: false });
   });
 });

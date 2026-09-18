@@ -205,6 +205,39 @@ describe("office undo history", () => {
     });
   });
 
+  it("returns the earlier promotion after two saves, and nothing after one", async () => {
+    const { previousChangeFor, undoableIds } = await import("./office-history");
+    const { savePromotion } = await import("./live-promotions");
+    const promotion = {
+      id: "prm-a3c4d6e7",
+      label: { es: "Venta de otoño", en: "Autumn sale" },
+      kind: "percent" as const,
+      value: 15,
+      scope: { type: "category" as const, categoryId: "heritage" },
+      endsAt: "2026-09-30",
+      active: true,
+    };
+
+    // A new promotion is taken back by retiring it, not by an undo.
+    await savePromotion(promotion);
+    expect(previousChangeFor("promotion", "prm-a3c4d6e7")).toBeUndefined();
+    expect(undoableIds("promotion")).not.toContain("prm-a3c4d6e7");
+
+    await savePromotion({ ...promotion, active: false });
+    expect(previousChangeFor("promotion", "prm-a3c4d6e7")).toEqual({
+      type: "promotion",
+      key: "promotion:prm-a3c4d6e7",
+      id: "prm-a3c4d6e7",
+      label: "Venta de otoño",
+      kind: "percent",
+      value: 15,
+      scope: { type: "category", categoryId: "heritage" },
+      endsAt: "2026-09-30",
+      active: true,
+    });
+    expect(undoableIds("promotion")).toContain("prm-a3c4d6e7");
+  });
+
   it("only makes request status undoable after a second line", async () => {
     const { previousChangeFor, undoableIds } = await import("./office-history");
     const { saveRequest } = await import("./request-store");

@@ -65,7 +65,7 @@ describe("a garment's price", () => {
     customizationNote: { en: "Made to your measurements.", es: "Hecho a su medida." },
     effectiveDate: "2026-09-01",
   };
-  const style = { priceEntryId: "heritage--frutera-print" };
+  const style = { id: "frutera", categoryId: "heritage", priceEntryId: "heritage--frutera-print" };
 
   it("uses the entry's numbers when the garment has no price of its own", async () => {
     const { resolveStylePrice } = await import("./live-pricing");
@@ -90,6 +90,24 @@ describe("a garment's price", () => {
     const { resolveStylePrice } = await import("./live-pricing");
     const price = resolveStylePrice({ ...style, ownPrice: { fixedPrice: 25000 } }, [entry]);
     expect(price).toMatchObject({ fixedPrice: 25000, customizationExtra: 12000, own: true });
+  });
+
+  it("carries the promotion that reaches the garment on the day, and keeps its numbers undiscounted", async () => {
+    const { resolveStylePrice } = await import("./live-pricing");
+    const sale = {
+      id: "prm-heritage",
+      label: { es: "Venta de herencia", en: "Heritage sale" },
+      kind: "percent" as const,
+      value: 20,
+      scope: { type: "category" as const, categoryId: "heritage" },
+      endsAt: "2026-09-30",
+      active: true,
+      updatedAt: "2026-09-18T12:00:00.000Z",
+    };
+    const own = { ...style, ownPrice: { fixedPrice: 25000 } };
+    expect(resolveStylePrice(own, [entry], [sale], "2026-09-30")).toMatchObject({ fixedPrice: 25000, customizationExtra: 12000, promotion: sale });
+    expect(resolveStylePrice(own, [entry], [sale], "2026-10-01")).not.toHaveProperty("promotion");
+    expect(resolveStylePrice({ ...style, categoryId: "dresses" }, [entry], [sale], "2026-09-30")).not.toHaveProperty("promotion");
   });
 
   it("is null when the pair has no live entry, own price or not", async () => {

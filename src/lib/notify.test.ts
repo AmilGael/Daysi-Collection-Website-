@@ -401,6 +401,69 @@ describe("notifyClientPaid", () => {
     expect(text).toContain("Vestido Amapola (Talla M) × 1 — $105");
   });
 
+  it("prints what a promoted line came to before the promotion, in the record's locale", async () => {
+    const { receiptMessage } = await import("./notify");
+    // Two $295 sets at 65 % off: $103.25 a piece.
+    const promoted = (locale: "es" | "en") =>
+      record({
+        locale,
+        estimate: {
+          lines: [
+            {
+              label: { en: "Sirena shirt dress", es: "Vestido camisero Sirena" },
+              note: { en: "Size M · 2 pieces", es: "Talla M · 2 piezas" },
+              amount: 20650,
+              unitAmount: 10325,
+              listAmount: 59000,
+              listUnitAmount: 29500,
+              taxBasis: "clothing",
+            },
+          ],
+          subtotal: 20650,
+          salesTax: 0,
+          total: 20650,
+          dueNow: 20650,
+          dueOnCollection: 0,
+          dueNowReason: { en: "Due now", es: "A pagar ahora" },
+        },
+      });
+
+    expect(receiptMessage(promoted("es")).text).toContain(
+      "Vestido camisero Sirena (Talla M · 2 piezas) × 2 — $206.50 (antes $590)",
+    );
+    expect(receiptMessage(promoted("en")).text).toContain(
+      "Sirena shirt dress (Size M · 2 pieces) × 2 — $206.50 (was $590)",
+    );
+  });
+
+  it("still counts the pieces on a line a promotion took down to nothing", async () => {
+    const { receiptMessage } = await import("./notify");
+    const { text } = receiptMessage(
+      record({
+        locale: "en",
+        estimate: {
+          lines: [
+            {
+              label: { en: "Amapola dress", es: "Vestido Amapola" },
+              amount: 0,
+              unitAmount: 0,
+              listAmount: 21000,
+              listUnitAmount: 10500,
+              taxBasis: "clothing",
+            },
+          ],
+          subtotal: 0,
+          salesTax: 0,
+          total: 0,
+          dueNow: 0,
+          dueOnCollection: 0,
+          dueNowReason: { en: "Nothing due", es: "Nada que pagar" },
+        },
+      }),
+    );
+    expect(text).toContain("Amapola dress × 2 — $0 (was $210)");
+  });
+
   it("says the deposit was paid by banco and what is still due on collection", async () => {
     const { notifyClientPaid } = await import("./notify");
 

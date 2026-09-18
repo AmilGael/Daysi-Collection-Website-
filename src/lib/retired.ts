@@ -9,7 +9,8 @@ export type RetiredKind =
   | "request"
   | "alteration"
   | "appointment-type"
-  | "gallery-section";
+  | "gallery-section"
+  | "promotion";
 export type RetiredRecord = {
   readonly kind: RetiredKind;
   readonly id: string;

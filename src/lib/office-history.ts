@@ -1,4 +1,4 @@
-import { alterationServices, appointmentTypes, priceList, styles } from "@/content";
+import { alterationServices, appointmentTypes, priceList, styles, type Promotion } from "@/content";
 import type { OfficeChange, UndoKind } from "./office-validation";
 import {
   addedStyles,
@@ -196,6 +196,30 @@ const notice = recordStream<SiteNotice>(
   }),
 );
 
+/**
+ * No baseline: a promotion did not exist before its first line, and a new
+ * one is taken back by retiring it. Each line after that (a switch turned
+ * off, then on) is undone to the one before it, in Spanish as she typed it;
+ * the action keeps that line's English.
+ */
+const promotion = recordStream<Promotion>(
+  "promotions",
+  (record) => record.id,
+  () => undefined,
+  (record, id) => ({
+    type: "promotion",
+    key: `promotion:${id}`,
+    id,
+    label: record.label.es,
+    kind: record.kind,
+    value: record.value,
+    scope: record.scope,
+    ...(record.startsAt === undefined ? {} : { startsAt: record.startsAt }),
+    ...(record.endsAt === undefined ? {} : { endsAt: record.endsAt }),
+    active: record.active,
+  }),
+);
+
 const requestStatus: Stream<StoredRequest> = {
   all: () => REQUEST_KINDS.flatMap(listRequests),
   key: (record) => record.reference,
@@ -271,6 +295,7 @@ function streamFor(kind: UndoKind): Stream<unknown> {
     case "request-status": return erased(requestStatus);
     case "style-text": return erased(styleText);
     case "work-text": return erased(workText);
+    case "promotion": return erased(promotion);
   }
 }
 

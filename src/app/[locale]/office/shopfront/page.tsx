@@ -1,16 +1,20 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { storedNotice } from "@/lib/live-catalog";
+import { categories, shopDay, translate } from "@/content";
+import type { Locale } from "@/i18n/routing";
+import { manageableStyles, storedNotice } from "@/lib/live-catalog";
+import { manageablePromotions } from "@/lib/live-promotions";
 import { undoableIds } from "@/lib/office-history";
 import { NoticeEditor } from "@/components/notice-editor";
+import { PromotionEditor } from "@/components/promotion-editor";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { SiteQrCode } from "@/components/site-qr-code";
 import { officeViewer } from "../_lib/viewer";
 import { applyShopfrontChanges } from "./actions";
 
 /**
- * Shopfront: what the shop says about itself. Today that is the notice at
- * the top of every page and the QR that hangs in the workroom; hours,
- * holidays and the season come here later.
+ * Shopfront: what the shop says about itself. The notice at the top of every
+ * page, the promotions that lower prices by themselves, and the QR that
+ * hangs in the workroom; hours, holidays and the season come here later.
  */
 export default async function OfficeShopfrontPage({
   params,
@@ -19,11 +23,15 @@ export default async function OfficeShopfrontPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const language = locale as Locale;
   await officeViewer(locale);
 
   const t = await getTranslations("office");
   const notice = storedNotice();
   const undoable = undoableIds("notice").has("site");
+
+  const undoablePromotions = undoableIds("promotion");
+  const promotions = manageablePromotions();
 
   return (
     <OfficeDraftProvider apply={applyShopfrontChanges}>
@@ -38,6 +46,33 @@ export default async function OfficeShopfrontPage({
           initialMessage={notice?.message ?? ""}
           initialVisible={notice?.visible ?? false}
           undoable={undoable}
+        />
+      </section>
+
+      <section className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-heading">{t("promoTitle")}</h2>
+          <p className="max-w-xl text-[0.875rem] leading-relaxed text-ink-faint">
+            {t("promoLead")}
+          </p>
+        </div>
+        <PromotionEditor
+          promotions={promotions
+            .filter((promotion) => !promotion.retired)
+            .map(({ retired: _retired, ...promotion }) => ({
+              ...promotion,
+              undoable: undoablePromotions.has(promotion.id),
+            }))}
+          retired={promotions
+            .filter((promotion) => promotion.retired)
+            .map(({ retired: _retired, ...promotion }) => promotion)}
+          categories={categories.map((category) => ({ id: category.id, name: translate(category.name, language) }))}
+          styles={manageableStyles().map((style) => ({
+            id: style.id,
+            name: translate(style.name, language),
+            retired: style.retired,
+          }))}
+          today={shopDay(new Date())}
         />
       </section>
 

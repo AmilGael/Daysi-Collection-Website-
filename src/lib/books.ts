@@ -86,6 +86,10 @@ export function salesRows(
     return estimate.lines.map((line) => {
       const note = line.note ? translate(line.note, locale) : "";
       const label = translate(line.label, locale);
+      // A promotion lowered this line: the amount is what was charged, and
+      // the list price rides in the description so the accountant sees the
+      // discount without a new column the importer would not know.
+      const list = line.listAmount === undefined ? "" : ` (list ${toAmount(line.listAmount)})`;
       return [
         record.reference,
         record.client.name || record.client.email,
@@ -96,7 +100,7 @@ export function salesRows(
         // return is filed on; a bank payment clears days later, and this is
         // what reconciles the export against the office's cleared-money trend.
         record.paidAt ? record.paidAt.slice(0, 10) : "",
-        note ? `${label} — ${note}` : label,
+        `${note ? `${label} — ${note}` : label}${list}`,
         "1",
         toAmount(line.amount),
         toAmount(line.amount),

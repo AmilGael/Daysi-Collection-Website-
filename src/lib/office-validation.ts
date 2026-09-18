@@ -257,6 +257,36 @@ export const priceChangeSchema = z.discriminatedUnion("type", [
   restoreChangeSchema.extend({ kind: priceRetireKind }),
 ]);
 
+/** A calendar day as a date box gives it, YYYY-MM-DD. */
+const calendarDay = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/);
+
+/**
+ * A promotion, typed in Spanish; the action writes the English. No id is a
+ * new one. How far each kind may go (a percent up to 90, an amount from a
+ * dollar) and an end before the start are refused in the action, like every
+ * other rule that reads two fields at once: a refinement here would make the
+ * member a `ZodEffects`, which `z.discriminatedUnion` refuses.
+ */
+export const promotionSchema = z.object({
+  id: z.string().regex(/^prm-[a-z0-9]{8}$/).optional(),
+  label: z.string().trim().min(2).max(60),
+  kind: z.enum(["percent", "amount"]),
+  /** A whole percent, or cents off each piece. */
+  value: z.number().int().min(1).max(5_000_00),
+  scope: z.discriminatedUnion("type", [
+    z.object({ type: z.literal("all") }),
+    z.object({
+      type: z.literal("category"),
+      categoryId: z.enum(categories.map((category) => category.id) as [string, ...string[]]),
+    }),
+    // A garment's id is checked against the rack in the action, as everywhere.
+    z.object({ type: z.literal("style"), styleId: id }),
+  ]),
+  startsAt: calendarDay.optional(),
+  endsAt: calendarDay.optional(),
+  active: z.boolean(),
+});
+
 export const shopfrontChangeSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("notice"),
@@ -264,6 +294,10 @@ export const shopfrontChangeSchema = z.discriminatedUnion("type", [
     message: z.string().trim().max(200),
     visible: z.boolean(),
   }),
+  promotionSchema.extend({ type: z.literal("promotion"), key: changeKey }),
+  // On this tab a retire or a restore always means a promotion.
+  retireChangeSchema,
+  restoreChangeSchema,
 ]);
 
 /** A hyphen-like character that is not a plain ASCII "-": the kind autocorrect
@@ -352,6 +386,7 @@ export const UNDO_KINDS = [
   "request-status",
   "style-text",
   "work-text",
+  "promotion",
 ] as const;
 export type UndoKind = (typeof UNDO_KINDS)[number];
 export const undoQuerySchema = z.object({
