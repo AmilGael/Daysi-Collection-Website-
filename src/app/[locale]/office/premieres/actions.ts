@@ -1,6 +1,6 @@
 "use server";
 
-import { premieres } from "@/content";
+import { premieres, type Premiere } from "@/content";
 import { ChangeRefused, applyEach, ownerAction } from "@/lib/action-guard";
 import { manageableStyles } from "@/lib/live-catalog";
 import {
@@ -8,6 +8,7 @@ import {
   assemblePremieres,
   manageablePremieres,
   premiereOverrides,
+  premiereOverrideVersions,
   saveAddedPremiere,
   savePremiereOverride,
   type PremiereOverride,
@@ -30,6 +31,23 @@ function liveStyleIds(): Set<string> {
 function checkStyleIds(styleIds: readonly string[]): void {
   const live = liveStyleIds();
   if (styleIds.some((id) => !live.has(id))) throw new ChangeRefused("unknown-style");
+}
+
+/**
+ * Every Spanish/English pairing a field has ever had for this season,
+ * oldest first: the season as seeded or added, then each saved override in
+ * turn (only the ones that actually named the field). An undo often sends
+ * back Spanish that matches one of these older pairings rather than the
+ * current one — that pairing's English is what gets reused, in
+ * `wordFor` below, instead of a fresh translation call.
+ */
+function knownPairings(field: Field, premiereId: string, seeded: Premiere): readonly { es: string; en: string }[] {
+  const pairings = [seeded[field]];
+  for (const version of premiereOverrideVersions(premiereId)) {
+    const value = version[field];
+    if (value) pairings.push(value);
+  }
+  return pairings;
 }
 
 /**
@@ -104,33 +122,45 @@ export const applyPremiereChanges = ownerAction(
           const releaseDate = change.releaseDate ?? premiere.releaseDate;
           if (releaseDate < revealDate) throw new ChangeRefused("bad-dates");
 
-          if (change.styleIds !== undefined) checkStyleIds(change.styleIds);
+          // The season as it was seeded or added, with no override at all:
+          // an undo can land on this, or on any saved version, so both the
+          // cover check and the translation reuse below read from it.
+          const seeded = assemblePremieres(premieres, addedPremieres(), []).find(
+            (candidate) => candidate.id === change.premiereId,
+          );
+          if (!seeded) throw new ChangeRefused("unknown-premiere");
+
+          // A premiere-update's checklist only ever arrives from an undo
+          // (a live edit of the checklist stages its own premiere-styles),
+          // and an undo must still land even when a garment on that older
+          // checklist has since been retired or removed: it is dropped
+          // silently rather than refusing the whole change.
+          const styleIds = change.styleIds?.filter((id) => liveStyleIds().has(id));
 
           // A cover coming back unchanged (an undo landing on the season as
           // it was seeded or added, before any override) is not an upload,
           // and must not be refused as one.
-          const seeded = assemblePremieres(premieres, addedPremieres(), []).find(
-            (candidate) => candidate.id === change.premiereId,
-          );
           if (
             change.coverImage !== undefined &&
             change.coverImage !== premiere.coverImage &&
-            change.coverImage !== seeded?.coverImage &&
+            change.coverImage !== seeded.coverImage &&
             !UPLOAD_PATH.test(change.coverImage)
           ) {
             throw new ChangeRefused("invalid");
           }
 
-          // Only Spanish that actually changed is translated. A field sent
-          // back exactly as the merged premiere already reads it — most
-          // often an undo — keeps the English that premiere already has,
-          // rather than a fresh call copying the Spanish over good English.
+          // Only Spanish that has never been paired with the English it
+          // would otherwise get is translated. A field sent back exactly as
+          // it was seeded, added, or saved at any earlier point — most
+          // often an undo — reuses that pairing's English instead of a
+          // fresh call copying the Spanish over good English.
           const toTranslate: Record<string, string> = {};
           const reused: Partial<Record<Field, { es: string; en: string }>> = {};
           for (const field of TEXT_FIELDS) {
             const value = change[field];
             if (value === undefined) continue;
-            if (value === premiere[field].es) reused[field] = premiere[field];
+            const known = knownPairings(field, change.premiereId, seeded).findLast((pair) => pair.es === value);
+            if (known) reused[field] = known;
             else toTranslate[field] = value;
           }
           const translated =
@@ -152,7 +182,7 @@ export const applyPremiereChanges = ownerAction(
             ...(change.piecesPlanned === undefined ? {} : { piecesPlanned: change.piecesPlanned }),
             ...(change.editionSize === undefined ? {} : { editionSize: change.editionSize }),
             ...(change.coverImage === undefined ? {} : { coverImage: change.coverImage }),
-            ...(change.styleIds === undefined ? {} : { styleIds: change.styleIds }),
+            ...(styleIds === undefined ? {} : { styleIds }),
           });
           return;
         }

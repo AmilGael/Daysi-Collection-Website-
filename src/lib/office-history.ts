@@ -37,7 +37,7 @@ type Stream<R> = {
   readonly key: (record: R) => string;
   readonly versions: (id: string) => R[];
   readonly baseline: (id: string) => OfficeChange | undefined;
-  readonly toChange: (record: R, id: string) => OfficeChange;
+  readonly toChange: (record: R, id: string) => OfficeChange | undefined;
   readonly undoable?: (latest: R) => boolean;
 };
 
@@ -56,7 +56,7 @@ function recordStream<R>(
   collection: string,
   key: (record: R) => string,
   baseline: (id: string) => OfficeChange | undefined,
-  toChange: (record: R, id: string) => OfficeChange,
+  toChange: (record: R, id: string) => OfficeChange | undefined,
 ): Stream<R> {
   return {
     all: () => readRecords<R>(collection),
@@ -231,17 +231,19 @@ const promotion = recordStream<Promotion>(
 
 /**
  * A premiere's own words, dates, numbers, cover and style checklist,
- * together. Each saved override record is only a partial diff — the
- * fields that one save actually touched, not a running total — because a
- * field a save never named keeps whatever the office action's own
- * forward-merge (`previousOverrideFields`) already had for it. That means
- * a record earlier in the history can be missing a field a later save
- * introduced, so `toChange`/`baseline` cannot return a record as-is: each
- * rebuilds the *whole* snapshot by taking the season as seeded or added
- * and overlaying only the fields that one record itself set. Undoing to
- * that snapshot then correctly puts back a field the very next save never
- * touched (the checklist, say, when the newest save only changed pieces),
- * rather than leaving it at whatever the newest save happened to carry
+ * together. Because the office action forward-merges every save onto the
+ * season's current override (`previousOverrideFields`), each saved record
+ * is a *running total*: it carries every field any earlier save on this
+ * premiere ever touched, not merely the field that one save changed. What
+ * a record can still be missing is a field no save had touched *yet* at
+ * that point in the premiere's history — one a later save is the first to
+ * introduce. So `toChange`/`baseline` cannot return a record as-is: each
+ * rebuilds the *whole* snapshot instead, taking the season as seeded or
+ * added and overlaying only the fields that one particular record (or, for
+ * `baseline`, no record at all) itself carries. Undoing to that snapshot
+ * then correctly puts back a field a later save was the first to touch
+ * (the checklist, say, when an earlier record predates it) as the seed,
+ * rather than leaving it at whatever the newest save happens to carry
  * forward.
  */
 function premiereSnapshot(
@@ -278,11 +280,12 @@ const premiere = recordStream<PremiereOverride>(
     return seeded ? premiereSnapshot(id, seeded, {}) : undefined;
   },
   (record, id) => {
-    // A saved record only ever exists for a premiere that exists (the
-    // action refuses `unknown-premiere` otherwise), so this is never
-    // undefined in practice.
-    const seeded = seededPremiere(id)!;
-    return premiereSnapshot(id, seeded, record);
+    // A saved override normally means the premiere still exists — but a
+    // season that was never added (an office undo can still reach a
+    // record for one that existed only briefly, in principle) has nothing
+    // to rebuild a snapshot from, so there is nothing to undo to either.
+    const seeded = seededPremiere(id);
+    return seeded ? premiereSnapshot(id, seeded, record) : undefined;
   },
 );
 

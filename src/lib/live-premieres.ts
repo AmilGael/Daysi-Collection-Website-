@@ -1,5 +1,5 @@
 import { premieres, premiereListingFrom, type Localized, type Premiere } from "@/content";
-import { appendRecord, latestBy, readRecords } from "./records";
+import { appendRecord, latestBy, readRecords, versionsOf } from "./records";
 import { retiredSet } from "./retired";
 
 /**
@@ -38,6 +38,11 @@ export function addedPremieres(): AddedPremiere[] {
 
 export function premiereOverrides(): PremiereOverride[] {
   return latestBy(readRecords<PremiereOverride>(PREMIERE_OVERRIDES), (record) => record.premiereId);
+}
+
+/** Every saved override line for one season, oldest first — its own history. */
+export function premiereOverrideVersions(premiereId: string): PremiereOverride[] {
+  return versionsOf<PremiereOverride>(PREMIERE_OVERRIDES, (record) => record.premiereId, premiereId);
 }
 
 export async function saveAddedPremiere(premiere: AddedPremiere): Promise<void> {

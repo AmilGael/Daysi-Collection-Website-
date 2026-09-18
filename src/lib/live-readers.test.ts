@@ -915,4 +915,45 @@ describe("a premiere announced from the office", () => {
     expect(otono?.title.es).toBe("Yurumein");
     expect(otono?.piecesPlanned).toBe(5);
   });
+
+  it("undo still lands when a garment on the season's checklist has since been retired, and drops it from what is saved", async () => {
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 });
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 4 });
+
+    const { setRetired } = await import("./retired");
+    // "sirena" is on otono-2026's seeded checklist; the undo about to run
+    // carries that checklist along (it never touched it, so it falls back
+    // to the seed), and must not refuse the whole change over one retired
+    // garment on it.
+    await setRetired("style", "sirena", true);
+
+    await undo("otono-2026");
+
+    const { manageablePremieres } = await import("./live-premieres");
+    const otono = manageablePremieres().find((premiere) => premiere.id === "otono-2026");
+    expect(otono?.piecesPlanned).toBe(5);
+    expect(otono?.styleIds).not.toContain("sirena");
+  });
+
+  it("undo reuses the seeded English when the Spanish it sends back matches the seed, even though the current text is something else entirely", async () => {
+    const { manageablePremieres } = await import("./live-premieres");
+    const seeded = manageablePremieres().find((premiere) => premiere.id === "otono-2026")!;
+
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 });
+    await apply({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      story: "Una historia nueva para esta temporada.",
+    });
+
+    // The undo sends the seeded Spanish back, but the *current* merged
+    // story is the one just saved above — a naive "matches the current
+    // text" check would miss the seed entirely and re-translate it.
+    await undo("otono-2026");
+
+    const otono = manageablePremieres().find((premiere) => premiere.id === "otono-2026");
+    expect(otono?.story).toEqual(seeded.story);
+    expect(otono?.piecesPlanned).toBe(5);
+  });
 });
