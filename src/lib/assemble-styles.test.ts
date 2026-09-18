@@ -37,9 +37,29 @@ describe("assembling the catalog from seed and what Daysi added", () => {
     expect(assembleStyles([style("a")], [], []).map((s) => s.id)).toEqual(["a"]);
   });
 
-  it("puts a garment she added after the ones that shipped", () => {
+  it("puts a garment she added ahead of the ones that shipped", () => {
     const result = assembleStyles([style("a")], [style("new")], []);
-    expect(result.map((s) => s.id)).toEqual(["a", "new"]);
+    expect(result.map((s) => s.id)).toEqual(["new", "a"]);
+  });
+
+  it("puts the garment she added last at the very front", () => {
+    const result = assembleStyles([style("a")], [style("older"), style("newer")], []);
+    expect(result.map((s) => s.id)).toEqual(["newer", "older", "a"]);
+  });
+
+  it("keeps a garment where it was when she edits it after adding another", () => {
+    const result = assembleStyles(
+      [style("a")],
+      [style("older"), style("newer"), style("older", { name: { en: "edited", es: "editada" } })],
+      [],
+    );
+    expect(result.map((s) => s.id)).toEqual(["newer", "older", "a"]);
+    expect(result[1]?.name.en).toBe("edited");
+  });
+
+  it("leaves a shipped garment in its own place when she saves a new record of it", () => {
+    const result = assembleStyles([style("a"), style("b")], [style("new"), style("a")], []);
+    expect(result.map((s) => s.id)).toEqual(["new", "a", "b"]);
   });
 
   it("lets her unpublish a garment she added herself", () => {
@@ -82,7 +102,7 @@ describe("assembling the catalog from seed and what Daysi added", () => {
   });
 
   it("behaves unchanged with an empty retired set", () => {
-    expect(assembleStyles([style("a")], [style("new")], [], new Set()).map((s) => s.id)).toEqual(["a", "new"]);
+    expect(assembleStyles([style("a")], [style("new")], [], new Set()).map((s) => s.id)).toEqual(["new", "a"]);
   });
 });
 
