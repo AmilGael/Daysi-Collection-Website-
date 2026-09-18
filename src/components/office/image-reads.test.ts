@@ -58,14 +58,14 @@ describe("image reads", () => {
 });
 
 describe("the add forms", () => {
-  it.each(["gallery-manager.tsx", "fabric-manager.tsx"])(
-    "%s reports an unreadable upload",
-    (name) => {
-      const source = fs.readFileSync(path.join(process.cwd(), "src/components", name), "utf8");
-      expect(source).toContain('from "./office/image-reads"');
-      expect(source).toContain('"upload-failed"');
-      expect(source).toContain("<ErrorText");
-      expect(source).not.toContain("createImageBitmap(");
-    },
-  );
+  it.each([
+    { relative: "src/components/office/gallery-work-sheet.tsx", from: "./image-reads" },
+    { relative: "src/components/fabric-manager.tsx", from: "./office/image-reads" },
+  ])("$relative reports an unreadable upload", ({ relative, from }) => {
+    const source = fs.readFileSync(path.join(process.cwd(), relative), "utf8");
+    expect(source).toContain(`from "${from}"`);
+    expect(source).toContain('"upload-failed"');
+    expect(source).toContain("<ErrorText");
+    expect(source).not.toContain("createImageBitmap(");
+  });
 });

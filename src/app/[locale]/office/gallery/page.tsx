@@ -10,7 +10,7 @@ import {
   sectionLabel,
 } from "@/lib/live-gallery";
 import { undoableIds } from "@/lib/office-history";
-import { GalleryManager, type ManagedWork } from "@/components/gallery-manager";
+import { GalleryCards, type ManagedWork } from "@/components/gallery-cards";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { officeViewer } from "../_lib/viewer";
 import { applyGalleryChanges } from "./actions";
@@ -71,7 +71,7 @@ export default async function OfficeGalleryPage({
         </p>
       </div>
       <OfficeDraftProvider apply={applyGalleryChanges}>
-        <GalleryManager
+        <GalleryCards
           works={active}
           retired={retired}
           categories={galleryCategories}
