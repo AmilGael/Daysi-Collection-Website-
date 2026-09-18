@@ -554,6 +554,7 @@
     "promoLead": "Un descuento que el sitio aplica solo, sin códigos: a toda la colección, a una categoría o a una prenda. Las tarjetas, la página de la prenda y el carrito muestran el precio rebajado junto al de antes, tachado. Si dos tocan la misma prenda, gana la más precisa (la de la prenda, luego la de la categoría) y nunca se suman. Nunca más del 90 % de descuento en una pieza.",
     "promoAdd": "Agregar una promoción",
     "promoAddLead": "Escríbala en español; el inglés se escribe solo cuando confirma. Baja el precio de la prenda nada más: el cargo por hacerla a su medida queda igual. Nunca más del 90 % de descuento: una cantidad fija más grande se queda en el 90 % del precio de la pieza.",
+    "promoBack": "Volver",
     "promoLabel": "Cómo se llama",
     "promoLabelPlaceholder": "Venta de otoño",
     "promoKind": "Cuánto baja",

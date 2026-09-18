@@ -554,6 +554,7 @@
     "promoLead": "A discount the site applies by itself, no codes: to the whole collection, one category or one garment. The cards, the garment page and the cart show the lowered price beside the old one, struck through. Where two reach the same garment, the narrower one wins (the garment's, then the category's), and they never add up. Never more than 90% off a piece.",
     "promoAdd": "Add a promotion",
     "promoAddLead": "Write it in Spanish; the English is written when you confirm. It lowers the garment's price only: the made-to-measure charge stays the same. Never more than 90% off: a larger set amount stops at 90% of the piece's price.",
+    "promoBack": "Back",
     "promoLabel": "What it's called",
     "promoLabelPlaceholder": "Autumn sale",
     "promoKind": "How much it takes off",

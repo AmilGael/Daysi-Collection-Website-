@@ -11,7 +11,6 @@ import { ChoiceGroup } from "./form";
 import { Pending } from "./office/confirm-bar";
 import { MoneyBox } from "./office/garment-sheet";
 import { RetireButton, RetiredGroup } from "./office/retired-group";
-import { Sheet } from "./office/sheet";
 import {
   formatDay,
   promotionKeyFor,
@@ -30,9 +29,13 @@ const field = "w-full border border-line bg-paper px-3 py-2 text-[0.9375rem] tex
 /**
  * The promotions on the shop window: each one's name, what it takes off,
  * what it reaches and when, a switch to turn it off and on, Retirar and
- * Deshacer; then the sheet that adds one. Everything stages into the tab's
- * draft and reaches the site at Confirmar cambios. No codes: a promotion
- * lowers every garment in its reach by itself.
+ * Deshacer; then the add form. This is already the body of one Sheet
+ * (opened from the Promociones card), so adding one swaps the list for the
+ * form in place — a second, nested Sheet would register its own Escape and
+ * back-gesture handlers on top of the outer one's, and either would close
+ * both and drop her back to the four cards. Everything stages into the
+ * tab's draft and reaches the site at Confirmar cambios. No codes: a
+ * promotion lowers every garment in its reach by itself.
  */
 export function PromotionEditor({
   promotions,
@@ -52,7 +55,7 @@ export function PromotionEditor({
   const locale = useLocale() as Locale;
   const draft = useOfficeDraft<ShopfrontChange>();
   const [adding, setAdding] = useState(false);
-  const close = useCallback(() => setAdding(false), []);
+  const backToList = useCallback(() => setAdding(false), []);
 
   const scopeName = (scope: PromotionScope): string => {
     switch (scope.type) {
@@ -87,6 +90,21 @@ export function PromotionEditor({
       ? [{ key: entry.key, wire: entry.change.wire }]
       : [],
   );
+
+  if (adding) {
+    return (
+      <div className="flex max-w-2xl flex-col gap-6">
+        <button type="button" onClick={backToList} className="w-fit text-[0.8125rem] underline underline-offset-4">
+          {t("promoBack")}
+        </button>
+        <NewPromotionForm
+          categories={categories}
+          styles={styles.filter((style) => !style.retired)}
+          onDone={backToList}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
@@ -187,14 +205,6 @@ export function PromotionEditor({
         restoreKey={promotionKeyFor}
         onRestore={(id) => draft.stage(promotionKeyFor(id), { wire: { type: "restore", key: promotionKeyFor(id), id } })}
       />
-
-      <Sheet open={adding} title={t("promoAdd")} onClose={close}>
-        <NewPromotionForm
-          categories={categories}
-          styles={styles.filter((style) => !style.retired)}
-          onDone={close}
-        />
-      </Sheet>
     </div>
   );
 }

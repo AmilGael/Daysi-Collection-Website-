@@ -92,12 +92,29 @@ describe("the promotions sheet", () => {
   });
 
   it("still keeps the add form, Retirar/Deshacer and Retirados exactly as Task 13 built them", () => {
-    // The add form opens through its own local state, nested inside whichever
-    // sheet this list itself is rendered in — not the cards' own `open`.
     expect(promoSource).toContain("const [adding, setAdding] = useState(false);");
     expect(promoSource).toContain("<RetiredGroup");
     expect(promoSource).toContain("<RetireButton");
     expect(promoSource).toContain('promotion.undoable ? <UndoLink kind="promotion" id={promotion.id} /> : null');
+  });
+
+  it("keeps the 90% rule, the amount cap and the date-order check, and stages the same wire, untouched", () => {
+    expect(promoSource).toContain("if (value < 1 || value > MOST_PERCENT) return setProblem(t(\"promoPercentRange\"));");
+    expect(promoSource).toContain("if (cents === null || cents < LEAST_AMOUNT || cents > MOST_AMOUNT) return setProblem(t(\"promoAmountRange\"));");
+    expect(promoSource).toContain("if (startsAt && endsAt && endsAt < startsAt) return setProblem(t(\"promoDatesOrder\"));");
+    expect(promoSource).toContain('scope: scopeFromChoice(scope),');
+  });
+
+  it("swaps the list for the add form in place, with no second Sheet nested inside the outer one", () => {
+    // A second Sheet would register its own Escape and popstate handlers on
+    // top of the outer one's (sheet.tsx), so Escape or a phone swipe-back
+    // while adding a promotion would close both and drop her back to the
+    // four cards — see the review finding on shopfront-cards.tsx.
+    expect(promoSource).not.toContain("<Sheet");
+    expect(promoSource).not.toContain('from "./office/sheet"');
+    expect(promoSource).toContain("if (adding) {");
+    expect(promoSource).toContain('onClick={backToList} className="w-fit text-[0.8125rem] underline underline-offset-4">\n          {t("promoBack")}');
+    expect(promoSource).toContain("onDone={backToList}");
   });
 });
 
@@ -142,12 +159,13 @@ describe("the office copy", () => {
   it("names every label the new cards show, in both languages", () => {
     for (const bundle of [es, en]) {
       const words = office(bundle);
-      for (const key of ["noticeEmpty", "noticeOnChip", "noticeOffChip", "promoActiveCount"]) {
+      for (const key of ["noticeEmpty", "noticeOnChip", "noticeOffChip", "promoActiveCount", "promoBack"]) {
         expect(words[key], key).toBeTruthy();
         expect(words[key], key).not.toContain("—");
       }
     }
     expect(office(es).noticeEmpty).toBe("Sin aviso");
+    expect(office(es).promoBack).toBe("Volver");
   });
 
   it("no longer tells her to (un)check a box that is a switch now", () => {
