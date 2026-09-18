@@ -9,6 +9,7 @@ import {
   manageablePriceList,
 } from "@/lib/live-pricing";
 import { PriceManager } from "@/components/price-manager";
+import type { PriceCategoryGroup } from "@/components/office/price-draft";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { undoableIds } from "@/lib/office-history";
 import { officeViewer } from "../_lib/viewer";
@@ -40,8 +41,10 @@ export default async function OfficePricesPage({
     if (style.retired || !style.ownPrice) continue;
     ownPriced.set(style.priceEntryId, (ownPriced.get(style.priceEntryId) ?? 0) + 1);
   }
+  const fabrics = liveFabrics();
   const priceEntries = manageablePriceList().map((entry) => ({
     id: entry.id,
+    categoryId: entry.categoryId,
     garment: translate(
       categories.find((category) => category.id === entry.categoryId)?.name ?? {
         en: entry.categoryId,
@@ -50,18 +53,27 @@ export default async function OfficePricesPage({
       language,
     ),
     fabric: translate(
-      liveFabrics().find((fabric) => fabric.id === entry.fabricId)?.name ?? {
+      fabrics.find((fabric) => fabric.id === entry.fabricId)?.name ?? {
         en: entry.fabricId,
         es: entry.fabricId,
       },
       language,
     ),
+    fabricSwatch: fabrics.find((fabric) => fabric.id === entry.fabricId)?.swatchImage ?? "",
     fixedPrice: entry.fixedPrice,
     customizationExtra: entry.customizationExtra,
     ownPriced: ownPriced.get(entry.id) ?? 0,
     retired: entry.retired,
     undoable: undoableEntries.has(entry.id),
   }));
+  const activePriceEntries = priceEntries.filter((entry) => !entry.retired);
+  const priceGroups: PriceCategoryGroup[] = categories
+    .map((category) => ({
+      id: category.id,
+      label: translate(category.name, language),
+      entries: activePriceEntries.filter((entry) => entry.categoryId === category.id),
+    }))
+    .filter((group) => group.entries.length > 0);
   const priceAlterations = manageableAlterations().map((alteration) => ({
     id: alteration.id,
     name: translate(alteration.name, language),
@@ -90,12 +102,13 @@ export default async function OfficePricesPage({
       </div>
       <OfficeDraftProvider apply={applyPriceChanges}>
         <PriceManager
-          entries={priceEntries.filter((entry) => !entry.retired)}
+          groups={priceGroups}
           retiredEntries={priceEntries.filter((entry) => entry.retired)}
           alterations={priceAlterations.filter((alteration) => !alteration.retired)}
           retiredAlterations={priceAlterations.filter((alteration) => alteration.retired)}
           appointments={priceAppointments.filter((appointment) => !appointment.retired)}
           retiredAppointments={priceAppointments.filter((appointment) => appointment.retired)}
+          locale={language}
         />
       </OfficeDraftProvider>
     </section>
