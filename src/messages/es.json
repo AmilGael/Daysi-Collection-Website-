@@ -523,6 +523,7 @@
     "textsDescription": "Descripción",
     "textsDetail": "Detalle",
     "textsCaption": "Pie de foto",
+    "confirmBarLabel": "Cambios",
     "changesPending": "{count, plural, one {# cambio sin confirmar} other {# cambios sin confirmar}}",
     "confirmChanges": "Confirmar cambios",
     "confirming": "Confirmando…",

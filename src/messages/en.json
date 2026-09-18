@@ -523,6 +523,7 @@
     "textsDescription": "Description",
     "textsDetail": "Detail",
     "textsCaption": "Caption",
+    "confirmBarLabel": "Changes",
     "changesPending": "{count, plural, one {# unconfirmed change} other {# unconfirmed changes}}",
     "confirmChanges": "Confirm changes",
     "confirming": "Confirming…",

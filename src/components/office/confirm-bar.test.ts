@@ -34,4 +34,19 @@ describe("the confirm bar", () => {
     expect(officeMessages(es).noChanges).toBe("Sin cambios");
     expect(officeMessages(en).noChanges).toBe("No changes");
   });
+
+  /**
+   * The bar used to be `sticky` inside the padded `.shell`, so its
+   * background stopped at the page gutters. It is now a fixed, full-width
+   * bar (rendered through a portal so no tab's nested layout can clip it),
+   * with its own `.shell` row inside so the content still lines up.
+   */
+  it("is a fixed, full-width bar, not a sticky one clipped by the shell", () => {
+    expect(source).not.toContain("sticky");
+    expect(source).toContain("fixed inset-x-0 bottom-0");
+    expect(source).toContain("bg-paper");
+    expect(source).not.toContain("bg-paper/95");
+    expect(source).toContain("shell");
+    expect(source).toContain("z-[60]");
+  });
 });

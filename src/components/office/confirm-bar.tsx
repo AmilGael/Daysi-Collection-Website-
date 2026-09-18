@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import type { JSX, ReactNode } from "react";
+import { buttonClass } from "@/components/ui";
 import type { DraftStatus } from "./draft-reducer";
 
 export function ErrorText({ code, count }: { code: string; count?: number }) {
@@ -16,9 +17,14 @@ export function ErrorText({ code, count }: { code: string; count?: number }) {
  * it will be when something is: a button she can always see is one she
  * never has to look for.
  *
- * It sits at z-[60]: above the sheet (z-50), which is above the sticky site
- * header (z-40), so Confirmar cambios is tappable whether a sheet is open
- * or not.
+ * `fixed`, not scroll-linked: rendered through a portal to `document.body`
+ * (see `use-office-draft.tsx`), so it is the same full-width, edge-to-edge
+ * bar on every tab, regardless of which flex parent staged it. The `.shell`
+ * row inside keeps its content lined up with the rest of the page.
+ *
+ * It sits at z-[60]: above the sheet (z-50), which is above the site header
+ * that pins to the top (z-40), so Confirmar cambios is tappable whether a
+ * sheet is open or not.
  */
 export function ConfirmBar({
   count,
@@ -38,36 +44,39 @@ export function ConfirmBar({
 
   return (
     <div
-      role="status"
-      className="sticky bottom-0 z-[60] mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-line bg-paper/95 py-3 backdrop-blur-md"
+      role="region"
+      aria-label={t("confirmBarLabel")}
+      className="fixed inset-x-0 bottom-0 z-[60] border-t border-line bg-paper shadow-[0_-12px_32px_-20px_rgb(20_17_13/0.35)]"
     >
-      <div>
-        <p className={`text-sm font-semibold ${idle ? "text-ink-faint" : ""}`}>
-          {idle ? t("noChanges") : t("changesPending", { count })}
-        </p>
-        {status === "failed" && error ? (
-          <p className="mt-1 text-[0.8125rem] text-ink"><ErrorText code={error} /></p>
-        ) : null}
-      </div>
-      <div className="flex items-center gap-3">
-        {idle ? null : (
+      <div className="shell flex min-h-16 items-center justify-between gap-4 py-3">
+        <div>
+          <p aria-live="polite" className={`text-sm font-semibold ${idle ? "text-ink-faint" : ""}`}>
+            {idle ? t("noChanges") : t("changesPending", { count })}
+          </p>
+          {status === "failed" && error ? (
+            <p className="mt-1 text-[0.8125rem] text-ink"><ErrorText code={error} /></p>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-3">
+          {idle ? null : (
+            <button
+              type="button"
+              onClick={onDiscard}
+              disabled={status === "confirming"}
+              className={buttonClass({ tone: "outline", size: "small" })}
+            >
+              {t("discardChanges")}
+            </button>
+          )}
           <button
             type="button"
-            onClick={onDiscard}
-            disabled={status === "confirming"}
-            className="border border-ink px-4 py-2 text-sm font-semibold disabled:opacity-60"
+            onClick={onConfirm}
+            disabled={idle || status === "confirming"}
+            className={buttonClass({ tone: "solid", size: "small" })}
           >
-            {t("discardChanges")}
+            {status === "confirming" ? t("confirming") : t("confirmChanges")}
           </button>
-        )}
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={idle || status === "confirming"}
-          className="bg-ink px-4 py-2 text-sm font-semibold text-paper disabled:opacity-60"
-        >
-          {status === "confirming" ? t("confirming") : t("confirmChanges")}
-        </button>
+        </div>
       </div>
     </div>
   );
