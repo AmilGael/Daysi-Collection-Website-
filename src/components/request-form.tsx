@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import {
+  sizeState,
   translate,
   type AlterationService,
   type DesignCategory,
@@ -296,8 +297,7 @@ export function RequestForm({
               <Select id={id} value={sizeId} onChange={(event) => setSizeId(event.target.value)}>
                 {(selectedStyle?.sizes ?? []).map((size) => (
                   <option key={size.sizeId} value={size.sizeId}>
-                    {size.sizeId.toUpperCase()} —{" "}
-                    {size.inStock ? tc("inStock") : tc("madeToOrder")}
+                    {size.sizeId.toUpperCase()} — {tc(sizeState(size))}
                   </option>
                 ))}
               </Select>

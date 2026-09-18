@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
+  sizeState,
   translate,
   type Cents,
   type GarmentStyle,
@@ -38,13 +39,16 @@ export function StyleOrderPanel({
   const tcart = useTranslations("cart");
   const locale = useLocale() as Locale;
   const router = useRouter();
-  const [addState, setAddState] = useState<"idle" | "adding" | "added">("idle");
+  const [addState, setAddState] = useState<"idle" | "adding" | "added" | "soldOut">("idle");
 
   const firstAvailable = style.sizes.find((size) => size.inStock) ?? style.sizes[0];
   const [sizeId, setSizeId] = useState<SizeId | undefined>(firstAvailable?.sizeId);
   const [customize, setCustomize] = useState(false);
 
   const total = fixedPrice + (customize ? customizationExtra : 0);
+  // A counted size with none left can still be sewn to measure, never sold ready-made.
+  const selected = style.sizes.find((size) => size.sizeId === sizeId);
+  const soldOut = selected !== undefined && sizeState(selected) === "soldOut" && !customize;
   const requestHref = `/request?kind=order&style=${style.slug}${
     sizeId ? `&size=${sizeId}` : ""
   }${customize ? "&customize=1" : ""}`;
@@ -63,7 +67,7 @@ export function StyleOrderPanel({
           customize,
         }),
       });
-      setAddState(response.ok ? "added" : "idle");
+      setAddState(response.ok ? "added" : response.status === 409 ? "soldOut" : "idle");
       // The cart badge lives in the header, which the server renders.
       if (response.ok) router.refresh();
     } catch {
@@ -84,7 +88,10 @@ export function StyleOrderPanel({
                 key={offered.sizeId}
                 type="button"
                 aria-pressed={isSelected}
-                onClick={() => setSizeId(offered.sizeId)}
+                onClick={() => {
+                  setSizeId(offered.sizeId);
+                  setAddState("idle");
+                }}
                 className={`flex min-w-16 flex-col items-center gap-0.5 rounded-[2px] border px-4 py-2.5 transition-colors ${
                   isSelected
                     ? "border-ink bg-ink text-paper"
@@ -97,7 +104,7 @@ export function StyleOrderPanel({
                     isSelected ? "text-paper-faint" : "text-ink-faint"
                   }`}
                 >
-                  {offered.inStock ? tc("inStock") : tc("madeToOrder")}
+                  {tc(sizeState(offered))}
                 </span>
               </button>
             );
@@ -119,7 +126,10 @@ export function StyleOrderPanel({
           <input
             type="checkbox"
             checked={customize}
-            onChange={(event) => setCustomize(event.target.checked)}
+            onChange={(event) => {
+              setCustomize(event.target.checked);
+              setAddState("idle");
+            }}
             className="mt-1 h-4 w-4 shrink-0 accent-ink"
           />
           <span className="flex flex-col gap-1">
@@ -146,11 +156,16 @@ export function StyleOrderPanel({
         <button
           type="button"
           onClick={addToCart}
-          disabled={!sizeId || addState === "adding"}
+          disabled={!sizeId || soldOut || addState === "adding"}
           className={buttonClass({ className: "w-full" })}
         >
-          {addState === "added" ? tcart("added") : tcart("addToCart")}
+          {addState === "added" ? tcart("added") : soldOut ? tc("soldOut") : tcart("addToCart")}
         </button>
+        {soldOut && style.customizationAvailable ? (
+          <p className="text-[0.8125rem] text-ink-soft">{t("soldOutNote")}</p>
+        ) : addState === "soldOut" ? (
+          <p role="status" className="text-[0.8125rem] text-ink-soft">{tcart("soldOut")}</p>
+        ) : null}
         <Link
           href={requestHref}
           className={buttonClass({ tone: "outline", className: "w-full" })}

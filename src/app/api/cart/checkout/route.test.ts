@@ -43,10 +43,14 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+async function firstStyle() {
+  const { styles } = await import("@/content");
+  return styles.find((candidate) => candidate.isPublished)!;
+}
+
 async function checkout() {
   const { writeCart } = await import("@/lib/cart");
-  const { styles } = await import("@/content");
-  const style = styles.find((candidate) => candidate.isPublished)!;
+  const style = await firstStyle();
   await writeCart({ lines: [{ styleSlug: style.slug, sizeId: "s", customize: false, quantity: 1 }] });
 
   const { POST } = await import("./route");
@@ -86,5 +90,53 @@ describe("paying for a cart", () => {
     const { createCheckoutSession } = await import("@/lib/payments");
     const request = vi.mocked(createCheckoutSession).mock.calls[0]![0];
     expect(request.cardsOnly).toBeUndefined();
+  });
+});
+
+describe("a cart and the pieces on the rack", () => {
+  it("records what the order took, garment by size, so the stock can count it", async () => {
+    const response = await checkout();
+    const { reference } = (await response.json()) as { reference: string };
+
+    const { findRequest } = await import("@/lib/request-store");
+    const style = await firstStyle();
+    expect(findRequest(reference)?.pieces).toEqual([
+      { styleId: style.id, sizeId: "s", quantity: 1, madeToMeasure: false },
+    ]);
+  });
+
+  it("refuses a piece that sold out while it sat in the cart, and leaves the cart as it was", async () => {
+    const style = await firstStyle();
+    const { saveStyleOverride } = await import("@/lib/live-catalog");
+    await saveStyleOverride({
+      styleId: style.id,
+      isPublished: true,
+      stock: { s: 0 },
+      countedAt: { s: "2026-09-01T12:00:00.000Z" },
+    });
+
+    const response = await checkout();
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: "sold-out" });
+    const { readCart } = await import("@/lib/cart");
+    expect((await readCart()).lines).toHaveLength(1);
+    const { listRequests } = await import("@/lib/request-store");
+    expect(listRequests("order")).toEqual([]);
+  });
+
+  it("holds the last piece for the first of two checkouts that arrive together", async () => {
+    const style = await firstStyle();
+    const { saveStyleOverride } = await import("@/lib/live-catalog");
+    await saveStyleOverride({
+      styleId: style.id,
+      isPublished: true,
+      stock: { s: 1 },
+      countedAt: { s: "2026-09-01T12:00:00.000Z" },
+    });
+
+    const statuses = (await Promise.all([checkout(), checkout()])).map((response) => response.status).sort();
+
+    expect(statuses).toEqual([200, 409]);
   });
 });

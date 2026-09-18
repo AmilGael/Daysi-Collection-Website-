@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { liveStyleBySlug as findStyle } from "@/lib/live-catalog";
+import { liveStyleBySlug as findStyle, liveStyles } from "@/lib/live-catalog";
+import { stockShortfall } from "@/lib/stock";
 import {
   addLine,
   cartCount,
@@ -54,7 +55,8 @@ export async function POST(request: Request) {
   }
 
   const change = parsed.data;
-  let cart = await readCart();
+  const before = await readCart();
+  let cart = before;
 
   switch (change.action) {
     case "add": {
@@ -81,6 +83,15 @@ export async function POST(request: Request) {
     case "clear":
       cart = emptyCart;
       break;
+  }
+
+  // More ready-made pieces than are left on the rack is refused; a quantity
+  // coming down never is, even when a sale elsewhere has left the cart short.
+  const asksForMore =
+    change.action === "add" ||
+    (change.action === "setQuantity" && change.quantity > (before.lines[change.index]?.quantity ?? 0));
+  if (asksForMore && stockShortfall(cart.lines, liveStyles())) {
+    return NextResponse.json({ error: "sold-out" }, { status: 409 });
   }
 
   await writeCart(cart);
