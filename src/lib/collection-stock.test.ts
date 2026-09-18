@@ -125,6 +125,26 @@ describe("a new garment with its pieces counted", () => {
     const result = await createWith({ s: 0, m: 0, l: 0 });
     expect(result).toEqual({ ok: true, results: [{ key: "style-create:1", ok: false, error: "no-sizes" }] });
   });
+
+  it("carries the counts, when they were taken, and her own price on the same override line", async () => {
+    // `create` above already prices a pair that is live (shirts--daisy-cotton),
+    // so its fixedPrice is a garment's own price, not the list's — the same
+    // one line has to carry both.
+    await createWith({ s: 1, m: 0, l: 2 });
+
+    const { allLiveStyles, styleOverrides } = await import("./live-catalog");
+    const sol = allLiveStyles().find((style) => style.name.es === "Camisa Sol")!;
+    const record = styleOverrides().find((override) => override.styleId === sol.id)!;
+
+    expect(record.stock).toEqual({ s: 1, m: 0, l: 2 });
+    expect(record.countedAt?.s).toBeTruthy();
+    expect(record.countedAt?.m).toBeTruthy();
+    expect(record.countedAt?.l).toBeTruthy();
+    expect(record.fixedPrice).toBe(10500);
+
+    const { priceFor } = await import("./live-pricing");
+    expect(priceFor(sol)).toMatchObject({ fixedPrice: 10500, own: true });
+  });
 });
 
 /**

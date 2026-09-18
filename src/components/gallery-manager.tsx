@@ -100,6 +100,17 @@ export function GalleryManager({ works, retired, categories, retiredSections, un
   const options = [...categories, ...pendingSections];
   const addedSections = categories.filter((section) => !section.coded);
 
+  // The picker followed a section she just named into "Otra…" (see `add`
+  // below); if that pending section drops out from under it — its one photo
+  // removed, or the whole draft discarded — the picker is left pointing at
+  // an id no option carries any more. Back to the first live section, same
+  // as the picker starts on.
+  useEffect(() => {
+    if (category === OTHER) return;
+    if (options.some((option) => option.id === category)) return;
+    setCategory(categories[0]?.id ?? OTHER);
+  }, [options, categories, category]);
+
   async function add(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const file = fileRef.current?.files?.[0];

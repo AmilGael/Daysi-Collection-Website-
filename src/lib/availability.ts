@@ -114,8 +114,11 @@ function businessCalendarDay(instant: Date): { date: string; weekday: number } {
  * for that date, so summer and winter time both come out right; within an hour
  * of the change itself the answer can be off by that hour, which for a
  * by-appointment atelier is acceptable.
+ *
+ * Exported for the order-note action too, which stamps a noted order's own
+ * date at noon New York time rather than the moment Daysi typed it.
  */
-function businessInstant(date: string, time: string): Date {
+export function businessInstant(date: string, time: string): Date {
   const nearby = new Date(`${date}T${time}:00Z`);
   const zoneName = new Intl.DateTimeFormat("en-US", {
     timeZone: BUSINESS_TIME_ZONE,

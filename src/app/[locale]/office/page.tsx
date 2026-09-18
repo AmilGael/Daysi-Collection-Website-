@@ -67,7 +67,7 @@ export default async function OfficeHubPage({
       <section className="flex flex-col gap-6">
         <h2 className="text-heading">{t("work")}</h2>
         <OrderNoteCard />
-        <OfficeRequestList records={withUndoable(work)} locale={language} emptyMessage={t("noWork")} />
+        <OfficeRequestList records={withUndoable(work)} locale={language} emptyMessage={t("noWork")} showOrderNotes />
       </section>
 
       <section className="flex flex-col gap-6">

@@ -27,7 +27,11 @@ export function AlterationCards({
 }): JSX.Element {
   const t = useTranslations("alterations");
   const [rush, setRush] = useState(false);
-  const surcharge = Math.min(...alterations.map((alteration) => alteration.rushSurcharge));
+  // The smallest surcharge that actually costs something: an alteration
+  // Daysi never charges extra for (a $0 surcharge) should not make the
+  // switch itself read "Rush · +$0".
+  const surcharges = alterations.map((alteration) => alteration.rushSurcharge).filter((amount) => amount > 0);
+  const surcharge = surcharges.length > 0 ? Math.min(...surcharges) : null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -45,7 +49,9 @@ export function AlterationCards({
               className={`absolute top-1 h-5 w-5 rounded-full bg-paper transition-[left] ${rush ? "left-6" : "left-1"}`}
             />
           </button>
-          <span>{t("rushToggle", { amount: formatMoney(surcharge, locale) })}</span>
+          <span>
+            {surcharge !== null ? t("rushToggle", { amount: formatMoney(surcharge, locale) }) : t("rushToggleNoAmount")}
+          </span>
         </label>
       ) : null}
 

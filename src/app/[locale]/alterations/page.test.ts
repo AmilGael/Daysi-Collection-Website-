@@ -45,6 +45,18 @@ describe("the alterations page", () => {
     expect(alterations(es).rushToggle).toBe("Con urgencia · +{amount} · listo antes");
   });
 
+  it("names the switch by the smallest surcharge that actually costs something, not a +$0", () => {
+    expect(cardsSource).toContain(
+      "const surcharges = alterations.map((alteration) => alteration.rushSurcharge).filter((amount) => amount > 0);",
+    );
+    expect(cardsSource).toContain("const surcharge = surcharges.length > 0 ? Math.min(...surcharges) : null;");
+    expect(cardsSource).toContain(
+      "{surcharge !== null ? t(\"rushToggle\", { amount: formatMoney(surcharge, locale) }) : t(\"rushToggleNoAmount\")}",
+    );
+    expect(alterations(es).rushToggleNoAmount).toBe("Con urgencia · listo antes");
+    expect(alterations(en).rushToggleNoAmount).toBe("Rush · ready sooner");
+  });
+
   it("says how a request goes in three steps, then the guarantee, the photograph and the way in", () => {
     expect([alterations(es).stepTell, alterations(es).stepPrice, alterations(es).stepCollect]).toEqual([
       "Cuénteme qué tiene",

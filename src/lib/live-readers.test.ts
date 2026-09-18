@@ -407,4 +407,76 @@ describe("noting an order the office took off-site", () => {
     expect(earnings.outstanding).toBe(3200);
     expect(earnings.received).toBe(0);
   });
+
+  it("keeps a WhatsApp phone on a custom piece, under its own CUS- reference", async () => {
+    await apply({
+      type: "order-note",
+      key: "order-note:cus",
+      kind: "commission",
+      clientName: "Marta Ríos",
+      phone: "\u200E917\u2011555\u20110100",
+      description: "Traje a medida, tela propia",
+      amount: 45000,
+      paid: true,
+    });
+
+    const { loadLedger } = await import("./earnings");
+    const written = loadLedger().find((record) => record.client.name === "Marta Ríos")!;
+    expect(written.reference).toMatch(/^CUS-/);
+    expect(written.client.phone).toBe("917-555-0100");
+  });
+
+  it("dates a noted order the day she gives it, not the day she typed it, and that is the month it is received in", async () => {
+    await apply({
+      type: "order-note",
+      key: "order-note:dated",
+      kind: "commission",
+      clientName: "Elena Cruz",
+      description: "Vestido de quince",
+      amount: 45000,
+      paid: true,
+      date: "2026-08-20",
+    });
+
+    const { loadLedger, monthlyReceived } = await import("./earnings");
+    const ledger = loadLedger();
+    const written = ledger.find((record) => record.client.name === "Elena Cruz")!;
+    expect(written.submittedAt.slice(0, 10)).toBe("2026-08-20");
+    expect(written.paidAt?.slice(0, 10)).toBe("2026-08-20");
+
+    const months = monthlyReceived(ledger, 6, new Date("2026-09-18T12:00:00.000Z"));
+    expect(months.find((month) => month.month === "2026-08")?.total).toBe(45000);
+    expect(months.find((month) => month.month === "2026-09")?.total).toBe(0);
+  });
+
+  it("stamps paidAt only when Daysi marks a noted order paid, and that is the month it counts in", async () => {
+    await apply({
+      type: "order-note",
+      key: "order-note:later-paid",
+      kind: "alteration",
+      clientName: "Nina Ortiz",
+      description: "Ajuste de cintura",
+      amount: 5000,
+      paid: false,
+    });
+    const { loadLedger } = await import("./earnings");
+    const noted = loadLedger().find((record) => record.client.name === "Nina Ortiz")!;
+    expect(noted.paidAt).toBeUndefined();
+
+    await apply({
+      type: "request-status",
+      key: `request:${noted.reference}`,
+      kind: noted.kind,
+      reference: noted.reference,
+      status: "paid",
+    });
+
+    const { loadLedger: reload, monthlyReceived } = await import("./earnings");
+    const ledger = reload();
+    const paidRecord = ledger.find((record) => record.reference === noted.reference)!;
+    expect(paidRecord.paidAt).toBeTruthy();
+
+    const months = monthlyReceived(ledger, 1, new Date());
+    expect(months[0]?.total).toBe(5000);
+  });
 });

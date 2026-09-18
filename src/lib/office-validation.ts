@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { categories } from "@/content";
+import { categories, shopDay } from "@/content";
 import type { ZodTypeAny } from "zod";
 
 /**
@@ -266,16 +266,37 @@ export const shopfrontChangeSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
+/** A hyphen-like character that is not a plain ASCII "-": the kind autocorrect
+ *  or a paste from WhatsApp leaves in a phone number. */
+const HYPHEN_LIKE = /[\u2010-\u2015\u2212]/g;
+/** Whatever is left once a phone is reduced to what it may actually hold. */
+const NOT_A_PHONE_CHARACTER = /[^0-9+()\-.\s]/g;
+
+/**
+ * Cleans a phone Daysi jots down by hand or pastes from WhatsApp: every
+ * hyphen-like dash becomes a plain "-", then anything that is not a digit, a
+ * space, +, (, ), - or . is dropped — a direction mark, a non-breaking space,
+ * an emoji. Shared by the sheet, before it ever stages a change, and by the
+ * schema below, so the two agree on what a phone is.
+ */
+export function normalizePhone(value: string): string {
+  return value.replace(HYPHEN_LIKE, "-").replace(NOT_A_PHONE_CHARACTER, "");
+}
+
 /** A phone Daysi jots down by hand: permissive on format, strict on the
  *  characters allowed, as everywhere else a client's number is taken. */
-const notedPhone = z
-  .string()
-  .trim()
-  .min(7)
-  .max(30)
-  .regex(/^[0-9+()\-.\s]+$/)
-  .optional();
+const notedPhone = z.preprocess(
+  (value) => (typeof value === "string" ? normalizePhone(value) : value),
+  z.string().trim().min(7).max(30).regex(/^[0-9+()\-.\s]+$/),
+).optional();
 const notedEmail = z.string().trim().max(160).email().optional();
+/** YYYY-MM-DD, no earlier than the site's own records and never in the
+ *  future: a typo that says "next year" would misdate a real payment. */
+const notedDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((value) => value >= "2020-01-01" && value <= shopDay(new Date()))
+  .optional();
 
 /**
  * An order, alteration or custom piece that never touched the site: Daysi
@@ -294,6 +315,9 @@ export const orderNoteSchema = z.object({
   description: z.string().trim().max(400),
   amount: cents,
   paid: z.boolean(),
+  /** When she took it, if not today. Stamps submittedAt (and paidAt, when
+   *  already paid) at noon New York time of that day. */
+  date: notedDate,
   notes: z.string().trim().max(400).optional(),
 });
 

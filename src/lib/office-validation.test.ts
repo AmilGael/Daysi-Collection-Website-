@@ -5,6 +5,7 @@ import {
   collectionChangeSchema,
   fabricChangeSchema,
   galleryChangeSchema,
+  normalizePhone,
   priceChangeSchema,
   shopfrontChangeSchema,
   styleCreateSchema,
@@ -543,5 +544,31 @@ describe("noting an order that never came through the site", () => {
     expect(workChangeSchema.safeParse({ ...orderNote, phone: "abc" }).success).toBe(false);
     expect(workChangeSchema.safeParse({ ...orderNote, email: "not-an-email" }).success).toBe(false);
     expect(workChangeSchema.safeParse({ ...orderNote, phone: undefined, email: undefined }).success).toBe(true);
+  });
+
+  it("cleans a phone pasted from WhatsApp: a non-breaking hyphen and a stray direction mark", () => {
+    // U+200E (left-to-right mark) before it, U+2011 (non-breaking hyphen) in
+    // place of both dashes: what a phone looks like copied out of a chat.
+    const messy = "\u200E917\u2011555\u20110100";
+    expect(normalizePhone(messy)).toBe("917-555-0100");
+
+    const parsed = workChangeSchema.safeParse({ ...orderNote, phone: messy });
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.type === "order-note" ? parsed.data.phone : null).toBe("917-555-0100");
+  });
+
+  it("still refuses a phone that has nothing left once the marks are stripped", () => {
+    expect(workChangeSchema.safeParse({ ...orderNote, phone: "12" }).success).toBe(false);
+    expect(workChangeSchema.safeParse({ ...orderNote, phone: "\u200E\u200E" }).success).toBe(false);
+  });
+
+  it("accepts a date she gives it, from 2020 up to today", () => {
+    expect(workChangeSchema.safeParse({ ...orderNote, date: "2026-08-20" }).success).toBe(true);
+  });
+
+  it("refuses a date before 2020, a date in the future, and one not shaped YYYY-MM-DD", () => {
+    expect(workChangeSchema.safeParse({ ...orderNote, date: "2019-12-31" }).success).toBe(false);
+    expect(workChangeSchema.safeParse({ ...orderNote, date: "2999-01-01" }).success).toBe(false);
+    expect(workChangeSchema.safeParse({ ...orderNote, date: "08/20/2026" }).success).toBe(false);
   });
 });

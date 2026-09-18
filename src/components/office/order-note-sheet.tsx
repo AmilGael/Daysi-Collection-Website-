@@ -2,8 +2,9 @@
 
 import { useState, type FormEvent, type JSX } from "react";
 import { useTranslations } from "next-intl";
+import { shopDay } from "@/content";
 import { centsFromInput } from "@/lib/money";
-import type { WorkChange } from "@/lib/office-validation";
+import { normalizePhone, type WorkChange } from "@/lib/office-validation";
 import { buttonClass } from "@/components/ui";
 import { MoneyBox } from "./garment-sheet";
 import { Sheet } from "./sheet";
@@ -60,8 +61,10 @@ function OrderNoteForm({ onDone }: { onDone(): void }): JSX.Element {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [paid, setPaid] = useState(true);
+  const [date, setDate] = useState("");
   const [notes, setNotes] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
+  const today = shopDay(new Date());
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -69,6 +72,13 @@ function OrderNoteForm({ onDone }: { onDone(): void }): JSX.Element {
     if (clientName.trim().length < 2) return setProblem(t("orderNoteNameRequired"));
     const cents = centsFromInput(amount);
     if (cents === null || cents > MAX_CENTS) return setProblem(t("servicePriceRequired"));
+    // Cleaned the same way the schema cleans it, so a number that reads fine
+    // to her — pasted from WhatsApp, a stray direction mark and all — is
+    // never staged only to be refused when she confirms.
+    const cleanPhone = normalizePhone(phone).trim();
+    if (phone.trim() && (cleanPhone.length < 7 || cleanPhone.length > 30)) {
+      return setProblem(t("orderNotePhoneInvalid"));
+    }
 
     const key = `order-note:${crypto.randomUUID()}`;
     draft.stage(key, {
@@ -77,11 +87,12 @@ function OrderNoteForm({ onDone }: { onDone(): void }): JSX.Element {
         key,
         kind,
         clientName: clientName.trim(),
-        ...(phone.trim() ? { phone: phone.trim() } : {}),
+        ...(cleanPhone ? { phone: cleanPhone } : {}),
         ...(email.trim() ? { email: email.trim() } : {}),
         description: description.trim(),
         amount: cents,
         paid,
+        ...(date ? { date } : {}),
         ...(notes.trim() ? { notes: notes.trim() } : {}),
       },
     });
@@ -146,6 +157,17 @@ function OrderNoteForm({ onDone }: { onDone(): void }): JSX.Element {
         </label>
         <MoneyBox label={t("orderNoteAmount")} value={amount} onChange={setAmount} />
         <Switch checked={paid} onChange={setPaid} label={t("orderNotePaid")} />
+        <label className="grid gap-1 text-[0.75rem] text-ink-faint">
+          {t("orderNoteDate")}
+          <input
+            type="date"
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
+            min="2020-01-01"
+            max={today}
+            className={field}
+          />
+        </label>
         <label className="grid gap-1 text-[0.75rem] text-ink-faint">
           {t("orderNoteNotes")}
           <textarea
