@@ -4,12 +4,10 @@ import { useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import {
-  sizeState,
   translate,
   type AlterationService,
   type DesignCategory,
   type Fabric,
-  type GarmentStyle,
 } from "@/content";
 import { formatMoney } from "@/lib/money";
 import type { Estimate } from "@/lib/pricing";
@@ -30,34 +28,27 @@ import {
 } from "./form";
 import { EstimateSummary } from "./estimate-summary";
 
-type Kind = "alteration" | "order" | "commission";
+type Kind = "alteration" | "commission";
 type ContactMethod = "whatsapp" | "phone" | "email";
 
 const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 
 /**
- * The one form Daysi's business runs on. It covers all three kinds of request
- * with the same fields for who you are and how to reach you, and swaps only the
- * part that describes the work.
+ * The one form Daysi's business runs on. It covers both kinds of request with
+ * the same fields for who you are and how to reach you, and swaps only the
+ * part that describes the work. A garment from the collection is not one of
+ * them: it is bought through the cart, where it is paid for.
  *
  * Nothing here computes a price the client can send: the server re-prices every
  * submission from the published list and returns the estimate it produced.
  */
 export function RequestForm({
   initialKind,
-  initialStyleSlug,
-  initialSizeId,
-  initialCustomize,
-  styles,
   alterations,
   categories,
   fabrics,
 }: {
   initialKind: Kind;
-  initialStyleSlug?: string;
-  initialSizeId?: string;
-  initialCustomize?: boolean;
-  styles: readonly GarmentStyle[];
   alterations: readonly AlterationService[];
   categories: readonly DesignCategory[];
   fabrics: readonly Fabric[];
@@ -85,11 +76,6 @@ export function RequestForm({
   const [photo, setPhoto] = useState<{ dataUrl: string; name: string } | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
 
-  // Order
-  const [styleSlug, setStyleSlug] = useState(initialStyleSlug ?? styles[0]?.slug ?? "");
-  const [sizeId, setSizeId] = useState(initialSizeId ?? "m");
-  const [customize, setCustomize] = useState(initialCustomize ?? false);
-
   // Commission
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
   const [fabricId, setFabricId] = useState(fabrics[0]?.id ?? "");
@@ -97,8 +83,6 @@ export function RequestForm({
   const [neededBy, setNeededBy] = useState("");
 
   const [estimate, setEstimate] = useState<Estimate | null>(null);
-
-  const selectedStyle = styles.find((style) => style.slug === styleSlug);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -116,9 +100,7 @@ export function RequestForm({
             preferredTiming,
             photoDataUrl: photo?.dataUrl,
           }
-        : kind === "order"
-          ? { ...common, kind, styleSlug, sizeId, customize }
-          : { ...common, kind, categoryId, fabricId, customize: true as const, occasion, neededBy };
+        : { ...common, kind, categoryId, fabricId, customize: true as const, occasion, neededBy };
 
     const result = await submit(body);
     if (result?.estimate) setEstimate(result.estimate);
@@ -168,7 +150,6 @@ export function RequestForm({
         onChange={setKind}
         options={[
           { value: "alteration", label: t("kindAlteration") },
-          { value: "order", label: t("kindOrder") },
           { value: "commission", label: t("kindCommission") },
         ]}
       />
@@ -275,38 +256,6 @@ export function RequestForm({
               </div>
             )}
           </Field>
-        </section>
-      ) : null}
-
-      {kind === "order" ? (
-        <section className="flex flex-col gap-6">
-          <Field label={t("kindOrder")}>
-            {({ id }) => (
-              <Select id={id} value={styleSlug} onChange={(event) => setStyleSlug(event.target.value)}>
-                {styles.map((style) => (
-                  <option key={style.slug} value={style.slug}>
-                    {translate(style.name, locale)}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-
-          <Field label={tc("size")}>
-            {({ id }) => (
-              <Select id={id} value={sizeId} onChange={(event) => setSizeId(event.target.value)}>
-                {(selectedStyle?.sizes ?? []).map((size) => (
-                  <option key={size.sizeId} value={size.sizeId}>
-                    {size.sizeId.toUpperCase()} — {tc(sizeState(size))}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-
-          <Checkbox checked={customize} onChange={setCustomize}>
-            {t("kindCommission")}
-          </Checkbox>
         </section>
       ) : null}
 

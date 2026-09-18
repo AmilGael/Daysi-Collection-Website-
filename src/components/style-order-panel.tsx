@@ -12,14 +12,15 @@ import {
   type SizeId,
 } from "@/content";
 import { formatMoney } from "@/lib/money";
-import { Link, useRouter, type Locale } from "@/i18n/routing";
+import { useRouter, type Locale } from "@/i18n/routing";
 import { buttonClass } from "./ui";
 
 /**
  * Size, customisation and the running price on a style page. The total updates
- * as the choice changes, and the choice is carried into the request form as
- * query parameters — the server re-prices it from the price list rather than
- * trusting the number shown here.
+ * as the choice changes, and the choice goes into the cart, where it is paid
+ * for — the server re-prices it from the price list rather than trusting the
+ * number shown here. There is no second way in: a garment ordered without
+ * paying would reach Daysi as an order nobody paid for.
  */
 export function StyleOrderPanel({
   style,
@@ -49,9 +50,6 @@ export function StyleOrderPanel({
   // A counted size with none left can still be sewn to measure, never sold ready-made.
   const selected = style.sizes.find((size) => size.sizeId === sizeId);
   const soldOut = selected !== undefined && sizeState(selected) === "soldOut" && !customize;
-  const requestHref = `/request?kind=order&style=${style.slug}${
-    sizeId ? `&size=${sizeId}` : ""
-  }${customize ? "&customize=1" : ""}`;
 
   async function addToCart() {
     if (!sizeId) return;
@@ -166,12 +164,6 @@ export function StyleOrderPanel({
         ) : addState === "soldOut" ? (
           <p role="status" className="text-[0.8125rem] text-ink-soft">{tcart("soldOut")}</p>
         ) : null}
-        <Link
-          href={requestHref}
-          className={buttonClass({ tone: "outline", className: "w-full" })}
-        >
-          {t("orderCta")}
-        </Link>
         <p className="text-[0.8125rem] text-ink-faint">{t("notInYourSize")}</p>
       </div>
     </div>

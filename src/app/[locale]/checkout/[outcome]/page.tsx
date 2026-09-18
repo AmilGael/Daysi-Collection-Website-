@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { ButtonLink } from "@/components/ui";
-import { thankYouState } from "@/lib/checkout-outcome";
+import { cancelledState, thankYouState } from "@/lib/checkout-outcome";
 import { callerKey } from "@/lib/rate-limit";
 
 /**
@@ -15,6 +15,11 @@ import { callerKey } from "@/lib/rate-limit";
  * payment on its way, a bank payment refused, or a plain thanks that promises
  * nothing when the webhook has not landed yet and Stripe could not be asked.
  * See `thankYouState`.
+ *
+ * The cancelled page closes the payment page the client backed out of, and
+ * the order with it, so nothing waits on a payment they said no to. Its copy
+ * is the same whatever the close found: nothing was charged either way. See
+ * `cancelledState`.
  */
 const OUTCOMES = ["thank-you", "cancelled"] as const;
 type Outcome = (typeof OUTCOMES)[number];
@@ -41,7 +46,14 @@ export default async function CheckoutOutcomePage({
   const reference = typeof query.reference === "string" ? query.reference : undefined;
   const t = await getTranslations("checkout");
 
-  // Only the thank-you page has anything to ask; a cancelled page reads nothing.
+  if (outcome === "cancelled" && reference) {
+    await cancelledState({
+      reference,
+      sessionId: query.session_id,
+      caller: callerKey({ headers: await headers() }, "cancel"),
+    });
+  }
+
   const state =
     outcome === "thank-you" && reference
       ? await thankYouState({

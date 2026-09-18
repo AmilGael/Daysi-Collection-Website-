@@ -284,6 +284,8 @@ export function EstimateBuilder({
         {estimate ? (
           <>
             <EstimateSummary estimate={estimate} />
+            {/* A garment from the collection is bought from its own page, through
+                the cart, never sent as a request nobody has paid for. */}
             <Link
               href={
                 kind === "appointment"
@@ -292,13 +294,11 @@ export function EstimateBuilder({
                     ? "/request?kind=alteration"
                     : kind === "commission"
                       ? "/request?kind=commission"
-                      : `/request?kind=order&style=${styleSlug}&size=${sizeId}${
-                          customize ? "&customize=1" : ""
-                        }`
+                      : `/collection/${styleSlug}`
               }
               className={buttonClass({ className: "w-full" })}
             >
-              {t("sendEstimate")}
+              {kind === "ready-made" ? t("seeGarment") : t("sendEstimate")}
             </Link>
             {!paymentsEnabled && estimate.dueNow > 0 ? (
               <p className="text-[0.8125rem] leading-relaxed text-ink-faint">

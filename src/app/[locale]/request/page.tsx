@@ -1,13 +1,13 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { categories } from "@/content";
 import { liveAlterations, liveFabrics } from "@/lib/live-pricing";
-import { liveStyles } from "@/lib/live-catalog";
 import { PageHeader } from "@/components/page-header";
 import { RequestForm } from "@/components/request-form";
 
-type Kind = "alteration" | "order" | "commission";
+type Kind = "alteration" | "commission";
 
-const KINDS: readonly Kind[] = ["alteration", "order", "commission"];
+/** A garment from the collection is bought through the cart, not requested here. */
+const KINDS: readonly Kind[] = ["alteration", "commission"];
 
 export default async function RequestPage({
   params,
@@ -30,10 +30,6 @@ export default async function RequestPage({
       <div className="shell pb-28">
         <RequestForm
           initialKind={kind}
-          initialStyleSlug={first(query.style)}
-          initialSizeId={first(query.size)}
-          initialCustomize={first(query.customize) === "1"}
-          styles={liveStyles()}
           alterations={liveAlterations()}
           categories={categories}
           fabrics={liveFabrics()}

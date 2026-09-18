@@ -10,6 +10,7 @@ import { callerKey, checkRateLimit, pruneRateLimits } from "@/lib/rate-limit";
 import { isSameOrigin, newReference } from "@/lib/security";
 import { recordRequest } from "@/lib/notify";
 import { createCheckoutSession } from "@/lib/payments";
+import { markExpired } from "@/lib/payment-events";
 import { paymentsEnabled } from "@/lib/env";
 import { currentViewer } from "@/lib/auth/session";
 import { findOrCreateAccount } from "@/lib/auth/accounts";
@@ -22,6 +23,11 @@ import type { StoredRequest } from "@/lib/request-store";
  * says what they chose, this decides what it costs — and the order is written
  * against an account, so it appears in "my orders" whether the person was
  * signed in when they filled the cart or signed in at the till.
+ *
+ * Only a paid checkout becomes an order. Without Stripe there is no way to
+ * pay, so nothing is written at all and the cart page points to WhatsApp;
+ * with it, the record waits on the payment page and Daysi hears of it only
+ * when Stripe confirms the money.
  */
 
 const CHECKOUTS_PER_HOUR = 8;
@@ -52,6 +58,10 @@ const schema = z.object({
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "bad-origin" }, { status: 403 });
+  }
+
+  if (!paymentsEnabled) {
+    return NextResponse.json({ error: "payments-off" }, { status: 503 });
   }
 
   pruneRateLimits();
@@ -91,10 +101,10 @@ export async function POST(request: Request) {
     if (stockShortfall(cart.lines, liveStyles())) return null;
 
     const reference = newReference("ORD");
-    // With Stripe configured and money due, the client is about to be sent to
-    // pay. Daysi must not hear about the order until that payment is confirmed,
-    // or a checkout abandoned on the card page reads exactly like a sale.
-    const awaitingPayment = paymentsEnabled && estimate.dueNow > 0;
+    // With money due, the client is about to be sent to pay. Daysi must not
+    // hear about the order until that payment is confirmed, or a checkout
+    // abandoned on the card page reads exactly like a sale.
+    const awaitingPayment = estimate.dueNow > 0;
     const record: StoredRequest = {
       reference,
       kind: "order",
@@ -141,21 +151,37 @@ export async function POST(request: Request) {
   }
   const { reference, awaitingPayment } = outcome;
 
-  // The cart is emptied only once the order is safely recorded.
+  // Nothing due now (a garment priced at nothing): there is no payment to
+  // wait for, so the order is already a real one and Daysi has been told.
+  if (!awaitingPayment) {
+    await writeCart(emptyCart);
+    return NextResponse.json({ reference, estimate });
+  }
+
+  const checkout = await createCheckoutSession({
+    reference,
+    description: `Daysi Collection · ${reference}`,
+    estimate,
+    customerEmail: account.email,
+    locale: details.locale,
+    // Closed after half an hour, so an abandoned cart is closed too. Bank
+    // debits stay on offer: they finish the page at once and settle later.
+    expiresInMinutes: CHECKOUT_HOLD_MINUTES,
+  }).catch((error: unknown) => {
+    console.error(`[stripe] Could not open a payment page for ${reference}.`, error);
+    return null;
+  });
+
+  if (!checkout) {
+    // No page to send the client to. The record never reached Daysi and no
+    // webhook will ever come for it, so it is closed here as a page that ran
+    // out would be: every list already leaves it out, and closing it gives
+    // back the pieces it held, so trying again can have them. The cart stays.
+    await markExpired(reference);
+    return NextResponse.json({ error: "checkout-unavailable", reference }, { status: 502 });
+  }
+
+  // The cart is emptied only once there is a payment page to send it to.
   await writeCart(emptyCart);
-
-  const checkout = awaitingPayment
-    ? await createCheckoutSession({
-        reference,
-        description: `Daysi Collection · ${reference}`,
-        estimate,
-        customerEmail: account.email,
-        locale: details.locale,
-        // Closed after half an hour, so an abandoned cart is closed too. Bank
-        // debits stay on offer: they finish the page at once and settle later.
-        expiresInMinutes: CHECKOUT_HOLD_MINUTES,
-      })
-    : null;
-
-  return NextResponse.json({ reference, estimate, checkoutUrl: checkout?.url });
+  return NextResponse.json({ reference, estimate, checkoutUrl: checkout.url });
 }

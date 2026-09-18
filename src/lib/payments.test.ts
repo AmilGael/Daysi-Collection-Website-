@@ -79,6 +79,7 @@ describe("how long a checkout stays open", () => {
       expires_at?: number;
       payment_method_types?: string[];
       success_url?: string;
+      cancel_url?: string;
     };
   }
 
@@ -100,6 +101,13 @@ describe("how long a checkout stays open", () => {
     const args = await sessionArgs(undefined);
     expect(args.success_url).toBe(
       "https://example.test/en/checkout/thank-you?reference=ORD-1&session_id={CHECKOUT_SESSION_ID}",
+    );
+  });
+
+  it("sends a client who backs out with the session's id, so the cancelled page can close it", async () => {
+    const args = await sessionArgs(undefined);
+    expect(args.cancel_url).toBe(
+      "https://example.test/en/checkout/cancelled?reference=ORD-1&session_id={CHECKOUT_SESSION_ID}",
     );
   });
 
@@ -203,5 +211,105 @@ describe("what the thank-you page is told", () => {
     // Otherwise a hand-edited URL could show one order's state under another's number.
     retrieveMock.mockResolvedValueOnce({ status: "complete", payment_status: "paid", metadata: { reference: "ORD-2" } });
     expect(await statusOf("cs_test_1", "ORD-1")).toBe("unknown");
+  });
+});
+
+/**
+ * The cancelled page closes the payment page the client walked away from, so
+ * the order is over the moment they say so rather than half an hour later.
+ * Only a page that is still open is closed, and only for the order it was
+ * made for; everything else is left to the webhook.
+ */
+describe("closing a payment page the client backed out of", () => {
+  const retrieveMock = vi.fn(async (_id: string, _options?: unknown): Promise<unknown> => ({}));
+  const expireMock = vi.fn(async (_id: string, _params?: unknown, _options?: unknown): Promise<unknown> => ({}));
+
+  beforeEach(() => {
+    retrieveMock.mockReset();
+    expireMock.mockReset();
+  });
+
+  async function expire(sessionId: string, reference: string, key = "sk_test_mocked") {
+    vi.stubEnv("STRIPE_SECRET_KEY", key);
+    vi.doMock("stripe", () => ({
+      default: class {
+        checkout = { sessions: { retrieve: retrieveMock, expire: expireMock } };
+      },
+    }));
+    const { expireCheckoutSession } = await import("./payments");
+    return expireCheckoutSession(sessionId, reference);
+  }
+
+  const session = (status: string, reference = "ORD-1") => ({ status, metadata: { reference } });
+
+  it("expires an open page that belongs to the order", async () => {
+    retrieveMock.mockResolvedValueOnce(session("open"));
+    expect(await expire("cs_test_1", "ORD-1")).toBe("expired");
+    expect(expireMock.mock.calls[0]![0]).toBe("cs_test_1");
+  });
+
+  it("gives Stripe one short try at each step, so the page cannot hang on it", async () => {
+    retrieveMock.mockResolvedValueOnce(session("open"));
+    await expire("cs_test_1", "ORD-1");
+    for (const options of [retrieveMock.mock.calls[0]![1], expireMock.mock.calls[0]![2]]) {
+      const { timeout, maxNetworkRetries } = options as { timeout?: number; maxNetworkRetries?: number };
+      expect(maxNetworkRetries).toBe(0);
+      expect(timeout).toBeGreaterThan(0);
+      expect(timeout).toBeLessThanOrEqual(10_000);
+    }
+  });
+
+  it("says not-open for a page Stripe has already closed, without closing it twice", async () => {
+    retrieveMock.mockResolvedValueOnce(session("expired"));
+    expect(await expire("cs_test_1", "ORD-1")).toBe("not-open");
+    expect(expireMock).not.toHaveBeenCalled();
+  });
+
+  it("says not-open when the page closed between the look and the close", async () => {
+    retrieveMock.mockResolvedValueOnce(session("open"));
+    expireMock.mockRejectedValueOnce(
+      Object.assign(new Error("Only Checkout Sessions with a status in [open] can be expired."), {
+        type: "StripeInvalidRequestError",
+      }),
+    );
+    expect(await expire("cs_test_1", "ORD-1")).toBe("not-open");
+  });
+
+  it("leaves a completed page to the webhook: money may be on its way", async () => {
+    retrieveMock.mockResolvedValueOnce(session("complete"));
+    expect(await expire("cs_test_1", "ORD-1")).toBe("unknown");
+    expect(expireMock).not.toHaveBeenCalled();
+  });
+
+  it("closes nothing for a session that belongs to another order", async () => {
+    // A hand-edited URL must not close one order under another's number.
+    retrieveMock.mockResolvedValueOnce(session("open", "ORD-2"));
+    expect(await expire("cs_test_1", "ORD-1")).toBe("mismatch");
+    expect(expireMock).not.toHaveBeenCalled();
+  });
+
+  it("says unknown without asking Stripe when payments are off or the id could not be a session", async () => {
+    expect(await expire("cs_test_1", "ORD-1", "")).toBe("unknown");
+    expect(await expire("abc", "ORD-1")).toBe("unknown");
+    expect(retrieveMock).not.toHaveBeenCalled();
+  });
+
+  it("closes nothing on a made-up id Stripe has never heard of", async () => {
+    // Stripe answers an unknown session with the same kind of error it gives
+    // for closing a closed page; only the second may close the order.
+    retrieveMock.mockRejectedValueOnce(
+      Object.assign(new Error("No such checkout.session: 'cs_made_up'"), { type: "StripeInvalidRequestError" }),
+    );
+    expect(await expire("cs_made_up", "ORD-1")).toBe("unknown");
+    expect(expireMock).not.toHaveBeenCalled();
+  });
+
+  it("says unknown, rather than failing the page, when Stripe cannot be reached", async () => {
+    retrieveMock.mockRejectedValueOnce(new Error("connection reset"));
+    expect(await expire("cs_test_1", "ORD-1")).toBe("unknown");
+
+    retrieveMock.mockResolvedValueOnce(session("open"));
+    expireMock.mockRejectedValueOnce(new Error("connection reset"));
+    expect(await expire("cs_test_1", "ORD-1")).toBe("unknown");
   });
 });

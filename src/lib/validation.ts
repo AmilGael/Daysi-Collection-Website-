@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { alterationServices, appointmentTypes, sizes } from "@/content";
+import { alterationServices, appointmentTypes } from "@/content";
 
 /**
  * One schema per form. Every route handler parses its body through the schema
@@ -38,7 +38,6 @@ const botCheck = z.object({
   renderedAt: z.coerce.number().int().nonnegative(),
 });
 
-const sizeIds = sizes.map((size) => size.id) as ["s", ...("s" | "m" | "l")[]];
 const alterationIds = alterationServices.map((item) => item.id) as [string, ...string[]];
 const appointmentIds = appointmentTypes.map((item) => item.id) as [string, ...string[]];
 
@@ -63,20 +62,6 @@ export const alterationRequestSchema = botCheck.extend({
   acceptedTerms: z.literal(true),
 });
 
-/** An order for a piece in the collection, customised or as-cut. */
-export const orderRequestSchema = botCheck.extend({
-  kind: z.literal("order"),
-  client,
-  // Any well-formed slug: whether it names a garment on sale right now is the
-  // live catalog's call, made when the route prices it. A list fixed at build
-  // time would refuse every garment Daysi adds from the office.
-  styleSlug: z.string().trim().min(1).max(80).regex(/^[a-z0-9-]+$/),
-  sizeId: z.enum(sizeIds),
-  customize: z.boolean().default(false),
-  notes: message.optional().default(""),
-  acceptedTerms: z.literal(true),
-});
-
 /** A custom piece, described rather than chosen from the collection. */
 export const commissionRequestSchema = botCheck.extend({
   kind: z.literal("commission"),
@@ -90,9 +75,13 @@ export const commissionRequestSchema = botCheck.extend({
   acceptedTerms: z.literal(true),
 });
 
+/**
+ * What the request form takes. A piece from the collection is not among
+ * them: it is bought through the cart, and only a paid checkout becomes an
+ * order. Made to measure is the cart's `customize` flag.
+ */
 export const requestSchema = z.discriminatedUnion("kind", [
   alterationRequestSchema,
-  orderRequestSchema,
   commissionRequestSchema,
 ]);
 

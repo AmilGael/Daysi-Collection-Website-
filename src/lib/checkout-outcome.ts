@@ -1,4 +1,5 @@
-import { checkoutPaymentStatus, isSessionId } from "./payments";
+import { markExpired } from "./payment-events";
+import { checkoutPaymentStatus, expireCheckoutSession, isSessionId } from "./payments";
 import { checkRateLimit, pruneRateLimits } from "./rate-limit";
 import { findRequest } from "./request-store";
 
@@ -43,4 +44,40 @@ export async function thankYouState(input: {
   pruneRateLimits();
   if (!checkRateLimit(input.caller, LOOKUPS_PER_HOUR, ONE_HOUR).allowed) return "unknown";
   return checkoutPaymentStatus(input.sessionId, input.reference);
+}
+
+export type CancelledState = "closed" | "already-closed" | "unknown";
+
+/**
+ * What the cancelled page does: the client pressed Stripe's back arrow, so the
+ * payment page is closed there and then, and the order with it. Otherwise the
+ * page stays payable, and the order sits in the client's own history as
+ * waiting for payment, until Stripe's own expiry half an hour later.
+ *
+ * Only the client's own untouched waiting line is closed, through the same
+ * `markExpired` the webhook uses, so the `checkout.session.expired` delivery
+ * that follows finds nothing waiting and writes nothing. "already-closed" is
+ * a record Stripe or Daysi has already written an outcome on, left as it is.
+ * The page is public and each close is a live call on Daysi's account, so it
+ * is held to the thank-you page's number of lookups an hour per address.
+ */
+export async function cancelledState(input: {
+  readonly reference: string;
+  readonly sessionId?: string | string[];
+  readonly caller: string;
+}): Promise<CancelledState> {
+  const record = findRequest(input.reference);
+  if (!record) return "unknown";
+  if (record.awaitingPayment !== true || record.source !== undefined) return "already-closed";
+
+  // As above: a close that could not be made costs no part of the budget.
+  if (typeof input.sessionId !== "string" || !isSessionId(input.sessionId)) return "unknown";
+  pruneRateLimits();
+  if (!checkRateLimit(input.caller, LOOKUPS_PER_HOUR, ONE_HOUR).allowed) return "unknown";
+
+  const expired = await expireCheckoutSession(input.sessionId, input.reference);
+  // A mismatched session, or Stripe unable to say: the record is left for the webhook.
+  if (expired !== "expired" && expired !== "not-open") return "unknown";
+  const closed = await markExpired(input.reference);
+  return closed === "closed" ? "closed" : closed === "not-waiting" ? "already-closed" : "unknown";
 }

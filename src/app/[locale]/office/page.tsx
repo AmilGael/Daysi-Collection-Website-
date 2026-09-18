@@ -2,7 +2,12 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { earningsFrom, loadLedger, monthlyReceived } from "@/lib/earnings";
 import { formatMoney } from "@/lib/money";
-import { activeRequests, manageableRequests, REQUEST_KINDS } from "@/lib/request-store";
+import {
+  activeRequests,
+  manageableRequests,
+  REQUEST_KINDS,
+  unfinishedCheckout,
+} from "@/lib/request-store";
 import { undoableIds } from "@/lib/office-history";
 import { Figure } from "@/components/office/figure";
 import { OfficeRequestList } from "@/components/office-request-list";
@@ -41,7 +46,10 @@ export default async function OfficeHubPage({
   const work = ledger.filter((record) => record.kind !== "appointment");
   const messages = activeRequests("contact");
   const signups = activeRequests("premiere-signup");
-  const retired = REQUEST_KINDS.flatMap(manageableRequests).filter((record) => record.retired);
+  // A card page nobody paid is not an order, retired or not.
+  const retired = REQUEST_KINDS.flatMap(manageableRequests).filter(
+    (r) => r.retired && !unfinishedCheckout(r),
+  );
   const undoable = undoableIds("request-status");
   const withUndoable = (records: typeof work) =>
     records.map((record) => ({ ...record, undoable: undoable.has(record.reference) }));
