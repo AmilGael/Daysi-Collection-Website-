@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type JSX } from "react";
+import { useCallback, useState, type JSX } from "react";
 import { useTranslations } from "next-intl";
 import { buttonClass } from "@/components/ui";
 import { Sheet } from "./sheet";
@@ -32,6 +32,7 @@ export function HelpSheet({ tab }: { tab: string }): JSX.Element {
   const [question, setQuestion] = useState("");
   const [asking, setAsking] = useState(false);
   const [failed, setFailed] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
 
   async function ask(text: string) {
     const trimmed = text.trim();
@@ -56,11 +57,18 @@ export function HelpSheet({ tab }: { tab: string }): JSX.Element {
       });
       const body: { answer?: string } | null = response.ok ? await response.json().catch(() => null) : null;
       if (!body?.answer) {
+        // A question with no answer never happened: back out of the thread
+        // rather than leave it one turn short of an answer — the next
+        // question would otherwise send an odd history back to the route.
+        setThread(history);
+        setQuestion(trimmed);
         setFailed(true);
         return;
       }
       setThread([...history, { role: "user", text: trimmed }, { role: "assistant", text: body.answer }]);
     } catch {
+      setThread(history);
+      setQuestion(trimmed);
       setFailed(true);
     } finally {
       setAsking(false);
@@ -77,7 +85,7 @@ export function HelpSheet({ tab }: { tab: string }): JSX.Element {
       >
         ?
       </button>
-      <Sheet open={open} title={t("helpTitle")} onClose={() => setOpen(false)}>
+      <Sheet open={open} title={t("helpTitle")} onClose={close}>
         <div className="flex flex-col gap-5">
           {thread.length === 0 ? (
             <div className="flex flex-col gap-2">

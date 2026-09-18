@@ -109,6 +109,33 @@ describe("askOfficeHelper", () => {
     ]);
   });
 
+  it("drops a leading assistant turn, so a rolled-back history still starts with the owner", async () => {
+    const { askOfficeHelper } = await import("./office-helper");
+    let seenMessages: readonly { role: string; content: unknown }[] = [];
+    const fakeCall: HelperCall = async ({ messages }) => {
+      seenMessages = messages;
+      return "ok";
+    };
+
+    await askOfficeHelper(
+      {
+        question: "¿y ahora?",
+        tab: "hub",
+        history: [
+          { role: "assistant", text: "una respuesta huérfana" },
+          { role: "user", text: "la siguiente pregunta" },
+        ],
+      },
+      fakeCall,
+    );
+
+    expect(seenMessages[0]!.role).toBe("user");
+    expect(seenMessages).toEqual([
+      { role: "user", content: "la siguiente pregunta" },
+      { role: "user", content: "[Pestaña: hub] ¿y ahora?" },
+    ]);
+  });
+
   it("marks the manual for an hour of caching, and only the manual", async () => {
     const { askOfficeHelper } = await import("./office-helper");
     let seenSystem: readonly Record<string, unknown>[] = [];

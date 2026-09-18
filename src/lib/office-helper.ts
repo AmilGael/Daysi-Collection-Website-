@@ -122,6 +122,18 @@ export function helperSystem(): { manual: string; state: string } {
   };
 }
 
+/**
+ * A conversation the Claude API accepts starts with a user turn. A sheet
+ * that rolls a failed question back out of its thread (see `help-sheet.tsx`)
+ * can still hand this an earlier assistant turn with nothing before it — the
+ * question that opened it never landed — so any leading assistant turns are
+ * dropped rather than sent.
+ */
+function dropLeadingAssistant(history: readonly HelperTurn[]): readonly HelperTurn[] {
+  const start = history.findIndex((turn) => turn.role !== "assistant");
+  return start === -1 ? [] : history.slice(start);
+}
+
 export async function askOfficeHelper(
   input: { readonly question: string; readonly tab: string; readonly history: readonly HelperTurn[] },
   call: HelperCall | null = defaultHelperCall(),
@@ -136,7 +148,7 @@ export async function askOfficeHelper(
   system.push({ type: "text", text: state });
 
   const messages: Anthropic.Beta.Messages.BetaMessageParam[] = [
-    ...input.history.map((turn) => ({ role: turn.role, content: turn.text })),
+    ...dropLeadingAssistant(input.history).map((turn) => ({ role: turn.role, content: turn.text })),
     { role: "user" as const, content: `[Pestaña: ${input.tab}] ${input.question}` },
   ];
 

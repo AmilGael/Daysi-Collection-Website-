@@ -30,6 +30,18 @@ describe("the sheet", () => {
     expect(source).toContain("window.history.pushState({ ...window.history.state, sheet: true }");
   });
 
+  /**
+   * Rendered into `document.body` rather than in place, so an ancestor with
+   * its own stacking or filter context — the office header's
+   * `backdrop-blur-md`, which becomes the containing block for a `fixed`
+   * descendant — can never shrink the overlay into its own box.
+   */
+  it("renders through a portal onto document.body, not in place", () => {
+    expect(source).toContain('import { createPortal } from "react-dom"');
+    expect(source).toContain("return createPortal(");
+    expect(source).toContain("document.body,");
+  });
+
   it("is closed by Listo in both languages", () => {
     expect(office(es).sheetDone).toBe("Listo");
     expect(office(en).sheetDone).toBe("Done");
