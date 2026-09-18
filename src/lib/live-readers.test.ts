@@ -339,8 +339,9 @@ describe("noting an order the office took off-site", () => {
     return result.results;
   }
 
-  it("writes a paid order the Hub's ledger and the books both read back", async () => {
-    // Under the $110 clothing exemption, so the total is the amount she typed.
+  it("writes a paid $200 order at exactly that total, untaxed, the Hub's ledger and the books both read back", async () => {
+    // Well over the $110 clothing exemption, to prove this is never re-taxed:
+    // she already collected whatever tax applied, or did not, off-site.
     await apply({
       type: "order-note",
       key: "order-note:one",
@@ -348,11 +349,11 @@ describe("noting an order the office took off-site", () => {
       clientName: "Rosa Martínez",
       email: "rosa@example.com",
       description: "Vestido azul, talla M",
-      amount: 9500,
+      amount: 20000,
       paid: true,
     });
 
-    const { loadLedger, monthlyReceived } = await import("./earnings");
+    const { loadLedger, monthlyReceived, earningsFrom } = await import("./earnings");
     const ledger = loadLedger();
     const written = ledger.find((record) => record.client.name === "Rosa Martínez");
     expect(written).toMatchObject({
@@ -363,18 +364,22 @@ describe("noting an order the office took off-site", () => {
       client: { name: "Rosa Martínez", email: "rosa@example.com" },
     });
     expect(written?.reference).toMatch(/^ORD-/);
-    expect(written?.estimate?.total).toBe(9500);
+    expect(written?.estimate?.salesTax).toBe(0);
+    expect(written?.estimate?.total).toBe(20000);
     expect(written?.paidAt).toBeTruthy();
+
+    expect(earningsFrom(ledger).received).toBe(20000);
 
     // Paid the moment she noted it, so this month's trend already carries it.
     const months = monthlyReceived(ledger, 1, new Date());
-    expect(months[0]?.total).toBe(9500);
+    expect(months[0]?.total).toBe(20000);
 
     const { salesRows } = await import("./books");
     const rows = salesRows([written!], "es");
     expect(rows[0]?.[1]).toBe("Rosa Martínez");
-    expect(rows[0]?.[6]).toBe("Pedido");
-    expect(rows[0]?.[8]).toBe("95.00");
+    expect(rows[0]?.[6]).toBe("Anotado en el taller · total recibido");
+    expect(rows[0]?.[8]).toBe("200.00");
+    expect(rows[0]?.[10]).toBe("NON");
     expect(rows[0]?.[11]).toBe("order");
   });
 

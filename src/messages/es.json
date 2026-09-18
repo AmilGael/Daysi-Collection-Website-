@@ -514,6 +514,7 @@
     "orderNotePhone": "Teléfono (opcional)",
     "orderNoteEmail": "Correo (opcional)",
     "orderNoteDescription": "Una línea que lo describa",
+    "orderNoteAmount": "Total que le pagaron (con impuesto, si lo cobró)",
     "orderNotePaid": "Ya está pagado",
     "orderNoteNotes": "Notas (opcional)",
     "orderNoteNameRequired": "Escriba el nombre de la clienta (2 a 80 letras).",

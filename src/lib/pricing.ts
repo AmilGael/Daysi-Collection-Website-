@@ -362,26 +362,31 @@ export function estimateDesign(): Estimate {
 
 export type NotedOrderKind = "order" | "alteration" | "commission";
 
-const NOTED_LABELS: Record<NotedOrderKind, Localized> = {
-  order: { en: "Order", es: "Pedido" },
-  alteration: { en: "Alteration", es: "Arreglo" },
-  commission: { en: "Custom piece", es: "Pieza a medida" },
+/**
+ * A noted line is never re-taxed: it says exactly what Daysi says came in.
+ * Running it through the clothing exemption the way a priced line is would
+ * invent tax on a cash sale she already settled in full, or apply it
+ * unevenly depending on how she happened to bundle several pieces into one
+ * typed amount. `taxBasis: "service"` keeps `build()` from adding anything.
+ */
+const NOTED_LABEL: Localized = {
+  en: "Noted in the office · total received",
+  es: "Anotado en el taller · total recibido",
 };
 
 /**
  * An order, alteration or custom piece Daysi took off-site — in person or
  * over WhatsApp — and notes from the office rather than prices from the
- * catalog: one line, for the amount she names. An alteration noted this way
- * carries no garment price to check against the clothing exemption, so it is
- * left untaxed as her time; an order or a commission is a garment sold
- * outright, taxed like every other one.
+ * catalog. `kind` names what it was, for the reference and the record, but
+ * changes nothing here: the one line is her own total, untaxed, labelled so
+ * her accountant can tell a noted line from one the site actually priced.
  */
 export function estimateNoted(amount: Cents, kind: NotedOrderKind): Estimate {
   const lines: EstimateLine[] = [
     {
-      label: NOTED_LABELS[kind],
+      label: NOTED_LABEL,
       amount,
-      taxBasis: kind === "alteration" ? "service" : "clothing",
+      taxBasis: "service",
     },
   ];
 

@@ -144,7 +144,7 @@ function OrderNoteForm({ onDone }: { onDone(): void }): JSX.Element {
             className={`${field} resize-none`}
           />
         </label>
-        <MoneyBox label={t("pricesPrice")} value={amount} onChange={setAmount} />
+        <MoneyBox label={t("orderNoteAmount")} value={amount} onChange={setAmount} />
         <Switch checked={paid} onChange={setPaid} label={t("orderNotePaid")} />
         <label className="grid gap-1 text-[0.75rem] text-ink-faint">
           {t("orderNoteNotes")}
