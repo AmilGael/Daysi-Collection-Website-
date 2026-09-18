@@ -131,6 +131,19 @@ describe("the Promociones card's summary", () => {
     expect(draftSource).not.toContain("!promotion.active");
     expect(cardsSource).toContain("soonestEnding(activePromotions, today)");
   });
+
+  it("only counts a promotion actually running today, reusing promotionApplies's own date logic", () => {
+    expect(cardsSource).toContain('import { promotionActiveToday } from "@/lib/promotions";');
+    expect(cardsSource).toContain(
+      'return promotionActiveToday({ active, startsAt, endsAt }, today) ? [promotion] : [];',
+    );
+    // Dates come from the same staged wire the active switch already reads,
+    // so an edit to the dates counts before it is confirmed too.
+    expect(cardsSource).toContain(
+      'const startsAt = wire?.type === "promotion" ? wire.startsAt : promotion.startsAt;',
+    );
+    expect(cardsSource).toContain('const endsAt = wire?.type === "promotion" ? wire.endsAt : promotion.endsAt;');
+  });
 });
 
 describe("the Aviso card", () => {

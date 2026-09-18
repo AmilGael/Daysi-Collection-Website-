@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { translate, type Promotion } from "@/content";
 import type { Locale } from "@/i18n/routing";
 import type { ShopfrontChange } from "@/lib/office-validation";
+import { promotionActiveToday } from "@/lib/promotions";
 import { HelperSwitch } from "./helper-switch";
 import { NoticeEditor } from "./notice-editor";
 import { Pending } from "./office/confirm-bar";
@@ -76,14 +77,18 @@ export function ShopfrontCards({
   const noticeMessage = noticeWire?.type === "notice" ? noticeWire.message : notice.message;
   const noticeVisible = noticeWire?.type === "notice" ? noticeWire.visible : notice.visible;
 
-  // A promotion's own `active` field, unless a switch on it is staged but
-  // not yet confirmed; one pending a retire never counts, whichever way its
-  // own switch last sat.
+  // A promotion's own `active` field and dates, unless an edit on it is
+  // staged but not yet confirmed; one pending a retire never counts,
+  // whichever way its own switch last sat. Only one running today — active
+  // and within its NY-day dates, `promotionApplies`'s own date check — is
+  // counted, so one not yet started or already over never inflates the tally.
   const activePromotions = promotions.flatMap((promotion) => {
     const wire = draft.pending(promotionKeyFor(promotion.id))?.change.wire;
     if (wire?.type === "retire") return [];
     const active = wire?.type === "promotion" ? wire.active : promotion.active;
-    return active ? [promotion] : [];
+    const startsAt = wire?.type === "promotion" ? wire.startsAt : promotion.startsAt;
+    const endsAt = wire?.type === "promotion" ? wire.endsAt : promotion.endsAt;
+    return promotionActiveToday({ active, startsAt, endsAt }, today) ? [promotion] : [];
   });
   const soonest = soonestEnding(activePromotions, today);
 

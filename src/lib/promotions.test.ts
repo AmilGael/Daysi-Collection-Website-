@@ -4,6 +4,7 @@ import {
   discountedAmount,
   pickPromotion,
   promotedPrice,
+  promotionActiveToday,
   promotionApplies,
   promotionBadge,
 } from "./promotions";
@@ -103,6 +104,26 @@ describe("what a promotion takes off", () => {
     expect(discountedAmount(10500, promotion({ kind: "amount", value: 11000 }))).toBe(1050);
     expect(discountedAmount(10500, promotion({ kind: "amount", value: 9450 }))).toBe(1050);
     expect(discountedAmount(10500, promotion({ kind: "amount", value: 9449 }))).toBe(1051);
+  });
+
+  it("caps a stored percent past 90 % at 90 %, the office's own limit on a new one", () => {
+    // The office refuses a percent over MOST_PERCENT when a promotion is
+    // saved, but a record from before that check (or one edited on disk)
+    // could still carry one — this is the last line of defence.
+    expect(discountedAmount(29500, promotion({ value: 95 }))).toBe(
+      discountedAmount(29500, promotion({ value: 90 })),
+    );
+    expect(discountedAmount(10000, promotion({ value: 100 }))).toBe(1000);
+  });
+});
+
+describe("promotionActiveToday", () => {
+  it("is true only while active and within its NY-day dates, with no scope to check", () => {
+    expect(promotionActiveToday(promotion(), today)).toBe(true);
+    expect(promotionActiveToday(promotion({ active: false }), today)).toBe(false);
+    expect(promotionActiveToday(promotion({ startsAt: "2026-09-21" }), today)).toBe(false);
+    expect(promotionActiveToday(promotion({ endsAt: "2026-09-19" }), today)).toBe(false);
+    expect(promotionActiveToday(promotion({ startsAt: "2026-09-20", endsAt: "2026-09-27" }), today)).toBe(true);
   });
 });
 

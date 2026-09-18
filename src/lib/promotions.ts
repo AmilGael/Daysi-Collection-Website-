@@ -30,10 +30,25 @@ export const LEAST_AMOUNT = 100;
 /** The most a set amount may be, as anywhere else she types a price. */
 export const MOST_AMOUNT = 500_000;
 
-export function promotionApplies(promotion: Promotion, style: Reachable, day: string): boolean {
+/**
+ * Whether a promotion is currently running at all — switched on and within
+ * its NY-day dates — with no regard for what it reaches. Split out of
+ * `promotionApplies` so a caller that already knows a promotion reaches
+ * everything it cares about (the Promociones card's own count) can still
+ * ask the same date question without a `style` to hand it.
+ */
+export function promotionActiveToday(
+  promotion: Pick<Promotion, "active" | "startsAt" | "endsAt">,
+  day: string,
+): boolean {
   if (!promotion.active) return false;
   if (promotion.startsAt !== undefined && day < promotion.startsAt) return false;
   if (promotion.endsAt !== undefined && day > promotion.endsAt) return false;
+  return true;
+}
+
+export function promotionApplies(promotion: Promotion, style: Reachable, day: string): boolean {
+  if (!promotionActiveToday(promotion, day)) return false;
   switch (promotion.scope.type) {
     case "all":
       return true;
@@ -79,7 +94,7 @@ export function pickPromotion(
 export function discountedAmount(amount: Cents, promotion: Promotion): Cents {
   const off =
     promotion.kind === "percent"
-      ? applyRate(amount, promotion.value / 100)
+      ? applyRate(amount, Math.min(promotion.value, MOST_PERCENT) / 100)
       : Math.min(promotion.value, applyRate(amount, MOST_PERCENT / 100));
   return Math.min(amount, Math.max(0, amount - off));
 }
