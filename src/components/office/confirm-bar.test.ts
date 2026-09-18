@@ -37,6 +37,13 @@ function classNamesIn(fileSource: string): string {
     .join(" ");
 }
 
+/** The text between two markers, so a check can land on one element (the
+ * outer bar, one button) instead of the whole file. */
+function sectionBetween(text: string, startMarker: string, endMarker: string): string {
+  const start = text.indexOf(startMarker);
+  return text.slice(start, text.indexOf(endMarker, start));
+}
+
 describe("the confirm bar", () => {
   it("never leaves the page", () => {
     expect(source).not.toContain("if (count === 0) return null;");
@@ -85,6 +92,29 @@ describe("the confirm bar", () => {
     expect(sheetSource).not.toContain("bottom-16");
     expect(globalsSource).toContain("--office-bar: 6rem");
     expect(globalsSource).toContain("--office-bar: 4rem");
+  });
+
+  /**
+   * Measured in the browser at 375px and 1280px: Descartar (outline, a
+   * real border) was 41px tall and Confirmar (solid, no border) 39px, and
+   * on phones the two flex-1 buttons split the row down the middle even
+   * though "Confirmar cambios" needs more than half of it. Confirmar's own
+   * transparent border matches Descartar's real one so both are the same
+   * height; Descartar takes its natural width and Confirmar takes the
+   * rest, so the split reflects what the labels actually need. The bar's
+   * height also moved from the inner row to this outer, bordered element,
+   * since border-box counts the border inside a fixed height only when
+   * it's on the element that has it.
+   */
+  it("matches the two buttons so neither is taller or the odd width", () => {
+    const outerBar = sectionBetween(source, 'aria-label={t("confirmBarLabel")}', '<div className="shell');
+    const confirmButton = sectionBetween(source, "onClick={onConfirm}", "</button>");
+    const discardButton = sectionBetween(source, "onClick={onDiscard}", "</button>");
+
+    expect(outerBar).toContain("h-[var(--office-bar)]");
+    expect(confirmButton).toContain("border-transparent");
+    expect(confirmButton).toContain("flex-1");
+    expect(discardButton).toContain("flex-none");
   });
 
   it("labels the region in both languages", () => {

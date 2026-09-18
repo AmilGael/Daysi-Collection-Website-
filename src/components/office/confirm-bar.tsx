@@ -22,15 +22,17 @@ export function ErrorText({ code, count }: { code: string; count?: number }) {
  * bar on every tab, regardless of which flex parent staged it. The `.shell`
  * row inside keeps its content lined up with the rest of the page.
  *
- * Its height is the `--office-bar` custom property (`globals.css`), which
- * `sheet.tsx` reads too, so the sheet always stops exactly where the bar
- * begins. Under 640 px the status text and the buttons don't fit on one
- * line — "5 cambios sin confirmar" beside two uppercase buttons overflows a
- * phone width — so below that breakpoint they stack into two rows inside
- * that same fixed height: the text truncates to one line, and the buttons
- * split the second row evenly (just Confirmar, full width, while idle).
- * From 640 px up they sit on one row, text on the left, buttons on the
- * right.
+ * Its height is the `--office-bar` custom property (`globals.css`), set on
+ * this outer element (Tailwind's preflight makes it border-box, so the
+ * border above counts inside that height too) — `sheet.tsx` reads the same
+ * property, so the sheet always stops exactly where the bar begins. Under
+ * 640 px the status text and the buttons don't fit on one line — "5
+ * cambios sin confirmar" beside two uppercase buttons overflows a phone
+ * width — so below that breakpoint they stack into two rows inside that
+ * same fixed height: the text truncates to one line; Descartar keeps its
+ * natural width and Confirmar fills what's left (alone, full width, while
+ * idle). From 640 px up they sit on one row, text on the left, both
+ * buttons at their natural width on the right.
  *
  * It sits at z-[60]: above the sheet (z-50), which is above the site header
  * that pins to the top (z-40), so Confirmar cambios is tappable whether a
@@ -56,9 +58,9 @@ export function ConfirmBar({
     <div
       role="region"
       aria-label={t("confirmBarLabel")}
-      className="fixed inset-x-0 bottom-0 z-[60] border-t border-line bg-paper shadow-[0_-12px_32px_-20px_rgb(20_17_13/0.35)]"
+      className="fixed inset-x-0 bottom-0 z-[60] h-[var(--office-bar)] border-t border-line bg-paper shadow-[0_-12px_32px_-20px_rgb(20_17_13/0.35)]"
     >
-      <div className="shell flex h-[var(--office-bar)] flex-col justify-center gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="shell flex h-full flex-col justify-center gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p
           aria-live="polite"
           className={`min-w-0 truncate text-sm font-semibold sm:flex-1 ${idle ? "text-ink-faint" : ""}`}
@@ -77,7 +79,7 @@ export function ConfirmBar({
               className={buttonClass({
                 tone: "outline",
                 size: "small",
-                className: "flex-1 whitespace-nowrap sm:flex-none",
+                className: "flex-none whitespace-nowrap",
               })}
             >
               {t("discardChanges")}
@@ -90,7 +92,7 @@ export function ConfirmBar({
             className={buttonClass({
               tone: "solid",
               size: "small",
-              className: "flex-1 whitespace-nowrap sm:flex-none",
+              className: "flex-1 whitespace-nowrap border border-transparent sm:flex-none",
             })}
           >
             {status === "confirming" ? t("confirming") : t("confirmChanges")}
