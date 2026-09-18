@@ -55,6 +55,8 @@ export default async function OfficePremieresPage({
     piecesPlanned: premiere.piecesPlanned,
     editionSize: premiere.editionSize,
     coverImage: premiere.coverImage,
+    // Retired garments included: the checklist below offers only live ones,
+    // so a retired one rides along with every save and stays on its season.
     styleIds: premiere.styleIds,
     signups: signupsFor(premiere, signups),
     retired: premiere.retired,

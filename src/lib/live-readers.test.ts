@@ -916,7 +916,45 @@ describe("a premiere announced from the office", () => {
     expect(otono?.piecesPlanned).toBe(5);
   });
 
-  it("undo still lands when a garment on the season's checklist has since been retired, and drops it from what is saved", async () => {
+  it("keeps a retired garment on its season's checklist while another is ticked beside it", async () => {
+    const { setRetired } = await import("./retired");
+    // "sirena" is on otono-2026's seeded checklist. The checklist only
+    // offers live garments, so once she is retired Daysi cannot untick her,
+    // and every save of that checklist sends her id along untouched.
+    await setRetired("style", "sirena", true);
+
+    const results = await apply({
+      type: "premiere-styles",
+      key: "premiere-styles:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["sirena", "frutera"],
+    });
+
+    expect(results).toEqual([{ key: "premiere-styles:otono-2026", ok: true }]);
+    const { manageablePremieres } = await import("./live-premieres");
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.styleIds).toEqual([
+      "sirena",
+      "frutera",
+    ]);
+  });
+
+  it("refuses ticking a retired garment that was not already on the season's checklist", async () => {
+    const { setRetired } = await import("./retired");
+    await setRetired("style", "frutera", true);
+
+    const results = await apply({
+      type: "premiere-styles",
+      key: "premiere-styles:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["sirena", "frutera"],
+    });
+
+    expect(results[0]?.error).toBe("unknown-style");
+    const { manageablePremieres } = await import("./live-premieres");
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.styleIds).toEqual(["sirena"]);
+  });
+
+  it("undo still lands when a garment on the season's checklist has since been retired, and restoring her brings her back to the season", async () => {
     await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 });
     await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 4 });
 
@@ -929,10 +967,30 @@ describe("a premiere announced from the office", () => {
 
     await undo("otono-2026");
 
-    const { manageablePremieres } = await import("./live-premieres");
+    const { manageablePremieres, liveFindPremiere } = await import("./live-premieres");
+    const { liveStylesInPremiere } = await import("./live-catalog");
     const otono = manageablePremieres().find((premiere) => premiere.id === "otono-2026");
     expect(otono?.piecesPlanned).toBe(5);
-    expect(otono?.styleIds).not.toContain("sirena");
+    // She stays on the checklist; the public site hides her while retired.
+    expect(otono?.styleIds).toContain("sirena");
+    const shown = () => liveStylesInPremiere(liveFindPremiere("otono-2026")!).map((style) => style.id);
+    expect(shown()).not.toContain("sirena");
+
+    await setRetired("style", "sirena", false);
+    expect(shown()).toContain("sirena");
+  });
+
+  it("undo drops a garment the catalog does not know at all", async () => {
+    const results = await apply({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["sirena", "nobody"],
+    });
+
+    expect(results).toEqual([{ key: "premiere:otono-2026", ok: true }]);
+    const { manageablePremieres } = await import("./live-premieres");
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.styleIds).toEqual(["sirena"]);
   });
 
   it("undo reuses the seeded English when the Spanish it sends back matches the seed, even though the current text is something else entirely", async () => {
