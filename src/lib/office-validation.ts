@@ -302,6 +302,64 @@ export const shopfrontChangeSchema = z.discriminatedUnion("type", [
   restoreChangeSchema,
 ]);
 
+/** The four Spanish boxes on a premiere. */
+const premiereText = {
+  season: z.string().trim().min(2).max(40),
+  title: z.string().trim().min(2).max(60),
+  story: z.string().trim().min(10).max(600),
+  inspiration: z.string().trim().max(400),
+};
+const premiereNumbers = {
+  piecesPlanned: z.number().int().min(1).max(200),
+  editionSize: z.number().int().min(1).max(500),
+};
+/** A garment's id is checked against the rack in the action, as everywhere else one is taken. */
+const premiereStyleIds = z.array(id).max(40);
+
+/**
+ * A premiere Daysi announces or corrects, typed in Spanish; the action
+ * writes the English. `release ≥ reveal` is checked in the action, like the
+ * promotion dates above: a refinement here would make the member a
+ * `ZodEffects`, which `z.discriminatedUnion` refuses.
+ */
+export const premiereChangeSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("premiere-create"),
+    key: changeKey,
+    ...premiereText,
+    revealDate: calendarDay,
+    releaseDate: calendarDay,
+    ...premiereNumbers,
+    coverImage: uploadPath,
+    styleIds: premiereStyleIds,
+  }),
+  z.object({
+    type: z.literal("premiere-update"),
+    key: changeKey,
+    premiereId: id,
+    season: premiereText.season.optional(),
+    title: premiereText.title.optional(),
+    story: premiereText.story.optional(),
+    inspiration: premiereText.inspiration.optional(),
+    revealDate: calendarDay.optional(),
+    releaseDate: calendarDay.optional(),
+    piecesPlanned: premiereNumbers.piecesPlanned.optional(),
+    editionSize: premiereNumbers.editionSize.optional(),
+    // An upload path or a coded /images/real/… path; checked in the action
+    // against uploadPath or the premiere's own current cover.
+    coverImage: z.string().max(200).optional(),
+  }),
+  z.object({
+    type: z.literal("premiere-styles"),
+    key: changeKey,
+    premiereId: id,
+    styleIds: premiereStyleIds,
+  }),
+  retireChangeSchema,
+  restoreChangeSchema,
+]);
+export type PremiereChange = z.infer<typeof premiereChangeSchema>;
+
 /** A hyphen-like character that is not a plain ASCII "-": the kind autocorrect
  *  or a paste from WhatsApp leaves in a phone number. */
 const HYPHEN_LIKE = /[\u2010-\u2015\u2212]/g;
@@ -389,6 +447,7 @@ export const UNDO_KINDS = [
   "style-text",
   "work-text",
   "promotion",
+  "premiere",
 ] as const;
 export type UndoKind = (typeof UNDO_KINDS)[number];
 export const undoQuerySchema = z.object({
@@ -411,4 +470,5 @@ export type OfficeChange =
   | FabricChange
   | PriceChange
   | ShopfrontChange
-  | WorkChange;
+  | WorkChange
+  | PremiereChange;

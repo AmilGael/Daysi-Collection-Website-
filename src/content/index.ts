@@ -143,33 +143,51 @@ export function shopDay(now: Date): string {
 }
 
 /**
- * The premiere that is currently open for sign-ups, if there is one. A season
- * stays next through the whole of its release day; the list is newest first,
- * so the first entry still to be released is the nearest one.
+ * The premiere that is currently open for sign-ups in a given list, if there
+ * is one. A season stays next through the whole of its release day; the
+ * list has to already run newest first, so the first entry still to be
+ * released is the nearest one.
  */
-export function upcomingPremiere(today: Date): Premiere | undefined {
+export function upcomingIn(list: readonly Premiere[], today: Date): Premiere | undefined {
   const day = shopDay(today);
-  return premieres.find((premiere) => premiere.releaseDate >= day);
+  return list.find((premiere) => premiere.releaseDate >= day);
+}
+
+export function upcomingPremiere(today: Date): Premiere | undefined {
+  return upcomingIn(premieres, today);
 }
 
 /**
- * What the premiere pages have to show on a given day. `next` is the season
- * still to be released, if one is written down; `featured` is the newest
- * season either way, the one whose photograph the pages show, defined as long
- * as any season has ever been written down; `past` is every season except
- * the next one, newest first. The day after a release there may be no next
- * season yet, and that gap is Daysi's to fill, not a fault in the code, so
- * both pages read from here and stand on their own.
+ * What the premiere pages have to show on a given day, from a list that
+ * already runs newest first. `next` is the season still to be released, if
+ * one is written down; `featured` is the newest season either way, the one
+ * whose photograph the pages show, defined as long as any season has ever
+ * been written down; `past` is every season except the next one, newest
+ * first. The day after a release there may be no next season yet, and that
+ * gap is Daysi's to fill, not a fault in the code, so both pages read from
+ * here and stand on their own.
+ *
+ * Pulled out of `premiereListing` so `lib/live-premieres.ts` can run the same
+ * rule over the seed with Daysi's additions and corrections on top, without
+ * this file reaching into the live layer (which itself reads the seed from
+ * here) and creating a cycle.
  */
-export function premiereListing(today: Date): {
+export function premiereListingFrom(
+  list: readonly Premiere[],
+  today: Date,
+): {
   next: Premiere | undefined;
   featured: Premiere | undefined;
   past: readonly Premiere[];
 } {
-  const next = upcomingPremiere(today);
+  const next = upcomingIn(list, today);
   return {
     next,
-    featured: premieres[0],
-    past: premieres.filter((premiere) => premiere.id !== next?.id),
+    featured: list[0],
+    past: list.filter((premiere) => premiere.id !== next?.id),
   };
+}
+
+export function premiereListing(today: Date): ReturnType<typeof premiereListingFrom> {
+  return premiereListingFrom(premieres, today);
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findPremiere } from "@/content";
+import { liveFindPremiere } from "@/lib/live-premieres";
 import { isLikelyBot, premiereSignupSchema } from "@/lib/validation";
 import { callerKey, checkRateLimit, pruneRateLimits } from "@/lib/rate-limit";
 import { isSameOrigin, newReference } from "@/lib/security";
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ reference });
   }
 
-  const premiere = findPremiere(signup.premiereId) ?? undefined;
+  const premiere = liveFindPremiere(signup.premiereId);
   if (!premiere) {
     return NextResponse.json({ error: "unknown-premiere" }, { status: 400 });
   }
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     submittedAt: new Date().toISOString(),
     locale: signup.locale,
     client: { name: signup.name ?? "", email: signup.email },
-    details: { Premiere: premiere.title.en, Season: premiere.season.en },
+    details: { Premiere: premiere.title.en, Season: premiere.season.en, PremiereId: premiere.id },
     status: "new" as const,
   };
 

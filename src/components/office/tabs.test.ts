@@ -6,7 +6,7 @@ import en from "@/messages/en.json";
 import { OFFICE_TABS } from "./tabs";
 
 /**
- * The office is seven tabs, and everything that has to agree about them,
+ * The office is eight tabs, and everything that has to agree about them,
  * the routes, the smoke script, the two languages, the guard, is checked
  * here against one list rather than trusted to stay in step by hand.
  */
@@ -14,11 +14,12 @@ import { OFFICE_TABS } from "./tabs";
 const officeMessages = (bundle: { office: object }) => bundle.office as Record<string, string>;
 
 describe("the office tabs", () => {
-  it("are seven, in the agreed order, each under /office", () => {
+  it("are eight, in the agreed order, each under /office", () => {
     expect(OFFICE_TABS.map((tab) => tab.id)).toEqual([
       "hub",
       "collection",
       "gallery",
+      "premieres",
       "fabrics",
       "prices",
       "shopfront",
@@ -94,6 +95,12 @@ describe("the collection tab", () => {
 describe("the gallery tab", () => {
   it("is guarded", () => {
     expectGuarded("gallery/page.tsx");
+  });
+});
+
+describe("the premieres tab", () => {
+  it("is guarded", () => {
+    expectGuarded("premieres/page.tsx");
   });
 });
 

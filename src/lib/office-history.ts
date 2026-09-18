@@ -1,4 +1,4 @@
-import { alterationServices, appointmentTypes, priceList, styles, type Promotion } from "@/content";
+import { alterationServices, appointmentTypes, premieres, priceList, styles, type Promotion } from "@/content";
 import type { OfficeChange, UndoKind } from "./office-validation";
 import {
   addedStyles,
@@ -8,6 +8,7 @@ import {
   type StyleOverride,
 } from "./live-catalog";
 import { manageableGallery, type GalleryVisibility } from "./live-gallery";
+import { addedPremieres, assemblePremieres, type PremiereOverride } from "./live-premieres";
 import {
   addedAlterations,
   addedAppointmentTypes,
@@ -220,6 +221,48 @@ const promotion = recordStream<Promotion>(
   }),
 );
 
+/**
+ * A premiere's own words, dates, numbers and cover — never its style
+ * checklist, which the sheet saves but does not offer for undo. The
+ * baseline is the season as seeded or added, before any override.
+ */
+const premiere = recordStream<PremiereOverride>(
+  "premiere-overrides",
+  (record) => record.premiereId,
+  (id) => {
+    const seeded = assemblePremieres(premieres, addedPremieres(), []).find((candidate) => candidate.id === id);
+    if (!seeded) return undefined;
+    return {
+      type: "premiere-update",
+      key: `premiere:${id}`,
+      premiereId: id,
+      season: seeded.season.es,
+      title: seeded.title.es,
+      story: seeded.story.es,
+      inspiration: seeded.inspiration.es,
+      revealDate: seeded.revealDate,
+      releaseDate: seeded.releaseDate,
+      piecesPlanned: seeded.piecesPlanned,
+      editionSize: seeded.editionSize,
+      coverImage: seeded.coverImage,
+    };
+  },
+  (record, id) => ({
+    type: "premiere-update",
+    key: `premiere:${id}`,
+    premiereId: id,
+    ...(record.season ? { season: record.season.es } : {}),
+    ...(record.title ? { title: record.title.es } : {}),
+    ...(record.story ? { story: record.story.es } : {}),
+    ...(record.inspiration ? { inspiration: record.inspiration.es } : {}),
+    ...(record.revealDate === undefined ? {} : { revealDate: record.revealDate }),
+    ...(record.releaseDate === undefined ? {} : { releaseDate: record.releaseDate }),
+    ...(record.piecesPlanned === undefined ? {} : { piecesPlanned: record.piecesPlanned }),
+    ...(record.editionSize === undefined ? {} : { editionSize: record.editionSize }),
+    ...(record.coverImage === undefined ? {} : { coverImage: record.coverImage }),
+  }),
+);
+
 const requestStatus: Stream<StoredRequest> = {
   all: () => REQUEST_KINDS.flatMap(listRequests),
   key: (record) => record.reference,
@@ -296,6 +339,7 @@ function streamFor(kind: UndoKind): Stream<unknown> {
     case "style-text": return erased(styleText);
     case "work-text": return erased(workText);
     case "promotion": return erased(promotion);
+    case "premiere": return erased(premiere);
   }
 }
 

@@ -4,13 +4,13 @@ import type { Metadata } from "next";
 import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import {
   findCategory,
-  findPremiere,
   primaryPhoto,
   publishedStyles,
   sizes,
   translate,
 } from "@/content";
 import { liveStyles } from "@/lib/live-catalog";
+import { liveFindPremiere } from "@/lib/live-premieres";
 import { liveFindFabric, priceFor, withPrices } from "@/lib/live-pricing";
 import { promotedPrice, promotionBadge } from "@/lib/promotions";
 import { routing, type Locale } from "@/i18n/routing";
@@ -68,7 +68,7 @@ export default async function StylePage({
   const shown = promotedPrice(price);
   const category = findCategory(style.categoryId);
   const fabric = liveFindFabric(price.fabricId);
-  const premiere = style.premiereId ? findPremiere(style.premiereId) : undefined;
+  const premiere = style.premiereId ? liveFindPremiere(style.premiereId) : undefined;
 
   const related = withPrices(
     liveStyles()

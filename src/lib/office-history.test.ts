@@ -238,6 +238,41 @@ describe("office undo history", () => {
     expect(undoableIds("promotion")).toContain("prm-a3c4d6e7");
   });
 
+  it("premiere undo returns the seeded words after one override and the first override after two", async () => {
+    const { previousChangeFor, undoableIds } = await import("./office-history");
+    const { savePremiereOverride } = await import("./live-premieres");
+    const { premieres } = await import("@/content");
+    const autumn = premieres.find((premiere) => premiere.id === "otono-2026")!;
+
+    expect(previousChangeFor("premiere", "otono-2026")).toBeUndefined();
+    expect(undoableIds("premiere")).not.toContain("otono-2026");
+
+    await savePremiereOverride({ premiereId: "otono-2026", piecesPlanned: 5 });
+    expect(previousChangeFor("premiere", "otono-2026")).toEqual({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      season: autumn.season.es,
+      title: autumn.title.es,
+      story: autumn.story.es,
+      inspiration: autumn.inspiration.es,
+      revealDate: autumn.revealDate,
+      releaseDate: autumn.releaseDate,
+      piecesPlanned: autumn.piecesPlanned,
+      editionSize: autumn.editionSize,
+      coverImage: autumn.coverImage,
+    });
+    expect(undoableIds("premiere")).toContain("otono-2026");
+
+    await savePremiereOverride({ premiereId: "otono-2026", piecesPlanned: 4 });
+    expect(previousChangeFor("premiere", "otono-2026")).toEqual({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      piecesPlanned: 5,
+    });
+  });
+
   it("only makes request status undoable after a second line", async () => {
     const { previousChangeFor, undoableIds } = await import("./office-history");
     const { saveRequest } = await import("./request-store");

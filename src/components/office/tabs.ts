@@ -10,6 +10,7 @@ export const OFFICE_TABS = [
   { id: "hub", href: "/office", labelKey: "tabHub" },
   { id: "collection", href: "/office/collection", labelKey: "tabCollection" },
   { id: "gallery", href: "/office/gallery", labelKey: "tabGallery" },
+  { id: "premieres", href: "/office/premieres", labelKey: "tabPremieres" },
   { id: "fabrics", href: "/office/fabrics", labelKey: "tabFabrics" },
   { id: "prices", href: "/office/prices", labelKey: "tabPrices" },
   { id: "shopfront", href: "/office/shopfront", labelKey: "tabShopfront" },

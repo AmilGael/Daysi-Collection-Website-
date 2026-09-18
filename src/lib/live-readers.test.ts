@@ -325,6 +325,46 @@ describe("the premiere list", () => {
     const names = liveStylesInPremiere(premiere).map((style) => style.name.en);
     expect(names).toContain("Frutera, corrected");
   });
+
+  it("a premiere sign-up for an added premiere is accepted", async () => {
+    const { saveAddedPremiere } = await import("./live-premieres");
+    const { findRequest } = await import("./request-store");
+
+    await saveAddedPremiere({
+      id: "est-a1b2c3d4",
+      slug: "una-nueva-temporada",
+      season: { es: "Invierno 2027", en: "Winter 2027" },
+      title: { es: "Nieve", en: "Snow" },
+      story: { es: "Historia", en: "Story" },
+      inspiration: { es: "Inspiración", en: "Inspiration" },
+      revealDate: "2027-01-05",
+      releaseDate: "2027-02-01",
+      piecesPlanned: 6,
+      editionSize: 12,
+      coverImage: "/uploads/nieve.jpg",
+      styleIds: [],
+      added: true,
+      addedAt: new Date().toISOString(),
+    });
+
+    const { POST } = await import("@/app/api/premiere-signups/route");
+    const response = await POST(
+      post("/api/premiere-signups", {
+        website: "",
+        renderedAt: Date.now() - 10_000,
+        email: "ana@example.com",
+        name: "Ana",
+        locale: "es",
+        premiereId: "est-a1b2c3d4",
+      }),
+    );
+    expect(response.status).toBe(200);
+    const { reference } = (await response.json()) as { reference: string };
+    expect(findRequest(reference)).toMatchObject({
+      kind: "premiere-signup",
+      details: { Premiere: "Snow", Season: "Winter 2027", PremiereId: "est-a1b2c3d4" },
+    });
+  });
 });
 
 describe("noting an order the office took off-site", () => {
@@ -618,5 +658,119 @@ describe("a promotion run from the shop window", () => {
     // An undo brings back the earlier Spanish; its English comes back with it.
     await apply({ ...onSirena, ...saved, scope: { type: "all" }, label: "Venta de otoño", active: false });
     expect(manageablePromotions()[0]).toMatchObject({ label: { es: "Venta de otoño", en: "Autumn sale" }, active: false });
+  });
+});
+
+describe("a premiere announced from the office", () => {
+  async function apply(...changes: Record<string, unknown>[]) {
+    const { headers } = await import("next/headers");
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({ origin: "http://localhost:3000", host: "localhost:3000" }),
+    );
+    const { currentViewer } = await import("@/lib/auth/session");
+    vi.mocked(currentViewer).mockResolvedValue({ role: "owner" } as Awaited<ReturnType<typeof currentViewer>>);
+    const { applyPremiereChanges } = await import("@/app/[locale]/office/premieres/actions");
+    const result = await applyPremiereChanges(changes);
+    if (!result.ok) throw new Error(result.error);
+    return result.results;
+  }
+
+  const create = {
+    type: "premiere-create",
+    key: "premiere-create:new",
+    season: "Invierno 2027",
+    title: "Nieve",
+    story: "Seis piezas alrededor del primer invierno en el Bronx.",
+    inspiration: "El frío que nunca conoció en la isla.",
+    revealDate: "2027-01-05",
+    releaseDate: "2027-02-01",
+    piecesPlanned: 6,
+    editionSize: 12,
+    coverImage: "/uploads/nieve.jpg",
+    styleIds: ["sirena"],
+  };
+
+  it("announces a season, copies the Spanish (no translation service configured), and slugs it from the title", async () => {
+    expect(await apply(create)).toEqual([{ key: "premiere-create:new", ok: true }]);
+
+    const { manageablePremieres } = await import("./live-premieres");
+    // Newest first: this season releases after both seeded ones.
+    const [saved] = manageablePremieres();
+    expect(saved).toMatchObject({
+      slug: "nieve",
+      title: { es: "Nieve", en: "Nieve" },
+      season: { es: "Invierno 2027", en: "Invierno 2027" },
+      piecesPlanned: 6,
+      editionSize: 12,
+      styleIds: ["sirena"],
+      added: true,
+      retired: false,
+    });
+    expect(saved?.id).toMatch(/^est-[a-z0-9]{8}$/);
+  });
+
+  it("de-duplicates a slug that collides with an existing one", async () => {
+    await apply(create);
+    await apply({ ...create, key: "premiere-create:two" });
+    const { manageablePremieres } = await import("./live-premieres");
+    const slugs = manageablePremieres().map((premiere) => premiere.slug);
+    expect(slugs).toEqual(expect.arrayContaining(["nieve", "nieve-2"]));
+  });
+
+  it("refuses a release before the reveal, and a garment not on the rack or retired", async () => {
+    const { setRetired } = await import("./retired");
+    await setRetired("style", "frutera", true);
+    const results = await apply(
+      { ...create, key: "premiere-create:a", releaseDate: "2027-01-01" },
+      { ...create, key: "premiere-create:b", styleIds: ["nobody"] },
+      { ...create, key: "premiere-create:c", styleIds: ["frutera"] },
+    );
+    expect(results.map((result) => result.error)).toEqual(["bad-dates", "unknown-style", "unknown-style"]);
+  });
+
+  it("updates only the fields she changed, and leaves the rest", async () => {
+    await apply(create);
+    const { manageablePremieres } = await import("./live-premieres");
+    const id = manageablePremieres()[0]!.id;
+
+    await apply({ type: "premiere-update", key: `premiere:${id}`, premiereId: id, piecesPlanned: 5 });
+    const updated = manageablePremieres().find((premiere) => premiere.id === id);
+    expect(updated).toMatchObject({ piecesPlanned: 5, title: { es: "Nieve", en: "Nieve" } });
+  });
+
+  it("refuses an update to a premiere that does not exist, and one whose new dates cross", async () => {
+    const results = await apply(
+      { type: "premiere-update", key: "premiere:nobody", premiereId: "nobody", piecesPlanned: 5 },
+      { type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", releaseDate: "2026-09-01" },
+    );
+    expect(results.map((result) => result.error)).toEqual(["unknown-premiere", "bad-dates"]);
+  });
+
+  it("saves which garments belong to the season, and refuses one that is not live", async () => {
+    await apply({
+      type: "premiere-styles",
+      key: "premiere-styles:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["frutera"],
+    });
+    const { manageablePremieres } = await import("./live-premieres");
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.styleIds).toEqual(["frutera"]);
+
+    const refused = await apply({
+      type: "premiere-styles",
+      key: "premiere-styles:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["nobody"],
+    });
+    expect(refused[0]?.error).toBe("unknown-style");
+  });
+
+  it("retires and restores a season", async () => {
+    await apply({ type: "retire", key: "premiere:otono-2026", id: "otono-2026" });
+    const { manageablePremieres } = await import("./live-premieres");
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.retired).toBe(true);
+
+    await apply({ type: "restore", key: "premiere:otono-2026", id: "otono-2026" });
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.retired).toBe(false);
   });
 });

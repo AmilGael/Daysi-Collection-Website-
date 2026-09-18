@@ -1,7 +1,8 @@
 import Image from "next/image";
 import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
-import { premiereListing, services, translate } from "@/content";
+import { services, translate } from "@/content";
 import { liveStyles } from "@/lib/live-catalog";
+import { livePremiereListing } from "@/lib/live-premieres";
 import { liveAlterations, withPrices } from "@/lib/live-pricing";
 import { SiteNoticeBar } from "@/components/site-notice";
 import { DesignStrip } from "@/components/design-strip";
@@ -354,7 +355,7 @@ async function NextPremiere() {
   const locale = (await getLocale()) as Locale;
   // Between seasons there is no next premiere written down yet; the section
   // keeps the newest season's photograph and says the next one is coming.
-  const { next, featured } = premiereListing(new Date());
+  const { next, featured } = livePremiereListing(new Date());
   if (!featured) return null;
 
   return (

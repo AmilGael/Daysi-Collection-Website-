@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import en from "@/messages/en.json";
 import es from "@/messages/es.json";
-import { premiereListing } from "./index";
+import { premiereListing, premiereListingFrom } from "./index";
 import { premieres } from "./premieres";
 
 /**
@@ -46,6 +46,12 @@ describe("the premiere listing", () => {
     expect(premiereListing(dayAfterRelease).featured?.id).toBe(autumn.id);
     expect(premiereListing(beforeRelease).featured?.id).toBe(autumn.id);
   });
+
+  it("premiereListingFrom is what premiereListing reads", () => {
+    for (const today of [beforeRelease, dayAfterRelease, eveOfReleaseNewYork, morningOfRelease, nightOfReleaseNewYork]) {
+      expect(premiereListing(today)).toEqual(premiereListingFrom(premieres, today));
+    }
+  });
 });
 
 describe("the premieres list", () => {
@@ -82,7 +88,11 @@ describe.each(Object.entries(pages))("the %s page", (_name, relative) => {
   const source = fs.readFileSync(path.join(process.cwd(), relative), "utf8");
 
   it("reads the listing rather than picking a premiere itself", () => {
-    expect(source).toContain("premiereListing(");
+    // Both pages read the live listing now (Task 14), so the call is
+    // `livePremiereListing(`; the check still asks for the "…PremiereListing("
+    // tail rather than the bare seed-only `premiereListing(` name, so a page
+    // that goes back to picking `premieres[0]` itself still fails it.
+    expect(source).toContain("PremiereListing(");
     expect(source).not.toContain("premieres[0]");
   });
 

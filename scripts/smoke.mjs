@@ -99,6 +99,7 @@ const PRIVATE = [
   "/office",
   "/office/collection",
   "/office/gallery",
+  "/office/premieres",
   "/office/fabrics",
   "/office/prices",
   "/office/shopfront",
