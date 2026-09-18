@@ -60,7 +60,7 @@ describe("image reads", () => {
 describe("the add forms", () => {
   it.each([
     { relative: "src/components/office/gallery-work-sheet.tsx", from: "./image-reads" },
-    { relative: "src/components/fabric-manager.tsx", from: "./office/image-reads" },
+    { relative: "src/components/office/fabric-sheet.tsx", from: "./image-reads" },
   ])("$relative reports an unreadable upload", ({ relative, from }) => {
     const source = fs.readFileSync(path.join(process.cwd(), relative), "utf8");
     expect(source).toContain(`from "${from}"`);

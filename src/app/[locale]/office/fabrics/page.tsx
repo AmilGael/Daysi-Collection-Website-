@@ -1,8 +1,9 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
-import { categories, translate } from "@/content";
-import { liveFabrics, manageableCustomFabrics } from "@/lib/live-pricing";
+import { translate } from "@/content";
+import { liveFabrics, livePriceList, manageableCustomFabrics } from "@/lib/live-pricing";
 import { FabricManager } from "@/components/fabric-manager";
+import { pricesFromEntries, type ManagedFabric } from "@/components/office/fabric-draft";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
 import { officeViewer } from "../_lib/viewer";
 import { applyFabricChanges } from "./actions";
@@ -22,24 +23,23 @@ export default async function OfficeFabricsPage({
 
   const custom = manageableCustomFabrics();
   const customIds = new Set(custom.map((fabric) => fabric.id));
-  const fabricWall = liveFabrics().map((fabric) => ({
+  const entries = livePriceList();
+  const fabricWall: ManagedFabric[] = liveFabrics().map((fabric) => ({
     id: fabric.id,
     name: translate(fabric.name, language),
     swatchImage: fabric.swatchImage,
     custom: customIds.has(fabric.id),
+    prices: pricesFromEntries(fabric.id, entries),
   }));
-  const retired = custom.filter((fabric) => fabric.retired).map((fabric) => ({
-    id: fabric.id,
-    name: fabric.name,
-    swatchImage: fabric.swatchImage,
-  }));
-  const fabricCategories = (["dresses", "pants", "shirts", "heritage"] as const).map((id) => ({
-    id,
-    label: translate(
-      categories.find((category) => category.id === id)?.name ?? { en: id, es: id },
-      language,
-    ),
-  }));
+  const retired: ManagedFabric[] = custom
+    .filter((fabric) => fabric.retired)
+    .map((fabric) => ({
+      id: fabric.id,
+      name: fabric.name,
+      swatchImage: fabric.swatchImage,
+      custom: true,
+      prices: fabric.prices,
+    }));
 
   return (
     <section className="flex flex-col gap-6">
@@ -50,7 +50,7 @@ export default async function OfficeFabricsPage({
         </p>
       </div>
       <OfficeDraftProvider apply={applyFabricChanges}>
-        <FabricManager fabrics={fabricWall} retired={retired} categories={fabricCategories} />
+        <FabricManager fabrics={fabricWall} retired={retired} locale={language} />
       </OfficeDraftProvider>
     </section>
   );
