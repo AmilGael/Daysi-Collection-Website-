@@ -60,7 +60,10 @@ export default async function AlterationsPage({
           </tbody>
         </table>
 
-        <p className="mt-8 max-w-2xl border-l-2 border-marigold pl-4 text-[0.9375rem] leading-relaxed text-ink-soft">
+        <p className="mt-8 max-w-2xl text-[0.9375rem] leading-relaxed text-ink-soft">
+          {t("variesNote")}
+        </p>
+        <p className="mt-6 max-w-2xl border-l-2 border-marigold pl-4 text-[0.9375rem] leading-relaxed text-ink-soft">
           {t("guarantee")}
         </p>
       </section>

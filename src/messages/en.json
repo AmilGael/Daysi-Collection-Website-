@@ -63,7 +63,7 @@
     "plateBasketCaption": "Frutera, with the market basket",
     "trust": {
       "one": "In business since 2008",
-      "two": "Fixed prices, never negotiated",
+      "two": "Published prices, never negotiated",
       "three": "Alterations back within a week",
       "four": "English and Spanish",
       "five": "Made by hand in the Bronx"
@@ -77,8 +77,9 @@
     "collectionTitle": "The collection",
     "collectionLead": "Small runs, published prices, sizes S to L.",
     "collectionLink": "See all pieces",
+    "stripLabel": "Latest from the workroom",
     "pricesTitle": "The price is the price.",
-    "pricesLead": "Prices here are set once, with the cost of cloth already built in, and they are not negotiated. That is what protects the work and what makes it fair to everyone who walks in.",
+    "pricesLead": "Prices here are published once, with the cost of cloth already built in, and they are not negotiated; anything extra a piece needs is agreed with you before cutting. That is what protects the work and what makes it fair to everyone who walks in.",
     "pricesLink": "Read the full price list",
     "alterationsTitle": "The alteration you have been putting off.",
     "alterationsLead": "Hems, waists, sleeves, zippers and full resizes, each with a price published in advance. Send a photo and get an answer, without a phone call.",
@@ -95,7 +96,7 @@
   },
   "collection": {
     "title": "The collection",
-    "lead": "Filter by design and by size. Every price shown is the fixed price, and every piece can be made to your measurements.",
+    "lead": "Filter by design and by size. Every price shown is the published price, and every piece can be made to your measurements.",
     "filterDesign": "Design",
     "filterSize": "Size",
     "all": "All",
@@ -126,7 +127,8 @@
   },
   "alterations": {
     "title": "Alterations",
-    "lead": "The published list. No estimate needed for anything on it: this is what it costs.",
+    "lead": "The published list: this is what each alteration costs.",
+    "variesNote": "If the garment turns out to need more work than it looked, Daysi tells you and you agree before she starts; the difference is paid on collection.",
     "tableService": "Alteration",
     "tablePrice": "Price",
     "tableTurnaround": "Back with you",
@@ -138,12 +140,14 @@
   },
   "prices": {
     "title": "Prices",
-    "lead": "One price list feeds this whole site. Prices are set by garment and by cloth, with the cost of material already built in, and they are fixed.",
-    "why": "Why the prices do not move",
+    "lead": "One price list feeds this whole site. Prices are set by garment and by cloth, with the cost of material already built in.",
+    "howToRead": "Each garment is priced by its cloth: find the garment, then the cloth. That is the price of the ready piece; made to measure adds the charge at the end of each list.",
+    "variesNote": "The listed price is for the piece as shown. A lining, extra work or a rush date can raise it: Daysi tells you and you agree before anything is cut, and the difference is paid separately, on collection. What you pay on this site is always the total you see.",
+    "why": "Why the price does not change with who asks",
     "whyBody": "A price that changes per client is a price that punishes whoever asks least. Setting it once, in public, with a cushion for the cost of cloth, is what keeps the work sustainable and keeps everyone paying the same.",
     "tableGarment": "Garment",
     "tableFabric": "Cloth",
-    "tablePrice": "Fixed price",
+    "tablePrice": "Price",
     "tableCustom": "Made to measure",
     "estimateTitle": "Build an estimate",
     "estimateLead": "Pick what you want and see exactly what is due, and when, before you commit to anything.",
@@ -323,7 +327,7 @@
       },
       "prices": {
         "title": "3. Prices",
-        "body": "Prices published on this site are fixed and are not negotiated. They include the cost of cloth at the rates in effect when they were set. A written estimate is valid for thirty days. If the work you ask for changes after an estimate is given, a new estimate is issued before the work continues. The price never changes without you seeing it first."
+        "body": "Prices published on this site are not negotiated. They include the cost of cloth at the rates in effect when they were set. A listed price is for the piece as shown: a lining, extra work or a rush date can raise it, and any difference is told to you and agreed before work starts, and paid on collection. A written estimate is valid for thirty days. If the work you ask for changes after an estimate is given, a new estimate is issued before the work continues. The price never changes without you seeing it first."
       },
       "deposits": {
         "title": "4. Deposits and payment",
@@ -458,7 +462,7 @@
   },
   "cart": {
     "title": "Your cart",
-    "lead": "Prices are the published fixed prices. Nothing is charged until you confirm.",
+    "lead": "Prices are the published prices. Nothing is charged until you confirm.",
     "empty": "Your cart is empty.",
     "browse": "See the collection",
     "quantity": "Quantity",
