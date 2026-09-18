@@ -92,6 +92,17 @@
   }
 }
 
+/**
+ * The bar is fixed and portalled to `document.body`, so it sits in front of
+ * whatever the last thing on the page is — the site footer, on every office
+ * tab — rather than pushing it up the way an in-flow element would. Padding
+ * the body by the bar's own height (`confirm-bar.tsx` marks it with
+ * `data-office-bar`) keeps the footer's last line clear of it.
+ */
+body:has([data-office-bar]) {
+  padding-bottom: var(--office-bar);
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;

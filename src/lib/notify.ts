@@ -25,14 +25,14 @@ export function summarise(request: StoredRequest): string {
   const lines: string[] = [
     `${KIND_LABELS[request.kind]} · ${request.reference}`,
     "",
-    `Name:      ${forNotification(request.client.name)}`,
+    `Name:      ${request.client.name ? forNotification(request.client.name) : "No name given"}`,
     `Email:     ${forNotification(request.client.email)}`,
   ];
 
   // No phone on file: Daysi cannot text or call, so the note says as much and
   // she knows to reply by email instead.
   if (request.client.phone) lines.push(`Phone:     ${forNotification(request.client.phone)}`);
-  else lines.push("Sin teléfono");
+  else lines.push("No phone given");
   if (request.client.preferredContact) {
     lines.push(`Reply via: ${request.client.preferredContact}`);
   }
@@ -255,7 +255,8 @@ export function receiptMessage(request: StoredRequest): { subject: string; text:
 
   const itemLines = lines.map((line) => {
     const qty = line.unitAmount ? Math.round(line.amount / line.unitAmount) : 1;
-    return `${translate(line.label, locale)} × ${qty} — ${formatMoney(line.amount, locale)}`;
+    const label = line.note ? `${translate(line.label, locale)} (${translate(line.note, locale)})` : translate(line.label, locale);
+    return `${label} × ${qty} — ${formatMoney(line.amount, locale)}`;
   });
 
   const subtotal = estimate?.subtotal ?? 0;

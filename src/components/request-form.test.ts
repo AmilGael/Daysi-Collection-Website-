@@ -39,6 +39,16 @@ describe("the request form's locked kind", () => {
     );
   });
 
+  /**
+   * The page's own <PageHeader> already gives the page title "Hacer una
+   * solicitud"/"Request an alteration or commission". Repeating it as an
+   * eyebrow above the locked heading was redundant; the kind heading and
+   * the Cambiar link are what a locked client needs.
+   */
+  it("drops the eyebrow that repeated the page title above the locked heading", () => {
+    expect(form).not.toContain('<p className="eyebrow mb-2">{t("title")}</p>');
+  });
+
   it("pre-ticks initialAlterationId only when it names a live alteration", () => {
     expect(form).toContain("initialAlterationId?: string");
     expect(form).toContain(
@@ -59,6 +69,17 @@ describe("the request page's ?kind and ?alteration", () => {
   it("locks only on a kind the form still offers", () => {
     expect(page).toContain("const locked = KINDS.includes(requested as Kind);");
     expect(page).toContain("lockedKind={locked ? kind : null}");
+  });
+
+  /**
+   * Without a key, React sees the same `<RequestForm>` element across a
+   * client-side navigation from one `?kind=` to another and reuses it, so
+   * its internal state (fields already typed, the alteration ticked) survives
+   * a switch that should have started fresh. Keying on the locked kind (or
+   * "open" for the bare, unlocked chooser) forces a remount instead.
+   */
+  it("keys the form on the locked kind, so it remounts across a ?kind change", () => {
+    expect(page).toContain('key={locked ? kind : "open"}');
   });
 
   it("reads ?alteration and hands it to the form, without validating it itself", () => {

@@ -166,12 +166,9 @@ export function RequestForm({
 
       {lockedKind ? (
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <div>
-            <p className="eyebrow mb-2">{t("title")}</p>
-            <h2 className="text-heading">
-              {t(kind === "alteration" ? "kindAlteration" : "kindCommission")}
-            </h2>
-          </div>
+          <h2 className="text-heading">
+            {t(kind === "alteration" ? "kindAlteration" : "kindCommission")}
+          </h2>
           <TextLink href="/request">{t("changeKind")}</TextLink>
         </div>
       ) : (

@@ -48,7 +48,8 @@ describe("the confirm bar", () => {
   it("never leaves the page", () => {
     expect(source).not.toContain("if (count === 0) return null;");
     expect(source).toContain("const idle = count === 0;");
-    expect(source).toContain('{idle ? t("noChanges") : t("changesPending", { count })}');
+    expect(source).toContain('const statusLine = idle ? t("noChanges") : t("changesPending", { count });');
+    expect(source).toContain("{statusLine}");
     expect(source).toContain("z-[60]");
   });
 
@@ -120,5 +121,32 @@ describe("the confirm bar", () => {
   it("labels the region in both languages", () => {
     expect(officeMessages(es).confirmBarLabel).toBe("Cambios");
     expect(officeMessages(en).confirmBarLabel).toBe("Changes");
+  });
+
+  /**
+   * The bar is portalled to `document.body` and fixed, so it covers the last
+   * `--office-bar` worth of whatever else is on the page — the site footer,
+   * on every office tab — instead of pushing it up. `data-office-bar` marks
+   * the bar so a global rule can pad the body clear of it, at whichever
+   * height the current breakpoint sets.
+   */
+  it("marks itself so the page can pad its footer clear of the fixed bar", () => {
+    const outerBar = sectionBetween(source, 'export function ConfirmBar', 'role="region"');
+    expect(outerBar).toContain("data-office-bar");
+    expect(globalsSource).toContain("body:has([data-office-bar])");
+    expect(globalsSource).toContain("padding-bottom: var(--office-bar);");
+  });
+
+  /**
+   * The error shares the truncated status line, which can hide it on a
+   * phone. `title` carries the untruncated status plus error so it can
+   * still be read on long-press/hover.
+   */
+  it("gives the status line a title with the full text, error included", () => {
+    const statusParagraph = sectionBetween(source, "<p\n", "</p>");
+    expect(statusParagraph).toContain("title={fullStatus}");
+    expect(source).toContain(
+      'const fullStatus = errorLine ? `${statusLine} · ${errorLine}` : statusLine;',
+    );
   });
 });

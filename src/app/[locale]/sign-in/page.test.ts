@@ -48,6 +48,16 @@ describe("the sign-in page", () => {
     expect(pageSource).toContain("signInLinkError");
   });
 
+  /**
+   * The card sits inside `.on-ink`, which sets `--color-focus` to marigold
+   * (~1.9:1 on the card's paper background) for the dark hero around it.
+   * The card overrides it back to the darker, text-capable marigold so
+   * keyboard focus on its buttons stays visible.
+   */
+  it("darkens the focus ring back down on the paper card, overriding .on-ink's marigold", () => {
+    expect(pageSource).toContain("[--color-focus:var(--color-marigold-deep)]");
+  });
+
   it("is a dark-hero route, so the header inverts over it like the homepage", () => {
     expect(headerSource).toContain('const DARK_HERO_ROUTES = ["/", "/premieres", "/atelier", "/sign-in"];');
   });

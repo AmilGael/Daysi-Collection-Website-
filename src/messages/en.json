@@ -312,6 +312,7 @@
     "bankNote": "Bank payments are handled by Stripe on their own secure page. This site never sees your bank details.",
     "cancelledTitle": "Payment cancelled.",
     "cancelledLead": "Nothing was charged, and order {reference} has been cancelled. Come back to the collection whenever you like.",
+    "cancelledBookingLead": "Nothing was charged and booking {reference} was cancelled. You can choose another time whenever you like.",
     "backHome": "Back to the site",
     "secureNote": "Card details are handled by Stripe on their own secure page. This site never sees them."
   },

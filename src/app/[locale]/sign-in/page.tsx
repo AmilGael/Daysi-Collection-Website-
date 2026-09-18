@@ -43,7 +43,7 @@ export default async function SignInPage({
         <div className="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/15 to-ink/85" />
       </div>
 
-      <div className="relative w-full max-w-md rounded-[2px] bg-paper p-8 text-ink shadow-[0_30px_80px_-30px_rgb(0_0_0/0.6)] sm:p-10">
+      <div className="relative w-full max-w-md rounded-[2px] bg-paper p-8 text-ink shadow-[0_30px_80px_-30px_rgb(0_0_0/0.6)] [--color-focus:var(--color-marigold-deep)] sm:p-10">
         <DaisyMark className="mx-auto mb-6 h-14 w-auto" />
         <h1 className="text-center text-heading">{t("signInTitle")}</h1>
         <p className="mt-3 text-center text-[0.9375rem] leading-relaxed text-ink-soft">

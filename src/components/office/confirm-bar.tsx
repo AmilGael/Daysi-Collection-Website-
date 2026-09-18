@@ -5,10 +5,14 @@ import type { JSX, ReactNode } from "react";
 import { buttonClass } from "@/components/ui";
 import type { DraftStatus } from "./draft-reducer";
 
+function errorMessage(t: ReturnType<typeof useTranslations<"office">>, code: string, count?: number): string {
+  const key = `error.${code}` as Parameters<typeof t.has>[0];
+  return t.has(key) ? t(key, { count: count ?? 0 }) : t("updateFailed");
+}
+
 export function ErrorText({ code, count }: { code: string; count?: number }) {
   const t = useTranslations("office");
-  const key = `error.${code}` as Parameters<typeof t.has>[0];
-  return <>{t.has(key) ? t(key, { count: count ?? 0 }) : t("updateFailed")}</>;
+  return <>{errorMessage(t, code, count)}</>;
 }
 
 /**
@@ -53,9 +57,15 @@ export function ConfirmBar({
 }): JSX.Element {
   const t = useTranslations("office");
   const idle = count === 0;
+  const statusLine = idle ? t("noChanges") : t("changesPending", { count });
+  const errorLine = status === "failed" && error ? errorMessage(t, error) : null;
+  // The truncated status line can hide the error on a phone; the full text
+  // still reaches long-press/hover through `title`.
+  const fullStatus = errorLine ? `${statusLine} · ${errorLine}` : statusLine;
 
   return (
     <div
+      data-office-bar
       role="region"
       aria-label={t("confirmBarLabel")}
       className="fixed inset-x-0 bottom-0 z-[60] h-[var(--office-bar)] border-t border-line bg-paper shadow-[0_-12px_32px_-20px_rgb(20_17_13/0.35)]"
@@ -63,9 +73,10 @@ export function ConfirmBar({
       <div className="shell flex h-full flex-col justify-center gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p
           aria-live="polite"
+          title={fullStatus}
           className={`min-w-0 truncate text-sm font-semibold sm:flex-1 ${idle ? "text-ink-faint" : ""}`}
         >
-          {idle ? t("noChanges") : t("changesPending", { count })}
+          {statusLine}
           {status === "failed" && error ? (
             <span className="font-normal text-ink"> · <ErrorText code={error} /></span>
           ) : null}

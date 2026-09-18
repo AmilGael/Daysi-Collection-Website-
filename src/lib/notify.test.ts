@@ -93,7 +93,7 @@ describe("summarise", () => {
   it("tells Daysi there is no phone when the client left none, so she knows to reply by email", async () => {
     const { summarise } = await import("./notify");
 
-    expect(summarise(record())).toContain("Sin teléfono");
+    expect(summarise(record())).toContain("No phone given");
   });
 
   it("prints the phone instead of the note when the client left one", async () => {
@@ -102,7 +102,18 @@ describe("summarise", () => {
     const text = summarise(record({ client: { name: "Ana", email: "ana@example.com", phone: "9175550100" } }));
 
     expect(text).toContain("Phone:     9175550100");
-    expect(text).not.toContain("Sin teléfono");
+    expect(text).not.toContain("No phone given");
+  });
+
+  // The owner summary's other labels (Name, Email, Phone…) are English, so a
+  // guest who left no name reads "No name given" rather than the Spanish
+  // "Sin nombre" — and no blank after "Name:" either.
+  it("tells Daysi there is no name when the guest left one, in the same language as the rest", async () => {
+    const { summarise } = await import("./notify");
+
+    const text = summarise(record({ client: { name: "", email: "ana@example.com" } }));
+
+    expect(text).toContain("Name:      No name given");
   });
 });
 
@@ -307,6 +318,35 @@ describe("notifyClientPaid", () => {
     expect(body.text).toContain("ORD-1");
     expect(body.text).toContain("wa.me/");
     expect(body.text).toContain("/es/account/orders");
+  });
+
+  it("prints a line's note after its label, translated to the record's locale", async () => {
+    const { receiptMessage } = await import("./notify");
+
+    const { text } = receiptMessage(
+      record({
+        locale: "es",
+        estimate: {
+          lines: [
+            {
+              label: { en: "Amapola dress", es: "Vestido Amapola" },
+              note: { en: "Size M", es: "Talla M" },
+              amount: 10500,
+              unitAmount: 10500,
+              taxBasis: "clothing",
+            },
+          ],
+          subtotal: 10500,
+          salesTax: 0,
+          total: 10500,
+          dueNow: 10500,
+          dueOnCollection: 0,
+          dueNowReason: { en: "Due now", es: "A pagar ahora" },
+        },
+      }),
+    );
+
+    expect(text).toContain("Vestido Amapola (Talla M) × 1 — $105");
   });
 
   it("says the deposit was paid by banco and what is still due on collection", async () => {

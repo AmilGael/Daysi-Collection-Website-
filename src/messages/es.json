@@ -312,6 +312,7 @@
     "bankNote": "Los pagos desde el banco los maneja Stripe en su propia página segura. Este sitio nunca ve sus datos bancarios.",
     "cancelledTitle": "Pago cancelado.",
     "cancelledLead": "No se cobró nada y el pedido {reference} quedó cancelado. Vuelva a la colección cuando quiera.",
+    "cancelledBookingLead": "No se cobró nada y la reserva {reference} quedó cancelada. Puede elegir otra hora cuando quiera.",
     "backHome": "Volver al sitio",
     "secureNote": "Los datos de la tarjeta los maneja Stripe en su propia página segura. Este sitio nunca los ve."
   },

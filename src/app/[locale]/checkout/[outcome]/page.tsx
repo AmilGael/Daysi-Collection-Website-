@@ -5,6 +5,7 @@ import { routing } from "@/i18n/routing";
 import { ButtonLink } from "@/components/ui";
 import { cancelledState, thankYouState } from "@/lib/checkout-outcome";
 import { callerKey } from "@/lib/rate-limit";
+import { findRequest } from "@/lib/request-store";
 
 /**
  * Where Stripe sends the client back to. Both outcomes are a real page rather
@@ -75,13 +76,22 @@ export default async function CheckoutOutcomePage({
             : "unknown";
   const note = state === "pending" ? t("bankNote") : state === "failed" ? null : t("secureNote");
 
+  // A booking deposit reaches this same cancelled page as an order's
+  // checkout, but "order {reference}" is wrong for a client who never
+  // bought a garment. The lead and the way back both follow the record's
+  // own kind; an unknown reference falls back to the order copy and home.
+  const cancelledBooking =
+    copy === "cancelled" && reference !== undefined && findRequest(reference)?.kind === "appointment";
+  const leadKey = cancelledBooking ? "cancelledBookingLead" : `${copy}Lead`;
+  const backHref = cancelledBooking ? "/appointments" : "/";
+
   return (
     <div className="shell flex min-h-[60svh] items-center py-24">
       <div className="flex max-w-xl flex-col gap-7">
         <h1 className="text-title">{t(`${copy}Title`)}</h1>
-        <p className="text-lead text-ink-soft">{t(`${copy}Lead`, { reference: reference ?? "–" })}</p>
+        <p className="text-lead text-ink-soft">{t(leadKey, { reference: reference ?? "–" })}</p>
         {note ? <p className="text-[0.875rem] text-ink-faint">{note}</p> : null}
-        <ButtonLink href="/" className="w-fit">
+        <ButtonLink href={backHref} className="w-fit">
           {t("backHome")}
         </ButtonLink>
       </div>

@@ -31,6 +31,7 @@ export default async function RequestPage({
       <PageHeader title={t("title")} lead={t("lead")} />
       <div className="shell pb-28">
         <RequestForm
+          key={locked ? kind : "open"}
           initialKind={kind}
           lockedKind={locked ? kind : null}
           initialAlterationId={initialAlterationId}
