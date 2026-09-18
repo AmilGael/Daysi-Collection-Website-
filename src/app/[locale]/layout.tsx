@@ -9,6 +9,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { Reveal } from "@/components/reveal";
 import { currentViewer } from "@/lib/auth/session";
 import { cartCount, readCart } from "@/lib/cart";
+import { helperEnabled } from "@/lib/env";
 import { HERO_IMAGE } from "@/content/photographs";
 import "../globals.css";
 
@@ -105,6 +106,7 @@ export default async function LocaleLayout({
                 : null
             }
             cartCount={cartCount(cart)}
+            helperEnabled={helperEnabled}
           />
           <main id="main">{children}</main>
           <SiteFooter />

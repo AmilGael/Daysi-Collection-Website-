@@ -6,6 +6,7 @@ import { Link, usePathname } from "@/i18n/routing";
 import { BAR_TABS, NAV_TABS } from "@/content/navigation";
 import { OFFICE_TABS } from "./office/tabs";
 import { OfficeTabs } from "./office/office-tabs";
+import { HelpSheet } from "./office/help-sheet";
 import { Logo } from "./logo";
 import { LanguageSwitch } from "./language-switch";
 import { AccountMenu } from "./account-menu";
@@ -23,9 +24,11 @@ const DARK_HERO_ROUTES = ["/", "/premieres", "/atelier", "/sign-in"];
 export function SiteHeader({
   viewer,
   cartCount,
+  helperEnabled,
 }: {
   viewer: HeaderViewer;
   cartCount: number;
+  helperEnabled: boolean;
 }) {
   const t = useTranslations("nav");
   const to = useTranslations("office");
@@ -41,6 +44,11 @@ export function SiteHeader({
   const barTabs = inOffice
     ? OFFICE_TABS.map((tab) => ({ href: tab.href, label: to(tab.labelKey), exact: true }))
     : BAR_TABS.map((tab) => ({ href: tab.href, label: t(tab.label), exact: false }));
+  // The tab a question is asked from, so the helper can answer "on this
+  // screen" rather than in the abstract. Falls back to the hub for any
+  // office path the list does not name.
+  const currentOfficeTab = OFFICE_TABS.find((tab) => tab.href === pathname)?.id ?? "hub";
+  const showHelp = inOffice && helperEnabled;
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -137,6 +145,7 @@ export function SiteHeader({
               </Link>
             );
           })}
+          {showHelp ? <HelpSheet tab={currentOfficeTab} /> : null}
         </nav>
 
         {/*
@@ -201,9 +210,14 @@ export function SiteHeader({
       {inOffice ? (
         // Below the bar's breakpoint the office tabs get a row of their own,
         // scrolling sideways, where the store links would have been hidden in
-        // the menu. One row of tabs, either way.
-        <div className="shell min-[75rem]:hidden">
-          <OfficeTabs />
+        // the menu. One row of tabs, either way. The tabs sit in their own
+        // shrinking box so the "?" always stays put at the end of the row
+        // rather than scrolling away with them.
+        <div className="shell flex items-center gap-3 min-[75rem]:hidden">
+          <div className="min-w-0 flex-1">
+            <OfficeTabs />
+          </div>
+          {showHelp ? <HelpSheet tab={currentOfficeTab} /> : null}
         </div>
       ) : null}
     </header>
