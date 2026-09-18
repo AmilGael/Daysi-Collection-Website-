@@ -41,6 +41,15 @@ export type StyleOverride = {
   readonly photos?: readonly string[];
   /** Offered in the design studio. Absent says nothing, so the garment's own flag stands. */
   readonly inStudio?: boolean;
+  /**
+   * The garment's own price in cents, instead of its pair's list price.
+   * Unlike the studio flag, the record is the whole truth here, as with
+   * `photos`: a newer record without it puts the list price back, which is
+   * also how an undo takes an own price away.
+   */
+  readonly fixedPrice?: number;
+  /** Its own made-to-measure extra; only read beside `fixedPrice`. Absent = the pair's extra. */
+  readonly customizationExtra?: number;
   readonly updatedAt: string;
 };
 
@@ -123,6 +132,16 @@ export function applyOverrides(
         return { sizeId: offered.sizeId, inStock: count > 0, count };
       }),
       ...(override.inStudio === undefined ? {} : { inStudio: override.inStudio }),
+      ...(override.fixedPrice === undefined
+        ? {}
+        : {
+            ownPrice: {
+              fixedPrice: override.fixedPrice,
+              ...(override.customizationExtra === undefined
+                ? {}
+                : { customizationExtra: override.customizationExtra }),
+            },
+          }),
     };
   });
 }

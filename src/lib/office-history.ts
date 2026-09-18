@@ -98,6 +98,12 @@ const styleOverride = recordStream<StyleOverride>(
       ...(legacy === undefined ? {} : { addedPhotos: [...legacy] }),
       ...(record.coverSrc === undefined || record.photos ? {} : { coverSrc: record.coverSrc }),
       ...(record.inStudio === undefined ? {} : { inStudio: record.inStudio }),
+      // The line is the whole truth about an own price, so a line without
+      // one comes back without one, which the merge reads as the list price.
+      ...(record.fixedPrice === undefined ? {} : { fixedPrice: record.fixedPrice }),
+      ...(record.fixedPrice === undefined || record.customizationExtra === undefined
+        ? {}
+        : { customizationExtra: record.customizationExtra }),
     };
   },
 );

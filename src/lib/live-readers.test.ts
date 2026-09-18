@@ -95,6 +95,40 @@ describe("pricing an added garment", () => {
     expect(estimate?.lines[0]?.label.en).toBe("Sol dress, corrected");
   });
 
+  it("charges a garment's own price in an estimate and a cart once Daysi sets one", async () => {
+    const { saveStyleOverride } = await import("./live-catalog");
+    const { estimateCart, estimateReadyMade } = await import("./pricing");
+    await saveStyleOverride({ styleId: "sol", isPublished: true, stock: {}, fixedPrice: 9900 });
+
+    expect(estimateReadyMade({ styleSlug: "sol", sizeId: "s", customize: false })?.subtotal).toBe(9900);
+    const cart = estimateCart([{ styleSlug: "sol", sizeId: "s", customize: false, quantity: 2 }]);
+    expect(cart?.subtotal).toBe(19800);
+    expect(cart?.lines[0]?.unitAmount).toBe(9900);
+    // Under $110 a piece, so the clothing exemption follows the own price too.
+    expect(cart?.salesTax).toBe(0);
+  });
+
+  it("charges the garment's own extra when set, else the entry's", async () => {
+    const { saveStyleOverride } = await import("./live-catalog");
+    const { estimateCart, estimateReadyMade } = await import("./pricing");
+    const { styles, priceList } = await import("@/content");
+    const frutera = styles.find((style) => style.id === "frutera")!;
+    const listed = priceList.find((entry) => entry.id === frutera.priceEntryId)!;
+
+    await saveStyleOverride({ styleId: "frutera", isPublished: true, stock: {}, fixedPrice: 20000 });
+    const listExtra = estimateReadyMade({ styleSlug: "frutera", sizeId: "m", customize: true });
+    expect(listExtra?.lines.map((line) => line.amount)).toEqual([20000, listed.customizationExtra]);
+
+    await saveStyleOverride({ styleId: "frutera", isPublished: true, stock: {}, fixedPrice: 20000, customizationExtra: 5000 });
+    const ownExtra = estimateCart([{ styleSlug: "frutera", sizeId: "m", customize: true, quantity: 1 }]);
+    expect(ownExtra?.lines.map((line) => line.amount)).toEqual([20000, 5000]);
+    expect(ownExtra?.lines[1]?.note).toEqual(listed.customizationNote);
+
+    // A newer line without a price is the list price again.
+    await saveStyleOverride({ styleId: "frutera", isPublished: true, stock: {} });
+    expect(estimateReadyMade({ styleSlug: "frutera", sizeId: "m", customize: false })?.subtotal).toBe(listed.fixedPrice);
+  });
+
   it("refuses a garment that is not in the live catalog", async () => {
     const { estimateReadyMade } = await import("./pricing");
     expect(estimateReadyMade({ styleSlug: "nobody", sizeId: "s", customize: false })).toBeNull();

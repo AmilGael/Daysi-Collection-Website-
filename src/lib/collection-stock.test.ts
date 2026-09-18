@@ -126,3 +126,69 @@ describe("a new garment with its pieces counted", () => {
     expect(result).toEqual({ ok: true, results: [{ key: "style-create:1", ok: false, error: "no-sizes" }] });
   });
 });
+
+/**
+ * The same actions, for a garment's own price: set on the sheet of a new or
+ * an existing garment, kept on its override line, and the list left alone.
+ */
+describe("a garment's own price from the office", () => {
+  const create = {
+    type: "style-create",
+    key: "style-create:1",
+    name: "Camisa Sol",
+    description: "Una camisa de algodón con botones de coco.",
+    detail: "",
+    color: "Amarilla",
+    categoryId: "shirts",
+    photos: ["/uploads/img-sol.jpg"],
+    inStudio: false,
+    sizes: { s: true, m: false, l: false },
+  };
+
+  async function run(change: Record<string, unknown>) {
+    const { applyCollectionChanges } = await import("@/app/[locale]/office/collection/actions");
+    return applyCollectionChanges([change]);
+  }
+
+  async function sol() {
+    const { allLiveStyles } = await import("./live-catalog");
+    return allLiveStyles().find((style) => style.name.es === "Camisa Sol")!;
+  }
+
+  it("gives a new garment on a priced pair its own price, and leaves the list as it was", async () => {
+    const { livePriceList, priceFor } = await import("./live-pricing");
+    const before = livePriceList().find((entry) => entry.id === "shirts--daisy-cotton")!;
+
+    await run({ ...create, fabricId: "daisy-cotton", fixedPrice: 9000, customizationExtra: 3000 });
+
+    const garment = await sol();
+    expect(garment.ownPrice).toEqual({ fixedPrice: 9000, customizationExtra: 3000 });
+    expect(priceFor(garment)).toMatchObject({ fixedPrice: 9000, customizationExtra: 3000, own: true });
+    expect(livePriceList().find((entry) => entry.id === "shirts--daisy-cotton")).toEqual(before);
+  });
+
+  it("puts the price of a new pair on the list, extra included, and the garment follows the list", async () => {
+    const { saveCustomFabric, livePriceList } = await import("./live-pricing");
+    await saveCustomFabric({ id: "cereza", name: "Cereza", swatchImage: "/uploads/a.jpg", averageColor: "#aabbcc", prices: { dresses: 12000 } });
+
+    await run({ ...create, fabricId: "cereza", fixedPrice: 9000, customizationExtra: 3000 });
+
+    expect(livePriceList().find((entry) => entry.id === "shirts--cereza")).toMatchObject({ fixedPrice: 9000, customizationExtra: 3000 });
+    expect((await sol()).ownPrice).toBeUndefined();
+  });
+
+  it("refuses an own price under a dollar on a priced pair", async () => {
+    const result = await run({ ...create, fabricId: "daisy-cotton", fixedPrice: 50 });
+    expect(result).toEqual({ ok: true, results: [{ key: "style-create:1", ok: false, error: "bad-price" }] });
+  });
+
+  it("sets and clears an own price on a garment, and drops an extra sent without a price", async () => {
+    await run({ type: "style-override", key: "style:frutera", styleId: "frutera", isPublished: true, stock: {}, fixedPrice: 20000 });
+    expect((await newest()).fixedPrice).toBe(20000);
+
+    await run({ type: "style-override", key: "style:frutera", styleId: "frutera", isPublished: true, stock: {}, customizationExtra: 5000 });
+    const record = await newest();
+    expect(record.fixedPrice).toBeUndefined();
+    expect(record.customizationExtra).toBeUndefined();
+  });
+});

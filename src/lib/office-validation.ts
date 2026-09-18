@@ -17,6 +17,8 @@ const uploadPath = z.string().regex(/^\/uploads\/[a-z0-9-]+\.(jpg|png|webp)$/);
 export const changeKey = z.string().regex(/^[a-z-]+:[A-Za-z0-9._:-]+$/).max(120);
 const cents = z.number().int().min(0).max(5_000_00);
 const fabricCents = z.number().int().min(1_00).max(5_000_00);
+/** A garment's own price: at least a dollar, like a fabric's, so a slip of the thumb is not a sale. */
+const ownPriceCents = z.number().int().min(1_00).max(5_000_00);
 const id = z.string().trim().min(1).max(60);
 
 /** A field Daysi fills in both languages. The English box is pre-filled from
@@ -54,6 +56,10 @@ export const styleOverrideSchema = z.object({
     .max(12)
     .optional(),
   inStudio: z.boolean().optional(),
+  /** The garment's own price. Absent puts the list price back: the newest record is the whole truth. */
+  fixedPrice: ownPriceCents.optional(),
+  /** Its own made-to-measure extra, read only beside fixedPrice. Absent = the list's extra. */
+  customizationExtra: cents.optional(),
 });
 
 /** Typed in Spanish only; the action writes the English (design, Amendment 4 §5). */
@@ -64,8 +70,13 @@ export const styleCreateSchema = z.object({
   color: z.string().trim().max(80),
   categoryId: z.enum(categories.map((category) => category.id) as [string, ...string[]]),
   fabricId: z.string().trim().min(1).max(60),
-  /** Only consulted when the garment-and-cloth pair has no published price. */
+  /**
+   * For a pair with no published price, the price that goes on the list; for
+   * a priced pair, this garment's own price beside the list (which stays).
+   */
   fixedPrice: z.number().int().min(0).max(5_000_00).optional(),
+  /** The made-to-measure extra that goes with fixedPrice, on the list or the garment. */
+  customizationExtra: cents.optional(),
   sizes: z.object({ s: sizeStock, m: sizeStock, l: sizeStock }).strict(),
   photos: z
     .array(uploadPath)

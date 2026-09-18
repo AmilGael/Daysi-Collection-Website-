@@ -53,6 +53,19 @@ describe("what the office accepts for a style override", () => {
     }
   });
 
+  it("accepts a garment's own price and extra, from $1 to $5,000", () => {
+    expect(styleOverrideSchema.safeParse({ styleId: "frutera", ...override, fixedPrice: 12000 }).success).toBe(true);
+    expect(
+      styleOverrideSchema.safeParse({ styleId: "frutera", ...override, fixedPrice: 12000, customizationExtra: 0 }).success,
+    ).toBe(true);
+    for (const fixedPrice of [50, 500_001, 120.5]) {
+      expect(styleOverrideSchema.safeParse({ styleId: "frutera", ...override, fixedPrice }).success, String(fixedPrice)).toBe(false);
+    }
+    expect(
+      styleOverrideSchema.safeParse({ styleId: "frutera", ...override, fixedPrice: 12000, customizationExtra: -1 }).success,
+    ).toBe(false);
+  });
+
   it("carries when a count was taken, as an undo restores it", () => {
     const result = styleOverrideSchema.safeParse({
       styleId: "frutera",
@@ -91,6 +104,12 @@ describe("what the office accepts for a new garment", () => {
 
   it("refuses a price nobody could have meant", () => {
     expect(styleCreateSchema.safeParse({ ...draft, fixedPrice: 900_000_00 }).success).toBe(false);
+  });
+
+  it("accepts a made-to-measure extra beside the price", () => {
+    const parsed = styleCreateSchema.safeParse({ ...draft, fixedPrice: 18000, customizationExtra: 7000 });
+    expect(parsed.success && parsed.data.customizationExtra).toBe(7000);
+    expect(styleCreateSchema.safeParse({ ...draft, customizationExtra: 900_000_00 }).success).toBe(false);
   });
 
   it("accepts how many pieces of each size she has", () => {

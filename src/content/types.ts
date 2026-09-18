@@ -82,6 +82,12 @@ export type StyleSize = {
   readonly count?: number;
 };
 
+/**
+ * A price Daysi set for one garment instead of its pair's list price. The
+ * extra, when absent, stays the list's made-to-measure charge.
+ */
+export type OwnPrice = { readonly fixedPrice: Cents; readonly customizationExtra?: Cents };
+
 /** ERD: GARMENT_STYLE — one card in the gallery. */
 export type GarmentStyle = {
   readonly id: string;
@@ -104,7 +110,32 @@ export type GarmentStyle = {
   readonly inStudio?: boolean;
   /** Set when the piece belongs to a limited-edition premiere. */
   readonly premiereId?: string;
+  /** Never set on a coded garment: Daysi gives one its own price from the office. */
+  readonly ownPrice?: OwnPrice;
 };
+
+/**
+ * What one garment costs, as every reader shows and charges it: the pair's
+ * list entry, with the garment's own numbers in place of the entry's when
+ * Daysi set them. Resolved on the server (`lib/live-pricing.ts`) and handed
+ * to the cards already worked out, because a card renders inside client
+ * components that must never reach for the files the live layer reads.
+ */
+export type StylePrice = {
+  readonly entryId: string;
+  readonly fabricId: string;
+  /** The garment's own price when set, else the entry's. */
+  readonly fixedPrice: Cents;
+  /** The garment's own extra when set, else the entry's. */
+  readonly customizationExtra: Cents;
+  /** Always the entry's. */
+  readonly customizationNote: Localized;
+  /** True when the numbers are the garment's own rather than the list's. */
+  readonly own: boolean;
+};
+
+/** A garment with its price resolved; null when its pair has no live entry. */
+export type PricedStyle = GarmentStyle & { readonly price: StylePrice | null };
 
 // ── Services, alterations and appointments ─────────────────────────────────
 

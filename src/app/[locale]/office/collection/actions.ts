@@ -113,9 +113,11 @@ export const applyCollectionChanges = ownerAction(
             }
           }
           const previous = styleOverrides().find((record) => record.styleId === change.styleId);
-          const { countedAt: sentCountedAt, ...rest } = override;
+          const { countedAt: sentCountedAt, customizationExtra, ...rest } = override;
           await saveStyleOverride({
             ...rest,
+            // An own extra means nothing without an own price beside it.
+            ...(rest.fixedPrice === undefined || customizationExtra === undefined ? {} : { customizationExtra }),
             ...mergedStock(previous, override.stock, sentCountedAt, new Date().toISOString()),
             // Readers of older records, and undo, still look at addedPhotos.
             ...(override.photos
@@ -181,9 +183,22 @@ export const applyCollectionChanges = ownerAction(
             throw new ChangeRefused("no-sizes");
           }
 
+          // One rule for the price she typed: a pair with no price yet puts it
+          // on the list; a priced pair keeps its list price, and hers becomes
+          // this garment's own, written on its override line below.
           const priceEntryId = `${draft.categoryId}--${draft.fabricId}`;
           const existing = manageablePriceList().find((entry) => entry.id === priceEntryId);
           if (existing?.retired) throw new ChangeRefused("entry-retired");
+          if (existing && draft.fixedPrice !== undefined && draft.fixedPrice < 1_00) {
+            throw new ChangeRefused("bad-price");
+          }
+          const ownPrice =
+            existing && draft.fixedPrice !== undefined
+              ? {
+                  fixedPrice: draft.fixedPrice,
+                  ...(draft.customizationExtra === undefined ? {} : { customizationExtra: draft.customizationExtra }),
+                }
+              : {};
           if (!existing) {
             if (draft.fixedPrice === undefined || draft.fixedPrice <= 0) {
               throw new ChangeRefused("price-required");
@@ -193,7 +208,7 @@ export const applyCollectionChanges = ownerAction(
               categoryId: draft.categoryId,
               fabricId: draft.fabricId,
               fixedPrice: draft.fixedPrice,
-              customizationExtra: CUSTOMIZATION_EXTRA[draft.categoryId] ?? 9500,
+              customizationExtra: draft.customizationExtra ?? CUSTOMIZATION_EXTRA[draft.categoryId] ?? 9500,
               customizationNote: {
                 en: "Made to your measurements, with your choice of neckline, sleeve and length.",
                 es: "Hecho a su medida, con el escote, la manga y el largo que usted elija.",
@@ -249,12 +264,15 @@ export const applyCollectionChanges = ownerAction(
             inStudio: draft.inStudio,
           });
           // The counts live where every later count does, so a sale is taken
-          // off from the moment the garment goes up.
-          if (Object.values(draft.sizes).some((value) => typeof value === "number")) {
+          // off from the moment the garment goes up; an own price lives there
+          // too, on the same line, so an undo reads one record.
+          if (Object.values(draft.sizes).some((value) => typeof value === "number") || "fixedPrice" in ownPrice) {
             await saveStyleOverride({
               styleId,
               isPublished: true,
               ...mergedStock(undefined, draft.sizes, undefined, new Date().toISOString()),
+              inStudio: draft.inStudio,
+              ...ownPrice,
             });
           }
           return;

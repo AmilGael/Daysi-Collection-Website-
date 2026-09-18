@@ -62,3 +62,51 @@ describe("the collection tab", () => {
     expect(office(es).seeEnglish).toBe("Ver inglés");
   });
 });
+
+describe("a garment's own price", () => {
+  it("is a switch on both sheets, beside the list price", () => {
+    const sheet = read("src/components/office/garment-sheet.tsx");
+    expect(sheet.match(/t\("ownPriceSwitch"\)/g)).toHaveLength(2);
+    expect(sheet.match(/t\("ownPriceNote"\)/g)).toHaveLength(2);
+    expect(sheet).toContain('t("stylePriceFromList")');
+  });
+
+  it("is counted on its entry's row in Precios", () => {
+    expect(read("src/components/price-manager.tsx")).toContain('t("entryOwnPriced", { count: entry.ownPriced })');
+  });
+
+  it("has its words in both languages", () => {
+    for (const bundle of [es, en]) {
+      for (const key of ["ownPriceSwitch", "ownPriceNote", "ownPriceRequired", "entryOwnPriced"]) {
+        expect(office(bundle)[key], key).toBeTruthy();
+        expect(office(bundle)[key], key).not.toContain("—");
+      }
+    }
+    expect(office(es).ownPriceSwitch).toBe("Precio propio para esta prenda");
+    expect(office(es).ownPriceNote).toBe("Solo esta prenda. La lista de precios no cambia.");
+    expect(office(es).entryOwnPriced).toBe(
+      "{count, plural, one {# prenda con precio propio} other {# prendas con precio propio}}",
+    );
+  });
+
+  it("reaches the public cards and garment page through the live price, never the coded list", () => {
+    const card = read("src/components/style-card.tsx");
+    expect(card).toContain("style: PricedStyle");
+    expect(card).not.toContain("findPriceEntry");
+    // Rendered inside client components: nothing that reads the data files.
+    expect(card).not.toContain("@/lib/live-");
+    expect(read("src/components/collection-gallery.tsx")).not.toContain("@/lib/live-");
+
+    const page = read("src/app/[locale]/collection/[slug]/page.tsx");
+    expect(page).toContain("const price = priceFor(style);");
+    expect(page).not.toContain("findPriceEntry");
+    for (const reader of [
+      "src/app/[locale]/collection/page.tsx",
+      "src/app/[locale]/page.tsx",
+      "src/app/[locale]/premieres/page.tsx",
+      "src/app/[locale]/collection/[slug]/page.tsx",
+    ]) {
+      expect(read(reader), reader).toContain("withPrices(");
+    }
+  });
+});

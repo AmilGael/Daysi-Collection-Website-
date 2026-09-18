@@ -73,6 +73,27 @@ describe("office undo history", () => {
     });
   });
 
+  it("returns the line before the own price, so undo clears it, and brings an own price back", async () => {
+    const { previousChangeFor } = await import("./office-history");
+    const { saveStyleOverride } = await import("./live-catalog");
+
+    // The coded baseline never carries one: undoing the first line is the list price.
+    await saveStyleOverride({ styleId: "frutera", isPublished: true, stock: {}, fixedPrice: 27000 });
+    expect(previousChangeFor("style-override", "frutera")).not.toHaveProperty("fixedPrice");
+
+    await saveStyleOverride({ styleId: "frutera", isPublished: true, stock: {}, fixedPrice: 25000, customizationExtra: 8000 });
+    expect(previousChangeFor("style-override", "frutera")).toMatchObject({ fixedPrice: 27000 });
+    expect(previousChangeFor("style-override", "frutera")).not.toHaveProperty("customizationExtra");
+
+    await saveStyleOverride({ styleId: "frutera", isPublished: false, stock: {} });
+    expect(previousChangeFor("style-override", "frutera")).toMatchObject({ fixedPrice: 25000, customizationExtra: 8000 });
+
+    await saveStyleOverride({ styleId: "frutera", isPublished: true, stock: {} });
+    const previous = previousChangeFor("style-override", "frutera");
+    expect(previous).toMatchObject({ isPublished: false });
+    expect(previous).not.toHaveProperty("fixedPrice");
+  });
+
   it("keeps the newest photos when undoing to the baseline and to the earlier line", async () => {
     const { previousChangeFor } = await import("./office-history");
     const { saveStyleOverride } = await import("./live-catalog");

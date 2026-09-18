@@ -6,7 +6,10 @@ import {
   type AlterationService,
   type AppointmentType,
   type Fabric,
+  type GarmentStyle,
   type PriceListEntry,
+  type PricedStyle,
+  type StylePrice,
 } from "@/content";
 import { appendRecord, latestBy, readRecords } from "./records";
 import { retiredSet } from "./retired";
@@ -54,6 +57,8 @@ export type CustomFabric = {
   >;
   readonly updatedAt: string;
 };
+
+export type { PricedStyle, StylePrice } from "@/content";
 
 const ENTRY_OVERRIDES = "price-overrides";
 const ALTERATION_OVERRIDES = "alteration-overrides";
@@ -165,6 +170,29 @@ export function assemblePriceList(
   );
 }
 
+/**
+ * What one garment costs: its pair's entry, with the garment's own numbers in
+ * place of the entry's when Daysi set them. The entry has to be live either
+ * way, so a retired or never-priced pair leaves the garment unpriced (and off
+ * sale) whatever it carries, exactly as before own prices existed.
+ */
+export function resolveStylePrice(
+  style: Pick<GarmentStyle, "priceEntryId" | "ownPrice">,
+  entries: readonly PriceListEntry[],
+): StylePrice | null {
+  const entry = entries.find((candidate) => candidate.id === style.priceEntryId);
+  if (!entry) return null;
+  const own = style.ownPrice;
+  return {
+    entryId: entry.id,
+    fabricId: entry.fabricId,
+    fixedPrice: own?.fixedPrice ?? entry.fixedPrice,
+    customizationExtra: own?.customizationExtra ?? entry.customizationExtra,
+    customizationNote: entry.customizationNote,
+    own: own !== undefined,
+  };
+}
+
 /* ------------------------------------------------------------------ live -- */
 
 export function manageableCustomFabrics(): (CustomFabric & { retired: boolean })[] {
@@ -235,6 +263,17 @@ export function liveAppointmentTypes(): AppointmentType[] {
 
 export function liveFindPriceEntry(id: string): PriceListEntry | undefined {
   return livePriceList().find((entry) => entry.id === id);
+}
+
+/** The one way a garment is priced, on every card, page, estimate and cart. */
+export function priceFor(style: GarmentStyle): StylePrice | null {
+  return resolveStylePrice(style, livePriceList());
+}
+
+/** Garments with their prices worked out, for cards rendered inside client components. */
+export function withPrices(styles: readonly GarmentStyle[]): PricedStyle[] {
+  const entries = livePriceList();
+  return styles.map((style) => ({ ...style, price: resolveStylePrice(style, entries) }));
 }
 
 export function liveFindFabric(id: string): Fabric | undefined {

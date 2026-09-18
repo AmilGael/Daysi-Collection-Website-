@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { categories, translate } from "@/content";
+import { manageableStyles } from "@/lib/live-catalog";
 import {
   liveAlterations,
   liveAppointmentTypes,
@@ -29,6 +30,13 @@ export default async function OfficePricesPage({
   const undoableEntries = undoableIds("price-entry");
   const undoableAlterations = undoableIds("alteration");
   const undoableAppointments = undoableIds("appointment");
+  // Garments on the rack that carry their own price, counted per entry, so
+  // she sees which list prices some pieces do not follow.
+  const ownPriced = new Map<string, number>();
+  for (const style of manageableStyles()) {
+    if (style.retired || !style.ownPrice) continue;
+    ownPriced.set(style.priceEntryId, (ownPriced.get(style.priceEntryId) ?? 0) + 1);
+  }
   const priceEntries = manageablePriceList().map((entry) => ({
     id: entry.id,
     garment: translate(
@@ -47,6 +55,7 @@ export default async function OfficePricesPage({
     ),
     fixedPrice: entry.fixedPrice,
     customizationExtra: entry.customizationExtra,
+    ownPriced: ownPriced.get(entry.id) ?? 0,
     retired: entry.retired,
     undoable: undoableEntries.has(entry.id),
   }));

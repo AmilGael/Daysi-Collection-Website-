@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import {
   translate,
   type DesignCategory,
-  type GarmentStyle,
+  type PricedStyle,
   type Size,
   type SizeId,
 } from "@/content";
@@ -29,7 +29,7 @@ export function CollectionGallery({
   categories,
   sizes,
 }: {
-  styles: readonly GarmentStyle[];
+  styles: readonly PricedStyle[];
   categories: readonly DesignCategory[];
   sizes: readonly Size[];
 }) {

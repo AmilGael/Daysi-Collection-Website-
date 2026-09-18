@@ -11,14 +11,22 @@ export type SizeId = "s" | "m" | "l";
 const SIZES: readonly SizeId[] = ["s", "m", "l"];
 /** Pieces left per size once counted; the older on/off switch for a size never counted. */
 export type Stock = Record<SizeId, boolean | number>;
+/** A garment's own price in cents; a null extra is the list's made-to-measure charge. */
+export type OwnPriceView = { readonly fixedPrice: number; readonly customizationExtra: number | null };
 
 export type ManagedStyle = {
   readonly id: string;
   readonly slug: string;
   readonly name: string;
   readonly category: string;
-  /** Cents, from the price list through the garment's price entry; null when the pair has none. */
+  /** Cents, what the site charges now: its own price, else the list's; null when the pair has none. */
   readonly price: number | null;
+  /** Cents, the list price of its garment-and-cloth pair; null when the pair has none. */
+  readonly listPrice: number | null;
+  /** Cents, the list's made-to-measure extra for that pair; null when the pair has none. */
+  readonly listExtra: number | null;
+  /** The price Daysi set for this garment alone; null when it follows the list. */
+  readonly ownPrice: OwnPriceView | null;
   /** Current order, cover first, as the site shows it now. */
   readonly photos: readonly string[];
   readonly isPublished: boolean;
@@ -42,6 +50,7 @@ export type OverrideView = {
   /** Counts an undo is bringing back, with the moment each was taken. */
   readonly countedAt?: Readonly<Partial<Record<SizeId, string>>>;
   readonly slots: readonly PhotoSlot[];
+  readonly ownPrice: OwnPriceView | null;
 };
 
 type OverrideWire = Extract<CollectionChange, { type: "style-override" }>;
@@ -72,6 +81,13 @@ export function viewOf(row: ManagedStyle, pending: DraftChange<CollectionChange>
     stock: { ...stockOf(row), ...(wire?.stock ?? {}) },
     ...(wire?.countedAt ? { countedAt: wire.countedAt } : {}),
     slots: slots ?? (wire?.photos ?? row.photos).map((src) => ({ kind: "src", src })),
+    // Unlike the stock, a pending line is the whole truth about the price:
+    // one without it (an undo, say) puts the list price back.
+    ownPrice: wire
+      ? wire.fixedPrice === undefined
+        ? null
+        : { fixedPrice: wire.fixedPrice, customizationExtra: wire.customizationExtra ?? null }
+      : row.ownPrice,
   };
 }
 
@@ -103,6 +119,13 @@ export function overrideChange(row: ManagedStyle, view: OverrideView): DraftChan
     ...changedStock(row, view),
     photos: view.slots.flatMap((slot) => (slot.kind === "src" ? [slot.src] : [])),
     inStudio: view.inStudio,
+    // Every line carries the own price it should keep; one left off is cleared.
+    ...(view.ownPrice === null
+      ? {}
+      : {
+          fixedPrice: view.ownPrice.fixedPrice,
+          ...(view.ownPrice.customizationExtra === null ? {} : { customizationExtra: view.ownPrice.customizationExtra }),
+        }),
   };
   const files = view.slots.flatMap((slot) => (slot.kind === "file" ? [slot.file] : []));
   if (files.length === 0) return { wire, meta: view.slots };
@@ -128,6 +151,8 @@ export function unchanged(view: OverrideView, row: ManagedStyle): boolean {
     view.inStudio === row.inStudio &&
     SIZES.every((size) => view.stock[size] === saved[size] && view.countedAt?.[size] === undefined) &&
     view.slots.length === row.photos.length &&
-    view.slots.every((slot, index) => slot.kind === "src" && slot.src === row.photos[index])
+    view.slots.every((slot, index) => slot.kind === "src" && slot.src === row.photos[index]) &&
+    view.ownPrice?.fixedPrice === row.ownPrice?.fixedPrice &&
+    view.ownPrice?.customizationExtra === row.ownPrice?.customizationExtra
   );
 }

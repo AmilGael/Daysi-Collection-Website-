@@ -9,7 +9,17 @@ import { RetireButton, RetiredGroup } from "./office/retired-group";
 import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft } from "./office/use-office-draft";
 
-export type ManagedEntry = { readonly id: string; readonly garment: string; readonly fabric: string; readonly fixedPrice: number; readonly customizationExtra: number; readonly retired: boolean; readonly undoable: boolean };
+export type ManagedEntry = {
+  readonly id: string;
+  readonly garment: string;
+  readonly fabric: string;
+  readonly fixedPrice: number;
+  readonly customizationExtra: number;
+  /** Garments on this entry that carry their own price instead of it. */
+  readonly ownPriced: number;
+  readonly retired: boolean;
+  readonly undoable: boolean;
+};
 export type ManagedAlteration = { readonly id: string; readonly name: string; readonly fixedPrice: number; readonly rushSurcharge: number; readonly undoable: boolean };
 export type ManagedAppointment = { readonly id: string; readonly name: string; readonly fee: number; readonly undoable: boolean };
 
@@ -25,7 +35,14 @@ export function PriceManager({ entries, retiredEntries, alterations, appointment
     <PriceTable
       caption={t("pricesGarments")}
       columns={[t("pricesPrice"), t("pricesExtra")]}
-      rows={entries.map((entry) => ({ id: entry.id, label: entry.garment, sublabel: entry.fabric, amounts: [entry.fixedPrice, entry.customizationExtra], undoable: entry.undoable }))}
+      rows={entries.map((entry) => ({
+        id: entry.id,
+        label: entry.garment,
+        sublabel: entry.fabric,
+        ...(entry.ownPriced > 0 ? { note: t("entryOwnPriced", { count: entry.ownPriced }) } : {}),
+        amounts: [entry.fixedPrice, entry.customizationExtra],
+        undoable: entry.undoable,
+      }))}
       undoKind="price-entry"
       toChange={(id, amounts) => ({ type: "entry", key: `entry:${id}`, id, fixedPrice: amounts[0] ?? 0, customizationExtra: amounts[1] ?? 0 })}
       retirable
@@ -55,7 +72,15 @@ export function PriceManager({ entries, retiredEntries, alterations, appointment
   </div>;
 }
 
-type Row = { readonly id: string; readonly label: string; readonly sublabel: string; readonly amounts: readonly number[]; readonly undoable: boolean };
+type Row = {
+  readonly id: string;
+  readonly label: string;
+  readonly sublabel: string;
+  /** Shown after the sublabel; not part of the row's name. */
+  readonly note?: string;
+  readonly amounts: readonly number[];
+  readonly undoable: boolean;
+};
 
 function amountsFrom(change: PriceChange, row: Row): readonly number[] {
   switch (change.type) {
@@ -100,7 +125,9 @@ function PriceTable({ caption, columns, rows, toChange, undoKind, retirable }: {
         return <div key={row.id} className={`flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-line py-3 ${retiring ? "opacity-50" : ""}`}>
           <div className="min-w-48 flex-1">
             <p className="text-[0.875rem]">{row.label}</p>
-            {row.sublabel ? <p className="text-[0.75rem] text-ink-faint">{row.sublabel}</p> : null}
+            {row.sublabel || row.note ? (
+              <p className="text-[0.75rem] text-ink-faint">{[row.sublabel, row.note].filter(Boolean).join(" · ")}</p>
+            ) : null}
           </div>
           {shown.map((value, index) => <label key={columns[index]} className="flex items-center gap-2 text-[0.75rem] text-ink-faint">
             {columns[index]}

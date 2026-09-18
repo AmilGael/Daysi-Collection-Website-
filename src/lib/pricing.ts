@@ -7,6 +7,7 @@ import {
   liveFindAppointmentType as findAppointmentType,
   liveFindFabric as findFabric,
   liveFindPriceEntry as findPriceEntry,
+  priceFor,
 } from "./live-pricing";
 import { applyRate, sum } from "./money";
 
@@ -118,7 +119,8 @@ export function estimateReadyMade(order: ReadyMadeOrder): Estimate | null {
   if (!style) return null;
   if (!style.sizes.some((size) => size.sizeId === order.sizeId)) return null;
 
-  const price = findPriceEntry(style.priceEntryId);
+  // The garment's own price when Daysi set one, else its pair's list entry.
+  const price = priceFor(style);
   if (!price) return null;
 
   const lines: EstimateLine[] = [
@@ -169,7 +171,7 @@ export function estimateCart(
     if (!style) continue;
     if (!style.sizes.some((size) => size.sizeId === item.sizeId)) continue;
 
-    const price = findPriceEntry(style.priceEntryId);
+    const price = priceFor(style);
     if (!price) continue;
 
     const quantity = Math.max(1, Math.floor(item.quantity));

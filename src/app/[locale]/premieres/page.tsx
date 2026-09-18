@@ -1,13 +1,19 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { premiereListing, translate } from "@/content";
-import { liveStylesInPremiere as stylesInPremiere } from "@/lib/live-catalog";
+import { premiereListing, translate, type Premiere, type PricedStyle } from "@/content";
+import { liveStylesInPremiere } from "@/lib/live-catalog";
+import { withPrices } from "@/lib/live-pricing";
 import type { Locale } from "@/i18n/routing";
 import { SectionHeading, Tag, TextLink } from "@/components/ui";
 import { LookbookGrid, StyleCard } from "@/components/style-card";
 import { PremiereSignup } from "@/components/premiere-signup";
 import { PHOTO_QUALITY } from "@/lib/images";
+
+/** A premiere's pieces as the site shows them now, priced for their cards. */
+function stylesInPremiere(premiere: Premiere): PricedStyle[] {
+  return withPrices(liveStylesInPremiere(premiere));
+}
 
 /**
  * The full-bleed photograph the page opens on. The header starts light on
