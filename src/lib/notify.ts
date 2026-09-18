@@ -29,7 +29,10 @@ export function summarise(request: StoredRequest): string {
     `Email:     ${forNotification(request.client.email)}`,
   ];
 
+  // No phone on file: Daysi cannot text or call, so the note says as much and
+  // she knows to reply by email instead.
   if (request.client.phone) lines.push(`Phone:     ${forNotification(request.client.phone)}`);
+  else lines.push("Sin teléfono");
   if (request.client.preferredContact) {
     lines.push(`Reply via: ${request.client.preferredContact}`);
   }

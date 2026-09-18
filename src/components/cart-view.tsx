@@ -56,6 +56,11 @@ export function CartView({
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Only the email is required: with no phone typed, WhatsApp or a call is
+  // not reachable, whatever the pills above say, so the order falls back to
+  // email until a number is given.
+  const contactMethod: ContactMethod = phone.trim() ? preferredContact : "email";
+
   async function change(body: unknown) {
     setBusy(true);
     try {
@@ -86,10 +91,10 @@ export function CartView({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          name,
+          name: name.trim() ? name : undefined,
           email,
-          phone,
-          preferredContact,
+          phone: phone.trim() ? phone : undefined,
+          preferredContact: contactMethod,
           notes,
           locale,
           acceptedTerms: true,
@@ -209,17 +214,6 @@ export function CartView({
           <form onSubmit={placeOrder} className="flex flex-col gap-5 border-t border-line pt-6">
             <h2 className="text-heading">{t("yourDetails")}</h2>
 
-            <Field label={tr("name")}>
-              {({ id }) => (
-                <TextInput
-                  id={id}
-                  required
-                  autoComplete="name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                />
-              )}
-            </Field>
             <Field label={tr("email")}>
               {({ id }) => (
                 <TextInput
@@ -234,11 +228,21 @@ export function CartView({
                 />
               )}
             </Field>
-            <Field label={tr("phone")}>
+            <Field label={tr("name")} optional>
               {({ id }) => (
                 <TextInput
                   id={id}
-                  required
+                  autoComplete="name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
+              )}
+            </Field>
+            <Field label={tr("phone")} optional hint={tr("whatsappHint")}>
+              {({ id, describedBy }) => (
+                <TextInput
+                  id={id}
+                  aria-describedby={describedBy}
                   type="tel"
                   autoComplete="tel"
                   value={phone}
@@ -247,16 +251,18 @@ export function CartView({
               )}
             </Field>
 
-            <ChoiceGroup
-              legend={tr("preferredContact")}
-              value={preferredContact}
-              onChange={setPreferredContact}
-              options={[
-                { value: "whatsapp", label: tc("whatsapp") },
-                { value: "phone", label: tc("phone") },
-                { value: "email", label: tc("email") },
-              ]}
-            />
+            {phone.trim() ? (
+              <ChoiceGroup
+                legend={tr("preferredContact")}
+                value={preferredContact}
+                onChange={setPreferredContact}
+                options={[
+                  { value: "whatsapp", label: tc("whatsapp") },
+                  { value: "phone", label: tc("phone") },
+                  { value: "email", label: tc("email") },
+                ]}
+              />
+            ) : null}
 
             <Field label={tr("notes")} optional>
               {({ id }) => (

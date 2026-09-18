@@ -89,6 +89,23 @@ describe("recordRequest", () => {
   });
 });
 
+describe("summarise", () => {
+  it("tells Daysi there is no phone when the client left none, so she knows to reply by email", async () => {
+    const { summarise } = await import("./notify");
+
+    expect(summarise(record())).toContain("Sin teléfono");
+  });
+
+  it("prints the phone instead of the note when the client left one", async () => {
+    const { summarise } = await import("./notify");
+
+    const text = summarise(record({ client: { name: "Ana", email: "ana@example.com", phone: "9175550100" } }));
+
+    expect(text).toContain("Phone:     9175550100");
+    expect(text).not.toContain("Sin teléfono");
+  });
+});
+
 describe("notifyOwner", () => {
   it("says in the subject and the body that a card payment came in", async () => {
     const { notifyOwner } = await import("./notify");

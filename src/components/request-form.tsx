@@ -84,9 +84,20 @@ export function RequestForm({
 
   const [estimate, setEstimate] = useState<Estimate | null>(null);
 
+  // Only the email is required: a phone left blank means there is no way to
+  // reach the guest by WhatsApp or by phone, whatever the pills above say, so
+  // the effective method falls back to email until a number is typed.
+  const contactMethod: ContactMethod = phone.trim() ? preferredContact : "email";
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const client = { name, email, phone, preferredContact, locale };
+    const client = {
+      name: name.trim() ? name : undefined,
+      email,
+      phone: phone.trim() ? phone : undefined,
+      preferredContact: contactMethod,
+      locale,
+    };
     const common = { website: "", renderedAt, client, notes, acceptedTerms: true as const };
 
     const body =
@@ -126,7 +137,7 @@ export function RequestForm({
       <div className="flex max-w-2xl flex-col gap-6 bg-paper-warm p-8 sm:p-12">
         <h2 className="text-title">{t("sentTitle")}</h2>
         <p className="text-lead text-ink-soft">
-          {t("sentLead", { reference: state.reference, contact: tc(preferredContact) })}
+          {t("sentLead", { reference: state.reference, contact: tc(contactMethod) })}
         </p>
         {estimate ? (
           <div className="flex flex-col gap-4">
@@ -316,31 +327,6 @@ export function RequestForm({
 
       <section className="flex flex-col gap-6 border-t border-line pt-10">
         <h2 className="text-heading">{t("yourDetails")}</h2>
-        <div className="grid gap-6 sm:grid-cols-2">
-          <Field label={t("name")}>
-            {({ id }) => (
-              <TextInput
-                id={id}
-                required
-                autoComplete="name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            )}
-          </Field>
-          <Field label={t("phone")}>
-            {({ id }) => (
-              <TextInput
-                id={id}
-                required
-                type="tel"
-                autoComplete="tel"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-              />
-            )}
-          </Field>
-        </div>
         <Field label={t("email")}>
           {({ id }) => (
             <TextInput
@@ -354,16 +340,43 @@ export function RequestForm({
           )}
         </Field>
 
-        <ChoiceGroup
-          legend={t("preferredContact")}
-          value={preferredContact}
-          onChange={setPreferredContact}
-          options={[
-            { value: "whatsapp", label: tc("whatsapp") },
-            { value: "phone", label: tc("phone") },
-            { value: "email", label: tc("email") },
-          ]}
-        />
+        <div className="grid gap-6 sm:grid-cols-2">
+          <Field label={t("name")} optional>
+            {({ id }) => (
+              <TextInput
+                id={id}
+                autoComplete="name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
+            )}
+          </Field>
+          <Field label={t("phone")} optional hint={t("whatsappHint")}>
+            {({ id, describedBy }) => (
+              <TextInput
+                id={id}
+                aria-describedby={describedBy}
+                type="tel"
+                autoComplete="tel"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+              />
+            )}
+          </Field>
+        </div>
+
+        {phone.trim() ? (
+          <ChoiceGroup
+            legend={t("preferredContact")}
+            value={preferredContact}
+            onChange={setPreferredContact}
+            options={[
+              { value: "whatsapp", label: tc("whatsapp") },
+              { value: "phone", label: tc("phone") },
+              { value: "email", label: tc("email") },
+            ]}
+          />
+        ) : null}
 
         <Field label={t("notes")} optional>
           {({ id }) => (

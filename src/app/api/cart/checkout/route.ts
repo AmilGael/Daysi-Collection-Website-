@@ -14,6 +14,7 @@ import { markExpired } from "@/lib/payment-events";
 import { paymentsEnabled } from "@/lib/env";
 import { currentViewer } from "@/lib/auth/session";
 import { findOrCreateAccount } from "@/lib/auth/accounts";
+import { clientSchema, resolvePreferredContact } from "@/lib/validation";
 import type { StoredRequest } from "@/lib/request-store";
 
 /**
@@ -46,11 +47,7 @@ function oneAtATime<T>(task: () => Promise<T>): Promise<T> {
 }
 
 const schema = z.object({
-  name: z.string().trim().min(2).max(80),
-  email: z.string().trim().max(160).email(),
-  phone: z.string().trim().min(7).max(30).regex(/^[0-9+()\-.\s]+$/),
-  preferredContact: z.enum(["whatsapp", "phone", "email"]),
-  locale: z.enum(["es", "en"]),
+  ...clientSchema.shape,
   notes: z.string().trim().max(2000).optional().default(""),
   acceptedTerms: z.literal(true),
 });
@@ -75,13 +72,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid" }, { status: 400 });
   }
 
+  const details = parsed.data;
+
+  // A guest may leave no phone at all — only the email is required — but
+  // asking to be reached by phone or WhatsApp with none on file is refused
+  // rather than silently ignored.
+  const contact = resolvePreferredContact(details);
+  if (!contact) {
+    return NextResponse.json({ error: "phone-required" }, { status: 400 });
+  }
+
   const cart = await readCart();
   const estimate = estimateCart(cart.lines);
   if (!estimate) {
     return NextResponse.json({ error: "empty-cart" }, { status: 400 });
   }
-
-  const details = parsed.data;
 
   // A signed-in viewer owns the order regardless of what the form said, so one
   // client cannot file an order onto another client's account by typing their
@@ -115,7 +120,7 @@ export async function POST(request: Request) {
         name: viewer ? viewer.account.name || details.name : details.name,
         email: account.email,
         phone: details.phone,
-        preferredContact: details.preferredContact,
+        preferredContact: contact.preferredContact,
       },
       details: {
         Pieces: cart.lines.map((line) => {

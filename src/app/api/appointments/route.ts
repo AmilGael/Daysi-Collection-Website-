@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { findAppointmentType, translate } from "@/content";
 import { BOOKING_PAYMENT_HOLD_MINUTES, availableDays, isSlotAvailable } from "@/lib/availability";
 import { estimateAppointment } from "@/lib/pricing";
-import { appointmentSchema, isLikelyBot } from "@/lib/validation";
+import { appointmentSchema, isLikelyBot, resolvePreferredContact } from "@/lib/validation";
 import { callerKey, checkRateLimit, pruneRateLimits } from "@/lib/rate-limit";
 import { isSameOrigin, newReference } from "@/lib/security";
 import { recordRequest } from "@/lib/notify";
@@ -67,6 +67,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ reference: newReference("CIT") });
   }
 
+  // A guest may leave no phone at all — only the email is required — but
+  // asking to be reached by phone or WhatsApp with none on file is refused
+  // rather than silently ignored.
+  const contact = resolvePreferredContact(booking.client);
+  if (!contact) {
+    return NextResponse.json({ error: "phone-required" }, { status: 400 });
+  }
+
   const type = findAppointmentType(booking.appointmentTypeId);
   const estimate = estimateAppointment(booking.appointmentTypeId);
   if (!type || !estimate) {
@@ -94,7 +102,7 @@ export async function POST(request: Request) {
         name: booking.client.name,
         email: booking.client.email,
         phone: booking.client.phone,
-        preferredContact: booking.client.preferredContact,
+        preferredContact: contact.preferredContact,
       },
       details: {
         // `date`, `startTime` and `minutes` are read back by the availability

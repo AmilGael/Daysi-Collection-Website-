@@ -77,6 +77,11 @@ export function AppointmentBooking({
 
   const selectedType = appointmentTypes.find((type) => type.id === typeId);
 
+  // Only the email is required: with no phone typed, WhatsApp or a call is
+  // not reachable, whatever the pills below say, so the booking falls back
+  // to email until a number is given.
+  const contactMethod: ContactMethod = phone.trim() ? preferredContact : "email";
+
   useEffect(() => {
     const controller = new AbortController();
     setDate(null);
@@ -122,7 +127,13 @@ export function AppointmentBooking({
       startTime,
       purpose: reason,
       acceptedTerms: true,
-      client: { name, email, phone, preferredContact, locale },
+      client: {
+        name: name.trim() ? name : undefined,
+        email,
+        phone: phone.trim() ? phone : undefined,
+        preferredContact: contactMethod,
+        locale,
+      },
     });
 
     if (result?.checkoutUrl) window.location.assign(result.checkoutUrl);
@@ -133,7 +144,7 @@ export function AppointmentBooking({
       <div className="flex max-w-2xl flex-col gap-6 bg-paper-warm p-8 sm:p-12">
         <h2 className="text-title">{t("bookedTitle")}</h2>
         <p className="text-lead text-ink-soft">
-          {t("bookedLead", { reference: state.reference, contact: tc(preferredContact) })}
+          {t("bookedLead", { reference: state.reference, contact: tc(contactMethod) })}
         </p>
         {estimate ? <EstimateSummary estimate={estimate} /> : null}
       </div>
@@ -292,31 +303,6 @@ export function AppointmentBooking({
 
         <section className="flex flex-col gap-6 border-t border-line pt-10">
           <h2 className="text-heading">{tr("yourDetails")}</h2>
-          <div className="grid gap-6 sm:grid-cols-2">
-            <Field label={tr("name")}>
-              {({ id }) => (
-                <TextInput
-                  id={id}
-                  required
-                  autoComplete="name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                />
-              )}
-            </Field>
-            <Field label={tr("phone")}>
-              {({ id }) => (
-                <TextInput
-                  id={id}
-                  required
-                  type="tel"
-                  autoComplete="tel"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                />
-              )}
-            </Field>
-          </div>
           <Field label={tr("email")}>
             {({ id }) => (
               <TextInput
@@ -329,16 +315,42 @@ export function AppointmentBooking({
               />
             )}
           </Field>
-          <ChoiceGroup
-            legend={tr("preferredContact")}
-            value={preferredContact}
-            onChange={setPreferredContact}
-            options={[
-              { value: "whatsapp", label: tc("whatsapp") },
-              { value: "phone", label: tc("phone") },
-              { value: "email", label: tc("email") },
-            ]}
-          />
+          <div className="grid gap-6 sm:grid-cols-2">
+            <Field label={tr("name")} optional>
+              {({ id }) => (
+                <TextInput
+                  id={id}
+                  autoComplete="name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
+              )}
+            </Field>
+            <Field label={tr("phone")} optional hint={tr("whatsappHint")}>
+              {({ id, describedBy }) => (
+                <TextInput
+                  id={id}
+                  aria-describedby={describedBy}
+                  type="tel"
+                  autoComplete="tel"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                />
+              )}
+            </Field>
+          </div>
+          {phone.trim() ? (
+            <ChoiceGroup
+              legend={tr("preferredContact")}
+              value={preferredContact}
+              onChange={setPreferredContact}
+              options={[
+                { value: "whatsapp", label: tc("whatsapp") },
+                { value: "phone", label: tc("phone") },
+                { value: "email", label: tc("email") },
+              ]}
+            />
+          ) : null}
         </section>
       </div>
 

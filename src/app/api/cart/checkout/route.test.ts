@@ -48,7 +48,7 @@ async function firstStyle() {
   return styles.find((candidate) => candidate.isPublished)!;
 }
 
-async function checkout() {
+async function checkout(overrides: Record<string, unknown> = {}) {
   const { writeCart } = await import("@/lib/cart");
   const style = await firstStyle();
   await writeCart({ lines: [{ styleSlug: style.slug, sizeId: "s", customize: false, quantity: 1 }] });
@@ -66,6 +66,7 @@ async function checkout() {
         locale: "es",
         notes: "",
         acceptedTerms: true,
+        ...overrides,
       }),
     }),
   );
@@ -90,6 +91,26 @@ describe("paying for a cart", () => {
     const { createCheckoutSession } = await import("@/lib/payments");
     const request = vi.mocked(createCheckoutSession).mock.calls[0]![0];
     expect(request.cardsOnly).toBeUndefined();
+  });
+});
+
+/**
+ * Only the email is required: a guest who leaves no name and no phone can
+ * still place an order, and Daysi replies by email since that is the only
+ * way she has to reach them.
+ */
+describe("a guest who gives only an email", () => {
+  it("takes the order with no name and no phone at all", async () => {
+    const response = await checkout({ name: undefined, phone: undefined, preferredContact: undefined });
+
+    expect(response.status).toBe(200);
+  });
+
+  it("refuses to promise a WhatsApp reply when there is no phone to write to", async () => {
+    const response = await checkout({ phone: undefined, preferredContact: "whatsapp" });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "phone-required" });
   });
 });
 

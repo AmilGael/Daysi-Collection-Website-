@@ -136,6 +136,48 @@ describe("the request form", () => {
     expect(findRequest(reference)?.estimate?.subtotal).toBeGreaterThan(0);
   });
 
+  it("takes an alteration request from a guest who gave only an email", async () => {
+    const { POST } = await import("@/app/api/requests/route");
+    const { findRequest } = await import("./request-store");
+    const response = await POST(
+      post("/api/requests", {
+        kind: "alteration",
+        website: "",
+        renderedAt: Date.now() - 10_000,
+        client: { email: "guest@example.com", locale: "en" },
+        garmentDescription: "A navy wool jacket that runs a little wide through the body.",
+        alterationIds: ["hem-dress"],
+        rush: false,
+        preferredTiming: "Before the 20th",
+        notes: "",
+        acceptedTerms: true,
+      }),
+    );
+    expect(response.status).toBe(200);
+    const { reference } = (await response.json()) as { reference: string };
+    expect(findRequest(reference)?.client).toMatchObject({ name: "", email: "guest@example.com" });
+  });
+
+  it("refuses to reply by phone when the guest left no number to call", async () => {
+    const { POST } = await import("@/app/api/requests/route");
+    const response = await POST(
+      post("/api/requests", {
+        kind: "alteration",
+        website: "",
+        renderedAt: Date.now() - 10_000,
+        client: { email: "guest@example.com", locale: "en", preferredContact: "phone" },
+        garmentDescription: "A navy wool jacket that runs a little wide through the body.",
+        alterationIds: ["hem-dress"],
+        rush: false,
+        preferredTiming: "Before the 20th",
+        notes: "",
+        acceptedTerms: true,
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "phone-required" });
+  });
+
   it("takes no garment from the collection: that is bought through the cart", async () => {
     const { POST } = await import("@/app/api/requests/route");
     const { listRequests } = await import("./request-store");

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { alterationServices } from "@/content";
 import { estimateAlteration, estimateCommission, type Estimate } from "@/lib/pricing";
-import { isLikelyBot, requestSchema, type ClientRequest } from "@/lib/validation";
+import { isLikelyBot, requestSchema, resolvePreferredContact, type ClientRequest } from "@/lib/validation";
 import { callerKey, checkRateLimit, pruneRateLimits } from "@/lib/rate-limit";
 import { isSameOrigin, newReference, parseImageDataUrl } from "@/lib/security";
 import { recordRequest } from "@/lib/notify";
@@ -47,6 +47,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ reference: newReference("DC") });
   }
 
+  // A guest may leave no phone at all — only the email is required — but
+  // asking to be reached by phone or WhatsApp with none on file is refused
+  // rather than silently ignored.
+  const contact = resolvePreferredContact(submission.client);
+  if (!contact) {
+    return NextResponse.json({ error: "phone-required" }, { status: 400 });
+  }
+
   const estimate = priceSubmission(submission);
   if (!estimate) {
     return NextResponse.json({ error: "unpriceable" }, { status: 400 });
@@ -64,7 +72,7 @@ export async function POST(request: Request) {
       name: submission.client.name,
       email: submission.client.email,
       phone: submission.client.phone,
-      preferredContact: submission.client.preferredContact,
+      preferredContact: contact.preferredContact,
     },
     details: describe(submission),
     estimate,
