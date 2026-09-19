@@ -394,6 +394,7 @@ export function RequestForm({
                 <TextInput
                   id={id}
                   type="date"
+                  min={today}
                   value={neededBy}
                   onChange={(event) => setNeededBy(event.target.value)}
                 />
