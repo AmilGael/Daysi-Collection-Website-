@@ -67,7 +67,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 2800,
     rushSurcharge: 2000,
-    turnaround: { en: "3–5 days", es: "3–5 días" },
+    turnaround: { en: "3 to 5 days", es: "3 a 5 días" },
   },
   {
     id: "hem-pants",
@@ -78,7 +78,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 2000,
     rushSurcharge: 2000,
-    turnaround: { en: "3–5 days", es: "3–5 días" },
+    turnaround: { en: "3 to 5 days", es: "3 a 5 días" },
   },
   {
     id: "waist",
@@ -89,7 +89,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 3600,
     rushSurcharge: 2000,
-    turnaround: { en: "4–6 days", es: "4–6 días" },
+    turnaround: { en: "4 to 6 days", es: "4 a 6 días" },
   },
   {
     id: "side-seams",
@@ -100,7 +100,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 4400,
     rushSurcharge: 2000,
-    turnaround: { en: "5–7 days", es: "5–7 días" },
+    turnaround: { en: "5 to 7 days", es: "5 a 7 días" },
   },
   {
     id: "sleeves",
@@ -111,7 +111,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 2800,
     rushSurcharge: 2000,
-    turnaround: { en: "4–6 days", es: "4–6 días" },
+    turnaround: { en: "4 to 6 days", es: "4 a 6 días" },
   },
   {
     id: "zipper",
@@ -122,7 +122,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 3600,
     rushSurcharge: 2000,
-    turnaround: { en: "4–6 days", es: "4–6 días" },
+    turnaround: { en: "4 to 6 days", es: "4 a 6 días" },
   },
   {
     id: "repair",
@@ -133,7 +133,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 2000,
     rushSurcharge: 2000,
-    turnaround: { en: "3–5 days", es: "3–5 días" },
+    turnaround: { en: "3 to 5 days", es: "3 a 5 días" },
   },
   {
     id: "resize",
@@ -144,7 +144,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 7600,
     rushSurcharge: 2800,
-    turnaround: { en: "1–2 weeks", es: "1–2 semanas" },
+    turnaround: { en: "1 to 2 weeks", es: "1 a 2 semanas" },
   },
   {
     id: "restyle",
@@ -155,7 +155,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 12000,
     rushSurcharge: 4000,
-    turnaround: { en: "2–3 weeks", es: "2–3 semanas" },
+    turnaround: { en: "2 to 3 weeks", es: "2 a 3 semanas" },
   },
 ];
 

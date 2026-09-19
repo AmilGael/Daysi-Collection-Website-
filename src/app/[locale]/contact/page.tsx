@@ -50,7 +50,7 @@ export default async function ContactPage({
                 >
                   <dt className="text-ink-soft">{translate(day.day, language)}</dt>
                   <dd className="tabular-nums text-ink-faint">
-                    {day.closes ? `${day.opens} – ${day.closes}` : t("closed")}
+                    {day.closes ? `${day.opens} ${locale === "es" ? "a" : "to"} ${day.closes}` : t("closed")}
                   </dd>
                 </div>
               ))}

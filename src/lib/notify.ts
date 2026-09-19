@@ -54,10 +54,10 @@ export function summarise(request: StoredRequest): string {
   if (request.estimate) {
     lines.push("", "Estimate");
     for (const line of request.estimate.lines) {
-      lines.push(`  ${line.label.en} — ${formatMoney(line.amount, "en")}`);
+      lines.push(`  ${line.label.en}: ${formatMoney(line.amount, "en")}`);
     }
-    lines.push(`  Total — ${formatMoney(request.estimate.total, "en")}`);
-    lines.push(`  Due now — ${formatMoney(request.estimate.dueNow, "en")}`);
+    lines.push(`  Total: ${formatMoney(request.estimate.total, "en")}`);
+    lines.push(`  Due now: ${formatMoney(request.estimate.dueNow, "en")}`);
   }
 
   if (request.photoFile) lines.push("", `Photo attached: ${request.photoFile}`);
@@ -188,7 +188,7 @@ export async function notifyOwner(request: StoredRequest): Promise<void> {
   await sendEmail({
     to: env.ownerEmails,
     replyTo: request.client.email,
-    subject: `${subjectPrefix(request)}${KIND_LABELS[request.kind]} — ${subjectName(request)} (${request.reference})`,
+    subject: `${subjectPrefix(request)}${KIND_LABELS[request.kind]} · ${subjectName(request)} (${request.reference})`,
     text: summarise(request),
     attachments: photoAttachment(request),
   });
@@ -310,7 +310,7 @@ export function receiptMessage(request: StoredRequest): { subject: string; text:
       line.listAmount === undefined
         ? ""
         : ` (${locale === "es" ? "antes" : "was"} ${formatMoney(line.listAmount, locale)})`;
-    return `${label} × ${qty} — ${formatMoney(line.amount, locale)}${list}`;
+    return `${label} × ${qty}: ${formatMoney(line.amount, locale)}${list}`;
   });
 
   const subtotal = estimate?.subtotal ?? 0;

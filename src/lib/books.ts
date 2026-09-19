@@ -100,7 +100,7 @@ export function salesRows(
         // return is filed on; a bank payment clears days later, and this is
         // what reconciles the export against the office's cleared-money trend.
         record.paidAt ? record.paidAt.slice(0, 10) : "",
-        `${note ? `${label} — ${note}` : label}${list}`,
+        `${note ? `${label} · ${note}` : label}${list}`,
         "1",
         toAmount(line.amount),
         toAmount(line.amount),

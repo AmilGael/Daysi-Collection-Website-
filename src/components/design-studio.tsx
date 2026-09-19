@@ -405,7 +405,7 @@ export function DesignStudio({
           <canvas
             ref={canvasRef}
             role="img"
-            aria-label={`${translate(silhouette.name, locale)} — ${translate(fabric.name, locale)}`}
+            aria-label={`${translate(silhouette.name, locale)}, ${translate(fabric.name, locale)}`}
             style={{ width: "100%", maxWidth: `${MOCKUP_WIDTH}px`, aspectRatio: `${MOCKUP_WIDTH} / ${MOCKUP_HEIGHT}` }}
           />
         </div>
