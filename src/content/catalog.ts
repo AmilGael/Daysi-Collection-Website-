@@ -45,19 +45,19 @@ export const sizes: readonly Size[] = [
   {
     id: "s",
     label: "S",
-    measurements: { en: "Bust 34–36in · Waist 27–29in", es: "Busto 86–91cm · Cintura 69–74cm" },
+    measurements: { en: "Bust 34-36in · Waist 27-29in", es: "Busto 86-91cm · Cintura 69-74cm" },
     sortOrder: 1,
   },
   {
     id: "m",
     label: "M",
-    measurements: { en: "Bust 37–39in · Waist 30–32in", es: "Busto 94–99cm · Cintura 76–81cm" },
+    measurements: { en: "Bust 37-39in · Waist 30-32in", es: "Busto 94-99cm · Cintura 76-81cm" },
     sortOrder: 2,
   },
   {
     id: "l",
     label: "L",
-    measurements: { en: "Bust 40–43in · Waist 33–36in", es: "Busto 102–109cm · Cintura 84–91cm" },
+    measurements: { en: "Bust 40-43in · Waist 33-36in", es: "Busto 102-109cm · Cintura 84-91cm" },
     sortOrder: 3,
   },
 ];
@@ -126,16 +126,6 @@ export const fabrics: readonly Fabric[] = [
     },
     swatchImage: "/images/real/fabric-ocelote.jpg",
     averageColor: "#E7DED2",
-  },
-  {
-    id: "laguna-wax",
-    name: { en: "Laguna wax cotton", es: "Algodón wax laguna" },
-    description: {
-      en: "Wax print on a steel-blue ground: marigold diamonds inside turquoise fans.",
-      es: "Estampado wax sobre fondo azul acero: rombos amarillos dentro de abanicos turquesa.",
-    },
-    swatchImage: "/images/real/fabric-laguna.jpg",
-    averageColor: "#4A5A5E",
   },
   {
     id: "medallon-print",

@@ -52,7 +52,7 @@ function PieceCount({
   onChange(count: number): void;
 }): JSX.Element {
   return (
-    <label className="flex min-h-11 items-center justify-between gap-4 border-b border-line text-[0.9375rem]">
+    <label className="flex min-h-10 items-center justify-between gap-4 border-b border-line text-[0.9375rem]">
       <span className="font-semibold uppercase">{size}</span>
       <input
         type="number"
@@ -71,7 +71,7 @@ function PieceCount({
           const count = Number.parseInt(event.target.value, 10);
           if (Number.isInteger(count)) onChange(Math.min(99, Math.max(0, count)));
         }}
-        className="w-24 border border-line bg-paper px-3 py-1.5 text-right tabular-nums text-ink placeholder:text-[0.75rem] placeholder:text-ink-faint focus:border-ink disabled:opacity-60"
+        className="w-16 border border-line bg-paper px-2 py-1 text-right tabular-nums text-ink placeholder:text-[0.75rem] placeholder:text-ink-faint focus:border-ink disabled:opacity-60"
       />
     </label>
   );

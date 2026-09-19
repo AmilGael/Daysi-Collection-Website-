@@ -194,7 +194,7 @@ describe("commissions", () => {
   it("takes half up front to reserve the cloth", () => {
     const estimate = estimateCommission({
       categoryId: "heritage",
-      fabricId: "wax-print",
+      fabricId: "fish-batik",
       customize: true,
     });
 

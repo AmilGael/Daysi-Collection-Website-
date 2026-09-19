@@ -181,7 +181,8 @@ export const styles: readonly GarmentStyle[] = [
     slug: "laguna",
     name: { en: "Laguna camp shirt", es: "Camisa campera Laguna" },
     categoryId: "shirts",
-    priceEntryId: "shirts--laguna-wax",
+    // Laguna is a wax print too: one "Algodón wax" in the list, not two.
+    priceEntryId: "shirts--wax-print",
     color: { en: "Steel blue, marigold and turquoise", es: "Azul acero, amarillo y turquesa" },
     description: {
       en: "The Yurumein cut in its second colourway: a cooler wax print for the same easy collar.",

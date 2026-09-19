@@ -50,6 +50,12 @@ const botCheck = z.object({
 const serviceId = z.string().min(1).max(60);
 
 /**
+ * A photo sent with a request, as a data URL. Only its size is bounded here;
+ * whether it really is an image is checked in the route, by its bytes.
+ */
+const requestPhoto = z.string().max(6_000_000).optional();
+
+/**
  * Who a request or an order comes from. Only the email is required — an
  * account is made from it silently — so a guest who leaves no name and no
  * phone is still a client Daysi can write back to. A phone number is what
@@ -76,9 +82,11 @@ export const alterationRequestSchema = botCheck.extend({
   garmentDescription: trimmed(500).min(10, "too-short"),
   alterationIds: z.array(serviceId).min(1).max(8),
   rush: z.boolean().default(false),
+  // The form sends a calendar day (YYYY-MM-DD) or nothing now. It stays a free
+  // string because it once was typed text, and a request from then still reads.
   preferredTiming: trimmed(120),
   notes: message.optional().default(""),
-  photoDataUrl: z.string().max(6_000_000).optional(),
+  photoDataUrl: requestPhoto,
   acceptedTerms: z.literal(true),
 });
 
@@ -92,6 +100,8 @@ export const commissionRequestSchema = botCheck.extend({
   occasion: trimmed(120),
   neededBy: trimmed(40),
   notes: message.optional().default(""),
+  // What the client has in mind, or a piece like it.
+  photoDataUrl: requestPhoto,
   acceptedTerms: z.literal(true),
 });
 

@@ -25,12 +25,11 @@ export const priceList: readonly PriceListEntry[] = [
   entry("shirts", "wax-print", 12000, 4400), // was 16500
   entry("shirts", "tropical-leaf", 13000, 4400), // was 17500
   entry("shirts", "daisy-cotton", 10500, 4400), // was 14500
-  entry("heritage", "wax-print", 29500, 9600), // was 39500
-  entry("heritage", "tropical-leaf", 28000, 9600), // was 37500
-  entry("heritage", "fish-batik", 29500, 9600), // was 39500
-  entry("heritage", "frutera-print", 31500, 9600), // was 42500
+  // Herencia keeps only its own cloths; wax and tropical leaf are shirt
+  // cloths (walkthrough, 19 Sept 2026). Made to measure came down to $76.
+  entry("heritage", "fish-batik", 29500, 7600), // was 39500
+  entry("heritage", "frutera-print", 31500, 7600), // was 42500
   entry("pants", "ocelote-print", 17500, 5200), // was 23500
-  entry("shirts", "laguna-wax", 12000, 4400), // was 16500
   entry("dresses", "medallon-print", 24000, 7600), // was 32500
 ];
 
@@ -68,7 +67,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 2800,
     rushSurcharge: 2000,
-    turnaround: { en: "3–5 days", es: "3–5 días" },
+    turnaround: { en: "3 to 5 days", es: "3 a 5 días" },
   },
   {
     id: "hem-pants",
@@ -79,7 +78,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 2000,
     rushSurcharge: 2000,
-    turnaround: { en: "3–5 days", es: "3–5 días" },
+    turnaround: { en: "3 to 5 days", es: "3 a 5 días" },
   },
   {
     id: "waist",
@@ -90,7 +89,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 3600,
     rushSurcharge: 2000,
-    turnaround: { en: "4–6 days", es: "4–6 días" },
+    turnaround: { en: "4 to 6 days", es: "4 a 6 días" },
   },
   {
     id: "side-seams",
@@ -101,7 +100,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 4400,
     rushSurcharge: 2000,
-    turnaround: { en: "5–7 days", es: "5–7 días" },
+    turnaround: { en: "5 to 7 days", es: "5 a 7 días" },
   },
   {
     id: "sleeves",
@@ -112,7 +111,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 2800,
     rushSurcharge: 2000,
-    turnaround: { en: "4–6 days", es: "4–6 días" },
+    turnaround: { en: "4 to 6 days", es: "4 a 6 días" },
   },
   {
     id: "zipper",
@@ -123,7 +122,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 3600,
     rushSurcharge: 2000,
-    turnaround: { en: "4–6 days", es: "4–6 días" },
+    turnaround: { en: "4 to 6 days", es: "4 a 6 días" },
   },
   {
     id: "repair",
@@ -134,7 +133,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 2000,
     rushSurcharge: 2000,
-    turnaround: { en: "3–5 days", es: "3–5 días" },
+    turnaround: { en: "3 to 5 days", es: "3 a 5 días" },
   },
   {
     id: "resize",
@@ -145,7 +144,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 7600,
     rushSurcharge: 2800,
-    turnaround: { en: "1–2 weeks", es: "1–2 semanas" },
+    turnaround: { en: "1 to 2 weeks", es: "1 a 2 semanas" },
   },
   {
     id: "restyle",
@@ -156,7 +155,7 @@ export const alterationServices: readonly AlterationService[] = [
     },
     fixedPrice: 12000,
     rushSurcharge: 4000,
-    turnaround: { en: "2–3 weeks", es: "2–3 semanas" },
+    turnaround: { en: "2 to 3 weeks", es: "2 a 3 semanas" },
   },
 ];
 

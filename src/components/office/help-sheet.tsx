@@ -2,6 +2,7 @@
 
 import { useCallback, useState, type JSX } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/routing";
 import { buttonClass } from "@/components/ui";
 import { Sheet } from "./sheet";
 
@@ -143,14 +144,17 @@ export function HelpSheet({ tab }: { tab: string }): JSX.Element {
             </button>
           </form>
 
-          <a
-            href="/api/office/manual"
-            target="_blank"
-            rel="noopener"
+          {/* The manual is an office page now, so it opens in place. The sheet
+              belongs to the site header, which stays mounted across the
+              move, so it closes itself on the way out rather than sit open
+              over the manual. */}
+          <Link
+            href="/office/manual"
+            onClick={close}
             className="w-fit text-[0.8125rem] underline underline-offset-4"
           >
             {t("helpOpenManual")}
-          </a>
+          </Link>
         </div>
       </Sheet>
     </>

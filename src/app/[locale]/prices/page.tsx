@@ -171,7 +171,6 @@ export default async function PricesPage({
       <section className="shell reveal flex flex-col gap-10 py-24">
         <SectionHeading title={t("estimateTitle")} lead={t("estimateLead")} />
         <EstimateBuilder
-          styles={liveStyles()}
           categories={categories}
           fabrics={fabrics}
           alterations={liveAlterations()}

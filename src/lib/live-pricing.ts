@@ -80,12 +80,16 @@ const CUSTOM_ENTRIES = "price-entries";
 const ADDED_ALTERATIONS = "added-alterations";
 const ADDED_APPOINTMENT_TYPES = "added-appointment-types";
 
-/** The coded per-category customization charges, reused for custom fabrics. */
+/**
+ * The made-to-measure charge a cloth Daysi adds from the office starts with:
+ * the same per-category figure the coded list carries, so a new cloth never
+ * quotes a different extra from its neighbours on the prices page.
+ */
 export const CUSTOMIZATION_EXTRA: Record<string, number> = {
-  dresses: 9500,
-  pants: 6500,
-  shirts: 5500,
-  heritage: 12000,
+  dresses: 7600,
+  pants: 5200,
+  shirts: 4400,
+  heritage: 7600,
 };
 
 /* ------------------------------------------------------------------ pure -- */

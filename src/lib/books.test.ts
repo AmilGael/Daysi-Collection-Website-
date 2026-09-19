@@ -99,7 +99,7 @@ describe("the sales file", () => {
         },
       });
     const [row] = salesRows([promoted(10325, 29500)], "en");
-    expect(column(row, "ItemDescription")).toBe("Sirena shirt dress — Size M (list 295.00)");
+    expect(column(row, "ItemDescription")).toBe("Sirena shirt dress · Size M (list 295.00)");
     expect(column(row, "ItemAmount")).toBe("103.25");
     expect(column(row, "ItemTaxCode")).toBe("NON");
     // 60 % off leaves $118 a piece, which is taxed.

@@ -46,9 +46,13 @@ export function StyleOrderPanel({
   const router = useRouter();
   const [addState, setAddState] = useState<"idle" | "adding" | "added" | "soldOut">("idle");
 
-  const firstAvailable = style.sizes.find((size) => size.inStock) ?? style.sizes[0];
-  const [sizeId, setSizeId] = useState<SizeId | undefined>(firstAvailable?.sizeId);
   const [customize, setCustomize] = useState(false);
+  // A counted size with no pieces left is not offered ready-made at all; made
+  // to measure it is any size again, since it is cut to her measurements.
+  const shownSizes = customize ? style.sizes : style.sizes.filter((size) => size.count !== 0);
+  const firstAvailable = shownSizes.find((size) => size.inStock) ?? shownSizes[0];
+  const [sizeId, setSizeId] = useState<SizeId | undefined>(firstAvailable?.sizeId);
+  const readyGone = !customize && shownSizes.length === 0;
 
   // A promotion lowers the piece, never the made-to-measure extra.
   const extra = customize ? customizationExtra : 0;
@@ -83,8 +87,9 @@ export function StyleOrderPanel({
     <div className="flex flex-col gap-8">
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-1 text-[0.8125rem] font-medium">{t("chooseSize")}</legend>
+        {readyGone ? <p className="text-[0.875rem] text-ink-soft">{t("readyGone")}</p> : null}
         <div className="flex flex-wrap gap-2">
-          {style.sizes.map((offered) => {
+          {shownSizes.map((offered) => {
             const size = sizes.find((candidate) => candidate.id === offered.sizeId);
             const isSelected = offered.sizeId === sizeId;
             return (
@@ -131,8 +136,13 @@ export function StyleOrderPanel({
             type="checkbox"
             checked={customize}
             onChange={(event) => {
-              setCustomize(event.target.checked);
+              const next = event.target.checked;
+              setCustomize(next);
               setAddState("idle");
+              // Back to ready-made: a size with none left is no longer on offer.
+              if (!next && style.sizes.find((size) => size.sizeId === sizeId)?.count === 0) {
+                setSizeId(style.sizes.find((size) => size.count !== 0)?.sizeId);
+              }
             }}
             className="mt-1 h-4 w-4 shrink-0 accent-ink"
           />
@@ -168,12 +178,12 @@ export function StyleOrderPanel({
         <button
           type="button"
           onClick={addToCart}
-          disabled={!sizeId || soldOut || addState === "adding"}
+          disabled={!sizeId || soldOut || readyGone || addState === "adding"}
           className={buttonClass({ className: "w-full" })}
         >
-          {addState === "added" ? tcart("added") : soldOut ? tc("soldOut") : tcart("addToCart")}
+          {addState === "added" ? tcart("added") : soldOut || readyGone ? tc("soldOut") : tcart("addToCart")}
         </button>
-        {soldOut && style.customizationAvailable ? (
+        {(soldOut || readyGone) && style.customizationAvailable ? (
           <p className="text-[0.8125rem] text-ink-soft">{t("soldOutNote")}</p>
         ) : addState === "soldOut" ? (
           <p role="status" className="text-[0.8125rem] text-ink-soft">{tcart("soldOut")}</p>

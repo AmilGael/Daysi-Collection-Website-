@@ -11,6 +11,7 @@ import { whatsappLink } from "@/lib/whatsapp";
 import { buttonClass } from "./ui";
 import { ChoiceGroup, Checkbox, Field, TextArea, TextInput } from "./form";
 import { EstimateSummary } from "./estimate-summary";
+import { MoreBox } from "./more-box";
 
 type ContactMethod = "whatsapp" | "phone" | "email";
 
@@ -238,7 +239,7 @@ export function CartView({
                 />
               )}
             </Field>
-            <Field label={tr("phone")} optional hint={tr("whatsappHint")}>
+            <Field label={tr("phone")} optional tip={tr("whatsappHint")}>
               {({ id, describedBy }) => (
                 <TextInput
                   id={id}
@@ -264,16 +265,18 @@ export function CartView({
               />
             ) : null}
 
-            <Field label={tr("notes")} optional>
-              {({ id }) => (
-                <TextArea
-                  id={id}
-                  rows={3}
-                  value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
-                />
-              )}
-            </Field>
+            <MoreBox value={notes}>
+              <Field label={tr("notes")} optional>
+                {({ id }) => (
+                  <TextArea
+                    id={id}
+                    rows={3}
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                  />
+                )}
+              </Field>
+            </MoreBox>
 
             <Checkbox checked={acceptedTerms} onChange={setAcceptedTerms}>
               {tr.rich("terms", {

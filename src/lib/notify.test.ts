@@ -363,8 +363,8 @@ describe("notifyClientPaid", () => {
     // The receipt invites a reply, so it has to reach Daysi and not no-reply@.
     expect(body.reply_to).toBe("daysi@example.com");
     expect(body.subject).toBe("Su recibo · ORD-1");
-    expect(body.text).toContain("Vestido Amapola × 1 — $105");
-    expect(body.text).toContain("Hecho a su medida × 2 — $40");
+    expect(body.text).toContain("Vestido Amapola × 1: $105");
+    expect(body.text).toContain("Hecho a su medida × 2: $40");
     expect(body.text).toContain("Total: $145");
     expect(body.text).toContain("tarjeta");
     expect(body.text).toContain("ORD-1");
@@ -398,7 +398,7 @@ describe("notifyClientPaid", () => {
       }),
     );
 
-    expect(text).toContain("Vestido Amapola (Talla M) × 1 — $105");
+    expect(text).toContain("Vestido Amapola (Talla M) × 1: $105");
   });
 
   it("prints what a promoted line came to before the promotion, in the record's locale", async () => {
@@ -429,10 +429,10 @@ describe("notifyClientPaid", () => {
       });
 
     expect(receiptMessage(promoted("es")).text).toContain(
-      "Vestido camisero Sirena (Talla M · 2 piezas) × 2 — $206.50 (antes $590)",
+      "Vestido camisero Sirena (Talla M · 2 piezas) × 2: $206.50 (antes $590)",
     );
     expect(receiptMessage(promoted("en")).text).toContain(
-      "Sirena shirt dress (Size M · 2 pieces) × 2 — $206.50 (was $590)",
+      "Sirena shirt dress (Size M · 2 pieces) × 2: $206.50 (was $590)",
     );
   });
 
@@ -461,7 +461,7 @@ describe("notifyClientPaid", () => {
         },
       }),
     );
-    expect(text).toContain("Amapola dress × 2 — $0 (was $210)");
+    expect(text).toContain("Amapola dress × 2: $0 (was $210)");
   });
 
   it("says the deposit was paid by banco and what is still due on collection", async () => {

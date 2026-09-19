@@ -49,7 +49,10 @@
     "somethingWentWrong": "Algo falló. Vuelva a intentarlo o escriba por WhatsApp.",
     "whatsapp": "WhatsApp",
     "email": "Correo",
-    "phone": "Teléfono"
+    "phone": "Teléfono",
+    "moreInfo": "Más información",
+    "moreOpen": "Algo más (opcional)",
+    "moreClose": "Cerrar"
   },
   "home": {
     "eyebrow": "A medida · Arreglos · Herencia",
@@ -119,7 +122,8 @@
     "notInYourSize": "¿No está en su talla? Se puede cortar para usted.",
     "soldOutNote": "Esta talla se agotó lista para llevar. Se puede hacer a su medida.",
     "partOfPremiere": "Parte del estreno {season}",
-    "relatedTitle": "También en esta colección"
+    "relatedTitle": "También en esta colección",
+    "readyGone": "Las piezas listas de esta prenda se agotaron. Puede pedirla hecha a su medida."
   },
   "services": {
     "title": "Servicios",
@@ -166,7 +170,6 @@
     "rush": "Servicio urgente",
     "noEstimate": "Escoja una opción arriba para ver el estimado.",
     "sendEstimate": "Enviarle esto a Daysi",
-    "seeGarment": "Ver la prenda",
     "payDeposit": "Pagar lo que corresponde ahora",
     "paymentsOff": "Los pagos con tarjeta se activan al conectar la cuenta de cobros de Daysi. Mientras tanto, envíe la solicitud y pague en persona.",
     "taxNote": "Nueva York no cobra impuesto sobre ropa de menos de $110 por pieza. El impuesto se muestra solo sobre lo que pasa de esa línea.",
@@ -265,8 +268,12 @@
     "garment": "¿Qué prenda es?",
     "garmentPlaceholder": "Un saco de lana azul marino, comprado el año pasado, un poco ancho del cuerpo.",
     "whatNeedsChanging": "¿Qué hay que cambiarle?",
+    "addAlteration": "Agregar otro arreglo…",
+    "chooseAlteration": "Elija el arreglo",
+    "removeAlteration": "Quitar {name}",
+    "photoNoticeAlteration": "Agregue una foto de la pieza que quiere arreglar.",
+    "photoNoticeCommission": "Agregue una foto de lo que se imagina o de una pieza parecida.",
     "timing": "¿Para cuándo la necesita?",
-    "timingPlaceholder": "Antes del 20 si se puede",
     "notes": "Algo más",
     "photo": "Agregar una foto",
     "photoHelp": "Una foto, hasta 4 MB. Le llega a Daysi y a nadie más.",
@@ -281,7 +288,10 @@
     "sentEstimate": "Este es el estimado, para que lo tenga por escrito:",
     "sentNext": "Todavía no se cobra nada. Daysi confirma los detalles con usted primero.",
     "orWhatsapp": "¿Prefiere mandarlo por WhatsApp?",
-    "estimateHeading": "Su estimado"
+    "estimateHeading": "Su estimado",
+    "photoChoose": "Elegir una foto",
+    "photoChange": "Cambiar la foto",
+    "photoTypes": "JPG, PNG o WEBP"
   },
   "contact": {
     "title": "Contacto",
@@ -738,7 +748,7 @@
     "alterationDescription": "Una línea que lo explique",
     "alterationDescriptionPlaceholder": "Puños nuevos en una manga sencilla, del mismo color.",
     "alterationTurnaround": "De vuelta en",
-    "alterationTurnaroundPlaceholder": "4–6 días",
+    "alterationTurnaroundPlaceholder": "4 a 6 días",
     "alterationPhoto": "Una foto, si tiene",
     "alterationPhotoNote": "Sin foto, el sitio le pone un dibujo de aguja e hilo.",
     "sessionNamePlaceholder": "Prueba de novia",

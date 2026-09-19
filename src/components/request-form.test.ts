@@ -89,3 +89,88 @@ describe("the request page's ?kind and ?alteration", () => {
     expect(page).toContain("initialAlterationId={initialAlterationId}");
   });
 });
+
+describe("the alteration part of the request form", () => {
+  it("shows only the alterations the client chose, as cards with a remove button", () => {
+    expect(form).toContain("chosenAlterations.map((alteration) =>");
+    expect(form).toContain("translate(alteration.name, locale)");
+    expect(form).toContain("formatMoney(alteration.fixedPrice, locale)");
+    expect(form).toContain(
+      'aria-label={t("removeAlteration", { name: translate(alteration.name, locale) })}',
+    );
+    expect(form).toContain("×");
+    // The old checklist of every alteration is gone.
+    expect(form).not.toContain('type="checkbox"');
+  });
+
+  it("adds the rest from one select, which lists only what is not chosen and resets", () => {
+    expect(form).toContain("remainingAlterations.map((alteration) =>");
+    expect(form).toContain('t(alterationIds.length > 0 ? "addAlteration" : "chooseAlteration")');
+    expect(form).toMatch(/<Select[\s\S]*?value=""[\s\S]*?addAlteration\(event\.target\.value\)/);
+  });
+
+  it("still submits alterationIds, and keeps the rush checkbox", () => {
+    expect(form).toMatch(/kind,\s*garmentDescription,\s*alterationIds,/);
+    expect(form).toContain("<Checkbox checked={rush} onChange={setRush}>");
+  });
+
+  it("asks for the timing on a calendar from today, not as free text", () => {
+    expect(form).toMatch(
+      /<Field label=\{t\("timing"\)\} optional>[\s\S]*?type="date"[\s\S]*?min=\{today\}[\s\S]*?value=\{preferredTiming\}/,
+    );
+    expect(form).toContain("const today = shopDay(new Date());");
+    expect(form).not.toContain("timingPlaceholder");
+    for (const bundle of [es, en]) expect(request(bundle).timingPlaceholder).toBeUndefined();
+  });
+
+  it("has its new copy in both bundles, with no dashes", () => {
+    expect(request(es).addAlteration).toBe("Agregar otro arreglo…");
+    expect(request(en).addAlteration).toBe("Add another alteration…");
+    expect(request(es).chooseAlteration).toBe("Elija el arreglo");
+    expect(request(en).chooseAlteration).toBe("Choose the alteration");
+    for (const bundle of [es, en]) {
+      for (const key of [
+        "addAlteration",
+        "chooseAlteration",
+        "removeAlteration",
+        "photoNoticeAlteration",
+        "photoNoticeCommission",
+      ]) {
+        expect(request(bundle)[key], key).toBeTruthy();
+        expect(request(bundle)[key], key).not.toMatch(/[—–]/);
+      }
+    }
+  });
+});
+
+describe("the photo on the request form", () => {
+  it("is offered on both kinds, with a notice that says what to photograph", () => {
+    expect(form).toContain(
+      't(kind === "alteration" ? "photoNoticeAlteration" : "photoNoticeCommission")',
+    );
+    expect(form.match(/\{photoField\}/g)?.length).toBe(2);
+    expect(form).toMatch(/kind,\s*categoryId,[\s\S]*?photoDataUrl: photo\?\.dataUrl/);
+  });
+
+  it("says it plainly in both languages", () => {
+    expect(request(es).photoNoticeAlteration).toBe("Agregue una foto de la pieza que quiere arreglar.");
+    expect(request(en).photoNoticeAlteration).toBe("Add a photo of the piece you want altered.");
+    expect(request(es).photoNoticeCommission).toBe(
+      "Agregue una foto de lo que se imagina o de una pieza parecida.",
+    );
+    expect(request(en).photoNoticeCommission).toBe(
+      "Add a photo of what you have in mind, or of a similar piece.",
+    );
+  });
+});
+
+describe("the request form's details", () => {
+  it("puts the WhatsApp aside behind a ? beside the phone label", () => {
+    expect(form).toContain('<Field label={t("phone")} optional tip={t("whatsappHint")}>');
+  });
+
+  it("folds the notes behind '+ Algo más'", () => {
+    expect(form).toContain('import { MoreBox } from "./more-box";');
+    expect(form).toMatch(/<MoreBox value=\{notes\}>\s*<Field label=\{t\("notes"\)\} optional>/);
+  });
+});

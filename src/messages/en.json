@@ -49,7 +49,10 @@
     "somethingWentWrong": "Something went wrong. Please try again, or write on WhatsApp.",
     "whatsapp": "WhatsApp",
     "email": "Email",
-    "phone": "Phone"
+    "phone": "Phone",
+    "moreInfo": "More information",
+    "moreOpen": "Anything else (optional)",
+    "moreClose": "Close"
   },
   "home": {
     "eyebrow": "Custom · Alterations · Heritage",
@@ -119,7 +122,8 @@
     "notInYourSize": "Not in your size? It can be cut for you.",
     "soldOutNote": "This size is sold out ready-made. It can be made to your measurements.",
     "partOfPremiere": "Part of the {season} premiere",
-    "relatedTitle": "Also in this collection"
+    "relatedTitle": "Also in this collection",
+    "readyGone": "The ready pieces of this garment are sold out. You can order it made to measure."
   },
   "services": {
     "title": "Services",
@@ -166,7 +170,6 @@
     "rush": "Rush service",
     "noEstimate": "Choose an option above to see the estimate.",
     "sendEstimate": "Send this to Daysi",
-    "seeGarment": "See the garment",
     "payDeposit": "Pay what is due now",
     "paymentsOff": "Card payments are switched on once Daysi's payment account is connected. Until then, send the request and settle in person.",
     "taxNote": "New York does not charge sales tax on clothing under $110 per item. Tax is shown on anything above that line.",
@@ -265,8 +268,12 @@
     "garment": "What is the garment?",
     "garmentPlaceholder": "A navy wool suit jacket, bought last year, a little wide through the body.",
     "whatNeedsChanging": "What needs changing?",
+    "addAlteration": "Add another alteration…",
+    "chooseAlteration": "Choose the alteration",
+    "removeAlteration": "Remove {name}",
+    "photoNoticeAlteration": "Add a photo of the piece you want altered.",
+    "photoNoticeCommission": "Add a photo of what you have in mind, or of a similar piece.",
     "timing": "When do you need it?",
-    "timingPlaceholder": "Before the 20th if possible",
     "notes": "Anything else",
     "photo": "Add a photo",
     "photoHelp": "One photo, up to 4 MB. It goes to Daysi and to nobody else.",
@@ -281,7 +288,10 @@
     "sentEstimate": "Here is what was quoted, so you have it in writing:",
     "sentNext": "Nothing is charged yet. Daysi confirms the details with you first.",
     "orWhatsapp": "Rather send it on WhatsApp?",
-    "estimateHeading": "Your estimate"
+    "estimateHeading": "Your estimate",
+    "photoChoose": "Choose a photo",
+    "photoChange": "Change the photo",
+    "photoTypes": "JPG, PNG or WEBP"
   },
   "contact": {
     "title": "Contact",
@@ -541,7 +551,7 @@
     "collectionLead": "Tap a garment to open it: its photos, its words, its sizes and whether it is shown. Sizes can also be changed from the card.",
     "noticeTitle": "A notice on the site",
     "noticeLead": "One line shown on the home page and the booking page: vacation dates, a delayed week, a premiere reminder. Turn off the switch to take it down; the wording stays for next time.",
-    "noticePlaceholder": "The atelier is closed August 25–30. Orders placed this week are cut on my return.",
+    "noticePlaceholder": "The atelier is closed August 25 to 30. Orders placed this week are cut on my return.",
     "noticeVisible": "Show it on the site",
     "noticeEmpty": "No notice",
     "noticeOnChip": "Visible",
@@ -738,7 +748,7 @@
     "alterationDescription": "One line that explains it",
     "alterationDescriptionPlaceholder": "New cuffs on a plain sleeve, in the same colour.",
     "alterationTurnaround": "Back with you in",
-    "alterationTurnaroundPlaceholder": "4–6 days",
+    "alterationTurnaroundPlaceholder": "4 to 6 days",
     "alterationPhoto": "A photo, if you have one",
     "alterationPhotoNote": "Without a photo, the site shows a drawing of a needle and thread.",
     "sessionNamePlaceholder": "Bridal fitting",

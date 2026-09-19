@@ -96,7 +96,7 @@ export default async function CheckoutOutcomePage({
     <div className="shell flex min-h-[60svh] items-center py-24">
       <div className="flex max-w-xl flex-col gap-7">
         <h1 className="text-title">{t(`${copy}Title`)}</h1>
-        <p className="text-lead text-ink-soft">{t(leadKey, { reference: reference ?? "–" })}</p>
+        <p className="text-lead text-ink-soft">{t(leadKey, { reference: reference ?? "-" })}</p>
         {note ? <p className="text-[0.875rem] text-ink-faint">{note}</p> : null}
         <ButtonLink href={backHref} className="w-fit">
           {t("backHome")}

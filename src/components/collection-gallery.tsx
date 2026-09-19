@@ -45,7 +45,7 @@ export function CollectionGallery({
       styles.filter((style) => {
         if (categoryId && style.categoryId !== categoryId) return false;
         if (sizeId) {
-          const offered = style.sizes.find((size) => size.sizeId === sizeId);
+          const offered = style.sizes.find((size) => size.sizeId === sizeId && size.count !== 0);
           if (!offered) return false;
           if (readyOnly && !offered.inStock) return false;
         } else if (readyOnly && !style.sizes.some((size) => size.inStock)) {

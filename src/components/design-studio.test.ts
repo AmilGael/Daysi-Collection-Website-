@@ -36,10 +36,10 @@ describe("sending a design from the studio", () => {
     expect(studio).toContain('{t("download")}');
   });
 
-  it("asks a guest only for an email, with the WhatsApp hint on the phone", () => {
+  it("asks a guest only for an email, with the WhatsApp tip on the phone", () => {
     expect(studio).toMatch(/<Field label=\{tr\("email"\)\}>[\s\S]*?required[\s\S]*?type="email"/);
     expect(studio).toContain('<Field label={tr("name")} optional>');
-    expect(studio).toContain('<Field label={tr("phone")} optional hint={tr("whatsappHint")}>');
+    expect(studio).toContain('<Field label={tr("phone")} optional tip={tr("whatsappHint")}>');
     expect(studio).toContain("<BotTrap renderedAt={renderedAt} />");
   });
 

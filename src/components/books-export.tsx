@@ -48,7 +48,7 @@ function formatRange(from: string, to: string, locale: Locale): string {
     year: "numeric",
     timeZone: "UTC",
   });
-  return `${day.format(new Date(`${from}T12:00:00Z`))} – ${day.format(new Date(`${to}T12:00:00Z`))}`;
+  return `${day.format(new Date(`${from}T12:00:00Z`))} - ${day.format(new Date(`${to}T12:00:00Z`))}`;
 }
 
 function DownloadFeedback({ state }: { state: DownloadState }): JSX.Element | null {
