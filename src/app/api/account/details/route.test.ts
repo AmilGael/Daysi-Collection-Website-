@@ -106,6 +106,14 @@ describe("the client's own details route", () => {
     expect(card?.email).toBe("ana@example.com");
   });
 
+  it("keeps the phone cleaned the way the office keeps it", async () => {
+    const response = await post({ name: "Ana", phone: "\u200E718\u2011555\u20110101", measurements: {} });
+
+    expect(response.status).toBe(200);
+    const { cardForAccount } = await import("@/lib/client-cards");
+    expect(cardForAccount(account)?.phone).toBe("718-555-0101");
+  });
+
   it("names the fields a bad body got wrong", async () => {
     const response = await post({ name: "Ana", measurements: { waist: { value: 320, unit: "in" } } });
 

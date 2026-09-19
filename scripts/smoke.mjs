@@ -200,6 +200,17 @@ for (const path of PRIVATE) {
   });
 }
 
+// The client's own card page: signed out, it sends them to sign in rather
+// than render an empty form (or anyone else's card).
+await check("the card page sends a signed-out visitor to sign in", async () => {
+  const response = await fetch(`${BASE}/es/account/details`, { redirect: "manual" });
+  const location = response.headers.get("location") ?? "";
+  return {
+    ok: (response.status === 307 || response.status === 308) && location.endsWith("/es/sign-in"),
+    detail: `${response.status} -> ${location || "(none)"}`,
+  };
+});
+
 // Trabajo folded into Hub on 14 September 2026; the old address must land
 // on the office rather than 404 for anyone who bookmarked it.
 await check("the old Trabajo address redirects into the office", async () => {

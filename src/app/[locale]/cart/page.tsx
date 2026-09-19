@@ -30,8 +30,8 @@ export default async function CartPage({
           initialEstimate={estimate}
           styles={liveStyles()}
           viewer={
-            viewer
-              ? { name: viewer.account.name, email: viewer.account.email, phone: contact?.phone ?? "" }
+            viewer && contact
+              ? { name: contact.name, email: viewer.account.email, phone: contact.phone }
               : null
           }
           paymentsEnabled={paymentsEnabled}

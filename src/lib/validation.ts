@@ -2,6 +2,7 @@ import { z } from "zod";
 import { silhouettes } from "@/content/silhouettes";
 import { MEASUREMENTS, type MeasurementId } from "@/content/measurements";
 import { UNITS, withinRange } from "./measurements";
+import { normalizePhone } from "./office-validation";
 
 /**
  * One schema per form. Every route handler parses its body through the schema
@@ -185,7 +186,9 @@ const measurementInput = (id: MeasurementId) =>
  */
 export const clientCardSchema = z.object({
   name,
-  phone: phone.optional(),
+  // Cleaned as the office cleans the number Daysi types (a paste from
+  // WhatsApp, a stray direction mark), so one card never holds two spellings.
+  phone: z.preprocess((value) => (typeof value === "string" ? normalizePhone(value) : value), phone).optional(),
   preferredContact: contactMethod.optional(),
   address: z
     .object({

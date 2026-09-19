@@ -177,6 +177,18 @@ describe("the client card schema", () => {
     expect(clientCardSchema.safeParse({ name: "Ana", measurements: { elbow: { value: 3, unit: "in" } } }).success).toBe(false);
     expect(clientCardSchema.safeParse({ name: "A", measurements: {} }).success).toBe(false);
   });
+
+  /** The office cleaned a phone before keeping it and the client's own save did not: one number, two spellings. */
+  it("cleans a phone the way the office does", async () => {
+    const { clientCardSchema } = await import("./validation");
+    const { normalizePhone } = await import("./office-validation");
+    const pasted = "\u200E718\u2011555\u20110101 ";
+    const parsed = clientCardSchema.safeParse({ name: "Ana", phone: pasted, measurements: {} });
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.phone).toBe("718-555-0101");
+    expect(parsed.data?.phone).toBe(normalizePhone(pasted).trim());
+    expect(clientCardSchema.safeParse({ name: "Ana", phone: "\u200E55\u2011", measurements: {} }).success).toBe(false);
+  });
 });
 
 describe("Daysi's side of a card", () => {

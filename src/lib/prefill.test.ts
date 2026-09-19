@@ -10,4 +10,11 @@ describe("forms a signed-in client opens", () => {
       expect(source, page).toContain("knownContact(");
     }
   });
+
+  /** The cart took the phone from the card but the name from the account, so a name fixed on the card never reached it. */
+  it("take the name from the card on the cart too, and the email from the account", () => {
+    const cart = fs.readFileSync("src/app/[locale]/cart/page.tsx", "utf8");
+    expect(cart).not.toContain("viewer.account.name");
+    expect(cart).toContain("name: contact.name, email: viewer.account.email, phone: contact.phone");
+  });
 });

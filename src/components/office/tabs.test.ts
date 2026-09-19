@@ -201,6 +201,12 @@ describe("the smoke script", () => {
     }
   });
 
+  it("checks that the client's card page sends a signed-out visitor to sign in", () => {
+    const smoke = fs.readFileSync(path.join(process.cwd(), "scripts/smoke.mjs"), "utf8");
+    expect(smoke).toContain('fetch(`${BASE}/es/account/details`, { redirect: "manual" })');
+    expect(smoke).toContain('(response.status === 307 || response.status === 308) && location.endsWith("/es/sign-in")');
+  });
+
   it("checks that the pages that are not tabs are private too", () => {
     const smoke = fs.readFileSync(path.join(process.cwd(), "scripts/smoke.mjs"), "utf8");
     for (const page of NON_TAB_PAGES) {
