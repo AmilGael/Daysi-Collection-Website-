@@ -440,3 +440,38 @@ export function estimateNoted(amount: Cents, kind: NotedOrderKind): Estimate {
     es: "Anotado desde la oficina; ya se resolvió fuera del sitio.",
   });
 }
+
+// ── A charge Daysi sends from the office ────────────────────────────────────
+
+const CHARGED_LABEL: Localized = {
+  en: "Daysi Collection · charged from the workshop",
+  es: "Daysi Collection · cobro del taller",
+};
+
+/**
+ * What a payment link Daysi makes from the office asks for, when the amount
+ * is not the record's own total (an alteration priced once she saw the
+ * garment, a noted order, a request that never had a price). Like a noted
+ * line it is never re-taxed: the number she types is the number the client
+ * pays, all of it now.
+ */
+export function estimateCharged(amount: Cents): Estimate {
+  return build([{ label: CHARGED_LABEL, amount, taxBasis: "service" }], (total) => total, CHARGED_REASON);
+}
+
+export const CHARGED_REASON: Localized = {
+  en: "Paid online through the link Daysi sent you.",
+  es: "Pagado en línea con el enlace que le mandó Daysi.",
+};
+
+/**
+ * The estimate a charge is made against. The record's own priced lines are
+ * kept when she charges exactly its total, so the receipt still itemises
+ * them; any other amount replaces them with one line of what she asked for.
+ */
+export function chargeEstimate(existing: Estimate | undefined, amount: Cents): Estimate {
+  if (existing && existing.total === amount) {
+    return { ...existing, dueNow: amount, dueOnCollection: 0, dueNowReason: CHARGED_REASON };
+  }
+  return estimateCharged(amount);
+}

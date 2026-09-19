@@ -137,6 +137,8 @@ describe("the office routes", () => {
   it("has routes to check", () => {
     expect(routes.map((route) => route.name).sort()).toEqual([
       "books",
+      "charge",
+      "charge/email",
       "help",
       "manual",
       "photos/[reference]",

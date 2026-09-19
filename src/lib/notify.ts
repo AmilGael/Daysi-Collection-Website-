@@ -392,6 +392,12 @@ export async function notifyClientPaid(request: StoredRequest): Promise<void> {
     console.info(`[notify] ${request.reference} paid; client receipt not sent, email not configured.`);
     return;
   }
+  // A client Daysi noted without an address, who paid a link without Stripe
+  // asking for one: there is nowhere to send it, and Resend refuses an empty to.
+  if (!request.client.email) {
+    console.info(`[notify] ${request.reference} paid; no client address, receipt not sent.`);
+    return;
+  }
 
   await sendEmail({
     to: request.client.email,
@@ -431,4 +437,79 @@ export async function recordRequest(request: StoredRequest): Promise<boolean> {
 
   await notifyOwner(request);
   return stored || emailEnabled;
+}
+
+/**
+ * The email that carries a payment link Daysi made from the office: what it
+ * is for, how much, the button's address, and when it stops working. Plain,
+ * like every mail here, in the client's own language.
+ */
+export function paymentLinkMessage(
+  request: StoredRequest,
+  link: { readonly url: string; readonly amount: number; readonly expiresAt: string },
+): { subject: string; text: string } {
+  const { locale } = request;
+  const name = forNotification(request.client.name);
+  const amount = formatMoney(link.amount, locale);
+  const until = new Intl.DateTimeFormat(locale === "es" ? "es-US" : "en-US", {
+    weekday: "long",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "America/New_York",
+  }).format(new Date(link.expiresAt));
+  const whatsapp = whatsappLink(
+    locale === "es"
+      ? `Hola Daysi, sobre el pago de ${request.reference}`
+      : `Hi Daysi, about paying ${request.reference}`,
+  );
+
+  if (locale === "es") {
+    return {
+      subject: `Su pago a Daysi Collection · ${request.reference}`,
+      text: [
+        greeting(name, "es"),
+        "",
+        `Daysi le manda el enlace para pagar ${amount} con tarjeta:`,
+        link.url,
+        "",
+        `El enlace vence: ${until}`,
+        "Al pagar, le llega el recibo a este correo.",
+        `Referencia: ${request.reference}`,
+        "",
+        `¿Preguntas? Escríbale por WhatsApp: ${whatsapp}`,
+        "",
+        "Daysi Collection",
+      ].join("\n"),
+    };
+  }
+  return {
+    subject: `Your payment to Daysi Collection · ${request.reference}`,
+    text: [
+      greeting(name, "en"),
+      "",
+      `Daysi sent you a link to pay ${amount} by card:`,
+      link.url,
+      "",
+      `The link closes: ${until}`,
+      "Once you pay, your receipt arrives at this address.",
+      `Reference: ${request.reference}`,
+      "",
+      `Questions? Message her on WhatsApp: ${whatsapp}`,
+      "",
+      "Daysi Collection",
+    ].join("\n"),
+  };
+}
+
+/** Sends the payment link to the client. False when there is no address or no mail. */
+export async function notifyClientPaymentLink(
+  request: StoredRequest,
+  link: { readonly url: string; readonly amount: number; readonly expiresAt: string },
+): Promise<boolean> {
+  if (!request.client.email) return false;
+  return sendEmail({
+    to: request.client.email,
+    ...(env.ownerEmails[0] ? { replyTo: env.ownerEmails[0] } : {}),
+    ...paymentLinkMessage(request, link),
+  });
 }

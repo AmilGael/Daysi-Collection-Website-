@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { earningsFrom, loadLedger, monthlyReceived } from "@/lib/earnings";
 import { formatMoney } from "@/lib/money";
+import { paymentsEnabled } from "@/lib/env";
 import {
   activeRequests,
   manageableRequests,
@@ -65,7 +66,10 @@ export default async function OfficeHubPage({
 
       <section className="flex flex-col gap-6">
         <h2 className="text-heading">{t("work")}</h2>
-        <OfficeRequestList records={withUndoable(work)} locale={language} emptyMessage={t("noWork")} showOrderNotes />
+        <OfficeRequestList records={withUndoable(work)} locale={language} emptyMessage={t("noWork")}
+          showOrderNotes
+          paymentsEnabled={paymentsEnabled}
+        />
       </section>
 
       <section className="flex flex-col gap-6">

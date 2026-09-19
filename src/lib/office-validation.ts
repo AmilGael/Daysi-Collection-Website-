@@ -421,10 +421,24 @@ export const orderNoteSchema = z.object({
   description: z.string().trim().max(400),
   amount: cents,
   paid: z.boolean(),
+  /** Not paid yet, and Daysi wants a card payment link for it made at
+   *  Confirmar. Refused alongside `paid`: one is money in, the other asked. */
+  charge: z.boolean().optional(),
   /** When she took it, if not today. Stamps submittedAt (and paidAt, when
    *  already paid) at noon New York time of that day. */
   date: notedDate,
   notes: z.string().trim().max(400).optional(),
+});
+
+/** A payment link for one record, made from its sheet in the Hub. */
+export const chargeSchema = z.object({
+  reference: z.string().trim().min(1).max(40),
+  amount: z.number().int().min(100).max(5_000_00),
+});
+
+/** Emailing the open payment link of one record to its client. */
+export const sendLinkSchema = z.object({
+  reference: z.string().trim().min(1).max(40),
 });
 
 export const workChangeSchema = z.discriminatedUnion("type", [

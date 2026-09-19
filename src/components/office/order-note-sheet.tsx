@@ -6,16 +6,19 @@ import { shopDay } from "@/content";
 import { centsFromInput } from "@/lib/money";
 import { normalizePhone, type WorkChange } from "@/lib/office-validation";
 import { buttonClass } from "@/components/ui";
+import { ChoiceGroup } from "@/components/form";
 import { MoneyBox } from "./garment-sheet";
 import { Sheet } from "./sheet";
-import { Switch } from "./switch";
 import { useOfficeDraft } from "./use-office-draft";
 
 const field = "w-full border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink";
 /** The most any price in the office may be, as everywhere else she types one. */
 const MAX_CENTS = 500_000;
-const KINDS = ["order", "alteration", "commission"] as const;
-type NotedKind = (typeof KINDS)[number];
+export const NOTED_KINDS = ["order", "alteration", "commission"] as const;
+const KINDS = NOTED_KINDS;
+export type NotedKind = (typeof KINDS)[number];
+/** Money already in, a card link to send now, or owed for later. */
+type Payment = "paid" | "charge" | "later";
 
 /**
  * The "+" that opens the sheet for an order Daysi took off-site — in person
@@ -23,7 +26,14 @@ type NotedKind = (typeof KINDS)[number];
  * books. Only the Trabajo section offers it: a session or a message always
  * comes from the site itself.
  */
-export function OrderNoteCard(): JSX.Element {
+export function OrderNoteCard({
+  kind,
+  paymentsEnabled,
+}: {
+  /** Which kind this box starts as; she can still change it in the sheet. */
+  kind: NotedKind;
+  paymentsEnabled: boolean;
+}): JSX.Element {
   const t = useTranslations("office");
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
@@ -32,13 +42,13 @@ export function OrderNoteCard(): JSX.Element {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-full w-full flex-col items-center justify-center gap-2 border border-dashed border-line-strong p-5 text-center text-[0.8125rem] text-ink-soft hover:border-ink"
+        className="flex min-h-14 w-full items-center justify-center gap-3 border border-dashed border-line-strong px-5 py-3 text-center text-[0.8125rem] text-ink-soft transition-colors hover:border-ink hover:text-ink sm:min-h-24 sm:flex-col sm:gap-2"
       >
-        <span className="text-2xl leading-none">+</span>
-        {t("addOrderNote")}
+        <span className="text-xl leading-none sm:text-2xl">+</span>
+        {t(`addNote.${kind}`)}
       </button>
-      <Sheet open={open} title={t("orderNoteTitle")} onClose={close}>
-        <OrderNoteForm onDone={close} />
+      <Sheet open={open} title={t(`addNote.${kind}`)} onClose={close}>
+        <OrderNoteForm onDone={close} initialKind={kind} paymentsEnabled={paymentsEnabled} />
       </Sheet>
     </>
   );
@@ -51,17 +61,25 @@ export function OrderNoteCard(): JSX.Element {
  * once she confirms. Nothing is mailed for it: not a receipt to the client,
  * not a notice to Daysi — she is the one writing it down.
  */
-function OrderNoteForm({ onDone }: { onDone(): void }): JSX.Element {
+function OrderNoteForm({
+  onDone,
+  initialKind,
+  paymentsEnabled,
+}: {
+  onDone(): void;
+  initialKind: NotedKind;
+  paymentsEnabled: boolean;
+}): JSX.Element {
   const t = useTranslations("office");
   const k = useTranslations("account");
   const draft = useOfficeDraft<WorkChange>();
-  const [kind, setKind] = useState<NotedKind>("order");
+  const [kind, setKind] = useState<NotedKind>(initialKind);
   const [clientName, setClientName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
-  const [paid, setPaid] = useState(true);
+  const [payment, setPayment] = useState<Payment>("paid");
   const [date, setDate] = useState("");
   const [notes, setNotes] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
@@ -92,7 +110,8 @@ function OrderNoteForm({ onDone }: { onDone(): void }): JSX.Element {
         ...(email.trim() ? { email: email.trim() } : {}),
         description: description.trim(),
         amount: cents,
-        paid,
+        paid: payment === "paid",
+        ...(payment === "charge" ? { charge: true } : {}),
         ...(date ? { date } : {}),
         ...(notes.trim() ? { notes: notes.trim() } : {}),
       },
@@ -156,8 +175,24 @@ function OrderNoteForm({ onDone }: { onDone(): void }): JSX.Element {
             className={`${field} resize-none`}
           />
         </label>
-        <MoneyBox label={t("orderNoteAmount")} value={amount} onChange={setAmount} />
-        <Switch checked={paid} onChange={setPaid} label={t("orderNotePaid")} />
+        <ChoiceGroup<Payment>
+          legend={t("orderNotePayment")}
+          options={[
+            { value: "paid", label: t("orderNotePaidNow") },
+            ...(paymentsEnabled ? [{ value: "charge" as Payment, label: t("orderNoteCharge") }] : []),
+            { value: "later", label: t("orderNoteLater") },
+          ]}
+          value={payment}
+          onChange={setPayment}
+        />
+        <MoneyBox
+          label={t(payment === "paid" ? "orderNoteAmount" : payment === "charge" ? "orderNoteChargeAmount" : "orderNoteOwedAmount")}
+          value={amount}
+          onChange={setAmount}
+        />
+        {payment === "charge" ? (
+          <p className="text-[0.8125rem] leading-relaxed text-ink-faint">{t("orderNoteChargeHint")}</p>
+        ) : null}
         <label className="grid gap-1 text-[0.75rem] text-ink-faint">
           {t("orderNoteDate")}
           <input

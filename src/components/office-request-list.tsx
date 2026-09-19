@@ -3,13 +3,18 @@
 import Image from "next/image";
 import { useCallback, useEffect, useState, type JSX } from "react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import type { Locale } from "@/i18n/routing";
 import { formatMoney } from "@/lib/money";
 import type { StoredRequest } from "@/lib/request-store";
 import type { WorkChange } from "@/lib/office-validation";
 import { whatsappLink } from "@/lib/whatsapp";
+import { centsFromInput } from "@/lib/money";
+import { chargeable, openPaymentLink } from "@/lib/payment-link";
+import { MoneyBox } from "@/components/office/garment-sheet";
+import { buttonClass } from "@/components/ui";
 import { Pending } from "@/components/office/confirm-bar";
-import { OrderNoteCard } from "@/components/office/order-note-sheet";
+import { NOTED_KINDS, OrderNoteCard } from "@/components/office/order-note-sheet";
 import { RetireButton } from "@/components/office/retired-group";
 import { Sheet } from "@/components/office/sheet";
 import { UndoLink } from "@/components/office/undo-link";
@@ -17,6 +22,9 @@ import { Tag } from "@/components/ui";
 import { useOfficeDraft } from "@/components/office/use-office-draft";
 
 const STATUSES = ["new", "answered", "scheduled", "paid", "refunded", "closed"] as const;
+
+/** The groups the work list is read in; any kind not named here is not work. */
+const WORK_GROUPS = ["order", "alteration", "commission", "design"] as const;
 
 const card =
   "flex h-full w-full flex-col gap-2 border border-line p-4 text-left transition-colors hover:border-ink";
@@ -32,12 +40,15 @@ export function OfficeRequestList({
   locale,
   emptyMessage,
   showOrderNotes = false,
+  paymentsEnabled = false,
 }: {
   records: readonly (StoredRequest & { undoable: boolean })[];
   locale: Locale;
   emptyMessage: string;
   /** Only the Trabajo list takes order notes; Citas and Mensajes never do. */
   showOrderNotes?: boolean;
+  /** Whether Stripe is on, so a card link can be offered at all. */
+  paymentsEnabled?: boolean;
 }): JSX.Element {
   const t = useTranslations("account");
   const to = useTranslations("office");
@@ -66,16 +77,7 @@ export function OfficeRequestList({
     );
   }
 
-  return (
-    <div className="flex flex-col gap-4">
-      <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {showOrderNotes ? (
-          <li>
-            <OrderNoteCard />
-          </li>
-        ) : null}
-
-        {pendingNotes.map((entry) => {
+  const renderPending = (entry: (typeof pendingNotes)[number]) => {
           const wire = entry.change.wire;
           if (wire.type !== "order-note") return null;
           return (
@@ -100,9 +102,9 @@ export function OfficeRequestList({
               </span>
             </li>
           );
-        })}
+        };
 
-        {records.map((record) => {
+  const renderRecord = (record: (typeof records)[number]) => {
           const key = `request:${record.reference}`;
           const pending = draft.pending(key);
           const status = pending?.change.wire.type === "request-status" ? pending.change.wire.status : record.status;
@@ -113,6 +115,10 @@ export function OfficeRequestList({
           let chipTone: "quiet" | "marigold";
           if (record.paymentFailed) {
             chipLabel = t("paymentFailed");
+            chipTone = "quiet";
+          } else if (status !== "paid" && openPaymentLink(record)) {
+            // Quiet, like every state still waiting on money: gold is kept for Pagado.
+            chipLabel = to("chargeLinkOpen");
             chipTone = "quiet";
           } else if (record.awaitingPayment && status !== "paid") {
             chipLabel = t(record.awaitingPayment === "bank" ? "bankPending" : "awaitingPayment");
@@ -167,8 +173,47 @@ export function OfficeRequestList({
               ) : null}
             </li>
           );
-        })}
-      </ul>
+        };
+
+  const grid = "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4";
+
+  return (
+    <div className="flex flex-col gap-4">
+      {showOrderNotes ? (
+        <>
+          {/* Where she starts one: a box per kind, above everything already in. */}
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {NOTED_KINDS.map((kind) => (
+              <li key={kind}>
+                <OrderNoteCard kind={kind} paymentsEnabled={paymentsEnabled} />
+              </li>
+            ))}
+          </ul>
+          {/* What is already in, below, one group per kind so an alteration
+              is never hunted for among the orders. */}
+          {WORK_GROUPS.map((kind) => {
+            const staged = pendingNotes.filter(
+              (entry) => entry.change.wire.type === "order-note" && entry.change.wire.kind === kind,
+            );
+            const inGroup = records.filter((record) => record.kind === kind);
+            if (staged.length === 0 && inGroup.length === 0) return null;
+            return (
+              <section key={kind} className="mt-6 flex flex-col gap-3">
+                <h3 className="flex items-baseline gap-3 text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-ink-faint">
+                  {to(`workGroup.${kind}`)}
+                  <span className="tabular-nums">{staged.length + inGroup.length}</span>
+                </h3>
+                <ul className={grid}>
+                  {staged.map(renderPending)}
+                  {inGroup.map(renderRecord)}
+                </ul>
+              </section>
+            );
+          })}
+        </>
+      ) : (
+        <ul className={grid}>{records.map(renderRecord)}</ul>
+      )}
 
       {empty ? <p className="text-[0.9375rem] text-ink-faint">{emptyMessage}</p> : null}
 
@@ -177,7 +222,7 @@ export function OfficeRequestList({
         title={opened ? `${t(`kind.${opened.kind}`)} · ${opened.client.name || opened.client.email}` : ""}
         onClose={close}
       >
-        {opened ? <RequestSheet record={opened} locale={locale} /> : null}
+        {opened ? <RequestSheet record={opened} locale={locale} paymentsEnabled={paymentsEnabled} /> : null}
       </Sheet>
     </div>
   );
@@ -191,9 +236,11 @@ export function OfficeRequestList({
 function RequestSheet({
   record,
   locale,
+  paymentsEnabled,
 }: {
   record: StoredRequest & { undoable: boolean };
   locale: Locale;
+  paymentsEnabled: boolean;
 }): JSX.Element {
   const t = useTranslations("account");
   const to = useTranslations("office");
@@ -254,12 +301,14 @@ function RequestSheet({
       </label>
       {record.paymentFailed ? (
         <Tag tone="quiet">{t("paymentFailed")}</Tag>
-      ) : record.awaitingPayment && status !== "paid" ? (
+      ) : record.awaitingPayment && status !== "paid" && !openPaymentLink(record) ? (
         <Tag tone="quiet">{t(record.awaitingPayment === "bank" ? "bankPending" : "awaitingPayment")}</Tag>
       ) : null}
       {record.estimate ? (
         <p className="text-[0.9375rem] tabular-nums text-ink-soft">{formatMoney(record.estimate.total, locale)}</p>
       ) : null}
+
+      {paymentsEnabled && !pending && !retiring ? <ChargePanel record={record} locale={locale} /> : null}
 
       {/* The picture the client sent: a studio design's mockup, an
           alteration's snapshot. The office route serves it only to Daysi,
@@ -311,6 +360,161 @@ function RequestSheet({
       ) : null}
     </div>
   );
+}
+
+/**
+ * Charging the client from the order itself: the amount (what the order
+ * comes to, unless she types another), then one tap for a card payment page,
+ * and from then on the ways to send it — WhatsApp when there is a phone,
+ * email when there is an address, or the link itself to paste anywhere.
+ * Made at once rather than staged: nothing moves until the client pays.
+ */
+function ChargePanel({ record, locale }: { record: StoredRequest; locale: Locale }): JSX.Element | null {
+  const to = useTranslations("office");
+  const router = useRouter();
+  const link = openPaymentLink(record);
+  const [amount, setAmount] = useState(() => inputOf(link?.amount ?? record.estimate?.total));
+  const [remaking, setRemaking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  if (!link && !chargeable(record)) return null;
+
+  async function postJson(url: string, body: unknown): Promise<Response> {
+    try {
+      return await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    } catch {
+      return new Response(null, { status: 599 });
+    }
+  }
+
+  async function makeLink() {
+    setNote(null);
+    const cents = centsFromInput(amount);
+    if (cents === null || cents < 100 || cents > 500_000) return setNote(to("chargeBadAmount"));
+    setBusy(true);
+    try {
+      const response = await postJson("/api/office/charge", { reference: record.reference, amount: cents });
+      if (!response.ok) {
+        const { error } = (await response.json().catch(() => ({}))) as { error?: string };
+        return setNote(to(error === "old-link-open" ? "chargeOldOpen" : "chargeFailed"));
+      }
+      setRemaking(false);
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sendEmail() {
+    setNote(null);
+    setBusy(true);
+    try {
+      const response = await postJson("/api/office/charge/email", { reference: record.reference });
+      setNote(to(response.ok ? "chargeEmailed" : "chargeEmailFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function copy(url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setNote(to("chargeCopied"));
+    } catch {
+      setNote(url);
+    }
+  }
+
+  const phoneDigits = record.client.phone ? record.client.phone.replace(/[^0-9]/g, "") : "";
+
+  return (
+    <section className="flex flex-col gap-4 border border-line bg-paper-warm/60 p-4">
+      <h3 className="text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-ink-faint">{to("chargeTitle")}</h3>
+
+      {link && !remaking ? (
+        <>
+          <p className="text-[0.9375rem] leading-relaxed">
+            {to("chargeReady", { amount: formatMoney(link.amount, locale), until: formatUntil(link.expiresAt, locale) })}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {phoneDigits.length >= 7 ? (
+              <a
+                href={whatsappLink(
+                  record.locale === "en"
+                    ? `Hi, here is the link to pay ${formatMoney(link.amount, "en")} for ${record.reference}: ${link.url}`
+                    : `Hola, aquí está el enlace para pagar ${formatMoney(link.amount, "es")} de ${record.reference}: ${link.url}`,
+                  record.client.phone,
+                )}
+                target="_blank"
+                rel="noopener"
+                className={buttonClass({ size: "small", tone: "solid" })}
+              >
+                {to("chargeWhatsapp")}
+              </a>
+            ) : null}
+            {record.client.email ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={sendEmail}
+                className={buttonClass({ size: "small", tone: phoneDigits.length >= 7 ? "outline" : "solid" })}
+              >
+                {to("chargeEmail")}
+              </button>
+            ) : null}
+            <button type="button" onClick={() => copy(link.url)} className={buttonClass({ size: "small", tone: "outline" })}>
+              {to("chargeCopy")}
+            </button>
+          </div>
+          <button type="button" onClick={() => setRemaking(true)} className="w-fit text-xs underline underline-offset-4">
+            {to("chargeRemake")}
+          </button>
+        </>
+      ) : (
+        <>
+          <MoneyBox label={to("chargeAmount")} value={amount} onChange={setAmount} />
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={makeLink}
+              className={buttonClass({ size: "small", tone: "solid" })}
+            >
+              {busy ? to("chargeMaking") : to("chargeMake")}
+            </button>
+            {remaking ? (
+              <button type="button" onClick={() => setRemaking(false)} className="text-xs underline underline-offset-4">
+                {to("chargeKeepOld")}
+              </button>
+            ) : null}
+          </div>
+          <p className="text-[0.8125rem] leading-relaxed text-ink-faint">{to("chargeHint")}</p>
+        </>
+      )}
+
+      {note ? (
+        <p role="status" className="text-[0.8125rem] text-ink">
+          {note}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+/** Cents as she would type them: 4500 is "45", 4550 is "45.50". */
+function inputOf(cents: number | undefined): string {
+  if (!cents) return "";
+  return cents % 100 === 0 ? String(cents / 100) : (cents / 100).toFixed(2);
+}
+
+function formatUntil(iso: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale === "es" ? "es-US" : "en-US", {
+    weekday: "long",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "America/New_York",
+  }).format(new Date(iso));
 }
 
 function photoHref(record: StoredRequest): string {

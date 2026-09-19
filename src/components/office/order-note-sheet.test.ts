@@ -48,3 +48,12 @@ describe("the order-note sheet's date", () => {
     expect(en.office.orderNoteDate).toBeTruthy();
   });
 });
+
+describe("the order-note sheet's payment", () => {
+  it("asks paid, charge by card (only with Stripe on) or later, and stages charge only for the card", () => {
+    expect(source).toContain('type Payment = "paid" | "charge" | "later";');
+    expect(source).toContain('...(paymentsEnabled ? [{ value: "charge" as Payment');
+    expect(source).toContain('paid: payment === "paid",');
+    expect(source).toContain('...(payment === "charge" ? { charge: true } : {}),');
+  });
+});

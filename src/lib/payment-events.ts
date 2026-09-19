@@ -23,7 +23,7 @@ import { retiredSet, setRetired } from "./retired";
 const PAYABLE_KINDS = ["appointment", "order", "commission", "alteration", "design"] as const;
 
 export type MarkPaidOutcome = "marked" | "already-paid" | "unknown";
-export type MarkExpiredOutcome = "closed" | "not-waiting" | "unknown";
+export type MarkExpiredOutcome = "closed" | "link-closed" | "not-waiting" | "unknown";
 export type MarkRefundedOutcome = "refunded" | "already-refunded" | "unknown";
 export type MarkBankPendingOutcome = "bank-pending" | "already-pending" | "not-waiting" | "unknown";
 export type MarkFailedOutcome = "failed" | "not-waiting" | "unknown";
@@ -48,7 +48,13 @@ function versionsOf(reference: string): StoredRequest[] {
  */
 export async function markPaid(
   reference: string,
-  payment: { readonly via: "card" | "bank"; readonly at: string },
+  payment: {
+    readonly via: "card" | "bank";
+    readonly at: string;
+    /** What the client typed on Stripe's page. Kept only when the record had
+     *  no address, as a client Daysi noted without one; never overwrites. */
+    readonly email?: string | null;
+  },
 ): Promise<MarkPaidOutcome> {
   const versions = versionsOf(reference);
   const current = versions.at(-1);
@@ -65,9 +71,13 @@ export async function markPaid(
 
   // The spread would otherwise carry the office's mark onto a line the office
   // did not write, and the waiting mark onto a line that is no longer waiting.
-  const { awaitingPayment: _waiting, paymentFailed: _failed, ...settled } = current;
+  const { awaitingPayment: _waiting, paymentFailed: _failed, paymentLink: _link, ...settled } = current;
   const paid: StoredRequest = {
     ...settled,
+    client:
+      !settled.client.email && payment.email
+        ? { ...settled.client, email: payment.email }
+        : settled.client,
     status: "paid",
     source: "stripe",
     paidVia: payment.via,
@@ -164,9 +174,24 @@ export async function markRefunded(reference: string): Promise<MarkRefundedOutco
  * once Stripe has written anything, or Daysi has changed anything herself,
  * the dead page is not news and the record is left as it is.
  */
-export async function markExpired(reference: string): Promise<MarkExpiredOutcome> {
+export async function markExpired(
+  reference: string,
+  sessionId?: string,
+): Promise<MarkExpiredOutcome> {
   const current = versionsOf(reference).at(-1);
   if (!current) return "unknown";
+
+  // A link Daysi made from the office ran out unpaid. The work itself is
+  // still owed, so the record keeps its status and only loses the link; she
+  // can make a new one. Only the page that expired is dropped: a new link she
+  // made since (which closed this one first) must survive this old event.
+  if (current.paymentLink) {
+    if (sessionId && current.paymentLink.sessionId !== sessionId) return "not-waiting";
+    if (current.status === "paid") return "not-waiting";
+    const { awaitingPayment: _waiting, paymentLink: _link, ...open } = current;
+    await saveRequest({ ...open, source: "office" });
+    return "link-closed";
+  }
   if (!current.awaitingPayment || current.source !== undefined || current.status === "paid") {
     return "not-waiting";
   }
@@ -272,7 +297,15 @@ export async function applyPaymentEvent(event: Stripe.Event): Promise<PaymentEve
       if (session.payment_status === "unpaid") {
         return logged(await markBankPending(reference), event, reference);
       }
-      return logged(await markPaid(reference, { via: "card", at: paidAt(event) }), event, reference);
+      return logged(
+        await markPaid(reference, {
+          via: "card",
+          at: paidAt(event),
+          email: session.customer_details?.email ?? null,
+        }),
+        event,
+        reference,
+      );
     }
 
     // The bank's answer, days after the page completed. Stripe only sends this
@@ -297,7 +330,7 @@ export async function applyPaymentEvent(event: Stripe.Event): Promise<PaymentEve
     case "checkout.session.expired": {
       const reference = referenceOf(event.data.object);
       if (!reference) return nameless(event);
-      return logged(await markExpired(reference), event, reference);
+      return logged(await markExpired(reference, event.data.object.id), event, reference);
     }
 
     // Money given back from Stripe's dashboard. The reference travels on the

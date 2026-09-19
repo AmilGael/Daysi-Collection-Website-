@@ -2,7 +2,8 @@ import { getTranslations } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { formatMoney } from "@/lib/money";
 import type { StoredRequest } from "@/lib/request-store";
-import { Tag } from "./ui";
+import { openPaymentLink } from "@/lib/payment-link";
+import { Tag, buttonClass } from "./ui";
 
 /**
  * A run of records as a reading table — used both in a client's own history
@@ -69,6 +70,13 @@ export async function RequestList({
                   ? t(record.awaitingPayment === "bank" ? "bankPending" : "awaitingPayment")
                   : t(`status.${record.status}`)}
             </Tag>
+            {/* A link Daysi sent from the workshop: the client can pay it from
+                here too, in case the WhatsApp message got buried. */}
+            {openPaymentLink(record) ? (
+              <a href={openPaymentLink(record)!.url} className={buttonClass({ size: "small", tone: "solid" })}>
+                {t("payNow", { amount: formatMoney(openPaymentLink(record)!.amount, locale) })}
+              </a>
+            ) : null}
           </div>
         </article>
       ))}
