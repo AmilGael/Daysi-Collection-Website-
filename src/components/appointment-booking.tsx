@@ -26,6 +26,7 @@ import {
 } from "./form";
 import { BookingCalendar } from "./booking-calendar";
 import { EstimateSummary } from "./estimate-summary";
+import { MoreBox } from "./more-box";
 
 type ContactMethod = "whatsapp" | "phone" | "email";
 
@@ -245,16 +246,18 @@ export function AppointmentBooking({
               </p>
               <p className="text-[0.9375rem]">{translate(service.name, locale)}</p>
             </div>
-            <Field label={t("noteForDaysi")} optional>
-              {({ id }) => (
-                <TextArea
-                  id={id}
-                  value={purpose}
-                  onChange={(event) => setPurpose(event.target.value)}
-                  placeholder={t("purposePlaceholder")}
-                />
-              )}
-            </Field>
+            <MoreBox value={purpose}>
+              <Field label={t("noteForDaysi")} optional>
+                {({ id }) => (
+                  <TextArea
+                    id={id}
+                    value={purpose}
+                    onChange={(event) => setPurpose(event.target.value)}
+                    placeholder={t("purposePlaceholder")}
+                  />
+                )}
+              </Field>
+            </MoreBox>
           </div>
         ) : (
           <Field label={t("purpose")}>
@@ -329,7 +332,7 @@ export function AppointmentBooking({
                 />
               )}
             </Field>
-            <Field label={tr("phone")} optional hint={tr("whatsappHint")}>
+            <Field label={tr("phone")} optional tip={tr("whatsappHint")}>
               {({ id, describedBy }) => (
                 <TextInput
                   id={id}

@@ -49,7 +49,10 @@
     "somethingWentWrong": "Algo falló. Vuelva a intentarlo o escriba por WhatsApp.",
     "whatsapp": "WhatsApp",
     "email": "Correo",
-    "phone": "Teléfono"
+    "phone": "Teléfono",
+    "moreInfo": "Más información",
+    "moreOpen": "Algo más (opcional)",
+    "moreClose": "Cerrar"
   },
   "home": {
     "eyebrow": "A medida · Arreglos · Herencia",
@@ -265,8 +268,12 @@
     "garment": "¿Qué prenda es?",
     "garmentPlaceholder": "Un saco de lana azul marino, comprado el año pasado, un poco ancho del cuerpo.",
     "whatNeedsChanging": "¿Qué hay que cambiarle?",
+    "addAlteration": "Agregar otro arreglo…",
+    "chooseAlteration": "Elija el arreglo",
+    "removeAlteration": "Quitar {name}",
+    "photoNoticeAlteration": "Agregue una foto de la pieza que quiere arreglar.",
+    "photoNoticeCommission": "Agregue una foto de lo que se imagina o de una pieza parecida.",
     "timing": "¿Para cuándo la necesita?",
-    "timingPlaceholder": "Antes del 20 si se puede",
     "notes": "Algo más",
     "photo": "Agregar una foto",
     "photoHelp": "Una foto, hasta 4 MB. Le llega a Daysi y a nadie más.",

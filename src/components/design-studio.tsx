@@ -20,6 +20,7 @@ import {
   useSubmit,
   type SubmitState,
 } from "./form";
+import { MoreBox } from "./more-box";
 import { buttonClass, ExternalButtonLink } from "./ui";
 
 const TRIM_COLORS = [
@@ -332,7 +333,7 @@ export function DesignStudio({
                   />
                 )}
               </Field>
-              <Field label={tr("phone")} optional hint={tr("whatsappHint")}>
+              <Field label={tr("phone")} optional tip={tr("whatsappHint")}>
                 {({ id, describedBy }) => (
                   <TextInput
                     id={id}
@@ -344,16 +345,18 @@ export function DesignStudio({
                   />
                 )}
               </Field>
-              <Field label={tr("notes")} optional>
-                {({ id }) => (
-                  <TextArea
-                    id={id}
-                    rows={3}
-                    value={notes}
-                    onChange={(event) => setNotes(event.target.value)}
-                  />
-                )}
-              </Field>
+              <MoreBox value={notes}>
+                <Field label={tr("notes")} optional>
+                  {({ id }) => (
+                    <TextArea
+                      id={id}
+                      rows={3}
+                      value={notes}
+                      onChange={(event) => setNotes(event.target.value)}
+                    />
+                  )}
+                </Field>
+              </MoreBox>
 
               <Checkbox checked={acceptedTerms} onChange={setAcceptedTerms}>
                 {tr.rich("terms", {

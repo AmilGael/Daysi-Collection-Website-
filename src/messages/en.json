@@ -49,7 +49,10 @@
     "somethingWentWrong": "Something went wrong. Please try again, or write on WhatsApp.",
     "whatsapp": "WhatsApp",
     "email": "Email",
-    "phone": "Phone"
+    "phone": "Phone",
+    "moreInfo": "More information",
+    "moreOpen": "Anything else (optional)",
+    "moreClose": "Close"
   },
   "home": {
     "eyebrow": "Custom · Alterations · Heritage",
@@ -265,8 +268,12 @@
     "garment": "What is the garment?",
     "garmentPlaceholder": "A navy wool suit jacket, bought last year, a little wide through the body.",
     "whatNeedsChanging": "What needs changing?",
+    "addAlteration": "Add another alteration…",
+    "chooseAlteration": "Choose the alteration",
+    "removeAlteration": "Remove {name}",
+    "photoNoticeAlteration": "Add a photo of the piece you want altered.",
+    "photoNoticeCommission": "Add a photo of what you have in mind, or of a similar piece.",
     "timing": "When do you need it?",
-    "timingPlaceholder": "Before the 20th if possible",
     "notes": "Anything else",
     "photo": "Add a photo",
     "photoHelp": "One photo, up to 4 MB. It goes to Daysi and to nobody else.",

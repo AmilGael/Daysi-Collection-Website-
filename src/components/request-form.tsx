@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import {
+  shopDay,
   translate,
   type AlterationService,
   type DesignCategory,
@@ -28,6 +29,7 @@ import {
   useSubmit,
 } from "./form";
 import { EstimateSummary } from "./estimate-summary";
+import { MoreBox } from "./more-box";
 
 type Kind = "alteration" | "commission";
 type ContactMethod = "whatsapp" | "phone" | "email";
@@ -94,6 +96,29 @@ export function RequestForm({
 
   const [estimate, setEstimate] = useState<Estimate | null>(null);
 
+  // The earliest day the timing calendar offers, as the day it is at the atelier.
+  const today = shopDay(new Date());
+
+  // Only what the client picked is shown; the rest waits in the select below
+  // it. Chosen ones keep the order they were picked in, which is the order
+  // the request lists them in.
+  const chosenAlterations = alterationIds.flatMap((id) => {
+    const alteration = alterations.find((candidate) => candidate.id === id);
+    return alteration ? [alteration] : [];
+  });
+  const remainingAlterations = alterations.filter(
+    (alteration) => !alterationIds.includes(alteration.id),
+  );
+
+  function addAlteration(id: string) {
+    if (!id) return;
+    setAlterationIds((current) => (current.includes(id) ? current : [...current, id]));
+  }
+
+  function removeAlteration(id: string) {
+    setAlterationIds((current) => current.filter((chosen) => chosen !== id));
+  }
+
   // Only the email is required: a phone left blank means there is no way to
   // reach the guest by WhatsApp or by phone, whatever the pills above say, so
   // the effective method falls back to email until a number is typed.
@@ -121,7 +146,16 @@ export function RequestForm({
             preferredTiming,
             photoDataUrl: photo?.dataUrl,
           }
-        : { ...common, kind, categoryId, fabricId, customize: true as const, occasion, neededBy };
+        : {
+            ...common,
+            kind,
+            categoryId,
+            fabricId,
+            customize: true as const,
+            occasion,
+            neededBy,
+            photoDataUrl: photo?.dataUrl,
+          };
 
     const result = await submit(body);
     if (result?.estimate) setEstimate(result.estimate);
@@ -141,6 +175,49 @@ export function RequestForm({
     reader.onload = () => setPhoto({ dataUrl: String(reader.result), name: file.name });
     reader.readAsDataURL(file);
   }
+
+  // Both kinds take a photo: the piece to be altered, or what the client has
+  // in mind for one made from scratch. The line above the field says which.
+  const photoField = (
+    <div className="flex flex-col gap-3">
+      <p className="text-[0.9375rem] text-ink-soft">
+        {t(kind === "alteration" ? "photoNoticeAlteration" : "photoNoticeCommission")}
+      </p>
+      <Field label={t("photo")} hint={t("photoHelp")} error={photoError ?? undefined} optional>
+        {({ id, describedBy }) => (
+          <div className="flex flex-col gap-3">
+            <input
+              id={id}
+              aria-describedby={describedBy}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => onPhotoChange(event.target.files?.[0])}
+              className="text-[0.875rem] file:mr-4 file:rounded-[2px] file:border-0 file:bg-ink file:px-4 file:py-2 file:text-[0.8125rem] file:text-paper"
+            />
+            {photo ? (
+              <div className="flex items-center gap-4">
+                <Image
+                  src={photo.dataUrl}
+                  alt=""
+                  width={72}
+                  height={72}
+                  unoptimized
+                  className="h-18 w-18 rounded-[2px] object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => setPhoto(null)}
+                  className="link-underline text-[0.8125rem]"
+                >
+                  {t("photoRemove")}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </Field>
+    </div>
+  );
 
   if (state.status === "done") {
     return (
@@ -204,88 +281,70 @@ export function RequestForm({
             <legend className="mb-1 text-[0.8125rem] font-medium">
               {t("whatNeedsChanging")}
             </legend>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {alterations.map((alteration) => {
-                const checked = alterationIds.includes(alteration.id);
-                return (
-                  <label
+            {chosenAlterations.length > 0 ? (
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {chosenAlterations.map((alteration) => (
+                  <li
                     key={alteration.id}
-                    className={`flex cursor-pointer items-start justify-between gap-3 rounded-[2px] border p-3.5 text-[0.875rem] transition-colors ${
-                      checked ? "border-ink" : "border-line hover:border-ink/40"
-                    }`}
+                    className="flex items-center justify-between gap-3 rounded-[2px] border border-ink bg-paper py-2.5 pl-3.5 pr-1.5 text-[0.875rem]"
                   >
-                    <span className="flex items-start gap-3">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(event) =>
-                          setAlterationIds((current) =>
-                            event.target.checked
-                              ? [...current, alteration.id]
-                              : current.filter((id) => id !== alteration.id),
-                          )
-                        }
-                        className="mt-0.5 h-4 w-4 shrink-0 accent-ink"
-                      />
-                      {translate(alteration.name, locale)}
+                    <span>{translate(alteration.name, locale)}</span>
+                    <span className="flex shrink-0 items-center gap-1">
+                      <span className="tabular-nums text-ink-faint">
+                        {formatMoney(alteration.fixedPrice, locale)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeAlteration(alteration.id)}
+                        aria-label={t("removeAlteration", { name: translate(alteration.name, locale) })}
+                        className="flex h-8 w-8 items-center justify-center rounded-[2px] text-[1.125rem] leading-none text-ink-soft transition-colors hover:bg-paper-warm hover:text-ink"
+                      >
+                        <span aria-hidden>×</span>
+                      </button>
                     </span>
-                    <span className="shrink-0 tabular-nums text-ink-faint">
-                      {formatMoney(alteration.fixedPrice, locale)}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {remainingAlterations.length > 0 ? (
+              // A controlled value of "" puts the select back on its first
+              // line after every pick, ready for the next one. It is required
+              // only while nothing is chosen, since a request needs one.
+              <Select
+                aria-label={t(alterationIds.length > 0 ? "addAlteration" : "chooseAlteration")}
+                required={alterationIds.length === 0}
+                value=""
+                onChange={(event) => addAlteration(event.target.value)}
+              >
+                <option value="">
+                  {t(alterationIds.length > 0 ? "addAlteration" : "chooseAlteration")}
+                </option>
+                {remainingAlterations.map((alteration) => (
+                  <option key={alteration.id} value={alteration.id}>
+                    {translate(alteration.name, locale)}, {formatMoney(alteration.fixedPrice, locale)}
+                  </option>
+                ))}
+              </Select>
+            ) : null}
           </fieldset>
 
           <Checkbox checked={rush} onChange={setRush}>
             {ta("rushTitle")} {ta("rushLead")}
           </Checkbox>
 
-          <Field label={t("timing")}>
+          <Field label={t("timing")} optional>
             {({ id }) => (
               <TextInput
                 id={id}
+                type="date"
+                min={today}
                 value={preferredTiming}
                 onChange={(event) => setPreferredTiming(event.target.value)}
-                placeholder={t("timingPlaceholder")}
               />
             )}
           </Field>
 
-          <Field label={t("photo")} hint={t("photoHelp")} error={photoError ?? undefined} optional>
-            {({ id, describedBy }) => (
-              <div className="flex flex-col gap-3">
-                <input
-                  id={id}
-                  aria-describedby={describedBy}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={(event) => onPhotoChange(event.target.files?.[0])}
-                  className="text-[0.875rem] file:mr-4 file:rounded-[2px] file:border-0 file:bg-ink file:px-4 file:py-2 file:text-[0.8125rem] file:text-paper"
-                />
-                {photo ? (
-                  <div className="flex items-center gap-4">
-                    <Image
-                      src={photo.dataUrl}
-                      alt=""
-                      width={72}
-                      height={72}
-                      unoptimized
-                      className="h-18 w-18 rounded-[2px] object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setPhoto(null)}
-                      className="link-underline text-[0.8125rem]"
-                    >
-                      {t("photoRemove")}
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            )}
-          </Field>
+          {photoField}
         </section>
       ) : null}
 
@@ -341,6 +400,8 @@ export function RequestForm({
               )}
             </Field>
           </div>
+
+          {photoField}
         </section>
       ) : null}
 
@@ -370,7 +431,7 @@ export function RequestForm({
               />
             )}
           </Field>
-          <Field label={t("phone")} optional hint={t("whatsappHint")}>
+          <Field label={t("phone")} optional tip={t("whatsappHint")}>
             {({ id, describedBy }) => (
               <TextInput
                 id={id}
@@ -397,11 +458,13 @@ export function RequestForm({
           />
         ) : null}
 
-        <Field label={t("notes")} optional>
-          {({ id }) => (
-            <TextArea id={id} value={notes} onChange={(event) => setNotes(event.target.value)} />
-          )}
-        </Field>
+        <MoreBox value={notes}>
+          <Field label={t("notes")} optional>
+            {({ id }) => (
+              <TextArea id={id} value={notes} onChange={(event) => setNotes(event.target.value)} />
+            )}
+          </Field>
+        </MoreBox>
       </section>
 
       <div className="flex flex-col gap-5 border-t border-line pt-8">
