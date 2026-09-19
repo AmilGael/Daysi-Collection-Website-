@@ -7,6 +7,7 @@ import {
   type Premiere,
   type Promotion,
 } from "@/content";
+import { CLIENT_CARDS, type ClientCard } from "./client-cards";
 import type { OfficeChange, UndoKind } from "./office-validation";
 import {
   addedStyles,
@@ -306,6 +307,21 @@ const premiere = recordStream<PremiereOverride>(
   },
 );
 
+/**
+ * No baseline: a card did not exist before its first line, and a card
+ * Daysi added by mistake is archived, not undone. Only her own lines can be
+ * undone; a client's save is theirs. The change re-appends the earlier
+ * version as it was (see `officeRevertCard`).
+ */
+const clientCard: Stream<ClientCard> = {
+  all: () => readRecords<ClientCard>(CLIENT_CARDS),
+  key: (record) => record.id,
+  versions: (id) => versionsOf<ClientCard>(CLIENT_CARDS, (record) => record.id, id),
+  baseline: () => undefined,
+  toChange: (record, id) => ({ type: "client-revert", key: `client:${id}`, id, to: record.updatedAt }),
+  undoable: (latest) => latest.updatedBy === "office",
+};
+
 const requestStatus: Stream<StoredRequest> = {
   all: () => REQUEST_KINDS.flatMap(listRequests),
   key: (record) => record.reference,
@@ -384,6 +400,7 @@ function streamFor(kind: UndoKind): Stream<unknown> {
     case "work-text": return erased(workText);
     case "promotion": return erased(promotion);
     case "premiere": return erased(premiere);
+    case "client-card": return erased(clientCard);
   }
 }
 

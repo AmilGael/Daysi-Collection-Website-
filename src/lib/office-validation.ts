@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { categories, shopDay } from "@/content";
+import { MEASUREMENTS, type MeasurementId } from "@/content/measurements";
 import { MOST_AMOUNT } from "./promotions";
 import { ANNOUNCEMENT_PAGE_IDS } from "./announcement-pages";
+import { UNITS, withinRange } from "./measurements";
 import type { ZodTypeAny } from "zod";
 
 /**
@@ -411,6 +413,50 @@ const notedDate = z
   .refine((value) => value >= "2020-01-01" && value <= shopDay(new Date()))
   .optional();
 
+const officeMeasurement = (id: MeasurementId) =>
+  z
+    .object({ value: z.number().finite().positive(), unit: z.enum(UNITS) })
+    .refine((m) => withinRange(id, m.value, m.unit), "out-of-range")
+    .nullable();
+
+const officeAddress = z
+  .object({
+    line1: z.string().trim().min(3).max(120),
+    line2: z.string().trim().max(60).optional(),
+    city: z.string().trim().min(2).max(60),
+    state: z.string().trim().min(2).max(30),
+    zip: z.string().trim().regex(/^\d{5}(-\d{4})?$/),
+  })
+  .nullable();
+
+/**
+ * The three wires a client card can arrive on from the office: a save (new or
+ * on an existing `cardId`), an archive toggle, and an undo's revert, which
+ * names the earlier version by its own `updatedAt` rather than by content, so
+ * `officeRevertCard` can find that exact line again. `measurements` accepts
+ * `null` per id as the clear; `address`, `notes` and `ownerNote` accept it the
+ * same way, one level up.
+ */
+export const clientSaveSchema = z.object({
+  type: z.literal("client-save"),
+  key: changeKey,
+  cardId: id.optional(),
+  name: z.string().trim().min(2).max(80),
+  email: notedEmail,
+  phone: notedPhone,
+  preferredContact: z.enum(["whatsapp", "phone", "email"]).optional(),
+  address: officeAddress.optional(),
+  measurements: z
+    .object(Object.fromEntries(MEASUREMENTS.map((m) => [m.id, officeMeasurement(m.id).optional()])) as Record<MeasurementId, z.ZodOptional<ReturnType<typeof officeMeasurement>>>)
+    .strict(),
+  notes: z.string().trim().max(400).nullable().optional(),
+  ownerNote: z.string().trim().max(400).nullable().optional(),
+});
+export const clientArchiveSchema = z.object({ type: z.literal("client-archive"), key: changeKey, id, archived: z.boolean() });
+export const clientRevertSchema = z.object({ type: z.literal("client-revert"), key: changeKey, id, to: z.string().datetime() });
+export const clientChangeSchema = z.discriminatedUnion("type", [clientSaveSchema, clientArchiveSchema, clientRevertSchema]);
+export type ClientChange = z.infer<typeof clientChangeSchema>;
+
 /**
  * An order, alteration or custom piece that never touched the site: Daysi
  * took it in person or over WhatsApp, and this is how it still reaches her
@@ -482,6 +528,7 @@ export const UNDO_KINDS = [
   "work-text",
   "promotion",
   "premiere",
+  "client-card",
 ] as const;
 export type UndoKind = (typeof UNDO_KINDS)[number];
 export const undoQuerySchema = z.object({
@@ -505,4 +552,5 @@ export type OfficeChange =
   | PriceChange
   | ShopfrontChange
   | WorkChange
-  | PremiereChange;
+  | PremiereChange
+  | ClientChange;

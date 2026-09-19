@@ -114,3 +114,57 @@ describe("the client card schema", () => {
     expect(clientCardSchema.safeParse({ name: "A", measurements: {} }).success).toBe(false);
   });
 });
+
+describe("Daysi's side of a card", () => {
+  it("adds a walk-in and locks the numbers she takes", async () => {
+    const { officeSaveCard } = await import("./client-cards");
+    const card = await officeSaveCard({ type: "client-save", key: "client:new-1", name: "Rosa", phone: "718 555 0101", measurements: { waist: { value: 80, unit: "cm" } } }, now);
+    expect(card.updatedBy).toBe("office");
+    expect(card.measurements.waist).toEqual({ value: 80, unit: "cm", by: "daysi", at: now.toISOString() });
+  });
+
+  it("leaves a client's unchanged measurement as the client's", async () => {
+    const { saveClientCard, officeSaveCard } = await import("./client-cards");
+    const mine = await saveClientCard(account, { name: "Ana", measurements: { hips: { value: 40, unit: "in" } } }, new Date("2026-09-01T00:00:00Z"));
+    const card = await officeSaveCard({ type: "client-save", key: `client:${mine.id}`, cardId: mine.id, name: "Ana", email: "ana@example.com", ownerNote: "cliente de años", measurements: { hips: { value: 40, unit: "in" } } }, now);
+    expect(card.measurements.hips?.by).toBe("client");
+    expect(card.ownerNote).toBe("cliente de años");
+    expect(card.accountId).toBe("acc_1");
+  });
+
+  it("refuses an email another card has, and a new email on an account's card", async () => {
+    const { saveClientCard, officeSaveCard } = await import("./client-cards");
+    const mine = await saveClientCard(account, { name: "Ana", measurements: {} }, now);
+    await expect(officeSaveCard({ type: "client-save", key: "client:new-2", name: "Otra", email: "ANA@example.com", measurements: {} }, now)).rejects.toMatchObject({ code: "taken" });
+    await expect(officeSaveCard({ type: "client-save", key: `client:${mine.id}`, cardId: mine.id, name: "Ana", email: "otra@example.com", measurements: {} }, now)).rejects.toMatchObject({ code: "locked-email" });
+  });
+
+  it("removes a measurement, the address or a note when she sends null", async () => {
+    const { officeSaveCard } = await import("./client-cards");
+    const card = await officeSaveCard({ type: "client-save", key: "client:new-3", name: "Rosa", notes: "x", address: { line1: "1 Main St", city: "Bronx", state: "NY", zip: "10451" }, measurements: { waist: { value: 80, unit: "cm" } } }, now);
+    const after = await officeSaveCard({ type: "client-save", key: `client:${card.id}`, cardId: card.id, name: "Rosa", notes: null, address: null, measurements: { waist: null } }, now);
+    expect(after.notes).toBeUndefined();
+    expect(after.address).toBeUndefined();
+    expect(after.measurements.waist).toBeUndefined();
+  });
+
+  it("archives and restores, and a revert brings back a version exactly", async () => {
+    const { officeSaveCard, officeArchiveCard, officeRevertCard, findClientCard } = await import("./client-cards");
+    const first = await officeSaveCard({ type: "client-save", key: "client:new-4", name: "Rosa", measurements: {} }, new Date("2026-09-10T00:00:00Z"));
+    await officeArchiveCard(first.id, true, new Date("2026-09-11T00:00:00Z"));
+    expect(findClientCard(first.id)?.archived).toBe(true);
+    await officeRevertCard(first.id, first.updatedAt, now);
+    expect(findClientCard(first.id)?.archived).toBeUndefined();
+    expect(findClientCard(first.id)).toMatchObject({ name: "Rosa", updatedAt: now.toISOString() });
+  });
+});
+
+describe("the office change schema for clients", () => {
+  it("accepts the three wires and refuses a bad measurement", async () => {
+    const { clientChangeSchema } = await import("./office-validation");
+    expect(clientChangeSchema.safeParse({ type: "client-save", key: "client:new-1", name: "Rosa", measurements: { waist: { value: 80, unit: "cm" }, hips: null } }).success).toBe(true);
+    expect(clientChangeSchema.safeParse({ type: "client-archive", key: "client:cli_a", id: "cli_a", archived: true }).success).toBe(true);
+    expect(clientChangeSchema.safeParse({ type: "client-revert", key: "client:cli_a", id: "cli_a", to: "2026-09-10T00:00:00.000Z" }).success).toBe(true);
+    expect(clientChangeSchema.safeParse({ type: "client-save", key: "client:new-1", name: "Rosa", measurements: { waist: { value: 900, unit: "cm" } } }).success).toBe(false);
+  });
+});

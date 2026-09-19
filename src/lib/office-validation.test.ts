@@ -250,7 +250,7 @@ describe.each([
 
 describe("undo query", () => {
   it("accepts a named stream and non-empty id", () => {
-    expect([...UNDO_KINDS]).toEqual(["style-override", "work-visibility", "price-entry", "alteration", "appointment", "announcement", "helper", "request-status", "style-text", "work-text", "promotion", "premiere"]);
+    expect([...UNDO_KINDS]).toEqual(["style-override", "work-visibility", "price-entry", "alteration", "appointment", "announcement", "helper", "request-status", "style-text", "work-text", "promotion", "premiere", "client-card"]);
     expect(undoQuerySchema.safeParse({ kind: "announcement", id: "site" }).success).toBe(true);
     expect(undoQuerySchema.safeParse({ kind: "retired:style", id: "x" }).success).toBe(false);
   });

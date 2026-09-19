@@ -386,6 +386,46 @@ describe("office undo history", () => {
 
 });
 
+describe("client card undo", () => {
+  it("offers undo only on an office line, and points back at the earlier version's updatedAt", async () => {
+    const { previousChangeFor, undoableIds } = await import("./office-history");
+    const { officeSaveCard, saveClientCard } = await import("./client-cards");
+
+    const first = await officeSaveCard(
+      { type: "client-save", key: "client:new-1", name: "Rosa", measurements: {} },
+      new Date("2026-09-10T00:00:00.000Z"),
+    );
+    // One line, and no card existed before it: nothing to undo to yet.
+    expect(previousChangeFor("client-card", first.id)).toBeUndefined();
+    expect(undoableIds("client-card")).not.toContain(first.id);
+
+    await officeSaveCard(
+      {
+        type: "client-save",
+        key: `client:${first.id}`,
+        cardId: first.id,
+        name: "Rosa Díaz",
+        email: "rosa@example.com",
+        measurements: {},
+      },
+      new Date("2026-09-11T00:00:00.000Z"),
+    );
+    expect(undoableIds("client-card")).toContain(first.id);
+    expect(previousChangeFor("client-card", first.id)).toEqual({
+      type: "client-revert",
+      key: `client:${first.id}`,
+      id: first.id,
+      to: first.updatedAt,
+    });
+
+    // The client's own save is the latest line now: not Daysi's to undo.
+    const account = { id: "acc_1", email: "rosa@example.com", name: "Rosa" };
+    await saveClientCard(account, { name: "Rosa Díaz", measurements: {} }, new Date("2026-09-12T00:00:00.000Z"));
+    expect(undoableIds("client-card")).not.toContain(first.id);
+    expect(previousChangeFor("client-card", first.id)).toBeUndefined();
+  });
+});
+
 describe("text undo", () => {
   it("stages the previous words", async () => {
     const { saveTextOverride } = await import("./live-text");
