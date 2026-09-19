@@ -11,7 +11,6 @@ import type { OfficeChange, UndoKind } from "./office-validation";
 import {
   addedStyles,
   assembleStyles,
-  type SiteNotice,
   type SizeStock,
   type StyleOverride,
 } from "./live-catalog";
@@ -32,6 +31,7 @@ import { textKey, type TextField, type TextOverride, type TextSubject } from "./
 import { readRecords, versionsOf } from "./records";
 import { REQUEST_KINDS, listRequests, requestVersions, type StoredRequest } from "./request-store";
 import type { HelperVisibility } from "./site-helper";
+import type { Announcement } from "./announcements";
 
 type Stream<R> = {
   readonly all: () => R[];
@@ -194,14 +194,22 @@ const appointment = recordStream<AppointmentOverride>(
   (record, id) => ({ type: "appointment", key: `appointment:${id}`, id, fee: record.fee }),
 );
 
-const notice = recordStream<SiteNotice>(
-  "site-notice",
-  () => "site",
-  () => ({ type: "notice", key: "notice:site", message: "", visible: false }),
-  (record) => ({
-    type: "notice",
-    key: "notice:site",
-    message: record.message,
+/**
+ * No baseline: an announcement did not exist before its first save, and a
+ * new one is taken back by retiring it. The old single notice read as "site"
+ * (see announcements.ts) has no line here until Daysi saves it, so there is
+ * nothing to undo on it before then either.
+ */
+const announcement = recordStream<Announcement>(
+  "announcements",
+  (record) => record.id,
+  () => undefined,
+  (record, id) => ({
+    type: "announcement",
+    key: `announcement:${id}`,
+    id,
+    message: record.message.es,
+    pages: record.pages === "all" ? "all" : [...record.pages],
     visible: record.visible,
   }),
 );
@@ -369,7 +377,7 @@ function streamFor(kind: UndoKind): Stream<unknown> {
     case "price-entry": return erased(priceEntry);
     case "alteration": return erased(alteration);
     case "appointment": return erased(appointment);
-    case "notice": return erased(notice);
+    case "announcement": return erased(announcement);
     case "helper": return erased(helperSwitch);
     case "request-status": return erased(requestStatus);
     case "style-text": return erased(styleText);

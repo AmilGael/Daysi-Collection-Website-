@@ -23,7 +23,14 @@ import { env } from "./env";
  * fallback, so no server-side fallback model is configured.
  */
 
-export type TranslationContext = "garment" | "photo" | "alteration" | "section" | "promotion" | "premiere";
+export type TranslationContext =
+  | "garment"
+  | "photo"
+  | "alteration"
+  | "section"
+  | "promotion"
+  | "premiere"
+  | "announcement";
 
 export type TranslationRequest = {
   readonly system: string;
@@ -48,6 +55,7 @@ const WHAT: Record<TranslationContext, string> = {
   section: "a section name in the gallery of finished work, next to ones like Runway or Bridal",
   promotion: "the name of a sale, shown beside the lowered prices on the shop's garments, like Autumn sale",
   premiere: "the season, title, story or inspiration of a limited-edition premiere, shown before its pieces are made",
+  announcement: "a short announcement in a bar across the top of the shop's pages, like Closed on Monday for the holiday",
 };
 
 function promptFor(fields: Readonly<Record<string, string>>, keys: readonly string[], context: TranslationContext): string {

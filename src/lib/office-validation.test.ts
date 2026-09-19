@@ -190,7 +190,17 @@ describe.each([
   ["price appointment", priceChangeSchema, { type: "appointment", key: "appointment:x", id: "x", fee: 100 }],
   ["price retire", priceChangeSchema, { type: "retire", key: "entry:x", id: "x" }],
   ["price restore", priceChangeSchema, { type: "restore", key: "entry:x", id: "x" }],
-  ["shopfront notice", shopfrontChangeSchema, { type: "notice", key: "notice:site", message: "Open", visible: true }],
+  [
+    "shopfront announcement on chosen pages",
+    shopfrontChangeSchema,
+    { type: "announcement", key: "announcement:new-1", message: "Cerrado el lunes", pages: ["home", "appointments"], visible: true },
+  ],
+  [
+    "shopfront announcement on every page",
+    shopfrontChangeSchema,
+    { type: "announcement", key: "announcement:ann-aaaaaaaa", id: "ann-aaaaaaaa", message: "Rebajas", pages: "all", visible: false },
+  ],
+  ["shopfront announcement retire", shopfrontChangeSchema, { type: "retire", key: "announcement:site", id: "site", kind: "announcement" }],
   [
     "shopfront promotion",
     shopfrontChangeSchema,
@@ -240,14 +250,14 @@ describe.each([
 
 describe("undo query", () => {
   it("accepts a named stream and non-empty id", () => {
-    expect([...UNDO_KINDS]).toEqual(["style-override", "work-visibility", "price-entry", "alteration", "appointment", "notice", "helper", "request-status", "style-text", "work-text", "promotion", "premiere"]);
-    expect(undoQuerySchema.safeParse({ kind: "notice", id: "site" }).success).toBe(true);
+    expect([...UNDO_KINDS]).toEqual(["style-override", "work-visibility", "price-entry", "alteration", "appointment", "announcement", "helper", "request-status", "style-text", "work-text", "promotion", "premiere"]);
+    expect(undoQuerySchema.safeParse({ kind: "announcement", id: "site" }).success).toBe(true);
     expect(undoQuerySchema.safeParse({ kind: "retired:style", id: "x" }).success).toBe(false);
   });
 
   it("refuses an unknown stream and an empty id", () => {
     expect(undoQuerySchema.safeParse({ kind: "everything", id: "site" }).success).toBe(false);
-    expect(undoQuerySchema.safeParse({ kind: "notice", id: "" }).success).toBe(false);
+    expect(undoQuerySchema.safeParse({ kind: "announcement", id: "" }).success).toBe(false);
   });
 });
 
@@ -700,5 +710,25 @@ describe("a premiere announced from the office", () => {
       premiereChangeSchema.safeParse({ ...styles, styleIds: Array.from({ length: 41 }, (_, index) => `sty-${index}`) })
         .success,
     ).toBe(false);
+  });
+});
+
+describe("an announcement from Vitrina", () => {
+  const base = { type: "announcement", key: "announcement:new-1", message: "Cerrado el lunes", pages: ["home"], visible: true };
+
+  it("needs something to say, and at most two hundred characters of it", () => {
+    expect(shopfrontChangeSchema.safeParse({ ...base, message: "   " }).success).toBe(false);
+    expect(shopfrontChangeSchema.safeParse({ ...base, message: "a".repeat(201) }).success).toBe(false);
+  });
+
+  it("needs at least one page, and only pages of the shop", () => {
+    expect(shopfrontChangeSchema.safeParse({ ...base, pages: [] }).success).toBe(false);
+    expect(shopfrontChangeSchema.safeParse({ ...base, pages: ["office"] }).success).toBe(false);
+    expect(shopfrontChangeSchema.safeParse({ ...base, pages: "everywhere" }).success).toBe(false);
+  });
+
+  it("still reads a retire with no kind as a promotion's", () => {
+    const parsed = shopfrontChangeSchema.safeParse({ type: "retire", key: "promotion:prm-a", id: "prm-a" });
+    expect(parsed.success && parsed.data.type === "retire" ? parsed.data.kind : "failed").toBeUndefined();
   });
 });

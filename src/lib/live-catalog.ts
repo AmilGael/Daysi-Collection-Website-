@@ -234,18 +234,11 @@ export function liveStylesInPremiere(premiere: Premiere): GarmentStyle[] {
     .filter((style): style is GarmentStyle => style !== undefined);
 }
 
-export function currentNotice(): SiteNotice | null {
-  const records = readRecords<SiteNotice>(NOTICE);
-  const latest = records.at(-1);
-  if (!latest || !latest.visible || latest.message.trim().length === 0) return null;
-  return latest;
-}
-
-/** The newest notice regardless of visibility, so the office can re-edit it. */
+/**
+ * The single notice the site had before announcements, newest line, shown or
+ * not. Read only by announcements.ts, which carries it over as the first one.
+ */
 export function storedNotice(): SiteNotice | null {
   return readRecords<SiteNotice>(NOTICE).at(-1) ?? null;
 }
 
-export async function saveNotice(notice: Omit<SiteNotice, "updatedAt">): Promise<void> {
-  await appendRecord(NOTICE, { ...notice, updatedAt: new Date().toISOString() });
-}

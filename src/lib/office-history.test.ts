@@ -185,24 +185,22 @@ describe("office undo history", () => {
     expect(undoableIds("appointment")).toContain("ses-fitting");
   });
 
-  it("uses the empty notice floor and then the prior notice", async () => {
-    const { previousChangeFor } = await import("./office-history");
-    const { saveNotice } = await import("./live-catalog");
+  it("has nothing before an announcement's first save, then its prior words, pages and switch", async () => {
+    const { previousChangeFor, undoableIds } = await import("./office-history");
+    const { saveAnnouncement } = await import("./announcements");
 
-    await saveNotice({ message: "First", visible: true });
-    expect(previousChangeFor("notice", "site")).toEqual({
-      type: "notice",
-      key: "notice:site",
-      message: "",
-      visible: false,
-    });
-    await saveNotice({ message: "Second", visible: true });
-    expect(previousChangeFor("notice", "site")).toEqual({
-      type: "notice",
-      key: "notice:site",
-      message: "First",
+    await saveAnnouncement({ id: "ann-a", message: { es: "Primero", en: "First" }, pages: ["home"], visible: true });
+    expect(previousChangeFor("announcement", "ann-a")).toBeUndefined();
+    await saveAnnouncement({ id: "ann-a", message: { es: "Segundo", en: "Second" }, pages: "all", visible: false });
+    expect(previousChangeFor("announcement", "ann-a")).toEqual({
+      type: "announcement",
+      key: "announcement:ann-a",
+      id: "ann-a",
+      message: "Primero",
+      pages: ["home"],
       visible: true,
     });
+    expect(undoableIds("announcement")).toContain("ann-a");
   });
 
   it("uses the shown-by-default floor and then the prior switch, for the visitor helper", async () => {
