@@ -16,10 +16,15 @@ export function RetiredGroup({
   items,
   restoreKey,
   onRestore,
+  label,
+  restoreLabel,
 }: {
   items: readonly RetiredItem[];
   restoreKey(id: string): string;
   onRestore(id: string): void;
+  /** The group's own name, for a tab whose things are archived rather than retired. */
+  label?: string;
+  restoreLabel?: string;
 }): JSX.Element {
   const t = useTranslations("office");
   const draft = useOfficeDraft<unknown>();
@@ -27,7 +32,7 @@ export function RetiredGroup({
   return (
     <details className="border-t border-line pt-5">
       <summary className="cursor-pointer text-sm font-semibold">
-        {t("retiredGroup", { count: items.length })}
+        {label ?? t("retiredGroup", { count: items.length })}
       </summary>
       {items.length === 0 ? (
         <p className="mt-4 text-sm text-ink-faint">{t("retiredEmpty")}</p>
@@ -56,7 +61,7 @@ export function RetiredGroup({
                     onClick={() => onRestore(item.id)}
                     className="text-xs font-semibold underline underline-offset-4"
                   >
-                    {t("restore")}
+                    {restoreLabel ?? t("restore")}
                   </button>
                 )}
               </li>

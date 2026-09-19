@@ -97,6 +97,7 @@ const PRIVATE = [
   "/account",
   "/account/orders",
   "/office",
+  "/office/clients",
   "/office/collection",
   "/office/gallery",
   "/office/premieres",

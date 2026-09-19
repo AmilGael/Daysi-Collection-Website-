@@ -6,7 +6,7 @@ import en from "@/messages/en.json";
 import { OFFICE_TABS } from "./tabs";
 
 /**
- * The office is eight tabs, and everything that has to agree about them,
+ * The office is nine tabs, and everything that has to agree about them,
  * the routes, the smoke script, the two languages, the guard, is checked
  * here against one list rather than trusted to stay in step by hand.
  */
@@ -14,9 +14,10 @@ import { OFFICE_TABS } from "./tabs";
 const officeMessages = (bundle: { office: object }) => bundle.office as Record<string, string>;
 
 describe("the office tabs", () => {
-  it("are eight, in the agreed order, each under /office", () => {
+  it("are nine, in the agreed order, each under /office", () => {
     expect(OFFICE_TABS.map((tab) => tab.id)).toEqual([
       "hub",
+      "clients",
       "collection",
       "gallery",
       "premieres",
@@ -86,6 +87,31 @@ describe("the hub tab", () => {
   });
 });
 
+describe("the clients tab", () => {
+  it("is guarded", () => {
+    expectGuarded("clients/page.tsx");
+  });
+
+  it("holds the book inside one draft provider, so the bar pins to the tab", () => {
+    const source = read("clients/page.tsx");
+    expect(source).toContain("<OfficeDraftProvider apply={applyClientChanges}>");
+    expect(source).toContain("</OfficeDraftProvider>");
+  });
+
+  it("strips the account id and who wrote the card last before a row reaches the browser", () => {
+    const source = read("clients/page.tsx");
+    expect(source).toContain("accountId: _accountId");
+    expect(source).toContain("updatedBy: _updatedBy");
+  });
+
+  it("keeps the book and the cards out of the browser: its client code imports them as types only", () => {
+    for (const file of ["client-book-view.tsx", "office/client-sheet.tsx", "office/client-sheet-parts.tsx", "office/client-draft.ts"]) {
+      const source = fs.readFileSync(path.join(process.cwd(), "src/components", file), "utf8");
+      expect(source, file).not.toMatch(/^import (?!type )[^;]*from "@\/lib\/client-(book|cards)";/m);
+    }
+  });
+});
+
 describe("the collection tab", () => {
   it("is guarded", () => {
     expectGuarded("collection/page.tsx");
@@ -139,7 +165,7 @@ describe("the books tab", () => {
 
 /**
  * Office pages that are deliberately not tabs. The manual is reached from
- * "Abrir el manual" in the help sheet and on Vitrina; a ninth tab for a
+ * "Abrir el manual" in the help sheet and on Vitrina; a tenth tab for a
  * document she reads once would crowd a strip that already scrolls on a
  * phone. Still guarded like every tab, and still private in the smoke run.
  */

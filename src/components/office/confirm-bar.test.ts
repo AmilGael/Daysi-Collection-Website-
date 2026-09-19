@@ -138,6 +138,22 @@ describe("the confirm bar", () => {
   });
 
   /**
+   * A client card's email is the one thing on it that must be unique, and
+   * an account holder's is theirs alone: both refusals get words of their
+   * own rather than the general "that change did not save".
+   */
+  it("words a client card's email refusals, in both languages and without dashes", () => {
+    expect(source).toContain('taken: "clientErrorTaken"');
+    expect(source).toContain('"locked-email": "clientErrorLockedEmail"');
+    for (const bundle of [es, en]) {
+      for (const key of ["clientErrorTaken", "clientErrorLockedEmail"]) {
+        expect(officeMessages(bundle)[key], key).toBeTruthy();
+        expect(officeMessages(bundle)[key]).not.toMatch(/[\u2013\u2014]/);
+      }
+    }
+  });
+
+  /**
    * The error shares the truncated status line, which can hide it on a
    * phone. `title` carries the untruncated status plus error so it can
    * still be read on long-press/hover.

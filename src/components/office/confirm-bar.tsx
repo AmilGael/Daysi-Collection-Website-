@@ -5,7 +5,20 @@ import type { JSX, ReactNode } from "react";
 import { buttonClass } from "@/components/ui";
 import type { DraftStatus } from "./draft-reducer";
 
+/**
+ * Refusals whose words live beside the tab that meets them rather than
+ * under `error.*`: a client card's email is taken by another card, or is
+ * the one its client signs in with. Every other code is `error.<code>`, and
+ * one with no words of its own falls back to the general failure.
+ */
+const ERROR_KEYS: Readonly<Record<string, "clientErrorTaken" | "clientErrorLockedEmail">> = {
+  taken: "clientErrorTaken",
+  "locked-email": "clientErrorLockedEmail",
+};
+
 function errorMessage(t: ReturnType<typeof useTranslations<"office">>, code: string, count?: number): string {
+  const own = ERROR_KEYS[code];
+  if (own) return t(own);
   const key = `error.${code}` as Parameters<typeof t.has>[0];
   return t.has(key) ? t(key, { count: count ?? 0 }) : t("updateFailed");
 }
