@@ -20,7 +20,7 @@ import { retiredSet, setRetired } from "./retired";
  */
 
 /** The kinds a payment can belong to. Messages and sign-ups are never charged. */
-const PAYABLE_KINDS = ["appointment", "order", "commission", "alteration"] as const;
+const PAYABLE_KINDS = ["appointment", "order", "commission", "alteration", "design"] as const;
 
 export type MarkPaidOutcome = "marked" | "already-paid" | "unknown";
 export type MarkExpiredOutcome = "closed" | "not-waiting" | "unknown";

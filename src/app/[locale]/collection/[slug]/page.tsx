@@ -4,15 +4,14 @@ import type { Metadata } from "next";
 import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import {
   findCategory,
-  findFabric,
   findPremiere,
-  findPriceEntry,
   primaryPhoto,
   publishedStyles,
   sizes,
   translate,
 } from "@/content";
 import { liveStyles } from "@/lib/live-catalog";
+import { liveFindFabric, priceFor, withPrices } from "@/lib/live-pricing";
 import { routing, type Locale } from "@/i18n/routing";
 import { StyleOrderPanel } from "@/components/style-order-panel";
 import { LookbookGrid, StyleCard } from "@/components/style-card";
@@ -60,15 +59,19 @@ export default async function StylePage({
   const t = await getTranslations("style");
   const tc = await getTranslations("common");
 
-  const price = findPriceEntry(style.priceEntryId);
-  const category = findCategory(style.categoryId);
-  const fabric = price ? findFabric(price.fabricId) : undefined;
-  const premiere = style.premiereId ? findPremiere(style.premiereId) : undefined;
+  // The live list, and the garment's own price when Daysi set one: a piece
+  // priced through an entry she wrote herself is on sale like any other.
+  const price = priceFor(style);
   if (!price) notFound();
+  const category = findCategory(style.categoryId);
+  const fabric = liveFindFabric(price.fabricId);
+  const premiere = style.premiereId ? findPremiere(style.premiereId) : undefined;
 
-  const related = liveStyles()
-    .filter((candidate) => candidate.id !== style.id && candidate.categoryId === style.categoryId)
-    .slice(0, 3);
+  const related = withPrices(
+    liveStyles()
+      .filter((candidate) => candidate.id !== style.id && candidate.categoryId === style.categoryId)
+      .slice(0, 3),
+  );
 
   return (
     <>

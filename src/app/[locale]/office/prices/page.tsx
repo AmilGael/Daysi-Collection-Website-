@@ -1,10 +1,11 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { categories, translate } from "@/content";
+import { manageableStyles } from "@/lib/live-catalog";
 import {
-  liveAlterations,
-  liveAppointmentTypes,
   liveFabrics,
+  manageableAlterations,
+  manageableAppointmentTypes,
   manageablePriceList,
 } from "@/lib/live-pricing";
 import { PriceManager } from "@/components/price-manager";
@@ -13,7 +14,10 @@ import { undoableIds } from "@/lib/office-history";
 import { officeViewer } from "../_lib/viewer";
 import { applyPriceChanges } from "./actions";
 
-/** Prices: garments, alterations and sessions, each a number she can change. */
+/**
+ * Prices: garments, alterations and sessions, each a number she can change,
+ * and alterations and sessions she can add (and retire what she added).
+ */
 export default async function OfficePricesPage({
   params,
 }: {
@@ -29,6 +33,13 @@ export default async function OfficePricesPage({
   const undoableEntries = undoableIds("price-entry");
   const undoableAlterations = undoableIds("alteration");
   const undoableAppointments = undoableIds("appointment");
+  // Garments on the rack that carry their own price, counted per entry, so
+  // she sees which list prices some pieces do not follow.
+  const ownPriced = new Map<string, number>();
+  for (const style of manageableStyles()) {
+    if (style.retired || !style.ownPrice) continue;
+    ownPriced.set(style.priceEntryId, (ownPriced.get(style.priceEntryId) ?? 0) + 1);
+  }
   const priceEntries = manageablePriceList().map((entry) => ({
     id: entry.id,
     garment: translate(
@@ -47,20 +58,25 @@ export default async function OfficePricesPage({
     ),
     fixedPrice: entry.fixedPrice,
     customizationExtra: entry.customizationExtra,
+    ownPriced: ownPriced.get(entry.id) ?? 0,
     retired: entry.retired,
     undoable: undoableEntries.has(entry.id),
   }));
-  const priceAlterations = liveAlterations().map((alteration) => ({
+  const priceAlterations = manageableAlterations().map((alteration) => ({
     id: alteration.id,
     name: translate(alteration.name, language),
     fixedPrice: alteration.fixedPrice,
     rushSurcharge: alteration.rushSurcharge,
+    coded: alteration.coded,
+    retired: alteration.retired,
     undoable: undoableAlterations.has(alteration.id),
   }));
-  const priceAppointments = liveAppointmentTypes().map((type) => ({
+  const priceAppointments = manageableAppointmentTypes().map((type) => ({
     id: type.id,
     name: translate(type.name, language),
     fee: type.fee,
+    coded: type.coded,
+    retired: type.retired,
     undoable: undoableAppointments.has(type.id),
   }));
 
@@ -76,8 +92,10 @@ export default async function OfficePricesPage({
         <PriceManager
           entries={priceEntries.filter((entry) => !entry.retired)}
           retiredEntries={priceEntries.filter((entry) => entry.retired)}
-          alterations={priceAlterations}
-          appointments={priceAppointments}
+          alterations={priceAlterations.filter((alteration) => !alteration.retired)}
+          retiredAlterations={priceAlterations.filter((alteration) => alteration.retired)}
+          appointments={priceAppointments.filter((appointment) => !appointment.retired)}
+          retiredAppointments={priceAppointments.filter((appointment) => appointment.retired)}
         />
       </OfficeDraftProvider>
     </section>

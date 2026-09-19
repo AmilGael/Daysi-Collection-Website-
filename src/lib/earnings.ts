@@ -23,7 +23,7 @@ export type Earnings = {
   readonly openCount: number;
 };
 
-const BILLABLE = ["order", "alteration", "commission", "appointment"] as const;
+const BILLABLE = ["order", "alteration", "commission", "appointment", "design"] as const;
 
 /**
  * Every job the office shows and the books count. A card page the client

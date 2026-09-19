@@ -2,7 +2,7 @@ import Image from "next/image";
 import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import { premiereListing, services, translate } from "@/content";
 import { liveStyles } from "@/lib/live-catalog";
-import { liveAlterations } from "@/lib/live-pricing";
+import { liveAlterations, withPrices } from "@/lib/live-pricing";
 import { SiteNoticeBar } from "@/components/site-notice";
 import { DesignStrip } from "@/components/design-strip";
 import { Link, type Locale } from "@/i18n/routing";
@@ -264,7 +264,7 @@ async function Services() {
 
 async function FeaturedCollection() {
   const t = await getTranslations("home");
-  const featured = liveStyles().slice(0, 3);
+  const featured = withPrices(liveStyles().slice(0, 3));
 
   return (
     <section className="reveal py-24 lg:py-32">

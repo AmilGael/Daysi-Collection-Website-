@@ -1,7 +1,7 @@
 import { Children } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
-import { findPriceEntry, primaryPhoto, translate, type GarmentStyle } from "@/content";
+import { primaryPhoto, translate, type PricedStyle } from "@/content";
 import { formatMoney } from "@/lib/money";
 import { Link, type Locale } from "@/i18n/routing";
 import { PHOTO_QUALITY } from "@/lib/images";
@@ -16,12 +16,17 @@ import { StylePhotoSwiper } from "./style-photo-swiper";
  * card is still here (name, colour, sizes, fixed price); it is just set at the
  * weight of a printed catalogue line rather than a product tile.
  */
-export function StyleCard({ style, priority = false }: { style: GarmentStyle; priority?: boolean }) {
+/**
+ * The card takes its price already worked out (`withPrices` on the server),
+ * the garment's own when Daysi set one: it renders inside client components,
+ * which must never reach for the files the live price list is read from.
+ */
+export function StyleCard({ style, priority = false }: { style: PricedStyle; priority?: boolean }) {
   const locale = useLocale() as Locale;
   const t = useTranslations("collection");
 
   const photo = primaryPhoto(style);
-  const price = findPriceEntry(style.priceEntryId);
+  const price = style.price;
   const href = `/collection/${style.slug}`;
 
   // A second photograph makes the picture area a swipeable strip; the strip's

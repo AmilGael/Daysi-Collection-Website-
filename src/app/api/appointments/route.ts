@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { findAppointmentType, translate } from "@/content";
+import { translate } from "@/content";
 import { BOOKING_PAYMENT_HOLD_MINUTES, availableDays, isSlotAvailable } from "@/lib/availability";
+import { liveFindAppointmentType } from "@/lib/live-pricing";
 import { estimateAppointment } from "@/lib/pricing";
 import { appointmentSchema, isLikelyBot, resolvePreferredContact } from "@/lib/validation";
 import { callerKey, checkRateLimit, pruneRateLimits } from "@/lib/rate-limit";
@@ -35,7 +36,7 @@ function oneBookingAtATime<T>(task: () => Promise<T>): Promise<T> {
 
 export async function GET(request: Request) {
   const typeId = new URL(request.url).searchParams.get("type") ?? "";
-  const type = findAppointmentType(typeId);
+  const type = liveFindAppointmentType(typeId);
   if (!type) {
     return NextResponse.json({ error: "unknown-session" }, { status: 400 });
   }
@@ -75,10 +76,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "phone-required" }, { status: 400 });
   }
 
-  const type = findAppointmentType(booking.appointmentTypeId);
+  // The id is a bounded string in the schema; whether it is a session Daysi
+  // offers today (she adds and retires them) is the live list's answer.
+  const type = liveFindAppointmentType(booking.appointmentTypeId);
   const estimate = estimateAppointment(booking.appointmentTypeId);
   if (!type || !estimate) {
-    return NextResponse.json({ error: "unknown-session" }, { status: 400 });
+    return NextResponse.json({ error: "unknown-appointment" }, { status: 400 });
   }
 
   // The free-slot check and the write that claims the slot must not interleave

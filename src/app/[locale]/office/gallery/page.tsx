@@ -2,7 +2,13 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { translate } from "@/content";
 import { galleryWorks } from "@/content/gallery";
-import { addedGalleryWorks, assembleGallery, GALLERY_ORDER, manageableGallery } from "@/lib/live-gallery";
+import {
+  addedGalleryWorks,
+  assembleGallery,
+  manageableGallery,
+  manageableGallerySections,
+  sectionLabel,
+} from "@/lib/live-gallery";
 import { undoableIds } from "@/lib/office-history";
 import { GalleryManager, type ManagedWork } from "@/components/gallery-manager";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
@@ -47,7 +53,14 @@ export default async function OfficeGalleryPage({
   }));
   const active = galleryWorksManaged.filter((work) => !work.retired);
   const retired = galleryWorksManaged.filter((work) => work.retired);
-  const galleryCategories = GALLERY_ORDER.map((id) => ({ id, label: tg(`category.${id}`) }));
+
+  const sections = manageableGallerySections();
+  const galleryCategories = sections
+    .filter((section) => !section.retired)
+    .map((section) => ({ id: section.id, label: sectionLabel(section, tg, language), coded: section.coded }));
+  const retiredSections = sections
+    .filter((section) => section.retired)
+    .map((section) => ({ id: section.id, name: sectionLabel(section, tg, language) }));
 
   return (
     <section className="flex flex-col gap-6">
@@ -62,6 +75,7 @@ export default async function OfficeGalleryPage({
           works={active}
           retired={retired}
           categories={galleryCategories}
+          retiredSections={retiredSections}
           undoableTexts={undoableTexts}
         />
       </OfficeDraftProvider>

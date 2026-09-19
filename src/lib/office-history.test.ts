@@ -73,6 +73,27 @@ describe("office undo history", () => {
     });
   });
 
+  it("returns the line before the own price, so undo clears it, and brings an own price back", async () => {
+    const { previousChangeFor } = await import("./office-history");
+    const { saveStyleOverride } = await import("./live-catalog");
+
+    // The coded baseline never carries one: undoing the first line is the list price.
+    await saveStyleOverride({ styleId: "frutera", isPublished: true, stock: {}, fixedPrice: 27000 });
+    expect(previousChangeFor("style-override", "frutera")).not.toHaveProperty("fixedPrice");
+
+    await saveStyleOverride({ styleId: "frutera", isPublished: true, stock: {}, fixedPrice: 25000, customizationExtra: 8000 });
+    expect(previousChangeFor("style-override", "frutera")).toMatchObject({ fixedPrice: 27000 });
+    expect(previousChangeFor("style-override", "frutera")).not.toHaveProperty("customizationExtra");
+
+    await saveStyleOverride({ styleId: "frutera", isPublished: false, stock: {} });
+    expect(previousChangeFor("style-override", "frutera")).toMatchObject({ fixedPrice: 25000, customizationExtra: 8000 });
+
+    await saveStyleOverride({ styleId: "frutera", isPublished: true, stock: {} });
+    const previous = previousChangeFor("style-override", "frutera");
+    expect(previous).toMatchObject({ isPublished: false });
+    expect(previous).not.toHaveProperty("fixedPrice");
+  });
+
   it("keeps the newest photos when undoing to the baseline and to the earlier line", async () => {
     const { previousChangeFor } = await import("./office-history");
     const { saveStyleOverride } = await import("./live-catalog");
@@ -116,6 +137,52 @@ describe("office undo history", () => {
       fixedPrice: coded.fixedPrice,
       customizationExtra: coded.customizationExtra,
     });
+  });
+
+  it("returns an added alteration's and an added session's own price as the baseline for their first edit", async () => {
+    const { previousChangeFor, undoableIds } = await import("./office-history");
+    const {
+      saveAddedAlteration,
+      saveAddedAppointmentType,
+      saveAlterationOverride,
+      saveAppointmentOverride,
+    } = await import("./live-pricing");
+    await saveAddedAlteration({
+      id: "alt-cuffs",
+      name: { es: "Poner puños", en: "Add cuffs" },
+      description: { es: "", en: "" },
+      fixedPrice: 3200,
+      rushSurcharge: 2000,
+      turnaround: { es: "", en: "" },
+    });
+    await saveAddedAppointmentType({
+      id: "ses-fitting",
+      minutes: 45,
+      name: { es: "Prueba", en: "Fitting" },
+      description: { es: "", en: "" },
+      fee: 9000,
+      depositDue: 9000,
+      overtimeRatePerHalfHour: 4000,
+      suitedFor: [],
+    });
+
+    await saveAlterationOverride({ alterationId: "alt-cuffs", fixedPrice: 3600, rushSurcharge: 2400 });
+    await saveAppointmentOverride({ typeId: "ses-fitting", fee: 11000 });
+    expect(previousChangeFor("alteration", "alt-cuffs")).toEqual({
+      type: "alteration",
+      key: "alteration:alt-cuffs",
+      id: "alt-cuffs",
+      fixedPrice: 3200,
+      rushSurcharge: 2000,
+    });
+    expect(previousChangeFor("appointment", "ses-fitting")).toEqual({
+      type: "appointment",
+      key: "appointment:ses-fitting",
+      id: "ses-fitting",
+      fee: 9000,
+    });
+    expect(undoableIds("alteration")).toContain("alt-cuffs");
+    expect(undoableIds("appointment")).toContain("ses-fitting");
   });
 
   it("uses the empty notice floor and then the prior notice", async () => {

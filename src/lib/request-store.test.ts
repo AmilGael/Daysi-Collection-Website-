@@ -96,6 +96,73 @@ describe("active and manageable requests", () => {
   });
 });
 
+/**
+ * The office photo route turns a reference off the network into a file on
+ * disk. The name on disk is never taken from the request: it is the one the
+ * record carries, and only when it is a name this server issued for that very
+ * record — anything else is no photo at all.
+ */
+describe("resolveRequestPhoto", () => {
+  const design = (photoFile: string): StoredRequest => ({
+    ...request("new"),
+    reference: "DSN-ACDEFGH3",
+    kind: "design",
+    photoFile,
+  });
+
+  it("finds the photo stored for a record, and says what type it is", async () => {
+    const { requestPhotoPath, resolveRequestPhoto, saveRequest } = await import("./request-store");
+    await saveRequest(design("DSN-ACDEFGH3.png"));
+
+    expect(resolveRequestPhoto("DSN-ACDEFGH3")).toEqual({
+      file: path.join(dir, "photos", "DSN-ACDEFGH3.png"),
+      contentType: "image/png",
+    });
+    expect(requestPhotoPath("DSN-ACDEFGH3.png")).toBe(path.join(dir, "photos", "DSN-ACDEFGH3.png"));
+  });
+
+  it("accepts every type saveRequestPhoto writes", async () => {
+    const { resolveRequestPhoto, saveRequest } = await import("./request-store");
+    const types = { jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
+    for (const [extension, contentType] of Object.entries(types)) {
+      await saveRequest(design(`DSN-ACDEFGH3.${extension}`));
+      expect(resolveRequestPhoto("DSN-ACDEFGH3")?.contentType).toBe(contentType);
+    }
+  });
+
+  it("refuses a path, and a reference with no record", async () => {
+    const { resolveRequestPhoto, saveRequest } = await import("./request-store");
+    await saveRequest(design("DSN-ACDEFGH3.png"));
+
+    expect(resolveRequestPhoto("../x")).toBeNull();
+    expect(resolveRequestPhoto("../photos/DSN-ACDEFGH3.png")).toBeNull();
+    expect(resolveRequestPhoto("DSN-NOBODY00")).toBeNull();
+    expect(resolveRequestPhoto("")).toBeNull();
+  });
+
+  it("refuses a record with no photo", async () => {
+    const { resolveRequestPhoto, saveRequest } = await import("./request-store");
+    await saveRequest(request("new"));
+
+    expect(resolveRequestPhoto("ORD-TEST")).toBeNull();
+  });
+
+  it("refuses a photo name this server did not issue for that record", async () => {
+    const { resolveRequestPhoto, saveRequest } = await import("./request-store");
+    for (const photoFile of [
+      "../../accounts.jsonl",
+      "/etc/passwd",
+      "DSN-ACDEFGH3.svg",
+      "DSN-ACDEFGH3.png/../../accounts.jsonl",
+      "ALT-ACDEFGH3.png",
+      "DSN-ACDEFGH3",
+    ]) {
+      await saveRequest(design(photoFile));
+      expect(resolveRequestPhoto("DSN-ACDEFGH3"), photoFile).toBeNull();
+    }
+  });
+});
+
 describe("who marks a status line", () => {
   const source = (relative: string) => readFileSync(path.join(process.cwd(), relative), "utf8");
   it("is the office on the work action and Stripe on the payment, and nobody on a client submission", () => {

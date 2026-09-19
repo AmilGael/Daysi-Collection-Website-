@@ -97,11 +97,15 @@ export function ownerRoute<Schema extends ZodTypeAny>(
  * anything reading its arguments off the query string. It hands back the
  * request so the handler can do its own parsing and answer with whatever it
  * likes, including a file.
+ *
+ * Whatever Next passes as the second argument — a dynamic segment's
+ * `{ params }` — goes to the handler exactly as it came, once the door has
+ * let the request through.
  */
-export function ownerRequest(
-  handle: (request: Request) => Promise<Response>,
-): (request: Request) => Promise<Response> {
-  return async (request: Request) => {
+export function ownerRequest<Context = unknown>(
+  handle: (request: Request, context: Context) => Promise<Response>,
+): (request: Request, context: Context) => Promise<Response> {
+  return async (request: Request, context: Context) => {
     const sameOrigin = isSameOrigin(request);
     const viewer = sameOrigin ? await currentViewer() : null;
 
@@ -112,7 +116,7 @@ export function ownerRequest(
     });
     if (denial) return refuse(denial);
 
-    return handle(request);
+    return handle(request, context);
   };
 }
 

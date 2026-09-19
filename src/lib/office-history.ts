@@ -9,6 +9,8 @@ import {
 } from "./live-catalog";
 import { manageableGallery, type GalleryVisibility } from "./live-gallery";
 import {
+  addedAlterations,
+  addedAppointmentTypes,
   assemblePriceList,
   customEntries,
   customFabrics,
@@ -98,6 +100,12 @@ const styleOverride = recordStream<StyleOverride>(
       ...(legacy === undefined ? {} : { addedPhotos: [...legacy] }),
       ...(record.coverSrc === undefined || record.photos ? {} : { coverSrc: record.coverSrc }),
       ...(record.inStudio === undefined ? {} : { inStudio: record.inStudio }),
+      // The line is the whole truth about an own price, so a line without
+      // one comes back without one, which the merge reads as the list price.
+      ...(record.fixedPrice === undefined ? {} : { fixedPrice: record.fixedPrice }),
+      ...(record.fixedPrice === undefined || record.customizationExtra === undefined
+        ? {}
+        : { customizationExtra: record.customizationExtra }),
     };
   },
 );
@@ -147,7 +155,8 @@ const alteration = recordStream<AlterationOverride>(
   "alteration-overrides",
   (record) => record.alterationId,
   (id) => {
-    const item = alterationServices.find((candidate) => candidate.id === id);
+    // An alteration she added comes back to the price she added it at.
+    const item = [...alterationServices, ...addedAlterations()].find((candidate) => candidate.id === id);
     return item ? {
       type: "alteration",
       key: `alteration:${id}`,
@@ -169,7 +178,7 @@ const appointment = recordStream<AppointmentOverride>(
   "appointment-overrides",
   (record) => record.typeId,
   (id) => {
-    const item = appointmentTypes.find((candidate) => candidate.id === id);
+    const item = [...appointmentTypes, ...addedAppointmentTypes()].find((candidate) => candidate.id === id);
     return item ? { type: "appointment", key: `appointment:${id}`, id, fee: item.fee } : undefined;
   },
   (record, id) => ({ type: "appointment", key: `appointment:${id}`, id, fee: record.fee }),

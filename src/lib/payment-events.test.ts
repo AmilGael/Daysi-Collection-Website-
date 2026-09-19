@@ -122,6 +122,28 @@ describe("markPaid", () => {
     expect(findRequest("ORD-1")?.status).toBe("new");
   });
 
+  it("finds a studio design, whose fee is paid before Daysi sees the sketch", async () => {
+    const { saveRequest, findRequest } = await import("./request-store");
+    const { markPaid } = await import("./payment-events");
+
+    await saveRequest(record({ reference: "DSN-1", kind: "design", awaitingPayment: true }));
+
+    expect(await markPaid("DSN-1", paidNow)).toBe("marked");
+    expect(findRequest("DSN-1")).toMatchObject({ status: "paid", source: "stripe", paidVia: "card" });
+    expect(findRequest("DSN-1")?.awaitingPayment).toBeUndefined();
+    expect(lines("design")).toHaveLength(2);
+  });
+
+  it("closes a studio design whose payment page ran out", async () => {
+    const { saveRequest, findRequest } = await import("./request-store");
+    const { markExpired } = await import("./payment-events");
+
+    await saveRequest(record({ reference: "DSN-1", kind: "design", awaitingPayment: true }));
+
+    expect(await markExpired("DSN-1")).toBe("closed");
+    expect(findRequest("DSN-1")).toMatchObject({ status: "closed", source: "stripe" });
+  });
+
   it("writes nothing for a reference it does not recognise", async () => {
     const { saveRequest } = await import("./request-store");
     const { markPaid } = await import("./payment-events");

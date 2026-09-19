@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { StoredRequest } from "./request-store";
@@ -237,6 +237,58 @@ describe("notifyOwner", () => {
   });
 });
 
+/**
+ * The picture is the point of a design request, and an alteration photo is
+ * what Daysi would otherwise have to ask for: both travel with her email. A
+ * file that has gone missing costs the attachment, never the message.
+ */
+describe("notifyOwner and the stored photo", () => {
+  type Sent = { subject: string; text: string; attachments?: { filename: string; content: string }[] };
+  const sent = () => JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as Sent;
+
+  it("attaches the stored photo to Daysi's email as base64", async () => {
+    const bytes = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
+    mkdirSync(path.join(dir, "photos"), { recursive: true });
+    writeFileSync(path.join(dir, "photos", "ALT-1.jpeg"), bytes);
+    const { notifyOwner } = await import("./notify");
+
+    await notifyOwner(record({ reference: "ALT-1", kind: "alteration", photoFile: "ALT-1.jpeg" }));
+
+    expect(sent().attachments).toEqual([
+      { filename: "ALT-1.jpeg", content: Buffer.from(bytes).toString("base64") },
+    ]);
+  });
+
+  it("sends the email without the attachment when the file is missing", async () => {
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { notifyOwner } = await import("./notify");
+
+    await notifyOwner(record({ reference: "ALT-1", kind: "alteration", photoFile: "ALT-1.jpeg" }));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(sent().attachments).toBeUndefined();
+    expect(sent().subject).toContain("ALT-1");
+    quiet.mockRestore();
+  });
+
+  it("attaches nothing to a request that came with no photo", async () => {
+    const { notifyOwner } = await import("./notify");
+
+    await notifyOwner(record());
+
+    expect(sent().attachments).toBeUndefined();
+  });
+
+  it("names a studio design in the subject", async () => {
+    const { notifyOwner } = await import("./notify");
+
+    await notifyOwner(record({ reference: "DSN-1", kind: "design", status: "paid", source: "stripe" }));
+
+    expect(sent().subject).toContain("Design request");
+    expect(sent().subject).toContain("PAID");
+  });
+});
+
 describe("notifyClientPaymentFailed", () => {
   it("tells the client, in their own language, that the bank refused the payment", async () => {
     const { notifyClientPaymentFailed } = await import("./notify");
@@ -435,6 +487,34 @@ describe("notifyClientPaid", () => {
     expect(body.text).toContain("Su cita es el");
     expect(body.text).toContain("14:00");
     expect(body.text).not.toContain("No debería aparecer");
+  });
+
+  it("tells a design's client that Daysi will write back with a quote, in their language", async () => {
+    const { receiptMessage } = await import("./notify");
+    const design = (locale: "es" | "en") =>
+      record({
+        reference: "DSN-1",
+        kind: "design",
+        locale,
+        status: "paid",
+        source: "stripe",
+        estimate: {
+          lines: [{ label: { en: "Design fee", es: "Tarifa de diseño" }, amount: 2000, taxBasis: "service" }],
+          subtotal: 2000,
+          salesTax: 0,
+          total: 2000,
+          dueNow: 2000,
+          dueOnCollection: 0,
+          dueNowReason: { en: "Should not appear.", es: "No debería aparecer." },
+        },
+      });
+
+    const es = receiptMessage(design("es")).text;
+    expect(es).toContain("Daysi revisa su diseño y le escribe con una cotización.");
+    expect(es).not.toContain("No debería aparecer");
+    expect(receiptMessage(design("en")).text).toContain(
+      "Daysi will look at your design and write to you with a quote.",
+    );
   });
 
   it("does not send a receipt when email is not configured", async () => {

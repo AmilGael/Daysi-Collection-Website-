@@ -3,7 +3,7 @@ import type { Locale } from "@/i18n/routing";
 import { categories, styles, translate } from "@/content";
 import { translationEnabled } from "@/lib/env";
 import { addedStyles, assembleStyles, manageableStyles } from "@/lib/live-catalog";
-import { liveFabrics, livePriceList } from "@/lib/live-pricing";
+import { liveFabrics, livePriceList, resolveStylePrice } from "@/lib/live-pricing";
 import { undoableIds } from "@/lib/office-history";
 import { CollectionCards } from "@/components/collection-cards";
 import type { ManagedStyle } from "@/components/office/garment-draft";
@@ -29,7 +29,8 @@ export default async function OfficeCollectionPage({
   const codedStyles = new Map(
     assembleStyles(styles, addedStyles(), [], new Set()).map((style) => [style.id, style]),
   );
-  const prices = new Map(livePriceList().map((entry) => [entry.id, entry.fixedPrice]));
+  const entries = livePriceList();
+  const listed = new Map(entries.map((entry) => [entry.id, entry]));
   const managedStyles: ManagedStyle[] = manageableStyles().map((style) => ({
     id: style.id,
     slug: style.slug,
@@ -41,7 +42,12 @@ export default async function OfficeCollectionPage({
       },
       language,
     ),
-    price: prices.get(style.priceEntryId) ?? null,
+    price: resolveStylePrice(style, entries)?.fixedPrice ?? null,
+    listPrice: listed.get(style.priceEntryId)?.fixedPrice ?? null,
+    listExtra: listed.get(style.priceEntryId)?.customizationExtra ?? null,
+    ownPrice: style.ownPrice
+      ? { fixedPrice: style.ownPrice.fixedPrice, customizationExtra: style.ownPrice.customizationExtra ?? null }
+      : null,
     photos: style.photos.map((photo) => photo.src),
     isPublished: style.isPublished,
     inStudio: style.inStudio === true,
@@ -77,7 +83,7 @@ export default async function OfficeCollectionPage({
     label: translate(fabric.name, language),
   }));
   const pricedPairs = Object.fromEntries(
-    livePriceList().map((entry) => [entry.id, entry.fixedPrice]),
+    entries.map((entry) => [entry.id, { fixedPrice: entry.fixedPrice, customizationExtra: entry.customizationExtra }]),
   );
 
   return (

@@ -45,7 +45,7 @@ export function CollectionCards({
   locale: Locale;
   categories: readonly Picker[];
   fabrics: readonly Picker[];
-  pricedPairs: Readonly<Record<string, number>>;
+  pricedPairs: Readonly<Record<string, { readonly fixedPrice: number; readonly customizationExtra: number }>>;
   undoableTexts: ReadonlySet<string>;
   translationEnabled: boolean;
 }): JSX.Element {
@@ -183,7 +183,7 @@ export function CollectionCards({
         {open === "new" ? (
           <NewGarmentSheet categories={categories} fabrics={fabrics} pricedPairs={pricedPairs} locale={locale} onDone={close} />
         ) : opened ? (
-          <GarmentSheet row={opened} undoableTexts={undoableTexts} translationEnabled={translationEnabled} />
+          <GarmentSheet row={opened} locale={locale} undoableTexts={undoableTexts} translationEnabled={translationEnabled} />
         ) : null}
       </Sheet>
     </div>

@@ -6,8 +6,11 @@ import {
   estimateAppointment,
   estimateCart,
   estimateCommission,
+  estimateDesign,
+  estimateNoted,
   estimateReadyMade,
 } from "./pricing";
+import { designFee } from "@/content";
 
 /**
  * These cover the promises the site makes out loud: that the published price is
@@ -197,6 +200,44 @@ describe("commissions", () => {
   });
 });
 
+describe("a design sent from the studio", () => {
+  it("is one untaxed service line of the design fee, paid in full now", () => {
+    const estimate = estimateDesign();
+
+    expect(designFee).toBe(2000);
+    expect(estimate.lines).toHaveLength(1);
+    expect(estimate.lines[0]).toMatchObject({ amount: designFee, taxBasis: "service" });
+    expect(estimate.salesTax).toBe(0);
+    expect(estimate.total).toBe(designFee);
+    expect(estimate.dueNow).toBe(estimate.total);
+    expect(estimate.dueOnCollection).toBe(0);
+  });
+});
+
+describe("an order noted from the office", () => {
+  it("records exactly the amount typed, untaxed, whatever the kind", () => {
+    // $200: well over the clothing exemption, which is exactly the point —
+    // a noted line is never taxed on top of what Daysi says she collected.
+    for (const kind of ["order", "alteration", "commission"] as const) {
+      const estimate = estimateNoted(20000, kind);
+      expect(estimate.lines).toHaveLength(1);
+      expect(estimate.lines[0]).toMatchObject({ amount: 20000, taxBasis: "service" });
+      expect(estimate.salesTax, kind).toBe(0);
+      expect(estimate.total, kind).toBe(20000);
+      expect(estimate.dueNow).toBe(20000);
+      expect(estimate.dueOnCollection).toBe(0);
+    }
+  });
+
+  it("labels the line so her accountant can tell it apart from one the site priced", () => {
+    const estimate = estimateNoted(9500, "order");
+    expect(estimate.lines[0]?.label).toEqual({
+      en: "Noted in the office · total received",
+      es: "Anotado en el taller · total recibido",
+    });
+  });
+});
+
 describe("every estimate", () => {
   it("adds up: the lines make the subtotal, and the split makes the total", () => {
     const estimates = [
@@ -204,6 +245,8 @@ describe("every estimate", () => {
       estimateAlteration({ alterationIds: ["resize", "sleeves"], rush: true }),
       estimateCommission({ categoryId: "dresses", fabricId: "medallon-print", customize: true }),
       estimateAppointment("consultation-60"),
+      estimateDesign(),
+      estimateNoted(20000, "order"),
     ];
 
     for (const estimate of estimates) {

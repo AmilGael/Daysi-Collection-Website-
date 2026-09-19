@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { alterationServices } from "@/content";
+import { liveAlterations } from "@/lib/live-pricing";
 import { estimateAlteration, estimateCommission, type Estimate } from "@/lib/pricing";
 import { isLikelyBot, requestSchema, resolvePreferredContact, type ClientRequest } from "@/lib/validation";
 import { callerKey, checkRateLimit, pruneRateLimits } from "@/lib/rate-limit";
@@ -53,6 +53,15 @@ export async function POST(request: Request) {
   const contact = resolvePreferredContact(submission.client);
   if (!contact) {
     return NextResponse.json({ error: "phone-required" }, { status: 400 });
+  }
+
+  // The ids are bounded strings in the schema; whether each one is on the
+  // list today — Daysi adds and retires alterations — is asked here.
+  if (submission.kind === "alteration") {
+    const offered = new Set(liveAlterations().map((alteration) => alteration.id));
+    if (!submission.alterationIds.every((id) => offered.has(id))) {
+      return NextResponse.json({ error: "unknown-alteration" }, { status: 400 });
+    }
   }
 
   const estimate = priceSubmission(submission);
@@ -115,16 +124,16 @@ function priceSubmission(submission: ClientRequest): Estimate | null {
 /** Turns the submission into the plain fields Daysi reads in her notification. */
 function describe(submission: ClientRequest): StoredRequest["details"] {
   switch (submission.kind) {
-    case "alteration":
+    case "alteration": {
+      const names = new Map(liveAlterations().map((alteration) => [alteration.id, alteration.name.en]));
       return {
         Garment: submission.garmentDescription,
-        Work: submission.alterationIds.map(
-          (id) => alterationServices.find((item) => item.id === id)?.name.en ?? id,
-        ),
+        Work: submission.alterationIds.map((id) => names.get(id) ?? id),
         Rush: submission.rush,
         Timing: submission.preferredTiming,
         Notes: submission.notes,
       };
+    }
     case "commission":
       return {
         Garment: submission.categoryId,

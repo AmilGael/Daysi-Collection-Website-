@@ -1,4 +1,4 @@
-import { commissionDepositRate, findCategory, type Cents, type Localized } from "@/content";
+import { commissionDepositRate, designFee, findCategory, type Cents, type Localized } from "@/content";
 // The live catalog, never the coded one: a garment Daysi added from the office
 // has to be priceable, and one she corrected has to be named as she wrote it.
 import { liveStyleBySlug as findStyle } from "./live-catalog";
@@ -7,6 +7,7 @@ import {
   liveFindAppointmentType as findAppointmentType,
   liveFindFabric as findFabric,
   liveFindPriceEntry as findPriceEntry,
+  priceFor,
 } from "./live-pricing";
 import { applyRate, sum } from "./money";
 
@@ -118,7 +119,8 @@ export function estimateReadyMade(order: ReadyMadeOrder): Estimate | null {
   if (!style) return null;
   if (!style.sizes.some((size) => size.sizeId === order.sizeId)) return null;
 
-  const price = findPriceEntry(style.priceEntryId);
+  // The garment's own price when Daysi set one, else its pair's list entry.
+  const price = priceFor(style);
   if (!price) return null;
 
   const lines: EstimateLine[] = [
@@ -169,7 +171,7 @@ export function estimateCart(
     if (!style) continue;
     if (!style.sizes.some((size) => size.sizeId === item.sizeId)) continue;
 
-    const price = findPriceEntry(style.priceEntryId);
+    const price = priceFor(style);
     if (!price) continue;
 
     const quantity = Math.max(1, Math.floor(item.quantity));
@@ -327,5 +329,69 @@ export function estimateCommission(request: CommissionEstimate): Estimate | null
   return build(lines, (total) => applyRate(total, commissionDepositRate), {
     en: "Half now to reserve the cloth and the calendar, half when the piece is ready.",
     es: "La mitad ahora para reservar la tela y la fecha, la mitad cuando la pieza esté lista.",
+  });
+}
+
+// ── Studio designs ─────────────────────────────────────────────────────────
+
+/**
+ * The fee for sending Daysi a sketch from the design studio. Her time, so a
+ * `service` line and untaxed, as a consultation is; paid in full before the
+ * sketch reaches her, and credited to an order placed within thirty days.
+ */
+export function estimateDesign(): Estimate {
+  const lines: EstimateLine[] = [
+    {
+      label: { en: "Design fee", es: "Tarifa de diseño" },
+      note: {
+        en: "Daysi receives your mockup and replies with a quote.",
+        es: "Daysi recibe su boceto y le responde con una cotización.",
+      },
+      amount: designFee,
+      taxBasis: "service",
+    },
+  ];
+
+  return build(lines, (total) => total, {
+    en: "Paid now. It comes off your order if you place one within thirty days.",
+    es: "Se paga ahora. Se descuenta de su pedido si lo hace dentro de treinta días.",
+  });
+}
+
+// ── Orders noted from the office ────────────────────────────────────────────
+
+export type NotedOrderKind = "order" | "alteration" | "commission";
+
+/**
+ * A noted line is never re-taxed: it says exactly what Daysi says came in.
+ * Running it through the clothing exemption the way a priced line is would
+ * invent tax on a cash sale she already settled in full, or apply it
+ * unevenly depending on how she happened to bundle several pieces into one
+ * typed amount. `taxBasis: "service"` keeps `build()` from adding anything.
+ */
+const NOTED_LABEL: Localized = {
+  en: "Noted in the office · total received",
+  es: "Anotado en el taller · total recibido",
+};
+
+/**
+ * An order, alteration or custom piece Daysi took off-site — in person or
+ * over WhatsApp — and notes from the office rather than prices from the
+ * catalog. `kind` names what it was, for the reference and the record, but
+ * changes nothing here: the one line is her own total, untaxed, labelled so
+ * her accountant can tell a noted line from one the site actually priced.
+ */
+export function estimateNoted(amount: Cents, kind: NotedOrderKind): Estimate {
+  const lines: EstimateLine[] = [
+    {
+      label: NOTED_LABEL,
+      amount,
+      taxBasis: "service",
+    },
+  ];
+
+  return build(lines, (total) => total, {
+    en: "Noted from the office; already settled outside the site.",
+    es: "Anotado desde la oficina; ya se resolvió fuera del sitio.",
   });
 }

@@ -57,6 +57,32 @@ describe("the active earnings ledger", () => {
   });
 });
 
+describe("a paid studio design", () => {
+  it("counts in the Hub and the books, and its unpaid page does not", async () => {
+    const { earningsFrom, loadLedger } = await import("./earnings");
+    const { saveRequest } = await import("./request-store");
+    const { estimateDesign } = await import("./pricing");
+    const design = (reference: string, overrides: Partial<StoredRequest>): StoredRequest => ({
+      reference,
+      kind: "design",
+      submittedAt: "2026-09-18T12:00:00.000Z",
+      locale: "es",
+      client: { name: "", email: "ana@example.com" },
+      details: {},
+      estimate: estimateDesign(),
+      photoFile: `${reference}.png`,
+      status: "new",
+      ...overrides,
+    });
+
+    await saveRequest(design("DSN-PAID", { status: "paid", source: "stripe", paidVia: "card" }));
+    await saveRequest(design("DSN-OPEN", { awaitingPayment: true }));
+
+    expect(loadLedger().map((record) => record.reference)).toEqual(["DSN-PAID"]);
+    expect(earningsFrom(loadLedger()).received).toBe(2000);
+  });
+});
+
 describe("a refunded order", () => {
   it("counts as neither received nor owed", async () => {
     const { earningsFrom } = await import("./earnings");

@@ -1,7 +1,15 @@
 import { cache } from "react";
 import { appendRecord, latestBy, readRecords } from "./records";
 
-export type RetiredKind = "style" | "gallery" | "fabric" | "price-entry" | "request";
+export type RetiredKind =
+  | "style"
+  | "gallery"
+  | "fabric"
+  | "price-entry"
+  | "request"
+  | "alteration"
+  | "appointment-type"
+  | "gallery-section";
 export type RetiredRecord = {
   readonly kind: RetiredKind;
   readonly id: string;

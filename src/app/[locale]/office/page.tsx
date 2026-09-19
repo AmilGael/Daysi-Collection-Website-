@@ -10,6 +10,7 @@ import {
 } from "@/lib/request-store";
 import { undoableIds } from "@/lib/office-history";
 import { Figure } from "@/components/office/figure";
+import { OrderNoteCard } from "@/components/office/order-note-sheet";
 import { OfficeRequestList } from "@/components/office-request-list";
 import { PremiereSignupList, WorkRetiredGroup } from "@/components/office/premiere-signup-list";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
@@ -65,7 +66,8 @@ export default async function OfficeHubPage({
 
       <section className="flex flex-col gap-6">
         <h2 className="text-heading">{t("work")}</h2>
-        <OfficeRequestList records={withUndoable(work)} locale={language} emptyMessage={t("noWork")} />
+        <OrderNoteCard />
+        <OfficeRequestList records={withUndoable(work)} locale={language} emptyMessage={t("noWork")} showOrderNotes />
       </section>
 
       <section className="flex flex-col gap-6">

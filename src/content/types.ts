@@ -82,6 +82,12 @@ export type StyleSize = {
   readonly count?: number;
 };
 
+/**
+ * A price Daysi set for one garment instead of its pair's list price. The
+ * extra, when absent, stays the list's made-to-measure charge.
+ */
+export type OwnPrice = { readonly fixedPrice: Cents; readonly customizationExtra?: Cents };
+
 /** ERD: GARMENT_STYLE — one card in the gallery. */
 export type GarmentStyle = {
   readonly id: string;
@@ -104,7 +110,32 @@ export type GarmentStyle = {
   readonly inStudio?: boolean;
   /** Set when the piece belongs to a limited-edition premiere. */
   readonly premiereId?: string;
+  /** Never set on a coded garment: Daysi gives one its own price from the office. */
+  readonly ownPrice?: OwnPrice;
 };
+
+/**
+ * What one garment costs, as every reader shows and charges it: the pair's
+ * list entry, with the garment's own numbers in place of the entry's when
+ * Daysi set them. Resolved on the server (`lib/live-pricing.ts`) and handed
+ * to the cards already worked out, because a card renders inside client
+ * components that must never reach for the files the live layer reads.
+ */
+export type StylePrice = {
+  readonly entryId: string;
+  readonly fabricId: string;
+  /** The garment's own price when set, else the entry's. */
+  readonly fixedPrice: Cents;
+  /** The garment's own extra when set, else the entry's. */
+  readonly customizationExtra: Cents;
+  /** Always the entry's. */
+  readonly customizationNote: Localized;
+  /** True when the numbers are the garment's own rather than the list's. */
+  readonly own: boolean;
+};
+
+/** A garment with its price resolved; null when its pair has no live entry. */
+export type PricedStyle = GarmentStyle & { readonly price: StylePrice | null };
 
 // ── Services, alterations and appointments ─────────────────────────────────
 
@@ -129,16 +160,19 @@ export type AlterationService = {
   readonly fixedPrice: Cents;
   readonly rushSurcharge: Cents;
   readonly turnaround: Localized;
+  /** An upload Daysi gave an alteration she added; it stands in for the drawn mark. */
+  readonly photo?: string;
 };
 
 /**
- * A bookable consultation. Sessions are 30 or 60 minutes; anything past the
- * booked length is billed at `overtimeRatePerHalfHour`, which the terms make
- * explicit before a client confirms.
+ * A bookable consultation. The coded sessions are 30 or 60 minutes; one Daysi
+ * adds from the office runs anywhere from 15 to 180. Anything past the booked
+ * length is billed at `overtimeRatePerHalfHour`, which the terms make explicit
+ * before a client confirms.
  */
 export type AppointmentType = {
   readonly id: string;
-  readonly minutes: 30 | 60;
+  readonly minutes: number;
   readonly name: Localized;
   readonly description: Localized;
   readonly fee: Cents;
@@ -211,14 +245,15 @@ export type BusinessInfo = {
 /**
  * ERD: GALLERY_WORK. A finished piece Daysi has made, shown as portfolio
  * rather than stock — no size, no price, nothing to add to a basket.
+ *
+ * The section a piece belongs to ("Dónde va") used to be a closed list of
+ * six. It is a plain string now: the six coded ids (`lib/live-gallery.ts`'s
+ * `CODED_SECTIONS`) plus whatever Daysi names herself through "Otra…".
+ * Whether an id names a real, live section is a question for the live
+ * layer, not this type — the same reasoning `office-validation.ts`'s
+ * comment gives for a garment's id.
  */
-export type GalleryCategoryId =
-  | "runway"
-  | "commissions"
-  | "bridal"
-  | "accessories"
-  | "press"
-  | "workroom";
+export type GalleryCategoryId = string;
 
 export type GalleryWork = {
   readonly id: string;

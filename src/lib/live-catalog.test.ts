@@ -98,3 +98,24 @@ describe("offered in the studio", () => {
     expect(silent.find((style) => style.id === "frutera")!.inStudio).toBeUndefined();
   });
 });
+
+describe("a garment's own price", () => {
+  it("carries an own price from the override onto the style, and a later override without one clears it", () => {
+    expect(applyOverrides(styles, []).find((style) => style.id === "frutera")!.ownPrice).toBeUndefined();
+
+    const own = applyOverrides(styles, [override({ fixedPrice: 27000, customizationExtra: 8000 })]);
+    expect(own.find((style) => style.id === "frutera")!.ownPrice).toEqual({ fixedPrice: 27000, customizationExtra: 8000 });
+
+    const priceOnly = applyOverrides(styles, [override({ fixedPrice: 27000 })]);
+    expect(priceOnly.find((style) => style.id === "frutera")!.ownPrice).toEqual({ fixedPrice: 27000 });
+
+    // The newest record is the whole truth: one without a price is the list price again.
+    const cleared = applyOverrides(styles, [override({ stock: { m: false } })]);
+    expect(cleared.find((style) => style.id === "frutera")!.ownPrice).toBeUndefined();
+  });
+
+  it("reads an extra only beside a price", () => {
+    const extraAlone = applyOverrides(styles, [override({ customizationExtra: 8000 })]);
+    expect(extraAlone.find((style) => style.id === "frutera")!.ownPrice).toBeUndefined();
+  });
+});

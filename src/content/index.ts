@@ -4,6 +4,7 @@ import {
   appointmentTypes,
   commissionDepositRate,
   consultationCreditDays,
+  designFee,
   priceList,
 } from "./price-list";
 import { premieres, services } from "./premieres";
@@ -29,6 +30,7 @@ export {
   categories,
   commissionDepositRate,
   consultationCreditDays,
+  designFee,
   fabrics,
   premieres,
   priceList,
@@ -136,7 +138,7 @@ const newYorkDay = new Intl.DateTimeFormat("en-CA", {
  * "2026-10-06" gives midnight UTC, which is 8 PM the evening before in the
  * Bronx; compared as instants the season stopped being "next" a night early.
  */
-function shopDay(now: Date): string {
+export function shopDay(now: Date): string {
   return newYorkDay.format(now);
 }
 

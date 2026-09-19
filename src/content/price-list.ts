@@ -1,4 +1,4 @@
-import type { AlterationService, AppointmentType, PriceListEntry } from "./types";
+import type { AlterationService, AppointmentType, Cents, PriceListEntry } from "./types";
 
 /**
  * ERD: PRICE_LIST_ENTRY — the one price list.
@@ -207,3 +207,10 @@ export const consultationCreditDays = 30;
 
 /** Share of a custom commission due before work begins. */
 export const commissionDepositRate = 0.5;
+
+/**
+ * What a client pays to send Daysi a design from the studio: her time
+ * looking at the sketch and writing back a quote. One figure, like the
+ * deposit rate above, and not edited from the office.
+ */
+export const designFee: Cents = 2000;

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { Locale } from "@/i18n/routing";
 import { formatMoney } from "@/lib/money";
@@ -22,16 +23,26 @@ export function OfficeRequestList({
   records,
   locale,
   emptyMessage,
+  showOrderNotes = false,
 }: {
   records: readonly (StoredRequest & { undoable: boolean })[];
   locale: Locale;
   emptyMessage: string;
+  /** Only the Trabajo list takes order notes; Citas and Mensajes never do. */
+  showOrderNotes?: boolean;
 }) {
   const t = useTranslations("account");
   const to = useTranslations("office");
   const draft = useOfficeDraft<WorkChange>();
 
-  if (records.length === 0) {
+  // A note staged from "+ Anotar un pedido" but not yet confirmed: shown at
+  // the top of this list until Confirmar, the same way Precios and Galería
+  // show what they have staged but not yet sent.
+  const pendingNotes = showOrderNotes
+    ? draft.entries.filter((entry) => entry.change.wire.type === "order-note")
+    : [];
+
+  if (records.length === 0 && pendingNotes.length === 0) {
     return (
       <p className="border border-dashed border-line px-6 py-14 text-center text-[0.9375rem] text-ink-faint">
         {emptyMessage}
@@ -58,6 +69,37 @@ export function OfficeRequestList({
 
   return (
     <div className="flex flex-col border-t border-line">
+      {pendingNotes.map((entry) => {
+        const wire = entry.change.wire;
+        if (wire.type !== "order-note") return null;
+        return (
+          <article
+            key={entry.key}
+            className="grid gap-3 border-b border-line py-5 sm:grid-cols-[8rem_1fr_auto] sm:items-center sm:gap-6"
+          >
+            <div className="flex flex-col gap-1.5">
+              <span className="font-mono text-[0.75rem]">{t(`kind.${wire.kind}`)}</span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <p className="text-[0.9375rem]">{wire.clientName}</p>
+              <p className="text-[0.8125rem] leading-relaxed text-ink-faint">{wire.description}</p>
+              <span className="flex flex-wrap items-center gap-3">
+                <Pending confirming={draft.pending(entry.key)?.confirming} error={entry.error} count={entry.count} />
+                <button
+                  type="button"
+                  onClick={() => draft.unstage(entry.key)}
+                  className="text-xs underline underline-offset-4"
+                >
+                  {to("removePending")}
+                </button>
+              </span>
+            </div>
+            <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-2">
+              <span className="text-[0.9375rem] tabular-nums">{formatMoney(wire.amount, locale)}</span>
+            </div>
+          </article>
+        );
+      })}
       {records.map((record) => {
         const pending = draft.pending(`request:${record.reference}`);
         const status = pending?.change.wire.type === "request-status"
@@ -79,6 +121,22 @@ export function OfficeRequestList({
                 year: "numeric",
               }).format(new Date(record.submittedAt))}
             </time>
+            {/* The picture the client sent: a studio design's mockup, an
+                alteration's snapshot. The office route serves it only to
+                Daysi, and knows the request came from here by its Referer,
+                so the link must never be marked noreferrer. */}
+            {record.photoFile ? (
+              <a href={photoHref(record)} target="_blank" className="mt-1 block w-fit">
+                <Image
+                  src={photoHref(record)}
+                  alt={to("requestPhoto", { reference: record.reference })}
+                  unoptimized
+                  width={72}
+                  height={96}
+                  className="h-24 w-[4.5rem] border border-line object-cover"
+                />
+              </a>
+            ) : null}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -141,6 +199,10 @@ export function OfficeRequestList({
       })}
     </div>
   );
+}
+
+function photoHref(record: StoredRequest): string {
+  return `/api/office/photos/${encodeURIComponent(record.reference)}`;
 }
 
 function summarise(record: StoredRequest): string {

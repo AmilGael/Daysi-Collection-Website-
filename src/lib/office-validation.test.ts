@@ -5,6 +5,7 @@ import {
   collectionChangeSchema,
   fabricChangeSchema,
   galleryChangeSchema,
+  normalizePhone,
   priceChangeSchema,
   shopfrontChangeSchema,
   styleCreateSchema,
@@ -53,6 +54,19 @@ describe("what the office accepts for a style override", () => {
     }
   });
 
+  it("accepts a garment's own price and extra, from $1 to $5,000", () => {
+    expect(styleOverrideSchema.safeParse({ styleId: "frutera", ...override, fixedPrice: 12000 }).success).toBe(true);
+    expect(
+      styleOverrideSchema.safeParse({ styleId: "frutera", ...override, fixedPrice: 12000, customizationExtra: 0 }).success,
+    ).toBe(true);
+    for (const fixedPrice of [50, 500_001, 120.5]) {
+      expect(styleOverrideSchema.safeParse({ styleId: "frutera", ...override, fixedPrice }).success, String(fixedPrice)).toBe(false);
+    }
+    expect(
+      styleOverrideSchema.safeParse({ styleId: "frutera", ...override, fixedPrice: 12000, customizationExtra: -1 }).success,
+    ).toBe(false);
+  });
+
   it("carries when a count was taken, as an undo restores it", () => {
     const result = styleOverrideSchema.safeParse({
       styleId: "frutera",
@@ -91,6 +105,12 @@ describe("what the office accepts for a new garment", () => {
 
   it("refuses a price nobody could have meant", () => {
     expect(styleCreateSchema.safeParse({ ...draft, fixedPrice: 900_000_00 }).success).toBe(false);
+  });
+
+  it("accepts a made-to-measure extra beside the price", () => {
+    const parsed = styleCreateSchema.safeParse({ ...draft, fixedPrice: 18000, customizationExtra: 7000 });
+    expect(parsed.success && parsed.data.customizationExtra).toBe(7000);
+    expect(styleCreateSchema.safeParse({ ...draft, customizationExtra: 900_000_00 }).success).toBe(false);
   });
 
   it("accepts how many pieces of each size she has", () => {
@@ -144,6 +164,9 @@ describe.each([
   ["gallery visibility", galleryChangeSchema, { type: "work-visibility", key: "gallery:x", id: "x", hidden: true }],
   ["gallery retire", galleryChangeSchema, { type: "retire", key: "gallery:x", id: "x" }],
   ["gallery restore", galleryChangeSchema, { type: "restore", key: "gallery:x", id: "x" }],
+  ["gallery section add", galleryChangeSchema, { type: "section-add", key: "section-add:one", name: "Quinceañeras" }],
+  ["gallery section retire", galleryChangeSchema, { type: "section-retire", key: "section:sec-otra", id: "sec-otra" }],
+  ["gallery section restore", galleryChangeSchema, { type: "section-restore", key: "section:sec-otra", id: "sec-otra" }],
   ["fabric add", fabricChangeSchema, fabricAdd],
   ["fabric retire", fabricChangeSchema, { type: "retire", key: "fabric:x", id: "x" }],
   ["fabric restore", fabricChangeSchema, { type: "restore", key: "fabric:x", id: "x" }],
@@ -154,6 +177,19 @@ describe.each([
   ["price restore", priceChangeSchema, { type: "restore", key: "entry:x", id: "x" }],
   ["shopfront notice", shopfrontChangeSchema, { type: "notice", key: "notice:site", message: "Open", visible: true }],
   ["work request status", workChangeSchema, { type: "request-status", key: "request:ALT-1", kind: "alteration", reference: "ALT-1", status: "answered" }],
+  [
+    "work order note",
+    workChangeSchema,
+    {
+      type: "order-note",
+      key: "order-note:one",
+      kind: "order",
+      clientName: "Rosa Martínez",
+      description: "Vestido azul, talla M",
+      amount: 15000,
+      paid: true,
+    },
+  ],
   ["work retire", workChangeSchema, { type: "retire", key: "request:CIT-1", id: "CIT-1" }],
   ["work restore", workChangeSchema, { type: "restore", key: "request:CIT-1", id: "CIT-1" }],
 ] as const)("%s change", (_name, schema, valid) => {
@@ -306,6 +342,35 @@ describe("bilingual gallery captions", () => {
   });
 });
 
+describe("a gallery photo's section is a string, not a fixed enum", () => {
+  it("accepts a section she named herself, and refuses one past 60 characters", () => {
+    expect(galleryChangeSchema.safeParse({ ...workAdd, category: "sec-otra" }).success).toBe(true);
+    expect(galleryChangeSchema.safeParse({ ...workAdd, category: "x".repeat(61) }).success).toBe(false);
+  });
+
+  it("refuses an empty section", () => {
+    expect(galleryChangeSchema.safeParse({ ...workAdd, category: "" }).success).toBe(false);
+  });
+});
+
+describe("naming a new gallery section, or retiring one she added", () => {
+  const sectionAdd = { type: "section-add", key: "section-add:one", name: "Quinceañeras" };
+
+  it("accepts a name from 2 to 40 characters", () => {
+    expect(galleryChangeSchema.safeParse(sectionAdd).success).toBe(true);
+    expect(galleryChangeSchema.safeParse({ ...sectionAdd, name: "Q" }).success).toBe(false);
+    expect(galleryChangeSchema.safeParse({ ...sectionAdd, name: "x".repeat(41) }).success).toBe(false);
+  });
+
+  it("accepts a retire or a restore by the section's id, refusing an empty one", () => {
+    const retire = { type: "section-retire", key: "section:sec-otra", id: "sec-otra" };
+    const restore = { type: "section-restore", key: "section:sec-otra", id: "sec-otra" };
+    expect(galleryChangeSchema.safeParse(retire).success).toBe(true);
+    expect(galleryChangeSchema.safeParse(restore).success).toBe(true);
+    expect(galleryChangeSchema.safeParse({ ...retire, id: "" }).success).toBe(false);
+  });
+});
+
 describe("the photo list and the studio switch on an override", () => {
   it("accepts a list of coded and uploaded photos, and the studio flag", () => {
     const result = styleOverrideSchema.safeParse({
@@ -388,5 +453,122 @@ describe("asking for a translation", () => {
     expect(
       collectionChangeSchema.safeParse({ type: "translate", key: "translate:style:frutera", id: "frutera", fields: [] }).success,
     ).toBe(false);
+  });
+});
+
+describe("adding an alteration or a session from Precios", () => {
+  const alterationAdd = {
+    type: "alteration-add",
+    key: "alteration-add:one",
+    name: "Poner puños",
+    description: "Puños nuevos en una manga sencilla.",
+    fixedPrice: 3200,
+    rushSurcharge: 2000,
+    turnaround: "4–6 días",
+  };
+  const appointmentAdd = {
+    type: "appointment-add",
+    key: "appointment-add:one",
+    name: "Prueba de novia",
+    minutes: 45,
+    fee: 9000,
+    suitedFor: "Una novia a dos semanas de la boda",
+  };
+
+  it("accepts an alteration typed in Spanish, with or without its own photo", () => {
+    expect(priceChangeSchema.safeParse(alterationAdd).success).toBe(true);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, photo: "/uploads/cuff-one.jpg" }).success).toBe(true);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, description: "", turnaround: "" }).success).toBe(true);
+  });
+
+  it("refuses an alteration with no name, words past their limits, a bad price or a photo from outside uploads", () => {
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, name: "P" }).success).toBe(false);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, name: "x".repeat(61) }).success).toBe(false);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, description: "x".repeat(161) }).success).toBe(false);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, turnaround: "x".repeat(31) }).success).toBe(false);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, fixedPrice: 5_000_01 }).success).toBe(false);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, rushSurcharge: -1 }).success).toBe(false);
+    expect(priceChangeSchema.safeParse({ ...alterationAdd, photo: "/images/real/craft-detail.jpg" }).success).toBe(false);
+  });
+
+  it("accepts a session of 15 to 180 minutes, and refuses one outside that", () => {
+    expect(priceChangeSchema.safeParse(appointmentAdd).success).toBe(true);
+    expect(priceChangeSchema.safeParse({ ...appointmentAdd, minutes: 15 }).success).toBe(true);
+    expect(priceChangeSchema.safeParse({ ...appointmentAdd, minutes: 180 }).success).toBe(true);
+    for (const minutes of [14, 181, 30.5]) {
+      expect(priceChangeSchema.safeParse({ ...appointmentAdd, minutes }).success, String(minutes)).toBe(false);
+    }
+    expect(priceChangeSchema.safeParse({ ...appointmentAdd, suitedFor: "x".repeat(121) }).success).toBe(false);
+    expect(priceChangeSchema.safeParse({ ...appointmentAdd, name: "" }).success).toBe(false);
+  });
+
+  it("retires and restores a price, an alteration or a session, and nothing else", () => {
+    for (const kind of ["price-entry", "alteration", "appointment-type"]) {
+      expect(priceChangeSchema.safeParse({ type: "retire", key: "alteration:x", id: "x", kind }).success, kind).toBe(true);
+      expect(priceChangeSchema.safeParse({ type: "restore", key: "alteration:x", id: "x", kind }).success, kind).toBe(true);
+    }
+    expect(priceChangeSchema.safeParse({ type: "retire", key: "style:x", id: "x", kind: "style" }).success).toBe(false);
+  });
+});
+
+describe("noting an order that never came through the site", () => {
+  const orderNote = {
+    type: "order-note",
+    key: "order-note:one",
+    kind: "order",
+    clientName: "Rosa Martínez",
+    description: "Vestido azul, talla M",
+    amount: 15000,
+    paid: true,
+  };
+
+  it("accepts the bare minimum, and with a phone, an email and notes besides", () => {
+    expect(workChangeSchema.safeParse(orderNote).success).toBe(true);
+    expect(
+      workChangeSchema.safeParse({
+        ...orderNote,
+        phone: "917-555-0100",
+        email: "rosa@example.com",
+        notes: "Pidió que se lo entreguen envuelto.",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("refuses a name too short, an amount past the cap, and a kind outside the three", () => {
+    expect(workChangeSchema.safeParse({ ...orderNote, clientName: "R" }).success).toBe(false);
+    expect(workChangeSchema.safeParse({ ...orderNote, amount: 5_000_01 }).success).toBe(false);
+    expect(workChangeSchema.safeParse({ ...orderNote, kind: "appointment" }).success).toBe(false);
+  });
+
+  it("refuses a phone or an email that is not one, but accepts leaving both out", () => {
+    expect(workChangeSchema.safeParse({ ...orderNote, phone: "abc" }).success).toBe(false);
+    expect(workChangeSchema.safeParse({ ...orderNote, email: "not-an-email" }).success).toBe(false);
+    expect(workChangeSchema.safeParse({ ...orderNote, phone: undefined, email: undefined }).success).toBe(true);
+  });
+
+  it("cleans a phone pasted from WhatsApp: a non-breaking hyphen and a stray direction mark", () => {
+    // U+200E (left-to-right mark) before it, U+2011 (non-breaking hyphen) in
+    // place of both dashes: what a phone looks like copied out of a chat.
+    const messy = "\u200E917\u2011555\u20110100";
+    expect(normalizePhone(messy)).toBe("917-555-0100");
+
+    const parsed = workChangeSchema.safeParse({ ...orderNote, phone: messy });
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.type === "order-note" ? parsed.data.phone : null).toBe("917-555-0100");
+  });
+
+  it("still refuses a phone that has nothing left once the marks are stripped", () => {
+    expect(workChangeSchema.safeParse({ ...orderNote, phone: "12" }).success).toBe(false);
+    expect(workChangeSchema.safeParse({ ...orderNote, phone: "\u200E\u200E" }).success).toBe(false);
+  });
+
+  it("accepts a date she gives it, from 2020 up to today", () => {
+    expect(workChangeSchema.safeParse({ ...orderNote, date: "2026-08-20" }).success).toBe(true);
+  });
+
+  it("refuses a date before 2020, a date in the future, and one not shaped YYYY-MM-DD", () => {
+    expect(workChangeSchema.safeParse({ ...orderNote, date: "2019-12-31" }).success).toBe(false);
+    expect(workChangeSchema.safeParse({ ...orderNote, date: "2999-01-01" }).success).toBe(false);
+    expect(workChangeSchema.safeParse({ ...orderNote, date: "08/20/2026" }).success).toBe(false);
   });
 });

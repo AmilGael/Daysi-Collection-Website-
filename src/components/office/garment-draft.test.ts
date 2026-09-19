@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { PhotoSlot } from "@/lib/photo-order";
-import { overrideChange, unchanged, viewOf, withCount, type ManagedStyle, type OverrideView } from "./garment-draft";
+import {
+  clearedPrice,
+  inBox,
+  ownPriceSwitched,
+  overrideChange,
+  unchanged,
+  viewOf,
+  withCount,
+  type ManagedStyle,
+  type OverrideView,
+} from "./garment-draft";
 
 const row: ManagedStyle = {
   id: "frutera",
@@ -8,6 +18,9 @@ const row: ManagedStyle = {
   name: "Conjunto Frutera",
   category: "Herencia",
   price: 29500,
+  listPrice: 29500,
+  listExtra: 12000,
+  ownPrice: null,
   photos: ["/images/real/frutera-capri.jpg", "/images/real/frutera-campaign.jpg"],
   isPublished: true,
   inStudio: false,
@@ -161,5 +174,70 @@ describe("unchanged", () => {
     expect(unchanged({ ...view, inStudio: true }, row)).toBe(false);
     expect(unchanged({ ...view, slots: [view.slots[1]!, view.slots[0]!] }, row)).toBe(false);
     expect(unchanged({ ...view, slots: [...view.slots, fileSlot("new")] }, row)).toBe(false);
+  });
+});
+
+describe("a garment's own price on the sheet", () => {
+  const owned: ManagedStyle = { ...row, price: 25000, ownPrice: { fixedPrice: 25000, customizationExtra: null } };
+
+  it("shows the saved own price, and none on a garment at its list price", () => {
+    expect(viewOf(row, undefined).ownPrice).toBeNull();
+    expect(viewOf(owned, undefined).ownPrice).toEqual({ fixedPrice: 25000, customizationExtra: null });
+  });
+
+  it("reads a pending change as the whole truth: a price on the wire is set, none is cleared", () => {
+    const set = overrideChange(row, { ...viewOf(row, undefined), ownPrice: { fixedPrice: 26000, customizationExtra: 9000 } });
+    expect(viewOf(row, set).ownPrice).toEqual({ fixedPrice: 26000, customizationExtra: 9000 });
+    // An undo back to a line without one clears it, although the row has one.
+    const undo = { wire: { type: "style-override" as const, key: "style:frutera", styleId: "frutera", isPublished: true, stock: {} } };
+    expect(viewOf(owned, undo).ownPrice).toBeNull();
+  });
+
+  it("puts the price on the wire only when set, and the extra only when she typed one", () => {
+    const none = overrideChange(row, viewOf(row, undefined)).wire;
+    expect(none).not.toHaveProperty("fixedPrice");
+    expect(none).not.toHaveProperty("customizationExtra");
+
+    const priceOnly = overrideChange(owned, viewOf(owned, undefined)).wire;
+    expect(priceOnly).toMatchObject({ fixedPrice: 25000 });
+    expect(priceOnly).not.toHaveProperty("customizationExtra");
+
+    const both = overrideChange(row, { ...viewOf(row, undefined), ownPrice: { fixedPrice: 26000, customizationExtra: 0 } }).wire;
+    expect(both).toMatchObject({ fixedPrice: 26000, customizationExtra: 0 });
+  });
+
+  it("keeps the own price on the wire when she only flips a size on the card", () => {
+    const view = viewOf(owned, undefined);
+    const wire = overrideChange(owned, { ...view, stock: { ...view.stock, l: true } }).wire;
+    expect(wire).toMatchObject({ fixedPrice: 25000, stock: { l: true } });
+  });
+
+  it("is changed when only the own price or its extra differs", () => {
+    const view = viewOf(owned, undefined);
+    expect(unchanged(view, owned)).toBe(true);
+    expect(unchanged({ ...view, ownPrice: null }, owned)).toBe(false);
+    expect(unchanged({ ...view, ownPrice: { fixedPrice: 25100, customizationExtra: null } }, owned)).toBe(false);
+    expect(unchanged({ ...view, ownPrice: { fixedPrice: 25000, customizationExtra: 9000 } }, owned)).toBe(false);
+    expect(unchanged({ ...viewOf(row, undefined), ownPrice: { fixedPrice: 29500, customizationExtra: null } }, row)).toBe(false);
+  });
+});
+
+describe("the new garment's price boxes", () => {
+  it("start empty with the switch off, which is also where a change of pair leaves them", () => {
+    expect(clearedPrice).toEqual({ own: false, price: "", extra: "" });
+  });
+
+  it("start from this pair's list price when the switch goes on, whatever was typed for another pair", () => {
+    // Pair A was $295 and she had typed over it; pair B is $400.
+    expect(ownPriceSwitched(true, 40000)).toEqual({ own: true, price: "400.00", extra: "" });
+  });
+
+  it("empty when the switch goes off, so nothing typed for this garment reaches the list", () => {
+    expect(ownPriceSwitched(false, 40000)).toEqual(clearedPrice);
+  });
+
+  it("show cents the way the Prices tab does", () => {
+    expect(inBox(29500)).toBe("295.00");
+    expect(inBox(10550)).toBe("105.50");
   });
 });

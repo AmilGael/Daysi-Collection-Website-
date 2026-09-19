@@ -2,7 +2,15 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { GalleryWork } from "@/content/types";
-import { assembleGallery, type GalleryVisibility } from "./live-gallery";
+import {
+  assembleGallery,
+  assembleSections,
+  galleryByCategory,
+  sectionId,
+  sectionLabel,
+  type GallerySection,
+  type GalleryVisibility,
+} from "./live-gallery";
 
 const work = (id: string, over: Partial<GalleryWork> = {}): GalleryWork => ({
   id,
@@ -118,5 +126,74 @@ describe("the office gallery page's coded captions", () => {
     ] as const;
     expect(assembleGallery(seed, [], [{ id: "g1", hidden: true }])).toHaveLength(0);
     expect(assembleGallery(seed, [], [])).toHaveLength(1);
+  });
+});
+
+const section = (id: string, over: Partial<GallerySection> = {}): GallerySection => ({
+  id,
+  name: { es: id, en: id },
+  addedAt: "2026-09-01T00:00:00.000Z",
+  ...over,
+});
+
+describe("assembling gallery sections", () => {
+  it("lists the six coded ids first, then added sections by addedAt", () => {
+    const sections = assembleSections(
+      [
+        section("sec-b", { addedAt: "2026-09-02T00:00:00.000Z" }),
+        section("sec-a", { addedAt: "2026-09-01T00:00:00.000Z" }),
+      ],
+      new Set(),
+    );
+    expect(sections.map((s) => s.id)).toEqual([
+      "runway", "commissions", "bridal", "accessories", "workroom", "press", "sec-a", "sec-b",
+    ]);
+    expect(sections.slice(0, 6).every((s) => s.coded)).toBe(true);
+    expect(sections.slice(6).every((s) => !s.coded)).toBe(true);
+  });
+
+  it("drops a retired added section, and never a coded one even if named in `retired`", () => {
+    const sections = assembleSections([section("sec-a")], new Set(["sec-a", "runway"]));
+    expect(sections.map((s) => s.id)).toEqual([
+      "runway", "commissions", "bridal", "accessories", "workroom", "press",
+    ]);
+  });
+
+  it("keeps the newest of two records for the same added section id", () => {
+    const sections = assembleSections(
+      [section("sec-a", { name: { es: "first", en: "first" } }), section("sec-a", { name: { es: "second", en: "second" } })],
+      new Set(),
+    );
+    expect(sections.find((s) => s.id === "sec-a")?.name).toEqual({ es: "second", en: "second" });
+  });
+
+  it("slugs an accented Spanish name to sec-…", () => {
+    expect(sectionId("Quinceañeras")).toBe("sec-quinceaneras");
+    expect(sectionId("Otra")).toBe("sec-otra");
+  });
+});
+
+describe("sectionLabel", () => {
+  it("reads a coded section's label from the caller's translator", () => {
+    const t = (key: string) => (key === "category.runway" ? "Pasarela" : `missing:${key}`);
+    expect(sectionLabel({ id: "runway", coded: true }, t, "es")).toBe("Pasarela");
+  });
+
+  it("reads an added section's own name, in the given locale", () => {
+    const added = section("sec-a", { name: { es: "Especial", en: "Special" } });
+    const view = assembleSections([added], new Set()).find((s) => s.id === "sec-a")!;
+    const t = () => "unused";
+    expect(sectionLabel(view, t, "es")).toBe("Especial");
+    expect(sectionLabel(view, t, "en")).toBe("Special");
+  });
+});
+
+describe("galleryByCategory", () => {
+  it("groups works under an added section, in the sections' order, and skips empty ones", () => {
+    const sections = assembleSections([section("sec-a", { name: { es: "Especial", en: "Special" } })], new Set());
+    const works = [work("g1", { category: "sec-a" }), work("g2", { category: "runway" })];
+    const grouped = galleryByCategory(works, sections);
+    expect(grouped.map((group) => group.section.id)).toEqual(["runway", "sec-a"]);
+    expect(grouped.find((group) => group.section.id === "sec-a")?.works.map((w) => w.id)).toEqual(["g1"]);
   });
 });
