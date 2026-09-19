@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import {
@@ -161,6 +161,8 @@ export function RequestForm({
     if (result?.estimate) setEstimate(result.estimate);
   }
 
+  const photoInput = useRef<HTMLInputElement>(null);
+
   function onPhotoChange(file: File | undefined) {
     setPhotoError(null);
     if (!file) {
@@ -177,46 +179,71 @@ export function RequestForm({
   }
 
   // Both kinds take a photo: the piece to be altered, or what the client has
-  // in mind for one made from scratch. The line above the field says which.
+  // in mind for one made from scratch. The label itself says which. The
+  // browser's own file button is hidden: it speaks the browser's language
+  // ("Choose File") whatever language the page is in.
   const photoField = (
-    <div className="flex flex-col gap-3">
-      <p className="text-[0.9375rem] text-ink-soft">
-        {t(kind === "alteration" ? "photoNoticeAlteration" : "photoNoticeCommission")}
-      </p>
-      <Field label={t("photo")} hint={t("photoHelp")} error={photoError ?? undefined} optional>
-        {({ id, describedBy }) => (
-          <div className="flex flex-col gap-3">
-            <input
-              id={id}
-              aria-describedby={describedBy}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(event) => onPhotoChange(event.target.files?.[0])}
-              className="text-[0.875rem] file:mr-4 file:rounded-[2px] file:border-0 file:bg-ink file:px-4 file:py-2 file:text-[0.8125rem] file:text-paper"
-            />
+    <Field
+      label={t(kind === "alteration" ? "photoNoticeAlteration" : "photoNoticeCommission")}
+      hint={t("photoHelp")}
+      error={photoError ?? undefined}
+      optional
+    >
+      {({ id, describedBy }) => (
+        <div className="flex flex-col gap-3">
+          <label
+            htmlFor={id}
+            className="flex cursor-pointer items-center gap-4 rounded-[2px] border border-dashed border-line-strong p-4 transition-colors hover:border-ink focus-within:border-ink"
+          >
             {photo ? (
-              <div className="flex items-center gap-4">
-                <Image
-                  src={photo.dataUrl}
-                  alt=""
-                  width={72}
-                  height={72}
-                  unoptimized
-                  className="h-18 w-18 rounded-[2px] object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => setPhoto(null)}
-                  className="link-underline text-[0.8125rem]"
-                >
-                  {t("photoRemove")}
-                </button>
-              </div>
-            ) : null}
-          </div>
-        )}
-      </Field>
-    </div>
+              <Image
+                src={photo.dataUrl}
+                alt=""
+                width={56}
+                height={56}
+                unoptimized
+                className="h-14 w-14 shrink-0 rounded-[2px] object-cover"
+              />
+            ) : (
+              <span aria-hidden className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[2px] bg-paper-warm text-ink-soft">
+                <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M4 8h3l1.5-2h7L17 8h3v11H4z" />
+                  <circle cx="12" cy="13" r="3.5" />
+                </svg>
+              </span>
+            )}
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span className="text-[0.9375rem] font-medium text-ink">
+                {photo ? t("photoChange") : t("photoChoose")}
+              </span>
+              <span className="truncate text-[0.75rem] text-ink-faint">{photo ? photo.name : t("photoTypes")}</span>
+            </span>
+          </label>
+          <input
+            ref={photoInput}
+            id={id}
+            aria-describedby={describedBy}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(event) => onPhotoChange(event.target.files?.[0])}
+            className="sr-only"
+          />
+          {photo ? (
+            <button
+              type="button"
+              onClick={() => {
+                setPhoto(null);
+                // So choosing the same file again still counts as a change.
+                if (photoInput.current) photoInput.current.value = "";
+              }}
+              className="link-underline w-fit text-[0.8125rem]"
+            >
+              {t("photoRemove")}
+            </button>
+          ) : null}
+        </div>
+      )}
+    </Field>
   );
 
   if (state.status === "done") {

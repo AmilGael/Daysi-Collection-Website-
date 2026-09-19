@@ -288,7 +288,10 @@
     "sentEstimate": "Here is what was quoted, so you have it in writing:",
     "sentNext": "Nothing is charged yet. Daysi confirms the details with you first.",
     "orWhatsapp": "Rather send it on WhatsApp?",
-    "estimateHeading": "Your estimate"
+    "estimateHeading": "Your estimate",
+    "photoChoose": "Choose a photo",
+    "photoChange": "Change the photo",
+    "photoTypes": "JPG, PNG or WEBP"
   },
   "contact": {
     "title": "Contact",

@@ -288,7 +288,10 @@
     "sentEstimate": "Este es el estimado, para que lo tenga por escrito:",
     "sentNext": "Todavía no se cobra nada. Daysi confirma los detalles con usted primero.",
     "orWhatsapp": "¿Prefiere mandarlo por WhatsApp?",
-    "estimateHeading": "Su estimado"
+    "estimateHeading": "Su estimado",
+    "photoChoose": "Elegir una foto",
+    "photoChange": "Cambiar la foto",
+    "photoTypes": "JPG, PNG o WEBP"
   },
   "contact": {
     "title": "Contacto",
