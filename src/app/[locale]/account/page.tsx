@@ -1,8 +1,10 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { business, translate } from "@/content";
+import { MEASUREMENTS } from "@/content/measurements";
 import { redirect } from "next/navigation";
 import type { Locale } from "@/i18n/routing";
 import { currentViewer } from "@/lib/auth/session";
+import { cardForAccount, measuredCount } from "@/lib/client-cards";
 import { requestsForAccount } from "@/lib/request-store";
 import { whatsappLink } from "@/lib/whatsapp";
 import { PageHeader } from "@/components/page-header";
@@ -34,6 +36,9 @@ export default async function AccountPage({
   ]);
   const recent = records.slice(0, 5);
 
+  const measured = measuredCount(cardForAccount(viewer.account));
+  const total = MEASUREMENTS.length;
+
   return (
     <>
       <PageHeader
@@ -43,6 +48,30 @@ export default async function AccountPage({
 
       <div className="shell grid gap-14 pb-28 lg:grid-cols-[1fr_20rem] lg:gap-20">
         <section className="flex flex-col gap-6">
+          <div className="mb-6 flex flex-col gap-3 border border-line p-6">
+            <h2 className="text-heading">{t("measuresTitle")}</h2>
+            <p className="text-[0.9375rem] leading-relaxed text-ink-soft">
+              {measured === 0
+                ? t("measuresEmpty")
+                : measured < total
+                  ? t("measuresPartial", { measured, total })
+                  : t("measuresDone")}
+            </p>
+            <div
+              role="progressbar"
+              aria-label={t("measuresTitle")}
+              aria-valuemin={0}
+              aria-valuemax={total}
+              aria-valuenow={measured}
+              className="h-1 bg-line"
+            >
+              <div className="h-full bg-ink" style={{ width: `${(measured / total) * 100}%` }} />
+            </div>
+            <ButtonLink href="/account/details" size="small" className="mt-2 min-h-11 w-fit">
+              {measured === total ? t("measuresEdit") : t("measuresFill")}
+            </ButtonLink>
+          </div>
+
           <div className="flex flex-wrap items-end justify-between gap-4">
             <h2 className="text-heading">{t("recentActivity")}</h2>
             {records.length > recent.length ? (
