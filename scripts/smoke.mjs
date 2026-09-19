@@ -333,6 +333,34 @@ await check("the CSP nonce matches the rendered scripts", async () => {
   };
 });
 
+/**
+ * The picture a shared link draws on WhatsApp and Facebook.
+ *
+ * Next writes og:image as an absolute address and, with no metadataBase, made
+ * one up from localhost:3000. Production shipped exactly that until September
+ * 2026, so every preview arrived with no picture. The image has to sit on the
+ * site being checked, and load from there. In CI the site *is* localhost:3000,
+ * so this passes either way; src/lib/site-metadata.test.ts guards it there,
+ * and this bites when SMOKE_URL is the real domain.
+ */
+await check("/es link previews show a picture from this site", async () => {
+  const html = await (await fetch(`${BASE}/es`)).text();
+  const images = ["og:image", "twitter:image"].map(
+    (name) =>
+      new RegExp(`<meta (?:property|name)="${name}" content="([^"]+)"`).exec(html)?.[1] ?? "",
+  );
+  const offSite = images.filter((image) => !image.startsWith(`${base.origin}/`));
+  if (offSite.length > 0) {
+    return { ok: false, detail: offSite.map((image) => image || "(missing)").join(", ") };
+  }
+  const response = await fetch(images[0]);
+  const type = response.headers.get("content-type") ?? "";
+  return {
+    ok: response.status === 200 && type.startsWith("image/"),
+    detail: `${images[0]} ${response.status} ${type}`,
+  };
+});
+
 await check("a cross-origin request is refused", async () => {
   const response = await fetch(`${BASE}/api/requests`, {
     method: "POST",

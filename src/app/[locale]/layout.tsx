@@ -15,7 +15,7 @@ import { currentViewer } from "@/lib/auth/session";
 import { cartCount, readCart } from "@/lib/cart";
 import { helperEnabled } from "@/lib/env";
 import { helperVisible } from "@/lib/site-helper";
-import { HERO_IMAGE } from "@/content/photographs";
+import { siteMetadata } from "@/lib/site-metadata";
 import "../globals.css";
 
 const display = Fraunces({
@@ -50,19 +50,7 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "meta" });
 
-  return {
-    title: t("title"),
-    description: t("description"),
-    alternates: {
-      languages: { es: "/es", en: "/en" },
-    },
-    openGraph: {
-      title: t("title"),
-      description: t("description"),
-      images: [HERO_IMAGE],
-      type: "website",
-    },
-  };
+  return siteMetadata({ title: t("title"), description: t("description") });
 }
 
 /**
