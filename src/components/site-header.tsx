@@ -6,6 +6,7 @@ import { Link, usePathname } from "@/i18n/routing";
 import { BAR_TABS, NAV_TABS } from "@/content/navigation";
 import { OFFICE_TABS } from "./office/tabs";
 import { OfficeTabs } from "./office/office-tabs";
+import { SlideRow } from "./slide-row";
 import { HelpSheet } from "./office/help-sheet";
 import { Logo } from "./logo";
 import { LanguageSwitch } from "./language-switch";
@@ -34,7 +35,7 @@ export function SiteHeader({
   const to = useTranslations("office");
   const pathname = usePathname();
 
-  // Inside the office the bar belongs to the office: its seven tabs take the
+  // Inside the office the bar belongs to the office: its tabs take the
   // place of the store links, and the store is one tap away through the
   // menu. Office tabs match exactly, because `/office` prefixes every other
   // one; store links match by prefix, because a garment page is still the
@@ -114,37 +115,49 @@ export function SiteHeader({
       ) : null}
 
       <div className="shell relative flex h-20 items-center justify-between gap-4 2xl:gap-6">
-        <Link href="/" aria-label="Daysi Collection">
+        {/* Never shrinks: when the bar ran short the logo was the one thing
+            that could give, and its wordmark ended up under the first tab. */}
+        <Link href="/" aria-label="Daysi Collection" className="shrink-0">
           <Logo tone={isOverPhotograph ? "paper" : "ink"} />
         </Link>
 
+        {/* The tabs slide sideways when they do not fit (see SlideRow), and
+            the "?" stays at the end of the row rather than sliding away.
+            The tabs sit at the phone strip's 0.14em, not 0.18: measured on
+            19 Sept 2026, the seven store links ran up to 69px over the bar at
+            1280 and 1536 with the wider spacing (squeezing the logo on the live
+            site), and the nine office tabs 68px in English. Tighter, the office
+            fits from 1200 up and the store from about 1300; below that the row
+            slides, which is the fallback and never the first answer. */}
         <nav
           aria-label={t("home")}
-          className={`hidden items-center gap-3 self-stretch min-[75rem]:flex min-[75rem]:border-l min-[75rem]:pl-6 2xl:gap-5 ${dividerClass}`}
+          className={`hidden min-w-0 items-center gap-3 self-stretch min-[75rem]:flex min-[75rem]:border-l min-[75rem]:pl-6 ${dividerClass}`}
         >
-          {barTabs.map((tab) => {
-            const isActive = tab.exact ? pathname === tab.href : pathname.startsWith(tab.href);
-            return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                aria-current={isActive ? "page" : undefined}
-                className={`relative whitespace-nowrap text-[0.6875rem] font-medium uppercase tracking-[0.18em] transition-colors ${
-                  isActive ? "opacity-100" : "opacity-70 hover:opacity-100"
-                }`}
-              >
-                {tab.label}
-                <span
-                  aria-hidden
-                  /* Scales rather than grows: width is a layout property and
-                     animating it relays the line every frame. */
-                  className={`absolute -bottom-2 left-0 h-px w-full origin-left bg-marigold transition-transform duration-300 ${
-                    isActive ? "scale-x-100" : "scale-x-0"
+          <SlideRow activeKey={pathname} className="flex items-center gap-2 self-stretch 2xl:gap-3">
+            {barTabs.map((tab) => {
+              const isActive = tab.exact ? pathname === tab.href : pathname.startsWith(tab.href);
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`relative whitespace-nowrap text-[0.6875rem] font-medium uppercase tracking-[0.14em] transition-colors ${
+                    isActive ? "opacity-100" : "opacity-70 hover:opacity-100"
                   }`}
-                />
-              </Link>
-            );
-          })}
+                >
+                  {tab.label}
+                  <span
+                    aria-hidden
+                    /* Scales rather than grows: width is a layout property and
+                       animating it relays the line every frame. */
+                    className={`absolute -bottom-2 left-0 h-px w-full origin-left bg-marigold transition-transform duration-300 ${
+                      isActive ? "scale-x-100" : "scale-x-0"
+                    }`}
+                  />
+                </Link>
+              );
+            })}
+          </SlideRow>
           {showHelp ? <HelpSheet tab={currentOfficeTab} /> : null}
         </nav>
 
@@ -161,7 +174,7 @@ export function SiteHeader({
           filled shape in the corner and reads as the one action. That returned
           about 120px, which is what paid for the seventh tab in the bar.
         */}
-        <div className={`flex items-center gap-2 self-stretch border-l pl-3 sm:gap-3 sm:pl-4 ${dividerClass}`}>
+        <div className={`flex shrink-0 items-center gap-2 self-stretch border-l pl-3 sm:gap-3 sm:pl-4 ${dividerClass}`}>
           <div className="hidden sm:block">
             <LanguageSwitch />
           </div>

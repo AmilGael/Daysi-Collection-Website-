@@ -267,11 +267,36 @@ describe("the office copy", () => {
 });
 
 describe("the tab strip on a phone", () => {
-  it("scrolls the active tab into view without moving the page", () => {
+  it("slides, and scrolls the active tab into view without moving the page", () => {
     const strip = fs.readFileSync(path.join(process.cwd(), "src/components/office/office-tabs.tsx"), "utf8");
-    expect(strip).toContain("useEffect(");
-    expect(strip).toContain('a[aria-current="page"]');
-    expect(strip).toContain('scrollIntoView({ inline: "nearest", block: "nearest" })');
-    expect(strip).toContain("}, [pathname]);");
+    const row = fs.readFileSync(path.join(process.cwd(), "src/components/slide-row.tsx"), "utf8");
+    expect(strip).toContain("<SlideRow activeKey={pathname}>");
+    expect(row).toContain('[aria-current="page"]');
+    expect(row).toContain('scrollIntoView({ inline: "nearest", block: "nearest" })');
+    expect(row).toContain("}, [activeKey]);");
+  });
+});
+
+describe("the tabs in the header bar", () => {
+  const header = fs.readFileSync(path.join(process.cwd(), "src/components/site-header.tsx"), "utf8");
+
+  it("slide when they do not fit, instead of pushing into the logo", () => {
+    // Nine office tabs needed more than the bar had between 1200 and ~1300px,
+    // and with nowhere to go they squeezed the logo under the first tab.
+    expect(header).toContain('<Link href="/" aria-label="Daysi Collection" className="shrink-0">');
+    expect(header).toMatch(/<nav\s+aria-label=\{t\("home"\)\}\s+className=\{`hidden min-w-0 /);
+    expect(header).toContain("<SlideRow activeKey={pathname}");
+    // Tighter before sliding, store and office alike: the wider 0.18em did not fit.
+    expect(header).toContain('<SlideRow activeKey={pathname} className="flex items-center gap-2 self-stretch 2xl:gap-3">');
+    expect(header).toContain("uppercase tracking-[0.14em] transition-colors");
+    expect(header).not.toContain("tracking-[0.18em]");
+    expect(header).toMatch(/flex shrink-0 items-center gap-2 self-stretch border-l/);
+  });
+
+  it("keep the help button out of the sliding row, so it never slides away", () => {
+    const rowEnd = header.indexOf("</SlideRow>");
+    const help = header.indexOf("<HelpSheet tab={currentOfficeTab} />");
+    expect(rowEnd).toBeGreaterThan(-1);
+    expect(help).toBeGreaterThan(rowEnd);
   });
 });
