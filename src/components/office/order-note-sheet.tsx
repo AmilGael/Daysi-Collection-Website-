@@ -1,15 +1,18 @@
 "use client";
 
-import { useCallback, useState, type FormEvent, type JSX } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type JSX } from "react";
 import { useTranslations } from "next-intl";
 import { shopDay } from "@/content";
 import { centsFromInput } from "@/lib/money";
 import { normalizePhone, type WorkChange } from "@/lib/office-validation";
 import { buttonClass } from "@/components/ui";
 import { ChoiceGroup } from "@/components/form";
+import { matchClients, type PickerEntry } from "./client-match";
 import { MoneyBox } from "./garment-sheet";
 import { Sheet } from "./sheet";
 import { useOfficeDraft } from "./use-office-draft";
+
+export { matchClients, type PickerEntry };
 
 const field = "w-full border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink";
 /** The most any price in the office may be, as everywhere else she types one. */
@@ -29,10 +32,13 @@ type Payment = "paid" | "charge" | "later";
 export function OrderNoteCard({
   kind,
   paymentsEnabled,
+  clients = [],
 }: {
   /** Which kind this box starts as; she can still change it in the sheet. */
   kind: NotedKind;
   paymentsEnabled: boolean;
+  /** The book, for the client-name box to offer as she types. */
+  clients?: readonly PickerEntry[];
 }): JSX.Element {
   const t = useTranslations("office");
   const [open, setOpen] = useState(false);
@@ -48,7 +54,7 @@ export function OrderNoteCard({
         {t("addNoteAny")}
       </button>
       <Sheet open={open} title={t("addNoteAny")} onClose={close}>
-        <OrderNoteForm onDone={close} initialKind={kind} paymentsEnabled={paymentsEnabled} />
+        <OrderNoteForm onDone={close} initialKind={kind} paymentsEnabled={paymentsEnabled} clients={clients} />
       </Sheet>
     </>
   );
@@ -65,10 +71,12 @@ function OrderNoteForm({
   onDone,
   initialKind,
   paymentsEnabled,
+  clients,
 }: {
   onDone(): void;
   initialKind: NotedKind;
   paymentsEnabled: boolean;
+  clients: readonly PickerEntry[];
 }): JSX.Element {
   const t = useTranslations("office");
   const k = useTranslations("account");
@@ -84,6 +92,32 @@ function OrderNoteForm({
   const [notes, setNotes] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
   const today = shopDay(new Date());
+
+  // The "Nombre del cliente" box doubles as a combobox onto the book: from
+  // two typed characters, up to five matches sit under the field. Closing is
+  // deferred a beat on blur so a tap on an option has time to land before it
+  // is unmounted from under the pointer.
+  const listId = useId();
+  const [listOpen, setListOpen] = useState(false);
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const matches = matchClients(clients, clientName);
+  const listExpanded = listOpen && matches.length > 0;
+
+  const pickClient = useCallback((entry: PickerEntry) => {
+    setClientName(entry.name);
+    setPhone(entry.phone);
+    setEmail(entry.email);
+    setListOpen(false);
+  }, []);
+
+  const closeListSoon = useCallback(() => {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+    blurTimer.current = setTimeout(() => setListOpen(false), 150);
+  }, []);
+
+  useEffect(() => () => {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+  }, []);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -138,16 +172,53 @@ function OrderNoteForm({
             ))}
           </select>
         </label>
-        <label className="grid gap-1 text-[0.75rem] text-ink-faint">
+        <label className="relative grid gap-1 text-[0.75rem] text-ink-faint">
           {t("orderNoteClientName")}
           <input
+            role="combobox"
+            aria-expanded={listExpanded}
+            aria-controls={listId}
+            aria-autocomplete="list"
+            autoComplete="off"
             value={clientName}
-            onChange={(event) => setClientName(event.target.value)}
+            onChange={(event) => {
+              setClientName(event.target.value);
+              setListOpen(true);
+            }}
+            onFocus={() => setListOpen(true)}
+            onBlur={closeListSoon}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setListOpen(false);
+            }}
             minLength={2}
             maxLength={80}
             required
             className={field}
           />
+          {listExpanded ? (
+            <div
+              id={listId}
+              role="listbox"
+              aria-label={t("orderNoteClientName")}
+              className="absolute inset-x-0 top-full z-10 mt-1 divide-y divide-line border border-line bg-paper text-ink shadow-[0_18px_40px_-24px_rgba(20,17,13,0.5)]"
+            >
+              {matches.map((entry) => (
+                <button
+                  key={entry.key}
+                  type="button"
+                  role="option"
+                  aria-selected={false}
+                  onClick={() => pickClient(entry)}
+                  className="flex min-h-11 w-full flex-col justify-center gap-0.5 px-3 py-2 text-left transition-colors hover:bg-paper-warm"
+                >
+                  <span className="truncate text-[0.9375rem] text-ink">{entry.name}</span>
+                  {entry.phone || entry.email ? (
+                    <span className="truncate text-[0.8125rem] text-ink-faint">{entry.phone || entry.email}</span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </label>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="grid gap-1 text-[0.75rem] text-ink-faint">

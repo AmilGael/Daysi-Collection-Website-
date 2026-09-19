@@ -14,7 +14,7 @@ import { chargeable, openPaymentLink } from "@/lib/payment-link";
 import { MoneyBox } from "@/components/office/garment-sheet";
 import { buttonClass } from "@/components/ui";
 import { Pending } from "@/components/office/confirm-bar";
-import { OrderNoteCard } from "@/components/office/order-note-sheet";
+import { OrderNoteCard, type PickerEntry } from "@/components/office/order-note-sheet";
 import { RetireButton } from "@/components/office/retired-group";
 import { Sheet } from "@/components/office/sheet";
 import { UndoLink } from "@/components/office/undo-link";
@@ -41,6 +41,7 @@ export function OfficeRequestList({
   emptyMessage,
   showOrderNotes = false,
   paymentsEnabled = false,
+  clients = [],
 }: {
   records: readonly (StoredRequest & { undoable: boolean })[];
   locale: Locale;
@@ -49,6 +50,8 @@ export function OfficeRequestList({
   showOrderNotes?: boolean;
   /** Whether Stripe is on, so a card link can be offered at all. */
   paymentsEnabled?: boolean;
+  /** The book, for the order note's client-name box; only the Trabajo list uses it. */
+  clients?: readonly PickerEntry[];
 }): JSX.Element {
   const t = useTranslations("account");
   const to = useTranslations("office");
@@ -178,7 +181,7 @@ export function OfficeRequestList({
           {/* Where she starts one: one box above everything already in. The
               sheet asks which kind it is, so a box per kind only stacked
               three on a phone and pushed the work below the fold. */}
-          <OrderNoteCard kind="order" paymentsEnabled={paymentsEnabled} />
+          <OrderNoteCard kind="order" paymentsEnabled={paymentsEnabled} clients={clients} />
           {/* What is already in, below, one group per kind so an alteration
               is never hunted for among the orders. */}
           {WORK_GROUPS.map((kind) => {

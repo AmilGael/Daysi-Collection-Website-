@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
+import { bookPickerEntries, clientBook } from "@/lib/client-book";
 import { earningsFrom, loadLedger, monthlyReceived } from "@/lib/earnings";
 import { formatMoney } from "@/lib/money";
 import { paymentsEnabled } from "@/lib/env";
@@ -54,6 +55,7 @@ export default async function OfficeHubPage({
   const undoable = undoableIds("request-status");
   const withUndoable = (records: typeof work) =>
     records.map((record) => ({ ...record, undoable: undoable.has(record.reference) }));
+  const clients = bookPickerEntries(clientBook());
 
   return (
     <OfficeDraftProvider apply={applyWorkChanges}>
@@ -69,6 +71,7 @@ export default async function OfficeHubPage({
         <OfficeRequestList records={withUndoable(work)} locale={language} emptyMessage={t("noWork")}
           showOrderNotes
           paymentsEnabled={paymentsEnabled}
+          clients={clients}
         />
       </section>
 

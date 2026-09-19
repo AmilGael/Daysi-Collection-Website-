@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import en from "@/messages/en.json";
 import es from "@/messages/es.json";
 import { normalizePhone } from "@/lib/office-validation";
+import { matchClients } from "@/components/office/client-match";
 
 /**
  * A phone typed by hand or pasted from WhatsApp used to reach the schema
@@ -64,5 +65,20 @@ describe("the one add box", () => {
     expect(opener.match(/t\("addNoteAny"\)/g)).toHaveLength(2);
     expect(opener).not.toContain("addNote.${kind}");
     expect(opener).toContain("initialKind={kind}");
+  });
+});
+
+describe("matchClients", () => {
+  it("finds a client by a name without accents, a phone's digits, or an email, five at most", () => {
+    const entries = [
+      { key: "a", name: "Rosa Pérez", phone: "(718) 555-0101", email: "" },
+      { key: "b", name: "Carmen Rosario", phone: "", email: "carmen@example.com" },
+      ...Array.from({ length: 8 }, (_, i) => ({ key: `r${i}`, name: `Rosa ${i}`, phone: "", email: "" })),
+    ];
+    expect(matchClients(entries, "perez").map((e) => e.key)).toEqual(["a"]);
+    expect(matchClients(entries, "5550101").map((e) => e.key)).toEqual(["a"]);
+    expect(matchClients(entries, "carmen@").map((e) => e.key)).toEqual(["b"]);
+    expect(matchClients(entries, "ros")).toHaveLength(5);
+    expect(matchClients(entries, "r")).toEqual([]);
   });
 });

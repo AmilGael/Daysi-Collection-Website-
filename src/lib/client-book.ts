@@ -175,8 +175,11 @@ export function clientBook(): BookRow[] {
     .sort((a, b) => (b.lastVisit ?? b.card?.updatedAt ?? "").localeCompare(a.lastVisit ?? a.card?.updatedAt ?? ""));
 }
 
+/** One row as the Hub's "who is this for" picker offers it: only what it fills in. */
+export type PickerEntry = { readonly key: string; readonly name: string; readonly phone: string; readonly email: string };
+
 /** The Hub's "who is this for" picker: active rows, only what it fills in. */
-export function bookPickerEntries(rows: readonly BookRow[]): { key: string; name: string; phone: string; email: string }[] {
+export function bookPickerEntries(rows: readonly BookRow[]): PickerEntry[] {
   return rows
     .filter((row) => !row.archived)
     .map((row) => ({ key: row.key, name: row.name, phone: row.phone ?? "", email: row.email ?? "" }));
