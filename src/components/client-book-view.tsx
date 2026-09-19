@@ -120,7 +120,7 @@ export function ClientBookView({
           value={query}
           onChange={setQuery}
           placeholder={t("clientsSearch")}
-          label={t("clientsSearch")}
+          label={t("clientsSearchLabel")}
           clearLabel={t("clientsSearchClear")}
           status={status}
         />
@@ -174,6 +174,10 @@ export function ClientBookView({
         title={openedRow?.name || (open !== null ? stagedByRow.get(open)?.meta.form.name.trim() : "") || t("clientAdd")}
         onClose={close}
         onDone={done}
+        // Only Añadir cliente starts in the Name box: a client already in
+        // the book is opened to be read, and a focused box would raise the
+        // phone's keyboard over half the sheet.
+        focusContent={openedRow !== undefined && isNewKey(openedRow.key)}
       >
         {openedRow ? (
           <ClientSheet

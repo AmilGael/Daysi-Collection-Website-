@@ -179,7 +179,8 @@ export function MeasureRow({
         <button
           type="button"
           onClick={() => onRemove(!removed)}
-          className="inline-flex min-h-9 items-center justify-self-end text-[0.8125rem] font-medium text-ink underline underline-offset-4"
+          // 44 px to tap; the negative margin keeps the row the height it was.
+          className="-my-1 inline-flex min-h-11 items-center justify-self-end text-[0.8125rem] font-medium text-ink underline underline-offset-4"
         >
           {removed ? t("clientKeep") : t("clientRemove")}
         </button>

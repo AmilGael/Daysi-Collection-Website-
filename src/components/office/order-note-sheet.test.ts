@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import en from "@/messages/en.json";
 import es from "@/messages/es.json";
 import { normalizePhone } from "@/lib/office-validation";
-import { matchClients } from "@/components/office/client-match";
+import { matchClients, pickerKey } from "@/components/office/client-match";
 
 /**
  * A phone typed by hand or pasted from WhatsApp used to reach the schema
@@ -80,5 +80,65 @@ describe("matchClients", () => {
     expect(matchClients(entries, "carmen@").map((e) => e.key)).toEqual(["b"]);
     expect(matchClients(entries, "ros")).toHaveLength(5);
     expect(matchClients(entries, "r")).toEqual([]);
+  });
+});
+
+/**
+ * The name box is a combobox onto the book, so it answers to the keys one
+ * does: the arrows move through the matches (wrapping), Enter takes the one
+ * highlighted, Escape shuts the list. Nothing highlighted, Enter is the
+ * form's; nothing open, Escape is the sheet's.
+ */
+describe("the client picker's keys", () => {
+  it("moves through the matches with the arrows, wrapping at either end", () => {
+    expect(pickerKey("ArrowDown", -1, 3, true)).toEqual({ kind: "move", active: 0 });
+    expect(pickerKey("ArrowDown", 2, 3, true)).toEqual({ kind: "move", active: 0 });
+    expect(pickerKey("ArrowUp", 0, 3, true)).toEqual({ kind: "move", active: 2 });
+    expect(pickerKey("ArrowUp", -1, 3, true)).toEqual({ kind: "move", active: 2 });
+    expect(pickerKey("ArrowUp", 2, 3, true)).toEqual({ kind: "move", active: 1 });
+  });
+
+  it("opens a shut list on an arrow, and does nothing when nothing matches", () => {
+    expect(pickerKey("ArrowDown", -1, 2, false)).toEqual({ kind: "move", active: 0 });
+    expect(pickerKey("ArrowUp", -1, 2, false)).toEqual({ kind: "move", active: 1 });
+    expect(pickerKey("ArrowDown", -1, 0, false)).toEqual({ kind: "ignore" });
+  });
+
+  it("takes the highlighted match on Enter, and leaves Enter to the form otherwise", () => {
+    expect(pickerKey("Enter", 1, 3, true)).toEqual({ kind: "pick", index: 1 });
+    expect(pickerKey("Enter", -1, 3, true)).toEqual({ kind: "ignore" });
+    expect(pickerKey("Enter", 1, 3, false)).toEqual({ kind: "ignore" });
+  });
+
+  it("shuts an open list on Escape, and leaves Escape to the sheet when it is shut", () => {
+    expect(pickerKey("Escape", 0, 3, true)).toEqual({ kind: "close" });
+    expect(pickerKey("Escape", -1, 3, false)).toEqual({ kind: "ignore" });
+    expect(pickerKey("a", 0, 3, true)).toEqual({ kind: "ignore" });
+  });
+});
+
+describe("the client picker in the sheet", () => {
+  it("is named by its visible label", () => {
+    expect(source).toContain("const inputId = useId();");
+    expect(source).toContain('<label htmlFor={inputId}>{t("orderNoteClientName")}</label>');
+    expect(source).toMatch(/<input\s+id=\{inputId\}\s+role="combobox"/);
+  });
+
+  it("points at the highlighted option, marks only that one selected, and keeps focus in the box", () => {
+    expect(source).toContain("aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}");
+    expect(source).toContain("aria-selected={index === activeIndex}");
+    expect(source).toContain("id={optionId(index)}");
+    expect(source).toContain("tabIndex={-1}");
+    expect(source).not.toContain("aria-selected={false}");
+  });
+
+  it("answers the keys through pickerKey, and claims each key it uses so the sheet does not also act on it", () => {
+    expect(source).toContain("const result = pickerKey(event.key, activeIndex, matches.length, listExpanded);");
+    expect(source).toContain('if (result.kind === "ignore") return;\n              event.preventDefault();');
+  });
+
+  it("lets the sheet close on Escape only when nothing inside has used the key", () => {
+    const sheet = readFileSync(path.join(process.cwd(), "src/components/office/sheet.tsx"), "utf8");
+    expect(sheet).toContain('if (event.key === "Escape" && !event.defaultPrevented) onClose();');
   });
 });

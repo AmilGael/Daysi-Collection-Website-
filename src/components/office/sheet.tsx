@@ -37,6 +37,7 @@ export function Sheet({
   title,
   onClose,
   onDone,
+  focusContent = true,
   children,
 }: {
   open: boolean;
@@ -48,6 +49,13 @@ export function Sheet({
    * gesture still just close: the back gesture has already left history.
    */
   onDone?(): void;
+  /**
+   * Whether opening focuses the first control inside (the default) or
+   * Listo. On a phone a focused box raises the keyboard over half the
+   * sheet, so a sheet opened to read (a client already in the book) passes
+   * false. Read when the sheet opens.
+   */
+  focusContent?: boolean;
   children: ReactNode;
 }): JSX.Element | null {
   const t = useTranslations("office");
@@ -58,11 +66,15 @@ export function Sheet({
   useEffect(() => {
     if (!open) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const first = content.current?.querySelector<HTMLElement>('input:not([type="file"]), textarea, select, button');
+    const first = focusContent
+      ? content.current?.querySelector<HTMLElement>('input:not([type="file"]), textarea, select, button')
+      : null;
     (first ?? panel.current?.querySelector<HTMLElement>("button"))?.focus();
 
+    // A control inside that used Escape itself (the Hub's client picker
+    // shutting its list) claims it with preventDefault: that one is not ours.
     const key = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape" && !event.defaultPrevented) onClose();
     };
     const pop = () => {
       closing.current = "pop";

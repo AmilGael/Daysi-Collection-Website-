@@ -7,7 +7,7 @@ import { centsFromInput } from "@/lib/money";
 import { normalizePhone, type WorkChange } from "@/lib/office-validation";
 import { buttonClass } from "@/components/ui";
 import { ChoiceGroup } from "@/components/form";
-import { matchClients, type PickerEntry } from "./client-match";
+import { matchClients, pickerKey, type PickerEntry } from "./client-match";
 import { MoneyBox } from "./garment-sheet";
 import { Sheet } from "./sheet";
 import { useOfficeDraft } from "./use-office-draft";
@@ -96,23 +96,33 @@ function OrderNoteForm({
   // The "Nombre del cliente" box doubles as a combobox onto the book: from
   // two typed characters, up to five matches sit under the field. Closing is
   // deferred a beat on blur so a tap on an option has time to land before it
-  // is unmounted from under the pointer.
+  // is unmounted from under the pointer. Focus stays in the box: the arrows
+  // move a highlight (`aria-activedescendant`) and Enter takes it
+  // (`pickerKey` in client-match.ts).
+  const inputId = useId();
   const listId = useId();
   const [listOpen, setListOpen] = useState(false);
+  const [active, setActive] = useState(-1);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const matches = matchClients(clients, clientName);
   const listExpanded = listOpen && matches.length > 0;
+  const activeIndex = listExpanded && active < matches.length ? active : -1;
+  const optionId = (index: number) => `${listId}-option-${index}`;
 
   const pickClient = useCallback((entry: PickerEntry) => {
     setClientName(entry.name);
     setPhone(entry.phone);
     setEmail(entry.email);
     setListOpen(false);
+    setActive(-1);
   }, []);
 
   const closeListSoon = useCallback(() => {
     if (blurTimer.current) clearTimeout(blurTimer.current);
-    blurTimer.current = setTimeout(() => setListOpen(false), 150);
+    blurTimer.current = setTimeout(() => {
+      setListOpen(false);
+      setActive(-1);
+    }, 150);
   }, []);
 
   useEffect(() => () => {
@@ -172,23 +182,38 @@ function OrderNoteForm({
             ))}
           </select>
         </label>
-        <label className="relative grid gap-1 text-[0.75rem] text-ink-faint">
-          {t("orderNoteClientName")}
+        <div className="relative grid gap-1 text-[0.75rem] text-ink-faint">
+          <label htmlFor={inputId}>{t("orderNoteClientName")}</label>
           <input
+            id={inputId}
             role="combobox"
             aria-expanded={listExpanded}
             aria-controls={listId}
             aria-autocomplete="list"
+            aria-activedescendant={activeIndex >= 0 ? optionId(activeIndex) : undefined}
             autoComplete="off"
             value={clientName}
             onChange={(event) => {
               setClientName(event.target.value);
               setListOpen(true);
+              setActive(-1);
             }}
             onFocus={() => setListOpen(true)}
             onBlur={closeListSoon}
             onKeyDown={(event) => {
-              if (event.key === "Escape") setListOpen(false);
+              const result = pickerKey(event.key, activeIndex, matches.length, listExpanded);
+              if (result.kind === "ignore") return;
+              event.preventDefault();
+              if (result.kind === "move") {
+                setListOpen(true);
+                setActive(result.active);
+              } else if (result.kind === "pick") {
+                const entry = matches[result.index];
+                if (entry) pickClient(entry);
+              } else {
+                setListOpen(false);
+                setActive(-1);
+              }
             }}
             minLength={2}
             maxLength={80}
@@ -202,14 +227,18 @@ function OrderNoteForm({
               aria-label={t("orderNoteClientName")}
               className="absolute inset-x-0 top-full z-10 mt-1 divide-y divide-line border border-line bg-paper text-ink shadow-[0_18px_40px_-24px_rgba(20,17,13,0.5)]"
             >
-              {matches.map((entry) => (
+              {matches.map((entry, index) => (
                 <button
                   key={entry.key}
+                  id={optionId(index)}
                   type="button"
                   role="option"
-                  aria-selected={false}
+                  aria-selected={index === activeIndex}
+                  tabIndex={-1}
                   onClick={() => pickClient(entry)}
-                  className="flex min-h-11 w-full flex-col justify-center gap-0.5 px-3 py-2 text-left transition-colors hover:bg-paper-warm"
+                  className={`flex min-h-11 w-full flex-col justify-center gap-0.5 px-3 py-2 text-left transition-colors hover:bg-paper-warm ${
+                    index === activeIndex ? "bg-paper-warm" : ""
+                  }`}
                 >
                   <span className="truncate text-[0.9375rem] text-ink">{entry.name}</span>
                   {entry.phone || entry.email ? (
@@ -219,7 +248,7 @@ function OrderNoteForm({
               ))}
             </div>
           ) : null}
-        </label>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="grid gap-1 text-[0.75rem] text-ink-faint">
             {t("orderNotePhone")}
