@@ -128,16 +128,6 @@ export const fabrics: readonly Fabric[] = [
     averageColor: "#E7DED2",
   },
   {
-    id: "laguna-wax",
-    name: { en: "Laguna wax cotton", es: "Algodón wax laguna" },
-    description: {
-      en: "Wax print on a steel-blue ground: marigold diamonds inside turquoise fans.",
-      es: "Estampado wax sobre fondo azul acero: rombos amarillos dentro de abanicos turquesa.",
-    },
-    swatchImage: "/images/real/fabric-laguna.jpg",
-    averageColor: "#4A5A5E",
-  },
-  {
     id: "medallon-print",
     name: { en: "Medallón cotton", es: "Algodón medallón" },
     description: {

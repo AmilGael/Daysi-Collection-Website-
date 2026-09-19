@@ -171,7 +171,7 @@ describe("the request form", () => {
         renderedAt: Date.now() - 10_000,
         client,
         categoryId: "heritage",
-        fabricId: "wax-print",
+        fabricId: "fish-batik",
         customize: true,
         occasion: "A wedding",
         neededBy: "2026-11-01",
@@ -618,7 +618,7 @@ describe("a promotion run from the shop window", () => {
 
     const measured = estimateReadyMade({ styleSlug: "sirena", sizeId: "m", customize: true });
     expect(measured?.lines[0]).toMatchObject({ amount: 10325, listAmount: 29500 });
-    expect(measured?.lines[1]?.amount).toBe(9600);
+    expect(measured?.lines[1]?.amount).toBe(7600);
     expect(measured?.lines[1]).not.toHaveProperty("listAmount");
 
     const frutera = estimateReadyMade({ styleSlug: "frutera", sizeId: "m", customize: false });

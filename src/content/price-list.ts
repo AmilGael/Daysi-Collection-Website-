@@ -25,12 +25,11 @@ export const priceList: readonly PriceListEntry[] = [
   entry("shirts", "wax-print", 12000, 4400), // was 16500
   entry("shirts", "tropical-leaf", 13000, 4400), // was 17500
   entry("shirts", "daisy-cotton", 10500, 4400), // was 14500
-  entry("heritage", "wax-print", 29500, 9600), // was 39500
-  entry("heritage", "tropical-leaf", 28000, 9600), // was 37500
-  entry("heritage", "fish-batik", 29500, 9600), // was 39500
-  entry("heritage", "frutera-print", 31500, 9600), // was 42500
+  // Herencia keeps only its own cloths; wax and tropical leaf are shirt
+  // cloths (walkthrough, 19 Sept 2026). Made to measure came down to $76.
+  entry("heritage", "fish-batik", 29500, 7600), // was 39500
+  entry("heritage", "frutera-print", 31500, 7600), // was 42500
   entry("pants", "ocelote-print", 17500, 5200), // was 23500
-  entry("shirts", "laguna-wax", 12000, 4400), // was 16500
   entry("dresses", "medallon-print", 24000, 7600), // was 32500
 ];
 

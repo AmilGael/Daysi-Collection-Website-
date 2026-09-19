@@ -67,7 +67,7 @@ describe("the price of Daysi's time", () => {
   it("takes it off the supplement for making a piece to measure", () => {
     const supplements = priceList.map((entry) => dollars(entry.customizationExtra));
     // Was 55, 65, 95 and 120 across shirts, pants, dresses and heritage.
-    expect([...new Set(supplements)].sort((a, b) => a - b)).toEqual([44, 52, 76, 96]);
+    expect([...new Set(supplements)].sort((a, b) => a - b)).toEqual([44, 52, 76]);
   });
 });
 
@@ -82,12 +82,9 @@ describe("the price of the garments", () => {
       "shirts--wax-print": 120, // was 165
       "shirts--tropical-leaf": 130, // was 175
       "shirts--daisy-cotton": 105, // was 145
-      "heritage--wax-print": 295, // was 395
-      "heritage--tropical-leaf": 280, // was 375
       "heritage--fish-batik": 295, // was 395
       "heritage--frutera-print": 315, // was 425
       "pants--ocelote-print": 175, // was 235
-      "shirts--laguna-wax": 120, // was 165
       "dresses--medallon-print": 240, // was 325
     });
   });
@@ -98,12 +95,9 @@ describe("the price of the garments", () => {
       "shirts--wax-print": 16500,
       "shirts--tropical-leaf": 17500,
       "shirts--daisy-cotton": 14500,
-      "heritage--wax-print": 39500,
-      "heritage--tropical-leaf": 37500,
       "heritage--fish-batik": 39500,
       "heritage--frutera-print": 42500,
       "pants--ocelote-print": 23500,
-      "shirts--laguna-wax": 16500,
       "dresses--medallon-print": 32500,
     };
 

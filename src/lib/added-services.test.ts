@@ -144,7 +144,7 @@ describe("retiring from the Prices tab", () => {
   it("still reads a retire with no kind as a garment price", async () => {
     const { priceList } = await import("@/content");
     const { manageablePriceList } = await import("./live-pricing");
-    const unused = priceList.find((entry) => entry.id === "shirts--laguna-wax")!;
+    const unused = priceList.find((entry) => entry.id === "shirts--tropical-leaf")!;
     const [result] = await apply({ type: "retire", key: `entry:${unused.id}`, id: unused.id });
     // Either retired, or refused because a garment still uses it: never read as another kind.
     expect(result!.error ?? "retired").toMatch(/^(retired|in-use)$/);
