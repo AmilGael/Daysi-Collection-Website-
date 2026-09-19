@@ -4,167 +4,34 @@ import { useId, useRef, useState, type FormEvent, type InputHTMLAttributes, type
 import { useTranslations } from "next-intl";
 import { MEASUREMENTS, type MeasurementId } from "@/content/measurements";
 import { useRouter, type Locale } from "@/i18n/routing";
-// Types only: client-cards.ts reads the store and must never reach the browser.
-import type {
-  Address,
-  ClientCardInput,
-  MeasurementInput,
-  Measurements,
-  PreferredContact,
-} from "@/lib/client-cards";
-import { bothUnits, defaultUnit, toCm, withinRange, type Unit } from "@/lib/measurements";
+import { bothUnits, type Unit } from "@/lib/measurements";
+import {
+  afterClear,
+  EMPTY_ADDRESS,
+  formPayload,
+  hasOwnEntries,
+  HOME_STATE,
+  measurementProblems,
+  shownText,
+  startingState,
+  withTyped,
+  type AddressFields,
+  type CardFormInitial,
+  type CardFormState,
+} from "./client-card-draft";
 import { ChoiceGroup, Field, TextArea, TextInput } from "./form";
 import { InfoTip } from "./info-tip";
 import { buttonClass } from "./ui";
 
 /**
  * The client's own card, from their account: contact, an optional address,
- * the measurements and a note for Daysi, filled in whenever they can.
+ * the measurements and a note for Daysi, filled in whenever they can. What
+ * the form holds and what a save sends are in client-card-draft.ts.
  *
  * The page hands over only what this form shows (never Daysi's private note
  * or the card's ids). A measurement Daysi took is shown as text and never
- * sent: the server keeps hers whatever arrives. Every other measurement the
- * client still has is sent on every save, because the save replaces the
- * client's numbers with exactly what it receives, so one left out is one
- * the client emptied.
+ * sent: the server keeps hers whatever arrives.
  */
-
-type AddressFields = {
-  readonly line1: string;
-  readonly line2: string;
-  readonly city: string;
-  readonly state: string;
-  readonly zip: string;
-};
-
-export type CardFormState = {
-  readonly name: string;
-  readonly phone: string;
-  readonly preferredContact: PreferredContact | null;
-  readonly addressOpen: boolean;
-  readonly address: AddressFields;
-  readonly notes: string;
-  readonly unit: Unit;
-  /** What is in each box, as typed. */
-  readonly values: Readonly<Record<MeasurementId, string>>;
-  /** Daysi's: shown, never sent. */
-  readonly locked: ReadonlySet<MeasurementId>;
-};
-
-/** What the page passes in: the viewer's own card, and nothing else of it. */
-export type CardFormInitial = {
-  readonly name: string;
-  readonly email: string;
-  readonly phone: string;
-  readonly preferredContact: PreferredContact | null;
-  readonly address: Address | null;
-  readonly notes: string;
-  readonly measurements: Measurements;
-};
-
-const EMPTY_ADDRESS: AddressFields = { line1: "", line2: "", city: "", state: "", zip: "" };
-const CM_PER_INCH = toCm(1, "in");
-/** The Bronx is in New York, and so is nearly every client. */
-const HOME_STATE = "NY";
-
-/** "30,5" and "30.5" are one number: a phone set to Spanish offers the comma. */
-function readNumber(text: string): number | null {
-  const cleaned = text.trim().replace(",", ".");
-  return /^(\d+(\.\d*)?|\.\d+)$/.test(cleaned) ? Number(cleaned) : null;
-}
-
-/** Half an inch or a whole centimetre: as fine as a tape is read. */
-function convert(value: number, from: Unit, to: Unit): number {
-  if (from === to) return value;
-  const cm = toCm(value, from);
-  return to === "cm" ? Math.round(cm) : Math.round((cm / CM_PER_INCH) * 2) / 2;
-}
-
-/** Every number the client typed, in the other unit. Daysi's and unreadable ones stay as they are. */
-export function switchUnit(
-  values: Readonly<Record<MeasurementId, string>>,
-  locked: ReadonlySet<MeasurementId>,
-  from: Unit,
-  to: Unit,
-): Record<MeasurementId, string> {
-  const next = { ...values };
-  if (from === to) return next;
-  for (const { id } of MEASUREMENTS) {
-    const value = readNumber(values[id]);
-    if (locked.has(id) || value === null) continue;
-    next[id] = String(convert(value, from, to));
-  }
-  return next;
-}
-
-/** What a save sends: trimmed, with empty fields left out and Daysi's numbers never included. */
-export function formPayload(state: CardFormState): ClientCardInput {
-  const phone = state.phone.trim();
-  const notes = state.notes.trim();
-  // WhatsApp and a call both need a number; without one, only email is a choice.
-  const preferredContact =
-    state.preferredContact && (phone || state.preferredContact === "email") ? state.preferredContact : null;
-
-  const line1 = state.address.line1.trim();
-  const line2 = state.address.line2.trim();
-  const city = state.address.city.trim();
-  const region = state.address.state.trim();
-  const zip = state.address.zip.trim();
-  // The state starts filled in, so it alone does not make an address.
-  const hasAddress = state.addressOpen && Boolean(line1 || line2 || city || zip);
-
-  const measurements: Partial<Record<MeasurementId, MeasurementInput>> = {};
-  for (const { id } of MEASUREMENTS) {
-    const text = state.values[id].trim();
-    if (state.locked.has(id) || !text) continue;
-    // A number it cannot read goes as NaN (null on the wire), which the
-    // server refuses: dropping it would erase the one on file.
-    measurements[id] = { value: readNumber(text) ?? Number.NaN, unit: state.unit };
-  }
-
-  return {
-    name: state.name.trim(),
-    ...(phone ? { phone } : {}),
-    ...(preferredContact ? { preferredContact } : {}),
-    ...(hasAddress ? { address: { line1, ...(line2 ? { line2 } : {}), city, state: region, zip } } : {}),
-    ...(notes ? { notes } : {}),
-    measurements,
-  };
-}
-
-function startingState(initial: CardFormInitial, locale: Locale): CardFormState {
-  const locked = new Set(MEASUREMENTS.filter((m) => initial.measurements[m.id]?.by === "daysi").map((m) => m.id));
-  const kept = MEASUREMENTS.map((m) => initial.measurements[m.id]).filter((m) => m !== undefined);
-  // The unit their tape speaks: their own numbers first, then Daysi's, then the language's.
-  const unit = (kept.find((m) => m.by === "client") ?? kept[0])?.unit ?? defaultUnit(locale);
-
-  const values = Object.fromEntries(
-    MEASUREMENTS.map(({ id }) => {
-      const measurement = initial.measurements[id];
-      if (!measurement || locked.has(id)) return [id, ""];
-      return [id, String(convert(measurement.value, measurement.unit, unit))];
-    }),
-  ) as Record<MeasurementId, string>;
-
-  return {
-    name: initial.name,
-    phone: initial.phone,
-    preferredContact: initial.preferredContact,
-    addressOpen: initial.address !== null,
-    address: initial.address
-      ? { ...initial.address, line2: initial.address.line2 ?? "" }
-      : EMPTY_ADDRESS,
-    notes: initial.notes,
-    unit,
-    values,
-    locked,
-  };
-}
-
-/** Whether "Borrar lo que escribí" has anything to clear. */
-function hasOwnEntries(payload: ClientCardInput): boolean {
-  return Boolean(payload.address || payload.notes || Object.keys(payload.measurements).length > 0);
-}
 
 type Status =
   | { readonly kind: "idle" | "saving" | "clearing" | "saved" | "cleared" }
@@ -199,8 +66,8 @@ export function ClientCardForm({ initial, locale }: { initial: CardFormInitial; 
     update({ address: { ...form.address, [key]: value } }, `address.${key}`);
   }
 
-  function setValue(id: MeasurementId, value: string) {
-    update({ values: { ...form.values, [id]: value } }, `measurements.${id}`);
+  function setValue(id: MeasurementId, text: string) {
+    update({ values: withTyped(form, id, text).values }, `measurements.${id}`);
   }
 
   function showErrors(found: Record<string, string>) {
@@ -230,15 +97,9 @@ export function ClientCardForm({ initial, locale }: { initial: CardFormInitial; 
     if (busy) return;
 
     // Checked here first, so a typo costs no trip and no save from the hour's allowance.
-    const local: Record<string, string> = {};
-    for (const { id } of MEASUREMENTS) {
-      const text = form.values[id].trim();
-      if (form.locked.has(id) || !text) continue;
-      const value = readNumber(text);
-      if (value === null || !withinRange(id, value, form.unit)) local[`measurements.${id}`] = t("errorRange");
-    }
-    if (Object.keys(local).length > 0) {
-      showErrors(local);
+    const problems = measurementProblems(form);
+    if (problems.length > 0) {
+      showErrors(Object.fromEntries(problems.map((id) => [`measurements.${id}`, t("errorRange")])));
       return;
     }
 
@@ -295,16 +156,7 @@ export function ClientCardForm({ initial, locale }: { initial: CardFormInitial; 
         setStatus({ kind: "error", message: t("errorGeneric") });
         return;
       }
-      // What the server just did: the name, the phone and Daysi's numbers stay.
-      setForm((current) => ({
-        ...current,
-        addressOpen: false,
-        address: EMPTY_ADDRESS,
-        notes: "",
-        values: Object.fromEntries(
-          MEASUREMENTS.map(({ id }) => [id, current.locked.has(id) ? current.values[id] : ""]),
-        ) as Record<MeasurementId, string>,
-      }));
+      setForm(afterClear);
       setErrors({});
       setHasOwn(false);
       setStatus({ kind: "cleared" });
@@ -452,12 +304,8 @@ export function ClientCardForm({ initial, locale }: { initial: CardFormInitial; 
         <ChoiceGroup
           legend={t("unitLegend")}
           value={form.unit}
-          onChange={(unit) => {
-            if (unit === form.unit) return;
-            update({ unit, values: switchUnit(form.values, form.locked, form.unit, unit) });
-            // Every number changed, so each is checked again on the next save.
-            dropErrors("measurements.");
-          }}
+          // Only what the boxes show changes: each keeps what was typed, in its own unit.
+          onChange={(unit) => update({ unit })}
           options={[
             { value: "in", label: t("unitIn") },
             { value: "cm", label: t("unitCm") },
@@ -482,7 +330,7 @@ export function ClientCardForm({ initial, locale }: { initial: CardFormInitial; 
                     howTo={measurement.howTo[locale]}
                     unit={form.unit}
                     unitName={form.unit === "in" ? t("unitIn") : t("unitCm")}
-                    value={form.values[measurement.id]}
+                    value={shownText(form.values[measurement.id], form.unit)}
                     error={errors[`measurements.${measurement.id}`]}
                     onChange={(value) => setValue(measurement.id, value)}
                   />

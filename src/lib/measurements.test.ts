@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MEASUREMENTS, MEASUREMENT_IDS } from "@/content/measurements";
-import { bothUnits, defaultUnit, toCm, withinRange } from "./measurements";
+import { bothUnits, convertMeasurement, defaultUnit, toCm, withinRange } from "./measurements";
 
 describe("the measurement list", () => {
   it("is the five agreed on 19 Sept 2026, each named and explained in both languages", () => {
@@ -33,6 +33,16 @@ describe("units", () => {
     expect(bothUnits(32, "in")).toBe("32 in · 81 cm");
     expect(bothUnits(81, "cm")).toBe("32 in · 81 cm");
     expect(bothUnits(30.5, "in")).toBe("30.5 in · 77 cm");
+  });
+
+  it("converts a reading to the other side of the tape, to the half inch or the whole centimetre", () => {
+    expect(convertMeasurement(81, "cm", "in")).toBe(32);
+    expect(convertMeasurement(82, "cm", "in")).toBe(32.5);
+    expect(convertMeasurement(30.5, "in", "cm")).toBe(77);
+    expect(convertMeasurement(30.25, "in", "cm")).toBe(77);
+    // Converted back from its own rounding, 82 cm would come back as 83:
+    // which is why the form always converts from what was typed.
+    expect(convertMeasurement(32.5, "in", "cm")).toBe(83);
   });
 
   it("starts English on inches and Spanish on centimetres", () => {

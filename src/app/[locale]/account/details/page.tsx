@@ -4,7 +4,8 @@ import type { Locale } from "@/i18n/routing";
 import { currentViewer } from "@/lib/auth/session";
 import { cardForAccount } from "@/lib/client-cards";
 import { PageHeader } from "@/components/page-header";
-import { ClientCardForm, type CardFormInitial } from "@/components/client-card-form";
+import { ClientCardForm } from "@/components/client-card-form";
+import type { CardFormInitial } from "@/components/client-card-draft";
 
 /**
  * The client's own card, filled in when they can. The form gets only what it

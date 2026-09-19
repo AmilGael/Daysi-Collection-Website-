@@ -17,15 +17,23 @@ export function withinRange(id: MeasurementId, value: number, unit: Unit): boole
   return cm >= definition.rangeCm[0] && cm <= definition.rangeCm[1];
 }
 
+/**
+ * A reading as the `to` side of the tape shows it: to the half inch or the
+ * whole centimetre. Always from the number as it was taken, never from an
+ * earlier conversion: 82 cm is 32.5 in, and 32.5 in is 83 cm.
+ */
+export function convertMeasurement(value: number, from: Unit, to: Unit): number {
+  const exact = from === to ? value : to === "cm" ? value * CM_PER_INCH : value / CM_PER_INCH;
+  return to === "cm" ? Math.round(exact) : Math.round(exact * 2) / 2;
+}
+
 function plain(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
 /** "32 in · 81 cm": what Daysi reads, so nobody converts in their head. */
 export function bothUnits(value: number, unit: Unit): string {
-  const cm = toCm(value, unit);
-  const inches = Math.round((cm / CM_PER_INCH) * 2) / 2;
-  return `${plain(inches)} in · ${Math.round(cm)} cm`;
+  return `${plain(convertMeasurement(value, unit, "in"))} in · ${convertMeasurement(value, unit, "cm")} cm`;
 }
 
 /** The size guide already speaks inches in English and centimetres in Spanish. */
