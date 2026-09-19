@@ -12,6 +12,22 @@ import type { GarmentStyle, PriceListEntry } from "@/content/types";
  * request email, the premiere list and the browser tab.
  */
 
+// The cart checkout reads its cart from a cookie, its viewer from the session,
+// and hands the payment to Stripe; none of those is what these tests are about.
+const jar = vi.hoisted(() => new Map<string, string>());
+vi.mock("next/headers", () => ({
+  cookies: vi.fn(async () => ({
+    get: (name: string) => (jar.has(name) ? { name, value: jar.get(name)! } : undefined),
+    set: (name: string, value: string) => void jar.set(name, value),
+    delete: (name: string) => void jar.delete(name),
+  })),
+  headers: vi.fn(async () => new Headers()),
+}));
+vi.mock("@/lib/auth/session", () => ({ currentViewer: vi.fn(async () => null) }));
+vi.mock("@/lib/payments", () => ({
+  createCheckoutSession: vi.fn(async () => ({ url: "https://checkout.stripe.test/session" })),
+}));
+
 let dir: string;
 
 const SOL: GarmentStyle = {
@@ -41,11 +57,14 @@ const SOL_PRICE: PriceListEntry = {
 
 beforeEach(async () => {
   vi.resetModules();
+  jar.clear();
   dir = mkdtempSync(path.join(tmpdir(), "daysi-live-readers-"));
   process.env.DATA_DIR = dir;
   process.env.AUTH_SECRET = "test-signing-key";
   vi.stubEnv("NODE_ENV", "test");
   vi.stubEnv("SITE_URL", "http://localhost:3000");
+  // Read once, when `env` first loads: the cart checkout refuses outright without it.
+  vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_placeholder");
 
   const { saveAddedStyle } = await import("./live-catalog");
   const { saveCustomEntry } = await import("./live-pricing");
@@ -82,46 +101,125 @@ describe("pricing an added garment", () => {
   });
 });
 
-describe("the request form", () => {
-  it("accepts an order for a garment Daysi added", async () => {
-    const { requestSchema } = await import("./validation");
-    const parsed = requestSchema.safeParse({
-      kind: "order",
-      website: "",
-      renderedAt: Date.now() - 10_000,
-      client: { name: "Ana", email: "ana@example.com", phone: "9175550100", preferredContact: "email", locale: "en" },
-      styleSlug: "sol",
-      sizeId: "s",
-      customize: false,
-      notes: "",
-      acceptedTerms: true,
-    });
-    expect(parsed.success).toBe(true);
-  });
+const client = { name: "Ana", email: "ana@example.com", phone: "9175550100", preferredContact: "email", locale: "en" };
 
-  it("writes the corrected name into the record Daysi reads", async () => {
+function post(url: string, body: unknown): Request {
+  return new Request(`http://localhost:3000${url}`, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: "http://localhost:3000", host: "localhost:3000" },
+    body: JSON.stringify(body),
+  });
+}
+
+describe("the request form", () => {
+  it("records a commission, priced from the published list", async () => {
     const { POST } = await import("@/app/api/requests/route");
     const { findRequest } = await import("./request-store");
     const response = await POST(
-      new Request("http://localhost:3000/api/requests", {
-        method: "POST",
-        headers: { "content-type": "application/json", origin: "http://localhost:3000", host: "localhost:3000" },
-        body: JSON.stringify({
-          kind: "order",
-          website: "",
-          renderedAt: Date.now() - 10_000,
-          client: { name: "Ana", email: "ana@example.com", phone: "9175550100", preferredContact: "email", locale: "en" },
-          styleSlug: "sol",
-          sizeId: "s",
-          customize: false,
-          notes: "",
-          acceptedTerms: true,
-        }),
+      post("/api/requests", {
+        kind: "commission",
+        website: "",
+        renderedAt: Date.now() - 10_000,
+        client,
+        categoryId: "heritage",
+        fabricId: "wax-print",
+        customize: true,
+        occasion: "A wedding",
+        neededBy: "2026-11-01",
+        notes: "",
+        acceptedTerms: true,
       }),
     );
     expect(response.status).toBe(200);
     const { reference } = (await response.json()) as { reference: string };
-    expect(findRequest(reference)?.details.Style).toBe("Sol dress, corrected");
+    expect(findRequest(reference)).toMatchObject({ kind: "commission", details: { Garment: "heritage" } });
+    expect(findRequest(reference)?.estimate?.subtotal).toBeGreaterThan(0);
+  });
+
+  it("takes an alteration request from a guest who gave only an email", async () => {
+    const { POST } = await import("@/app/api/requests/route");
+    const { findRequest } = await import("./request-store");
+    const response = await POST(
+      post("/api/requests", {
+        kind: "alteration",
+        website: "",
+        renderedAt: Date.now() - 10_000,
+        client: { email: "guest@example.com", locale: "en" },
+        garmentDescription: "A navy wool jacket that runs a little wide through the body.",
+        alterationIds: ["hem-dress"],
+        rush: false,
+        preferredTiming: "Before the 20th",
+        notes: "",
+        acceptedTerms: true,
+      }),
+    );
+    expect(response.status).toBe(200);
+    const { reference } = (await response.json()) as { reference: string };
+    expect(findRequest(reference)?.client).toMatchObject({ name: "", email: "guest@example.com" });
+  });
+
+  it("refuses to reply by phone when the guest left no number to call", async () => {
+    const { POST } = await import("@/app/api/requests/route");
+    const response = await POST(
+      post("/api/requests", {
+        kind: "alteration",
+        website: "",
+        renderedAt: Date.now() - 10_000,
+        client: { email: "guest@example.com", locale: "en", preferredContact: "phone" },
+        garmentDescription: "A navy wool jacket that runs a little wide through the body.",
+        alterationIds: ["hem-dress"],
+        rush: false,
+        preferredTiming: "Before the 20th",
+        notes: "",
+        acceptedTerms: true,
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "phone-required" });
+  });
+
+  it("takes no garment from the collection: that is bought through the cart", async () => {
+    const { POST } = await import("@/app/api/requests/route");
+    const { listRequests } = await import("./request-store");
+    const response = await POST(
+      post("/api/requests", {
+        kind: "order",
+        website: "",
+        renderedAt: Date.now() - 10_000,
+        client,
+        styleSlug: "sol",
+        sizeId: "s",
+        customize: false,
+        notes: "",
+        acceptedTerms: true,
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(listRequests("order")).toEqual([]);
+  });
+});
+
+describe("the cart checkout", () => {
+  it("writes the corrected name of a garment Daysi added into the order she reads", async () => {
+    const { writeCart } = await import("./cart");
+    await writeCart({ lines: [{ styleSlug: "sol", sizeId: "s", customize: false, quantity: 1 }] });
+
+    const { POST } = await import("@/app/api/cart/checkout/route");
+    const { findRequest } = await import("./request-store");
+    const response = await POST(
+      post("/api/cart/checkout", {
+        name: client.name,
+        email: client.email,
+        phone: client.phone,
+        preferredContact: client.preferredContact,
+        locale: client.locale,
+        notes: "",
+        acceptedTerms: true,
+      }),
+    );
+    expect(response.status).toBe(200);
+    const { reference } = (await response.json()) as { reference: string };
+    expect(findRequest(reference)?.details.Pieces).toEqual(["Sol dress, corrected · S × 1"]);
   });
 });
 

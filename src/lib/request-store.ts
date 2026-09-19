@@ -213,6 +213,10 @@ export function findRequest(reference: string): StoredRequest | undefined {
  * *verified* address on the signed-in account — a client cannot reach another
  * person's orders by claiming their address, because claiming it is not how
  * they got here.
+ *
+ * A card page the client opened and never paid is left out, as it is from
+ * Daysi's office: it is not an order, and it must not sit in their history
+ * as waiting for payment. See `unfinishedCheckout`.
  */
 export function requestsForAccount(
   account: { id: string; email: string },
@@ -221,9 +225,10 @@ export function requestsForAccount(
   const all = kinds.flatMap(activeRequests);
   const mine = all.filter(
     (record) =>
-      record.accountId === account.id ||
-      (record.accountId === undefined &&
-        record.client.email.trim().toLowerCase() === account.email),
+      !unfinishedCheckout(record) &&
+      (record.accountId === account.id ||
+        (record.accountId === undefined &&
+          record.client.email.trim().toLowerCase() === account.email)),
   );
 
   return mine.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));

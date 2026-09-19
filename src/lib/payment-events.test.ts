@@ -97,6 +97,7 @@ describe("markPaid", () => {
   it("marks the order paid and says the line came from Stripe", async () => {
     vi.doMock("./notify", () => ({
       notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaid: vi.fn(async () => undefined),
       notifyClientPaymentFailed: vi.fn(async () => undefined),
     }));
     const { saveRequest, findRequest } = await import("./request-store");
@@ -160,7 +161,10 @@ describe("markPaid", () => {
 
 describe("markPaid tells Daysi", () => {
   it("announces the order once Stripe confirms, and only once", async () => {
-    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    vi.doMock("./notify", () => ({
+      notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaid: vi.fn(async () => undefined),
+    }));
     const { saveRequest } = await import("./request-store");
     const { markPaid } = await import("./payment-events");
     const { notifyOwner } = await import("./notify");
@@ -179,7 +183,10 @@ describe("markPaid tells Daysi", () => {
   });
 
   it("drops the waiting mark from the paid line", async () => {
-    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    vi.doMock("./notify", () => ({
+      notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaid: vi.fn(async () => undefined),
+    }));
     const { saveRequest, findRequest } = await import("./request-store");
     const { markPaid } = await import("./payment-events");
 
@@ -188,11 +195,35 @@ describe("markPaid tells Daysi", () => {
 
     expect(findRequest("ORD-1")).not.toHaveProperty("awaitingPayment");
   });
+
+  it("tells the client once, not on a retry", async () => {
+    vi.doMock("./notify", () => ({
+      notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaid: vi.fn(async () => undefined),
+    }));
+    const { saveRequest } = await import("./request-store");
+    const { markPaid } = await import("./payment-events");
+    const { notifyClientPaid } = await import("./notify");
+
+    await saveRequest(record({ reference: "ORD-1", kind: "order", awaitingPayment: true }));
+
+    await markPaid("ORD-1", paidNow);
+    expect(notifyClientPaid).toHaveBeenCalledTimes(1);
+    expect(notifyClientPaid).toHaveBeenCalledWith(
+      expect.objectContaining({ reference: "ORD-1", status: "paid", source: "stripe" }),
+    );
+
+    await markPaid("ORD-1", paidNow);
+    expect(notifyClientPaid).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("markExpired", () => {
   it("closes a booking whose payment page ran out, so it leaves the calendar and the books", async () => {
-    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    vi.doMock("./notify", () => ({
+      notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaid: vi.fn(async () => undefined),
+    }));
     const { saveRequest, findRequest } = await import("./request-store");
     const { markExpired } = await import("./payment-events");
 
@@ -207,7 +238,10 @@ describe("markExpired", () => {
   });
 
   it("leaves a paid order alone when Stripe reports its session expired afterwards", async () => {
-    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    vi.doMock("./notify", () => ({
+      notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaid: vi.fn(async () => undefined),
+    }));
     const { saveRequest, findRequest } = await import("./request-store");
     const { markPaid, markExpired } = await import("./payment-events");
 
@@ -221,7 +255,10 @@ describe("markExpired", () => {
 
   it("leaves a record the office has already handled alone", async () => {
     // Daysi took cash and marked it herself; the dead payment page is not news.
-    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    vi.doMock("./notify", () => ({
+      notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaid: vi.fn(async () => undefined),
+    }));
     const { saveRequest, findRequest } = await import("./request-store");
     const { markExpired } = await import("./payment-events");
 
@@ -236,7 +273,10 @@ describe("markExpired", () => {
   });
 
   it("writes nothing for a reference it does not recognise", async () => {
-    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    vi.doMock("./notify", () => ({
+      notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaid: vi.fn(async () => undefined),
+    }));
     const { markExpired } = await import("./payment-events");
     expect(await markExpired("ORD-nobody")).toBe("unknown");
   });
@@ -244,7 +284,10 @@ describe("markExpired", () => {
 
 describe("markRefunded", () => {
   it("writes the refund Stripe reports on top of the paid order", async () => {
-    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    vi.doMock("./notify", () => ({
+      notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaid: vi.fn(async () => undefined),
+    }));
     const { saveRequest, findRequest } = await import("./request-store");
     const { markPaid, markRefunded } = await import("./payment-events");
 
@@ -257,7 +300,10 @@ describe("markRefunded", () => {
   });
 
   it("does not repeat itself when Stripe delivers the refund twice", async () => {
-    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    vi.doMock("./notify", () => ({
+      notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaid: vi.fn(async () => undefined),
+    }));
     const { saveRequest } = await import("./request-store");
     const { markPaid, markRefunded } = await import("./payment-events");
 
@@ -269,7 +315,10 @@ describe("markRefunded", () => {
   });
 
   it("does not put the money back when the payment event is retried after the refund", async () => {
-    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    vi.doMock("./notify", () => ({
+      notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaid: vi.fn(async () => undefined),
+    }));
     const { saveRequest, findRequest } = await import("./request-store");
     const { markPaid, markRefunded } = await import("./payment-events");
 
@@ -281,7 +330,10 @@ describe("markRefunded", () => {
   });
 
   it("writes nothing for a reference it does not recognise", async () => {
-    vi.doMock("./notify", () => ({ notifyOwner: vi.fn(async () => undefined) }));
+    vi.doMock("./notify", () => ({
+      notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaid: vi.fn(async () => undefined),
+    }));
     const { markRefunded } = await import("./payment-events");
     expect(await markRefunded("ORD-nobody")).toBe("unknown");
   });
@@ -297,6 +349,7 @@ describe("applyPaymentEvent", () => {
   async function setup() {
     vi.doMock("./notify", () => ({
       notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaid: vi.fn(async () => undefined),
       notifyClientPaymentFailed: vi.fn(async () => undefined),
     }));
     const { saveRequest, findRequest } = await import("./request-store");

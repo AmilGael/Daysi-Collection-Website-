@@ -6,7 +6,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { translate, type GarmentStyle } from "@/content";
 import type { Cart } from "@/lib/cart";
 import type { Estimate } from "@/lib/pricing";
-import { Link, type Locale } from "@/i18n/routing";
+import { Link, useRouter, type Locale } from "@/i18n/routing";
+import { whatsappLink } from "@/lib/whatsapp";
 import { buttonClass } from "./ui";
 import { ChoiceGroup, Checkbox, Field, TextArea, TextInput } from "./form";
 import { EstimateSummary } from "./estimate-summary";
@@ -19,6 +20,10 @@ type ContactMethod = "whatsapp" | "phone" | "email";
  * Every change posts to the server and the server sends back the re-priced
  * basket, so what the client sees is always what the server would charge.
  * Nothing here adds up a total on its own.
+ *
+ * The till only ever leads to Stripe. With card payments off there is no
+ * form at all, only the total and the way to reach Daysi on WhatsApp, since
+ * an order nobody can pay for is not an order.
  */
 export function CartView({
   initialCart,
@@ -37,6 +42,7 @@ export function CartView({
   const tr = useTranslations("request");
   const tc = useTranslations("common");
   const locale = useLocale() as Locale;
+  const router = useRouter();
 
   const [cart, setCart] = useState(initialCart);
   const [estimate, setEstimate] = useState(initialEstimate);
@@ -48,8 +54,12 @@ export function CartView({
   const [preferredContact, setPreferredContact] = useState<ContactMethod>("whatsapp");
   const [notes, setNotes] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [placed, setPlaced] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Only the email is required: with no phone typed, WhatsApp or a call is
+  // not reachable, whatever the pills above say, so the order falls back to
+  // email until a number is given.
+  const contactMethod: ContactMethod = phone.trim() ? preferredContact : "email";
 
   async function change(body: unknown) {
     setBusy(true);
@@ -81,18 +91,27 @@ export function CartView({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          name,
+          name: name.trim() ? name : undefined,
           email,
-          phone,
-          preferredContact,
+          phone: phone.trim() ? phone : undefined,
+          preferredContact: contactMethod,
           notes,
           locale,
           acceptedTerms: true,
         }),
       });
 
+      // Every refusal leaves the cart as it was, so the client can try again.
       if (!response.ok) {
-        setError(response.status === 409 ? t("soldOut") : tc("somethingWentWrong"));
+        setError(
+          response.status === 409
+            ? t("soldOut")
+            : response.status === 502
+              ? t("checkoutUnavailable")
+              : response.status === 503
+                ? t("paymentsOff")
+                : tc("somethingWentWrong"),
+        );
         return;
       }
 
@@ -101,26 +120,14 @@ export function CartView({
         window.location.assign(result.checkoutUrl);
         return;
       }
-      setPlaced(result.reference);
-      setCart({ lines: [] });
-      setEstimate(null);
+      // Nothing was due now, so there was nothing to pay: the order is
+      // already Daysi's, and the thank-you page gives the client its number.
+      router.push(`/checkout/thank-you?reference=${encodeURIComponent(result.reference)}`);
     } catch {
       setError(tc("somethingWentWrong"));
     } finally {
       setBusy(false);
     }
-  }
-
-  if (placed) {
-    return (
-      <div className="flex max-w-2xl flex-col gap-6 bg-paper-warm p-8 sm:p-12">
-        <h2 className="text-title">{t("placedTitle")}</h2>
-        <p className="text-lead text-ink-soft">{t("placedLead", { reference: placed })}</p>
-        <Link href="/account/orders" className={buttonClass({ size: "small", className: "w-fit" })}>
-          {t("seeOrders")}
-        </Link>
-      </div>
-    );
   }
 
   if (cart.lines.length === 0) {
@@ -203,100 +210,113 @@ export function CartView({
       <aside className="flex flex-col gap-6 lg:sticky lg:top-28 lg:self-start">
         {estimate ? <EstimateSummary estimate={estimate} /> : null}
 
-        <form onSubmit={placeOrder} className="flex flex-col gap-5 border-t border-line pt-6">
-          <h2 className="text-heading">{t("yourDetails")}</h2>
+        {paymentsEnabled ? (
+          <form onSubmit={placeOrder} className="flex flex-col gap-5 border-t border-line pt-6">
+            <h2 className="text-heading">{t("yourDetails")}</h2>
 
-          <Field label={tr("name")}>
-            {({ id }) => (
-              <TextInput
-                id={id}
-                required
-                autoComplete="name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
+            <Field label={tr("email")}>
+              {({ id }) => (
+                <TextInput
+                  id={id}
+                  required
+                  type="email"
+                  autoComplete="email"
+                  readOnly={viewer !== null}
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className={viewer ? "text-ink-faint" : undefined}
+                />
+              )}
+            </Field>
+            <Field label={tr("name")} optional>
+              {({ id }) => (
+                <TextInput
+                  id={id}
+                  autoComplete="name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
+              )}
+            </Field>
+            <Field label={tr("phone")} optional hint={tr("whatsappHint")}>
+              {({ id, describedBy }) => (
+                <TextInput
+                  id={id}
+                  aria-describedby={describedBy}
+                  type="tel"
+                  autoComplete="tel"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                />
+              )}
+            </Field>
+
+            {phone.trim() ? (
+              <ChoiceGroup
+                legend={tr("preferredContact")}
+                value={preferredContact}
+                onChange={setPreferredContact}
+                options={[
+                  { value: "whatsapp", label: tc("whatsapp") },
+                  { value: "phone", label: tc("phone") },
+                  { value: "email", label: tc("email") },
+                ]}
               />
-            )}
-          </Field>
-          <Field label={tr("email")}>
-            {({ id }) => (
-              <TextInput
-                id={id}
-                required
-                type="email"
-                autoComplete="email"
-                readOnly={viewer !== null}
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className={viewer ? "text-ink-faint" : undefined}
-              />
-            )}
-          </Field>
-          <Field label={tr("phone")}>
-            {({ id }) => (
-              <TextInput
-                id={id}
-                required
-                type="tel"
-                autoComplete="tel"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-              />
-            )}
-          </Field>
+            ) : null}
 
-          <ChoiceGroup
-            legend={tr("preferredContact")}
-            value={preferredContact}
-            onChange={setPreferredContact}
-            options={[
-              { value: "whatsapp", label: tc("whatsapp") },
-              { value: "phone", label: tc("phone") },
-              { value: "email", label: tc("email") },
-            ]}
-          />
+            <Field label={tr("notes")} optional>
+              {({ id }) => (
+                <TextArea
+                  id={id}
+                  rows={3}
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                />
+              )}
+            </Field>
 
-          <Field label={tr("notes")} optional>
-            {({ id }) => (
-              <TextArea
-                id={id}
-                rows={3}
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-              />
-            )}
-          </Field>
+            <Checkbox checked={acceptedTerms} onChange={setAcceptedTerms}>
+              {tr.rich("terms", {
+                link: (chunks) => (
+                  <Link href="/terms" className="link-underline">
+                    {chunks}
+                  </Link>
+                ),
+              })}
+            </Checkbox>
 
-          <Checkbox checked={acceptedTerms} onChange={setAcceptedTerms}>
-            {tr.rich("terms", {
-              link: (chunks) => (
-                <Link href="/terms" className="link-underline">
-                  {chunks}
-                </Link>
-              ),
-            })}
-          </Checkbox>
+            {error ? (
+              <p role="alert" className="bg-paper-warm px-4 py-3 text-[0.875rem]">
+                {error}
+              </p>
+            ) : null}
 
-          {error ? (
-            <p role="alert" className="bg-paper-warm px-4 py-3 text-[0.875rem]">
-              {error}
-            </p>
-          ) : null}
+            <button
+              type="submit"
+              disabled={busy || !acceptedTerms}
+              className="inline-flex items-center justify-center rounded-[2px] bg-ink px-8 py-4 text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-paper transition-colors hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {t("payNow")}
+            </button>
 
-          <button
-            type="submit"
-            disabled={busy || !acceptedTerms}
-            className="inline-flex items-center justify-center rounded-[2px] bg-ink px-8 py-4 text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-paper transition-colors hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            {paymentsEnabled ? t("payNow") : t("placeOrder")}
-          </button>
-
-          {/* Either way the client is told how the money part works before
-              pressing anything: what the checkout accepts, or that cards are
-              not on yet and settling happens in person. */}
-          <p className="text-[0.8125rem] leading-relaxed text-ink-faint">
-            {paymentsEnabled ? t("paymentMethods") : t("paymentsOff")}
-          </p>
-        </form>
+            {/* The client is told what the checkout accepts before pressing anything. */}
+            <p className="text-[0.8125rem] leading-relaxed text-ink-faint">{t("paymentMethods")}</p>
+          </form>
+        ) : (
+          <div className="flex flex-col gap-5 border-t border-line pt-6">
+            <p className="text-[0.875rem] leading-relaxed text-ink-soft">{t("paymentsOff")}</p>
+            <a
+              href={whatsappLink(
+                locale === "es" ? "Hola Daysi, quisiera hacer un pedido." : "Hi Daysi, I'd like to place an order.",
+              )}
+              target="_blank"
+              rel="noreferrer noopener"
+              className={buttonClass({ className: "w-full" })}
+            >
+              {tc("whatsapp")}
+            </a>
+          </div>
+        )}
       </aside>
     </div>
   );

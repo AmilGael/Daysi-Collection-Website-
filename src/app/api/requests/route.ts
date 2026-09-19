@@ -1,21 +1,16 @@
 import { NextResponse } from "next/server";
-import { alterationServices, translate } from "@/content";
-import { liveStyleBySlug as findStyle } from "@/lib/live-catalog";
-import {
-  estimateAlteration,
-  estimateCommission,
-  estimateReadyMade,
-  type Estimate,
-} from "@/lib/pricing";
-import { isLikelyBot, requestSchema, type ClientRequest } from "@/lib/validation";
+import { alterationServices } from "@/content";
+import { estimateAlteration, estimateCommission, type Estimate } from "@/lib/pricing";
+import { isLikelyBot, requestSchema, resolvePreferredContact, type ClientRequest } from "@/lib/validation";
 import { callerKey, checkRateLimit, pruneRateLimits } from "@/lib/rate-limit";
 import { isSameOrigin, newReference, parseImageDataUrl } from "@/lib/security";
 import { recordRequest } from "@/lib/notify";
 import { saveRequestPhoto, type StoredRequest } from "@/lib/request-store";
 
 /**
- * Alteration, order and commission requests — the workflow the whole site
- * points at.
+ * Alteration and commission requests — the workflow the whole site points at.
+ * A garment from the collection is not requested here: it is bought through
+ * the cart, so the only order is one Stripe was paid for.
  *
  * The order of checks matters and is deliberate: reject anything not from this
  * site, then rate limit, then validate the shape, then drop obvious bots, and
@@ -52,6 +47,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ reference: newReference("DC") });
   }
 
+  // A guest may leave no phone at all — only the email is required — but
+  // asking to be reached by phone or WhatsApp with none on file is refused
+  // rather than silently ignored.
+  const contact = resolvePreferredContact(submission.client);
+  if (!contact) {
+    return NextResponse.json({ error: "phone-required" }, { status: 400 });
+  }
+
   const estimate = priceSubmission(submission);
   if (!estimate) {
     return NextResponse.json({ error: "unpriceable" }, { status: 400 });
@@ -69,7 +72,7 @@ export async function POST(request: Request) {
       name: submission.client.name,
       email: submission.client.email,
       phone: submission.client.phone,
-      preferredContact: submission.client.preferredContact,
+      preferredContact: contact.preferredContact,
     },
     details: describe(submission),
     estimate,
@@ -86,7 +89,7 @@ export async function POST(request: Request) {
 }
 
 function referencePrefix(kind: ClientRequest["kind"]): string {
-  return { alteration: "ALT", order: "ORD", commission: "CUS" }[kind];
+  return { alteration: "ALT", commission: "CUS" }[kind];
 }
 
 /**
@@ -99,12 +102,6 @@ function priceSubmission(submission: ClientRequest): Estimate | null {
       return estimateAlteration({
         alterationIds: submission.alterationIds,
         rush: submission.rush,
-      });
-    case "order":
-      return estimateReadyMade({
-        styleSlug: submission.styleSlug,
-        sizeId: submission.sizeId,
-        customize: submission.customize,
       });
     case "commission":
       return estimateCommission({
@@ -128,15 +125,6 @@ function describe(submission: ClientRequest): StoredRequest["details"] {
         Timing: submission.preferredTiming,
         Notes: submission.notes,
       };
-    case "order": {
-      const style = findStyle(submission.styleSlug);
-      return {
-        Style: style ? translate(style.name, "en") : submission.styleSlug,
-        Size: submission.sizeId.toUpperCase(),
-        "Made to measure": submission.customize,
-        Notes: submission.notes,
-      };
-    }
     case "commission":
       return {
         Garment: submission.categoryId,

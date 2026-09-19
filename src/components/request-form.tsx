@@ -4,17 +4,16 @@ import { useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import {
-  sizeState,
   translate,
   type AlterationService,
   type DesignCategory,
   type Fabric,
-  type GarmentStyle,
 } from "@/content";
 import { formatMoney } from "@/lib/money";
 import type { Estimate } from "@/lib/pricing";
 import { Link, type Locale } from "@/i18n/routing";
 import { whatsappLink } from "@/lib/whatsapp";
+import { TextLink } from "@/components/ui";
 import {
   BotTrap,
   Checkbox,
@@ -30,34 +29,31 @@ import {
 } from "./form";
 import { EstimateSummary } from "./estimate-summary";
 
-type Kind = "alteration" | "order" | "commission";
+type Kind = "alteration" | "commission";
 type ContactMethod = "whatsapp" | "phone" | "email";
 
 const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 
 /**
- * The one form Daysi's business runs on. It covers all three kinds of request
- * with the same fields for who you are and how to reach you, and swaps only the
- * part that describes the work.
+ * The one form Daysi's business runs on. It covers both kinds of request with
+ * the same fields for who you are and how to reach you, and swaps only the
+ * part that describes the work. A garment from the collection is not one of
+ * them: it is bought through the cart, where it is paid for.
  *
  * Nothing here computes a price the client can send: the server re-prices every
  * submission from the published list and returns the estimate it produced.
  */
 export function RequestForm({
   initialKind,
-  initialStyleSlug,
-  initialSizeId,
-  initialCustomize,
-  styles,
+  lockedKind,
+  initialAlterationId,
   alterations,
   categories,
   fabrics,
 }: {
   initialKind: Kind;
-  initialStyleSlug?: string;
-  initialSizeId?: string;
-  initialCustomize?: boolean;
-  styles: readonly GarmentStyle[];
+  lockedKind: Kind | null;
+  initialAlterationId?: string;
   alterations: readonly AlterationService[];
   categories: readonly DesignCategory[];
   fabrics: readonly Fabric[];
@@ -79,16 +75,16 @@ export function RequestForm({
 
   // Alteration
   const [garmentDescription, setGarmentDescription] = useState("");
-  const [alterationIds, setAlterationIds] = useState<string[]>([]);
+  const [alterationIds, setAlterationIds] = useState<string[]>(
+    initialAlterationId &&
+      alterations.some((alteration) => alteration.id === initialAlterationId)
+      ? [initialAlterationId]
+      : [],
+  );
   const [rush, setRush] = useState(false);
   const [preferredTiming, setPreferredTiming] = useState("");
   const [photo, setPhoto] = useState<{ dataUrl: string; name: string } | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
-
-  // Order
-  const [styleSlug, setStyleSlug] = useState(initialStyleSlug ?? styles[0]?.slug ?? "");
-  const [sizeId, setSizeId] = useState(initialSizeId ?? "m");
-  const [customize, setCustomize] = useState(initialCustomize ?? false);
 
   // Commission
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
@@ -98,11 +94,20 @@ export function RequestForm({
 
   const [estimate, setEstimate] = useState<Estimate | null>(null);
 
-  const selectedStyle = styles.find((style) => style.slug === styleSlug);
+  // Only the email is required: a phone left blank means there is no way to
+  // reach the guest by WhatsApp or by phone, whatever the pills above say, so
+  // the effective method falls back to email until a number is typed.
+  const contactMethod: ContactMethod = phone.trim() ? preferredContact : "email";
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const client = { name, email, phone, preferredContact, locale };
+    const client = {
+      name: name.trim() ? name : undefined,
+      email,
+      phone: phone.trim() ? phone : undefined,
+      preferredContact: contactMethod,
+      locale,
+    };
     const common = { website: "", renderedAt, client, notes, acceptedTerms: true as const };
 
     const body =
@@ -116,9 +121,7 @@ export function RequestForm({
             preferredTiming,
             photoDataUrl: photo?.dataUrl,
           }
-        : kind === "order"
-          ? { ...common, kind, styleSlug, sizeId, customize }
-          : { ...common, kind, categoryId, fabricId, customize: true as const, occasion, neededBy };
+        : { ...common, kind, categoryId, fabricId, customize: true as const, occasion, neededBy };
 
     const result = await submit(body);
     if (result?.estimate) setEstimate(result.estimate);
@@ -144,7 +147,7 @@ export function RequestForm({
       <div className="flex max-w-2xl flex-col gap-6 bg-paper-warm p-8 sm:p-12">
         <h2 className="text-title">{t("sentTitle")}</h2>
         <p className="text-lead text-ink-soft">
-          {t("sentLead", { reference: state.reference, contact: tc(preferredContact) })}
+          {t("sentLead", { reference: state.reference, contact: tc(contactMethod) })}
         </p>
         {estimate ? (
           <div className="flex flex-col gap-4">
@@ -161,17 +164,25 @@ export function RequestForm({
     <form onSubmit={onSubmit} className="relative flex max-w-2xl flex-col gap-10">
       <BotTrap renderedAt={renderedAt} />
 
-      <ChoiceGroup
-        legend={t("title")}
-        columns
-        value={kind}
-        onChange={setKind}
-        options={[
-          { value: "alteration", label: t("kindAlteration") },
-          { value: "order", label: t("kindOrder") },
-          { value: "commission", label: t("kindCommission") },
-        ]}
-      />
+      {lockedKind ? (
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="text-heading">
+            {t(kind === "alteration" ? "kindAlteration" : "kindCommission")}
+          </h2>
+          <TextLink href="/request">{t("changeKind")}</TextLink>
+        </div>
+      ) : (
+        <ChoiceGroup
+          legend={t("title")}
+          columns
+          value={kind}
+          onChange={setKind}
+          options={[
+            { value: "alteration", label: t("kindAlteration") },
+            { value: "commission", label: t("kindCommission") },
+          ]}
+        />
+      )}
 
       {kind === "alteration" ? (
         <section className="flex flex-col gap-6">
@@ -278,38 +289,6 @@ export function RequestForm({
         </section>
       ) : null}
 
-      {kind === "order" ? (
-        <section className="flex flex-col gap-6">
-          <Field label={t("kindOrder")}>
-            {({ id }) => (
-              <Select id={id} value={styleSlug} onChange={(event) => setStyleSlug(event.target.value)}>
-                {styles.map((style) => (
-                  <option key={style.slug} value={style.slug}>
-                    {translate(style.name, locale)}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-
-          <Field label={tc("size")}>
-            {({ id }) => (
-              <Select id={id} value={sizeId} onChange={(event) => setSizeId(event.target.value)}>
-                {(selectedStyle?.sizes ?? []).map((size) => (
-                  <option key={size.sizeId} value={size.sizeId}>
-                    {size.sizeId.toUpperCase()} — {tc(sizeState(size))}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-
-          <Checkbox checked={customize} onChange={setCustomize}>
-            {t("kindCommission")}
-          </Checkbox>
-        </section>
-      ) : null}
-
       {kind === "commission" ? (
         <section className="flex flex-col gap-6">
           <div className="grid gap-6 sm:grid-cols-2">
@@ -367,31 +346,6 @@ export function RequestForm({
 
       <section className="flex flex-col gap-6 border-t border-line pt-10">
         <h2 className="text-heading">{t("yourDetails")}</h2>
-        <div className="grid gap-6 sm:grid-cols-2">
-          <Field label={t("name")}>
-            {({ id }) => (
-              <TextInput
-                id={id}
-                required
-                autoComplete="name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            )}
-          </Field>
-          <Field label={t("phone")}>
-            {({ id }) => (
-              <TextInput
-                id={id}
-                required
-                type="tel"
-                autoComplete="tel"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-              />
-            )}
-          </Field>
-        </div>
         <Field label={t("email")}>
           {({ id }) => (
             <TextInput
@@ -405,16 +359,43 @@ export function RequestForm({
           )}
         </Field>
 
-        <ChoiceGroup
-          legend={t("preferredContact")}
-          value={preferredContact}
-          onChange={setPreferredContact}
-          options={[
-            { value: "whatsapp", label: tc("whatsapp") },
-            { value: "phone", label: tc("phone") },
-            { value: "email", label: tc("email") },
-          ]}
-        />
+        <div className="grid gap-6 sm:grid-cols-2">
+          <Field label={t("name")} optional>
+            {({ id }) => (
+              <TextInput
+                id={id}
+                autoComplete="name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
+            )}
+          </Field>
+          <Field label={t("phone")} optional hint={t("whatsappHint")}>
+            {({ id, describedBy }) => (
+              <TextInput
+                id={id}
+                aria-describedby={describedBy}
+                type="tel"
+                autoComplete="tel"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+              />
+            )}
+          </Field>
+        </div>
+
+        {phone.trim() ? (
+          <ChoiceGroup
+            legend={t("preferredContact")}
+            value={preferredContact}
+            onChange={setPreferredContact}
+            options={[
+              { value: "whatsapp", label: tc("whatsapp") },
+              { value: "phone", label: tc("phone") },
+              { value: "email", label: tc("email") },
+            ]}
+          />
+        ) : null}
 
         <Field label={t("notes")} optional>
           {({ id }) => (

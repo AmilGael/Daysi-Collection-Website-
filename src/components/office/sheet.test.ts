@@ -19,7 +19,8 @@ describe("the sheet", () => {
     expect(source).toContain('role="dialog"');
     expect(source).toContain('aria-modal="true"');
     expect(source).toContain("fixed inset-0 z-50");
-    expect(source).toContain("bottom-16");
+    expect(source).toContain("bottom-[var(--office-bar)]");
+    expect(source).not.toContain("bottom-16");
     expect(source).not.toContain("sm:inset-y-0");
   });
 

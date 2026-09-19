@@ -18,7 +18,7 @@ export type HeaderViewer = { name: string; email: string; isOwner: boolean } | n
  * the header starts light and inverts to the normal light-background chrome as
  * soon as the page scrolls past the image.
  */
-const DARK_HERO_ROUTES = ["/", "/premieres", "/atelier"];
+const DARK_HERO_ROUTES = ["/", "/premieres", "/atelier", "/sign-in"];
 
 export function SiteHeader({
   viewer,

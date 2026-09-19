@@ -1,7 +1,9 @@
+import { translate } from "@/content";
 import { emailEnabled, env } from "./env";
 import { formatMoney } from "./money";
 import { forNotification } from "./security";
 import { saveRequest, type StoredRequest } from "./request-store";
+import { whatsappLink } from "./whatsapp";
 
 /**
  * How Daysi hears that something came in. Email if a key is configured;
@@ -23,11 +25,14 @@ export function summarise(request: StoredRequest): string {
   const lines: string[] = [
     `${KIND_LABELS[request.kind]} · ${request.reference}`,
     "",
-    `Name:      ${forNotification(request.client.name)}`,
+    `Name:      ${request.client.name ? forNotification(request.client.name) : "No name given"}`,
     `Email:     ${forNotification(request.client.email)}`,
   ];
 
+  // No phone on file: Daysi cannot text or call, so the note says as much and
+  // she knows to reply by email instead.
   if (request.client.phone) lines.push(`Phone:     ${forNotification(request.client.phone)}`);
+  else lines.push("No phone given");
   if (request.client.preferredContact) {
     lines.push(`Reply via: ${request.client.preferredContact}`);
   }
@@ -89,6 +94,28 @@ function subjectPrefix(request: StoredRequest): string {
 }
 
 /**
+ * How a message to the client opens: a name, when there is one — nothing
+ * invented when there is not. "Hola," and "Hello," read as complete
+ * sentences on their own; a stand-in word ("client", "cliente") would be
+ * worse than leaving it out, since it announces that the name was missing
+ * rather than just not mentioning one.
+ */
+function greeting(name: string, locale: "es" | "en"): string {
+  const word = locale === "es" ? "Hola" : "Hello";
+  return name ? `${word} ${name},` : `${word},`;
+}
+
+/**
+ * The name slot in the owner's subject line: the client's name, or their
+ * email when they left none, so the line never reads with a gap ("Order —
+ *  (ORD-1)") where a name should be — an email is still a way to tell one
+ * guest from the next at a glance.
+ */
+function subjectName(request: StoredRequest): string {
+  return request.client.name || request.client.email;
+}
+
+/**
  * The one place mail leaves this application. Never throws: a message that
  * could not be sent is logged, and the caller decides what that means for the
  * client in front of them.
@@ -137,7 +164,7 @@ export async function notifyOwner(request: StoredRequest): Promise<void> {
   await sendEmail({
     to: env.ownerEmails,
     replyTo: request.client.email,
-    subject: `${subjectPrefix(request)}${KIND_LABELS[request.kind]} — ${request.client.name} (${request.reference})`,
+    subject: `${subjectPrefix(request)}${KIND_LABELS[request.kind]} — ${subjectName(request)} (${request.reference})`,
     text: summarise(request),
   });
 }
@@ -161,7 +188,7 @@ export async function notifyClientPaymentFailed(request: StoredRequest): Promise
       ? {
           subject: `Su pago no llegó · ${request.reference}`,
           text: [
-            `Hola ${name},`,
+            greeting(name, "es"),
             "",
             `Su banco no envió el pago de ${amount} de la solicitud ${request.reference}, así que no se cobró nada.`,
             "",
@@ -173,7 +200,7 @@ export async function notifyClientPaymentFailed(request: StoredRequest): Promise
       : {
           subject: `Your payment did not go through · ${request.reference}`,
           text: [
-            `Hello ${name},`,
+            greeting(name, "en"),
             "",
             `Your bank did not send the payment of ${amount} for request ${request.reference}, so nothing was charged.`,
             "",
@@ -187,6 +214,136 @@ export async function notifyClientPaymentFailed(request: StoredRequest): Promise
     to: request.client.email,
     ...(env.ownerEmails[0] ? { replyTo: env.ownerEmails[0] } : {}),
     ...message,
+  });
+}
+
+/**
+ * What comes next, in the client's own words: an appointment names the day
+ * and the hour that was booked; everything else falls back to the reason the
+ * estimate itself gives for what was charged now.
+ */
+function whatsNext(request: StoredRequest): string {
+  const { locale } = request;
+  if (request.kind === "appointment") {
+    const date = request.details.date;
+    const startTime = request.details.startTime;
+    if (typeof date === "string" && typeof startTime === "string") {
+      const when = new Intl.DateTimeFormat(locale === "es" ? "es-US" : "en-US", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      }).format(new Date(`${date}T12:00:00`));
+      return locale === "es"
+        ? `Su cita es el ${when} a las ${startTime}.`
+        : `Your appointment is on ${when} at ${startTime}.`;
+    }
+  }
+  return request.estimate ? translate(request.estimate.dueNowReason, locale) : "";
+}
+
+/**
+ * The client's own receipt: every line they are being charged for, what was
+ * paid now and what is still owed, and what happens next. Split from
+ * `notifyClientPaid` so the tests can check the words without going through
+ * `sendEmail`.
+ */
+export function receiptMessage(request: StoredRequest): { subject: string; text: string } {
+  const { locale } = request;
+  const name = forNotification(request.client.name);
+  const estimate = request.estimate;
+  const lines = estimate?.lines ?? [];
+
+  const itemLines = lines.map((line) => {
+    const qty = line.unitAmount ? Math.round(line.amount / line.unitAmount) : 1;
+    const label = line.note ? `${translate(line.label, locale)} (${translate(line.note, locale)})` : translate(line.label, locale);
+    return `${label} × ${qty} — ${formatMoney(line.amount, locale)}`;
+  });
+
+  const subtotal = estimate?.subtotal ?? 0;
+  const salesTax = estimate?.salesTax ?? 0;
+  const total = estimate?.total ?? 0;
+  const dueNow = estimate?.dueNow ?? 0;
+  const dueOnCollection = estimate?.dueOnCollection ?? 0;
+  const byBank = request.paidVia === "bank";
+  const via = locale === "es" ? (byBank ? "banco" : "tarjeta") : byBank ? "bank" : "card";
+
+  const whatsapp = whatsappLink(
+    locale === "es"
+      ? `Hola Daysi, sobre mi pedido ${request.reference}`
+      : `Hi Daysi, about my order ${request.reference}`,
+  );
+  const ordersUrl = `${env.siteUrl}/${locale}/account/orders`;
+
+  const text =
+    locale === "es"
+      ? [
+          greeting(name, "es"),
+          "",
+          ...itemLines,
+          "",
+          `Subtotal: ${formatMoney(subtotal, "es")}`,
+          ...(salesTax > 0 ? [`Impuesto: ${formatMoney(salesTax, "es")}`] : []),
+          `Total: ${formatMoney(total, "es")}`,
+          "",
+          `Pagado ahora (${via}): ${formatMoney(dueNow, "es")}`,
+          ...(dueOnCollection > 0 ? [`Pendiente al recoger: ${formatMoney(dueOnCollection, "es")}`] : []),
+          "",
+          `Referencia: ${request.reference}`,
+          "",
+          "Qué sigue",
+          whatsNext(request),
+          "",
+          `¿Preguntas? Escríbanos por WhatsApp: ${whatsapp}`,
+          `Vea sus pedidos: ${ordersUrl}`,
+          "",
+          "Daysi Collection",
+        ].join("\n")
+      : [
+          greeting(name, "en"),
+          "",
+          ...itemLines,
+          "",
+          `Subtotal: ${formatMoney(subtotal, "en")}`,
+          ...(salesTax > 0 ? [`Tax: ${formatMoney(salesTax, "en")}`] : []),
+          `Total: ${formatMoney(total, "en")}`,
+          "",
+          `Paid now (${via}): ${formatMoney(dueNow, "en")}`,
+          ...(dueOnCollection > 0 ? [`Due on collection: ${formatMoney(dueOnCollection, "en")}`] : []),
+          "",
+          `Reference: ${request.reference}`,
+          "",
+          "What's next",
+          whatsNext(request),
+          "",
+          `Questions? Reach us on WhatsApp: ${whatsapp}`,
+          `See your orders: ${ordersUrl}`,
+          "",
+          "Daysi Collection",
+        ].join("\n");
+
+  return {
+    subject: locale === "es" ? `Su recibo · ${request.reference}` : `Your receipt · ${request.reference}`,
+    text,
+  };
+}
+
+/**
+ * The receipt Stripe's confirmation buys the client: the thank-you page
+ * promises it is "on its way to your inbox", and this is what makes that
+ * true. Sent once, from `markPaid`, never from the form itself — a client who
+ * only reached the payment page has not paid, and must not be told they were
+ * charged.
+ */
+export async function notifyClientPaid(request: StoredRequest): Promise<void> {
+  if (!emailEnabled) {
+    console.info(`[notify] ${request.reference} paid; client receipt not sent, email not configured.`);
+    return;
+  }
+
+  await sendEmail({
+    to: request.client.email,
+    ...(env.ownerEmails[0] ? { replyTo: env.ownerEmails[0] } : {}),
+    ...receiptMessage(request),
   });
 }
 

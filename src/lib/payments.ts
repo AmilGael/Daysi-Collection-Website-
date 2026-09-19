@@ -119,9 +119,10 @@ export async function createCheckoutSession(
       : {}),
     ...(request.cardsOnly ? { payment_method_types: ["card" as const] } : {}),
     // Stripe fills in the braces with the session's id, so the thank-you page
-    // can ask whether the money is actually in before it says so.
+    // can ask whether the money is actually in before it says so, and the
+    // cancelled page can close the payment page the client backed out of.
     success_url: `${env.siteUrl}/${request.locale}/checkout/thank-you?reference=${request.reference}&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${env.siteUrl}/${request.locale}/checkout/cancelled?reference=${request.reference}`,
+    cancel_url: `${env.siteUrl}/${request.locale}/checkout/cancelled?reference=${request.reference}&session_id={CHECKOUT_SESSION_ID}`,
   });
 
   return session.url ? { url: session.url } : null;
@@ -157,6 +158,57 @@ export async function checkoutPaymentStatus(
     return session.status === "complete" ? "pending" : "unknown";
   } catch (error) {
     console.warn(`[stripe] Could not read session ${sessionId} for the thank-you page.`, error);
+    return "unknown";
+  }
+}
+
+export type ExpireOutcome = "expired" | "not-open" | "mismatch" | "unknown";
+
+/**
+ * Closes the payment page a client backed out of, for the cancelled page.
+ * Without this the page stays payable, and the order stays waiting, until
+ * Stripe closes it on its own half an hour later.
+ *
+ * "expired" is a page this call closed; "not-open" is one Stripe had already
+ * closed, found either on the look or by the close being refused. Both mean
+ * nothing can be paid on it any more. "mismatch" is a session made for
+ * another order, and is left alone. "unknown" covers Stripe switched off,
+ * an id that could not be a session, Stripe slow or unreachable, and a
+ * completed page: that one may be a bank debit on its way, and the webhook,
+ * not this page, writes what it became. One short try, as on the thank-you
+ * page, because the client is waiting on it.
+ */
+export async function expireCheckoutSession(
+  sessionId: string,
+  reference: string,
+): Promise<ExpireOutcome> {
+  if (!paymentsEnabled) return "unknown";
+  if (!isSessionId(sessionId)) return "unknown";
+  const once = { timeout: LOOKUP_TIMEOUT_MS, maxNetworkRetries: 0 };
+
+  let session: Stripe.Checkout.Session;
+  try {
+    session = await stripe().checkout.sessions.retrieve(sessionId, once);
+  } catch (error) {
+    // Including a made-up id Stripe has never heard of: that proves nothing
+    // about the order, so nothing is closed on its word.
+    console.warn(`[stripe] Could not read session ${sessionId} for the cancelled page.`, error);
+    return "unknown";
+  }
+  // A hand-edited URL must not close one order under another's number.
+  if (referenceOf(session) !== reference) return "mismatch";
+  if (session.status === "expired") return "not-open";
+  if (session.status !== "open") return "unknown";
+
+  try {
+    await stripe().checkout.sessions.expire(sessionId, {}, once);
+    return "expired";
+  } catch (error) {
+    // Stripe refuses to expire a page that is no longer open: it ran out
+    // between the look and the close. A timeout or a dropped connection says
+    // nothing about the page.
+    if ((error as { type?: unknown } | null)?.type === "StripeInvalidRequestError") return "not-open";
+    console.warn(`[stripe] Could not close session ${sessionId} for the cancelled page.`, error);
     return "unknown";
   }
 }

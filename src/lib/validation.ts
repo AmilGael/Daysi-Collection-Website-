@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { alterationServices, appointmentTypes, sizes } from "@/content";
+import { alterationServices, appointmentTypes } from "@/content";
 
 /**
  * One schema per form. Every route handler parses its body through the schema
@@ -29,6 +29,8 @@ const locale = z.enum(["es", "en"]);
 
 const contactMethod = z.enum(["whatsapp", "phone", "email"]);
 
+export type ContactMethod = z.infer<typeof contactMethod>;
+
 /**
  * A hidden field no person will ever fill in, plus the time the form was
  * rendered. Both are checked in `isLikelyBot` below.
@@ -38,22 +40,33 @@ const botCheck = z.object({
   renderedAt: z.coerce.number().int().nonnegative(),
 });
 
-const sizeIds = sizes.map((size) => size.id) as ["s", ...("s" | "m" | "l")[]];
 const alterationIds = alterationServices.map((item) => item.id) as [string, ...string[]];
 const appointmentIds = appointmentTypes.map((item) => item.id) as [string, ...string[]];
 
-const client = z.object({
-  name,
+/**
+ * Who a request or an order comes from. Only the email is required — an
+ * account is made from it silently — so a guest who leaves no name and no
+ * phone is still a client Daysi can write back to. A phone number is what
+ * unlocks WhatsApp or a call as the reply method; see `resolvePreferredContact`,
+ * which every route calls to turn the choice below into one that is actually
+ * reachable.
+ */
+export const clientSchema = z.object({
+  // `.optional().default("")` alone would re-validate the substituted "" against
+  // `name`'s own `min(2)`, refusing exactly the guest this is meant to admit — a
+  // missing name has to become "" after that check runs, not before it, so the
+  // fallback is a transform rather than a default.
+  name: name.optional().transform((value) => value ?? ""),
   email,
-  phone,
-  preferredContact: contactMethod,
+  phone: phone.optional(),
+  preferredContact: contactMethod.optional(),
   locale,
 });
 
 /** The alteration request form — the heart of the Demo Day workflow. */
 export const alterationRequestSchema = botCheck.extend({
   kind: z.literal("alteration"),
-  client,
+  client: clientSchema,
   garmentDescription: trimmed(500).min(10, "too-short"),
   alterationIds: z.array(z.enum(alterationIds)).min(1).max(8),
   rush: z.boolean().default(false),
@@ -63,24 +76,10 @@ export const alterationRequestSchema = botCheck.extend({
   acceptedTerms: z.literal(true),
 });
 
-/** An order for a piece in the collection, customised or as-cut. */
-export const orderRequestSchema = botCheck.extend({
-  kind: z.literal("order"),
-  client,
-  // Any well-formed slug: whether it names a garment on sale right now is the
-  // live catalog's call, made when the route prices it. A list fixed at build
-  // time would refuse every garment Daysi adds from the office.
-  styleSlug: z.string().trim().min(1).max(80).regex(/^[a-z0-9-]+$/),
-  sizeId: z.enum(sizeIds),
-  customize: z.boolean().default(false),
-  notes: message.optional().default(""),
-  acceptedTerms: z.literal(true),
-});
-
 /** A custom piece, described rather than chosen from the collection. */
 export const commissionRequestSchema = botCheck.extend({
   kind: z.literal("commission"),
-  client,
+  client: clientSchema,
   categoryId: trimmed(40),
   fabricId: trimmed(40),
   customize: z.literal(true),
@@ -90,16 +89,20 @@ export const commissionRequestSchema = botCheck.extend({
   acceptedTerms: z.literal(true),
 });
 
+/**
+ * What the request form takes. A piece from the collection is not among
+ * them: it is bought through the cart, and only a paid checkout becomes an
+ * order. Made to measure is the cart's `customize` flag.
+ */
 export const requestSchema = z.discriminatedUnion("kind", [
   alterationRequestSchema,
-  orderRequestSchema,
   commissionRequestSchema,
 ]);
 
 export type ClientRequest = z.infer<typeof requestSchema>;
 
 export const appointmentSchema = botCheck.extend({
-  client,
+  client: clientSchema,
   appointmentTypeId: z.enum(appointmentIds),
   /** ISO date, validated against real availability in the route handler. */
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "invalid-date"),
@@ -124,6 +127,25 @@ export const contactSchema = botCheck.extend({
   locale,
   message: message.min(10, "too-short"),
 });
+
+/**
+ * Turns whatever a form sent for "how should Daysi reply" into a method she
+ * can actually use, and refuses the two that need a phone when the guest
+ * left none. A choice the form never asked about — undefined — falls back to
+ * WhatsApp for whoever left a number and email for whoever did not, so an
+ * email-only guest is never silently assigned a contact method nobody can
+ * reach them by.
+ */
+export function resolvePreferredContact(details: {
+  phone?: string;
+  preferredContact?: ContactMethod;
+}): { preferredContact: ContactMethod } | null {
+  const preferredContact = details.preferredContact ?? (details.phone ? "whatsapp" : "email");
+  if ((preferredContact === "whatsapp" || preferredContact === "phone") && !details.phone) {
+    return null;
+  }
+  return { preferredContact };
+}
 
 /**
  * Two cheap signals that catch nearly all form spam without putting a puzzle in

@@ -7,10 +7,12 @@ import {
   useEffect,
   useOptimistic,
   useReducer,
+  useState,
   useTransition,
   type JSX,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import type { ActionResult, ChangeResult } from "@/lib/action-guard";
 import { uploadPhoto } from "@/components/office-client";
@@ -67,7 +69,12 @@ export function OfficeDraftProvider<Wire>({
     (_, keys) => new Set(keys),
   );
   const [, startTransition] = useTransition();
+  const [mounted, setMounted] = useState(false);
   const count = state.entries.length;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const stage = useCallback((key: string, change: DraftChange<Wire>) => {
     dispatch({ type: "stage", key, change });
@@ -153,13 +160,18 @@ export function OfficeDraftProvider<Wire>({
   return (
     <DraftContext.Provider value={value as DraftContextValue<unknown>}>
       {children}
-      <ConfirmBar
-        count={count}
-        status={state.status}
-        error={state.error}
-        onConfirm={confirm}
-        onDiscard={discard}
-      />
+      {mounted
+        ? createPortal(
+            <ConfirmBar
+              count={count}
+              status={state.status}
+              error={state.error}
+              onConfirm={confirm}
+              onDiscard={discard}
+            />,
+            document.body,
+          )
+        : null}
     </DraftContext.Provider>
   );
 }

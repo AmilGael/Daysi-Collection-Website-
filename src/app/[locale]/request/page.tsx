@@ -1,13 +1,13 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { categories } from "@/content";
 import { liveAlterations, liveFabrics } from "@/lib/live-pricing";
-import { liveStyles } from "@/lib/live-catalog";
 import { PageHeader } from "@/components/page-header";
 import { RequestForm } from "@/components/request-form";
 
-type Kind = "alteration" | "order" | "commission";
+type Kind = "alteration" | "commission";
 
-const KINDS: readonly Kind[] = ["alteration", "order", "commission"];
+/** A garment from the collection is bought through the cart, not requested here. */
+const KINDS: readonly Kind[] = ["alteration", "commission"];
 
 export default async function RequestPage({
   params,
@@ -22,18 +22,19 @@ export default async function RequestPage({
   const t = await getTranslations("request");
 
   const requested = first(query.kind);
-  const kind = KINDS.includes(requested as Kind) ? (requested as Kind) : "alteration";
+  const locked = KINDS.includes(requested as Kind);
+  const kind = locked ? (requested as Kind) : "alteration";
+  const initialAlterationId = first(query.alteration);
 
   return (
     <>
       <PageHeader title={t("title")} lead={t("lead")} />
       <div className="shell pb-28">
         <RequestForm
+          key={locked ? kind : "open"}
           initialKind={kind}
-          initialStyleSlug={first(query.style)}
-          initialSizeId={first(query.size)}
-          initialCustomize={first(query.customize) === "1"}
-          styles={liveStyles()}
+          lockedKind={locked ? kind : null}
+          initialAlterationId={initialAlterationId}
           alterations={liveAlterations()}
           categories={categories}
           fabrics={liveFabrics()}

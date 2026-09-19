@@ -64,6 +64,31 @@ describe("active and manageable requests", () => {
     ).toEqual([]);
   });
 
+  it("requestsForAccount leaves out an open card page and a Stripe-closed one, keeps bank-pending and office-touched", async () => {
+    // A card page the client backed out of is not an order, in their own
+    // history any more than in Daysi's office.
+    const { requestsForAccount, saveRequest } = await import("./request-store");
+    const line = (reference: string, overrides: Partial<StoredRequest>): StoredRequest => ({
+      ...request("new"),
+      reference,
+      ...overrides,
+    });
+
+    await saveRequest(line("ORD-OPEN", { awaitingPayment: true }));
+    await saveRequest(line("ORD-CLOSED", { awaitingPayment: true }));
+    await saveRequest(line("ORD-CLOSED", { status: "closed", source: "stripe" }));
+    await saveRequest(line("ORD-BANK", { awaitingPayment: true }));
+    await saveRequest(line("ORD-BANK", { awaitingPayment: "bank", source: "stripe" }));
+    await saveRequest(line("ORD-HERS", { awaitingPayment: true }));
+    await saveRequest(line("ORD-HERS", { awaitingPayment: true, status: "answered", source: "office" }));
+    await saveRequest(line("ORD-PAID", { status: "paid", source: "stripe", paidVia: "card" }));
+
+    const references = requestsForAccount({ id: "account-1", email: "ana@example.com" }, ["order"]).map(
+      (record) => record.reference,
+    );
+    expect(references.sort()).toEqual(["ORD-BANK", "ORD-HERS", "ORD-PAID"]);
+  });
+
   it("returns empty history for an unknown reference", async () => {
     const { findRequest, requestVersions } = await import("./request-store");
     expect(requestVersions("ORD-UNKNOWN")).toEqual([]);
