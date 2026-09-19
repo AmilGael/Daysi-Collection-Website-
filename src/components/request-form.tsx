@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import {
@@ -9,9 +9,11 @@ import {
   type AlterationService,
   type DesignCategory,
   type Fabric,
+  type PriceListEntry,
 } from "@/content";
 import { formatMoney } from "@/lib/money";
 import type { Estimate } from "@/lib/pricing";
+import type { RequestPrefill } from "@/lib/estimate-handoff";
 import { Link, type Locale } from "@/i18n/routing";
 import { whatsappLink } from "@/lib/whatsapp";
 import { TextLink } from "@/components/ui";
@@ -48,17 +50,21 @@ const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 export function RequestForm({
   initialKind,
   lockedKind,
-  initialAlterationId,
+  prefill,
   alterations,
   categories,
   fabrics,
+  priceList,
 }: {
   initialKind: Kind;
   lockedKind: Kind | null;
-  initialAlterationId?: string;
+  /** What was chosen on the way here, already checked by the page. */
+  prefill: RequestPrefill;
   alterations: readonly AlterationService[];
   categories: readonly DesignCategory[];
   fabrics: readonly Fabric[];
+  /** Only the cloths a garment is priced in are offered for it. */
+  priceList: readonly PriceListEntry[];
 }) {
   const t = useTranslations("request");
   const tc = useTranslations("common");
@@ -77,20 +83,30 @@ export function RequestForm({
 
   // Alteration
   const [garmentDescription, setGarmentDescription] = useState("");
-  const [alterationIds, setAlterationIds] = useState<string[]>(
-    initialAlterationId &&
-      alterations.some((alteration) => alteration.id === initialAlterationId)
-      ? [initialAlterationId]
-      : [],
-  );
-  const [rush, setRush] = useState(false);
+  const [alterationIds, setAlterationIds] = useState<string[]>([...prefill.alterationIds]);
+  const [rush, setRush] = useState(prefill.rush);
   const [preferredTiming, setPreferredTiming] = useState("");
   const [photo, setPhoto] = useState<{ dataUrl: string; name: string } | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
 
   // Commission
-  const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
-  const [fabricId, setFabricId] = useState(fabrics[0]?.id ?? "");
+  const [categoryId, setCategoryId] = useState(prefill.categoryId ?? categories[0]?.id ?? "");
+  const fabricsForCategory = useMemo(
+    () =>
+      fabrics.filter((fabric) =>
+        priceList.some((entry) => entry.categoryId === categoryId && entry.fabricId === fabric.id),
+      ),
+    [fabrics, priceList, categoryId],
+  );
+  const [fabricId, setFabricId] = useState(prefill.fabricId ?? fabricsForCategory[0]?.id ?? "");
+
+  // Changing the garment can strand a cloth it is not made in, which the
+  // server would refuse only after the whole form was filled in.
+  useEffect(() => {
+    if (!fabricsForCategory.some((fabric) => fabric.id === fabricId)) {
+      setFabricId(fabricsForCategory[0]?.id ?? "");
+    }
+  }, [fabricsForCategory, fabricId]);
   const [occasion, setOccasion] = useState("");
   const [neededBy, setNeededBy] = useState("");
 
@@ -396,7 +412,7 @@ export function RequestForm({
             <Field label={tc("customization")}>
               {({ id }) => (
                 <Select id={id} value={fabricId} onChange={(event) => setFabricId(event.target.value)}>
-                  {fabrics.map((fabric) => (
+                  {fabricsForCategory.map((fabric) => (
                     <option key={fabric.id} value={fabric.id}>
                       {translate(fabric.name, locale)}
                     </option>

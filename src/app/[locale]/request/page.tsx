@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { categories } from "@/content";
-import { liveAlterations, liveFabrics } from "@/lib/live-pricing";
+import { liveAlterations, liveFabrics, livePriceList } from "@/lib/live-pricing";
+import { requestPrefill } from "@/lib/estimate-handoff";
 import { PageHeader } from "@/components/page-header";
 import { RequestForm } from "@/components/request-form";
 
@@ -24,7 +25,18 @@ export default async function RequestPage({
   const requested = first(query.kind);
   const locked = KINDS.includes(requested as Kind);
   const kind = locked ? (requested as Kind) : "alteration";
-  const initialAlterationId = first(query.alteration);
+  // What the estimate builder or an alteration card chose, checked against
+  // what the shop offers today; see lib/estimate-handoff.ts.
+  const alterations = liveAlterations();
+  const fabrics = liveFabrics();
+  const priceList = livePriceList();
+  const prefill = requestPrefill(query, {
+    categoryIds: categories.map((category) => category.id),
+    fabricIds: fabrics.map((fabric) => fabric.id),
+    alterationIds: alterations.map((alteration) => alteration.id),
+    priced: (categoryId, fabricId) =>
+      priceList.some((entry) => entry.categoryId === categoryId && entry.fabricId === fabricId),
+  });
 
   return (
     <>
@@ -34,10 +46,11 @@ export default async function RequestPage({
           key={locked ? kind : "open"}
           initialKind={kind}
           lockedKind={locked ? kind : null}
-          initialAlterationId={initialAlterationId}
-          alterations={liveAlterations()}
+          prefill={prefill}
+          alterations={alterations}
           categories={categories}
-          fabrics={liveFabrics()}
+          fabrics={fabrics}
+          priceList={priceList}
         />
       </div>
     </>

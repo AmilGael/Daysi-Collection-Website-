@@ -12,6 +12,7 @@ import {
 } from "@/content";
 import { formatMoney } from "@/lib/money";
 import type { Estimate } from "@/lib/pricing";
+import { handoffHref } from "@/lib/estimate-handoff";
 import { Link, useRouter, type Locale } from "@/i18n/routing";
 import { buttonClass } from "./ui";
 import { ChoiceGroup, Field, Select } from "./form";
@@ -235,13 +236,13 @@ export function EstimateBuilder({
           <>
             <EstimateSummary estimate={estimate} />
             <Link
-              href={
+              href={handoffHref(
                 kind === "appointment"
-                  ? "/appointments"
+                  ? { kind, appointmentTypeId }
                   : kind === "alteration"
-                    ? "/request?kind=alteration"
-                    : "/request?kind=commission"
-              }
+                    ? { kind, alterationIds, rush }
+                    : { kind, categoryId, fabricId },
+              )}
               className={buttonClass({ className: "w-full" })}
             >
               {t("sendEstimate")}

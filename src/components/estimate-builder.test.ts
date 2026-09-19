@@ -19,3 +19,14 @@ describe("the estimate builder's collection choice", () => {
     expect(source).toContain('useState<Kind>("commission")');
   });
 });
+
+describe("the estimate builder's send button", () => {
+  it("carries what was chosen, not only the kind", () => {
+    expect(source).toContain("href={handoffHref(");
+    expect(source).toContain("{ kind, appointmentTypeId }");
+    expect(source).toContain("{ kind, alterationIds, rush }");
+    expect(source).toContain("{ kind, categoryId, fabricId }");
+    expect(source).not.toContain('"/request?kind=');
+    expect(source).not.toContain('? "/appointments"');
+  });
+});

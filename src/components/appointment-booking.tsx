@@ -40,6 +40,7 @@ export function AppointmentBooking({
   paymentsEnabled,
   creditDays,
   service = null,
+  initialTypeId,
   alterations = [],
 }: {
   appointmentTypes: readonly AppointmentType[];
@@ -47,6 +48,8 @@ export function AppointmentBooking({
   creditDays: number;
   /** Set when the client arrived from a service page; it becomes the reason for the visit. */
   service?: Service | null;
+  /** The session chosen in the estimate builder, already checked by the page. */
+  initialTypeId?: string;
   /** The published alteration prices, offered for a look right before booking. */
   alterations?: readonly AlterationService[];
 }) {
@@ -63,7 +66,7 @@ export function AppointmentBooking({
     service?.id === "custom"
       ? appointmentTypes.find((type) => type.minutes >= 60)?.id
       : undefined;
-  const [typeId, setTypeId] = useState(suggestedTypeId ?? appointmentTypes[0]?.id ?? "");
+  const [typeId, setTypeId] = useState(initialTypeId ?? suggestedTypeId ?? appointmentTypes[0]?.id ?? "");
   const [days, setDays] = useState<readonly DaySlots[]>([]);
   const [date, setDate] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<string | null>(null);

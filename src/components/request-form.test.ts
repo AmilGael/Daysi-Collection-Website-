@@ -49,11 +49,21 @@ describe("the request form's locked kind", () => {
     expect(form).not.toContain('<p className="eyebrow mb-2">{t("title")}</p>');
   });
 
-  it("pre-ticks initialAlterationId only when it names a live alteration", () => {
-    expect(form).toContain("initialAlterationId?: string");
-    expect(form).toContain(
-      "alterations.some((alteration) => alteration.id === initialAlterationId)",
-    );
+  /**
+   * The page checks the address against what the shop offers (see
+   * lib/estimate-handoff.ts); the form only starts from what it was handed.
+   */
+  it("opens on what was chosen on the way here", () => {
+    expect(form).toContain("prefill: RequestPrefill;");
+    expect(form).toContain("useState<string[]>([...prefill.alterationIds])");
+    expect(form).toContain("useState(prefill.rush)");
+    expect(form).toContain("useState(prefill.categoryId ?? categories[0]?.id");
+    expect(form).toContain("useState(prefill.fabricId ?? fabricsForCategory[0]?.id");
+  });
+
+  it("offers only the cloths the chosen garment is priced in", () => {
+    expect(form).toContain("fabricsForCategory.map((fabric) =>");
+    expect(form).not.toContain("{fabrics.map((fabric) =>");
   });
 
   it("has changeKind in both message bundles, and nowhere else duplicated", () => {
@@ -65,7 +75,7 @@ describe("the request form's locked kind", () => {
   });
 });
 
-describe("the request page's ?kind and ?alteration", () => {
+describe("the request page's ?kind and what was chosen", () => {
   it("locks only on a kind the form still offers", () => {
     expect(page).toContain("const locked = KINDS.includes(requested as Kind);");
     expect(page).toContain("lockedKind={locked ? kind : null}");
@@ -82,11 +92,10 @@ describe("the request page's ?kind and ?alteration", () => {
     expect(page).toContain('key={locked ? kind : "open"}');
   });
 
-  it("reads ?alteration and hands it to the form, without validating it itself", () => {
-    expect(page).toContain(
-      "const initialAlterationId = first(query.alteration);",
-    );
-    expect(page).toContain("initialAlterationId={initialAlterationId}");
+  it("reads the choices in the address against the live lists and hands them to the form", () => {
+    expect(page).toContain("const prefill = requestPrefill(query, {");
+    expect(page).toContain("prefill={prefill}");
+    expect(page).toContain("priceList={priceList}");
   });
 });
 
