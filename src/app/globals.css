@@ -394,3 +394,316 @@ body:has([data-office-bar]) {
 .glow-marigold:hover {
   box-shadow: 0 18px 44px -14px rgb(from var(--color-marigold) r g b / 0.7);
 }
+
+/**
+ * The office manual (`docs/manual-del-taller.html`), shown at /office/manual
+ * inside the office layout. The file carries no styling of its own any more:
+ * it used to load its own copy of the fonts and switch to a dark page on a
+ * dark-mode computer, which made it look like somebody else's document. Here
+ * it takes the site's tokens and nothing else, so it reads as one more office
+ * page.
+ *
+ * Its class names are the file's own (`task`, `steps`, `btn`, `label`...),
+ * so every rule is scoped under `.manual` to keep them from reaching the rest
+ * of the site, and to win over the site's own `.eyebrow` and `.rule` where
+ * the manual wants them a little different.
+ */
+@layer components {
+  .manual {
+    /* The column, and the shorter line the paragraphs keep inside it. */
+    --manual-measure: 36rem;
+    max-width: 42rem;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.65;
+    color: var(--color-ink);
+  }
+
+  .manual p {
+    max-width: var(--manual-measure);
+  }
+
+  .manual strong {
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+
+  /* The body links are the two cross references in the last section; the
+     table of contents dresses its own below. */
+  .manual a {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--color-line-strong);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  /* --- masthead --- */
+
+  .manual .masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .manual .eyebrow {
+    margin: 0;
+  }
+
+  .manual .title {
+    font-size: var(--text-section);
+    line-height: var(--text-section--line-height);
+    letter-spacing: var(--text-section--letter-spacing);
+  }
+
+  .manual .standfirst {
+    margin-top: 0.25rem;
+    font-size: var(--text-lead);
+    line-height: var(--text-lead--line-height);
+    letter-spacing: var(--text-lead--letter-spacing);
+    color: var(--color-ink-soft);
+  }
+
+  /* One short marigold rule closing the masthead: a rule is one of the two
+     things her palette lets yellow be. */
+  .manual hr.rule {
+    width: 3rem;
+    height: 2px;
+    margin: 2.5rem 0 0;
+    border: 0;
+    background: var(--color-marigold);
+  }
+
+  /* --- contents --- */
+
+  .manual .contents {
+    margin-top: 2.5rem;
+  }
+
+  .manual .contents ol {
+    margin-top: 1rem;
+    padding: 0;
+    list-style: none;
+    counter-reset: toc;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .manual .contents li {
+    counter-increment: toc;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .manual .contents a {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.625rem 0;
+    font-size: 0.9375rem;
+    color: var(--color-ink);
+    text-decoration: none;
+    transition: color 150ms var(--ease-soft);
+  }
+
+  /* The number is how she finds "el punto 10" when the text sends her
+     there, so it stays quiet, tabular and aligned. */
+  .manual .contents a::before {
+    content: counter(toc, decimal-leading-zero);
+    flex: none;
+    width: 1.5rem;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink-faint);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .manual .contents a:hover {
+      color: var(--color-marigold-deep);
+    }
+  }
+
+  /* --- tasks --- */
+
+  /* More room above a heading than below it: the space belongs to the
+     boundary between tasks. The scroll margin clears the sticky header and
+     the office tabs when a contents link jumps here. */
+  .manual .task {
+    margin-top: clamp(3.5rem, 2.5rem + 3vw, 5rem);
+    scroll-margin-top: 9rem;
+  }
+
+  .manual h2 {
+    font-size: var(--text-heading);
+    line-height: var(--text-heading--line-height);
+    letter-spacing: var(--text-heading--letter-spacing);
+  }
+
+  /* The task number sits above its heading as a small label, in the body
+     face, so the heading itself is only words. */
+  .manual h2 .n {
+    display: block;
+    margin-bottom: 0.625rem;
+    font-family: var(--font-body);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.2em;
+    color: var(--color-ink-faint);
+  }
+
+  .manual .task > p,
+  .manual .closing > p {
+    margin-top: 1rem;
+    color: var(--color-ink-soft);
+  }
+
+  .manual .task > ul {
+    display: grid;
+    gap: 0.5rem;
+    max-width: var(--manual-measure);
+    margin-top: 1rem;
+    padding-left: 1.25rem;
+    list-style: disc;
+    color: var(--color-ink-soft);
+  }
+
+  .manual .task > ul > li::marker {
+    color: var(--color-ink-faint);
+  }
+
+  /* Numbered steps. The number hangs in its own column, positioned rather
+     than laid out on a grid: a step's text is full of inline chips, and a
+     grid would pull each of them out into a cell of its own. */
+  .manual ol.steps {
+    display: grid;
+    gap: 0.875rem;
+    max-width: var(--manual-measure);
+    margin-top: 1.5rem;
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
+  }
+
+  .manual ol.steps > li {
+    position: relative;
+    padding-left: 2.5rem;
+    counter-increment: step;
+    color: var(--color-ink-soft);
+  }
+
+  .manual ol.steps > li::before {
+    content: counter(step);
+    position: absolute;
+    top: 0.125rem;
+    left: 0;
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 1px solid var(--color-line);
+    border-radius: 2px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink);
+  }
+
+  /* --- what she will see on screen --- */
+
+  /* A button, drawn the way the office draws its small solid buttons. */
+  .manual .btn {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    border-radius: 2px;
+    background: var(--color-ink);
+    color: var(--color-paper);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    line-height: 1.6;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    vertical-align: 0.06em;
+  }
+
+  /* A label printed on the page, not a button: the office's chip. Inline,
+     cloned at a line break, so a long one wraps rather than running off a
+     phone. */
+  .manual .label {
+    padding: 0.0625rem 0.375rem;
+    border: 1px solid var(--color-line);
+    border-radius: 2px;
+    background: var(--color-paper-warm);
+    color: var(--color-ink);
+    font-size: 0.875rem;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  .manual .path {
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-marigold-deep);
+    white-space: nowrap;
+  }
+
+  /* --- asides --- */
+
+  /* A marigold rule over the point it makes; a caution takes the ink rule
+     instead, so a warning never reads as a highlight. */
+  .manual .note {
+    max-width: var(--manual-measure);
+    margin-top: 1.5rem;
+    padding-top: 0.875rem;
+    border-top: 2px solid var(--color-marigold);
+  }
+
+  .manual .note.careful {
+    border-top-color: var(--color-ink-soft);
+  }
+
+  .manual .note p {
+    font-size: 0.9375rem;
+    color: var(--color-ink-soft);
+  }
+
+  .manual .note p + p {
+    margin-top: 0.625rem;
+  }
+
+  /* --- closing --- */
+
+  .manual .closing {
+    margin-top: clamp(4rem, 3rem + 3vw, 6rem);
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-line);
+  }
+
+  @media print {
+    .manual {
+      max-width: none;
+      font-size: 10.5pt;
+      line-height: 1.5;
+    }
+
+    .manual .contents {
+      break-after: page;
+    }
+
+    .manual h2 {
+      break-after: avoid;
+    }
+
+    .manual ol.steps > li,
+    .manual .note {
+      break-inside: avoid;
+    }
+
+    .manual .btn,
+    .manual .label,
+    .manual hr.rule {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+  }
+}

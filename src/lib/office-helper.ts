@@ -1,10 +1,9 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import type Anthropic from "@anthropic-ai/sdk";
 import { categories, translate } from "@/content";
 import { OFFICE_TABS } from "@/components/office/tabs";
 import es from "@/messages/es.json";
 import { earningsFrom, loadLedger } from "./earnings";
+import { readManual } from "./manual";
 import { formatMoney } from "./money";
 import { liveFabrics, manageableAlterations, manageableAppointmentTypes, manageablePriceList } from "./live-pricing";
 import { defaultHelperCall, dropLeadingAssistant, type HelperCall, type HelperTurn, withoutDashes } from "./claude-helper";
@@ -19,23 +18,6 @@ import { defaultHelperCall, dropLeadingAssistant, type HelperCall, type HelperTu
  * SDK call as its default and a fake one in tests, exactly as
  * `translateToEnglish` does.
  */
-
-const MANUAL_PATH = path.join(process.cwd(), "docs", "manual-del-taller.html");
-
-/** Read once per server lifetime; missing is a fact, not a retry. */
-let manualHtml: string | null | undefined;
-
-/** The manual's raw HTML, for the download route. `null` when it is missing. */
-export function readManual(): string | null {
-  if (manualHtml === undefined) {
-    try {
-      manualHtml = readFileSync(MANUAL_PATH, "utf8");
-    } catch {
-      manualHtml = null;
-    }
-  }
-  return manualHtml;
-}
 
 /** The manual's words, without its markup or its styling — what the model reads. */
 function manualAsText(html: string): string {

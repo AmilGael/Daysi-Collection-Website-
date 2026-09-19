@@ -3,7 +3,7 @@
 import { useCallback, useState, type JSX, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { translate, type Promotion } from "@/content";
-import type { Locale } from "@/i18n/routing";
+import { Link, type Locale } from "@/i18n/routing";
 import type { ShopfrontChange } from "@/lib/office-validation";
 import { promotionActiveToday } from "@/lib/promotions";
 import { HelperSwitch } from "./helper-switch";
@@ -148,14 +148,9 @@ export function ShopfrontCards({
         </li>
       </ul>
 
-      <a
-        href="/api/office/manual"
-        target="_blank"
-        rel="noopener"
-        className="w-fit text-[0.8125rem] underline underline-offset-4"
-      >
+      <Link href="/office/manual" className="w-fit text-[0.8125rem] underline underline-offset-4">
         {t("helpOpenManual")}
-      </a>
+      </Link>
 
       <Sheet open={open !== null} title={title} onClose={close}>
         {open === "notice" ? (
