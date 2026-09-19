@@ -36,11 +36,18 @@ export function Sheet({
   open,
   title,
   onClose,
+  onDone,
   children,
 }: {
   open: boolean;
   title: string;
   onClose(): void;
+  /**
+   * Listo alone, when a sheet wants a word before it closes (Clientes shows
+   * the problems it is leaving out). Escape, the backdrop and the back
+   * gesture still just close: the back gesture has already left history.
+   */
+  onDone?(): void;
   children: ReactNode;
 }): JSX.Element | null {
   const t = useTranslations("office");
@@ -98,7 +105,7 @@ export function Sheet({
           <h2 className="min-w-0 truncate font-display text-[1.25rem]">{title}</h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={onDone ?? onClose}
             className={buttonClass({ size: "small", tone: "solid" })}
           >
             {t("sheetDone")}

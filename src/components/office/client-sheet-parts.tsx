@@ -33,8 +33,15 @@ export function Section({ title, aside, children }: { title: string; aside?: str
 export function TextField({
   label,
   error,
+  invalid = false,
   ...props
-}: InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string }): JSX.Element {
+}: InputHTMLAttributes<HTMLInputElement> & {
+  label: string;
+  error?: string;
+  /** Marked without a line of its own: the address's one problem is said under all of its boxes. */
+  invalid?: boolean;
+}): JSX.Element {
+  const marked = invalid || error !== undefined;
   const id = useId();
   return (
     <div className="flex flex-col gap-1.5">
@@ -44,9 +51,9 @@ export function TextField({
       <input
         {...props}
         id={id}
-        aria-invalid={error ? true : undefined}
+        aria-invalid={marked ? true : undefined}
         aria-describedby={error ? `${id}-error` : undefined}
-        className={error ? field.replace("border-line-strong", "border-alert") : field}
+        className={marked ? field.replace("border-line-strong", "border-alert") : field}
       />
       {error ? (
         <p id={`${id}-error`} className="text-[0.8125rem] text-alert">
@@ -102,8 +109,10 @@ export function MeasureRow({
   text,
   removed,
   removable,
-  error,
+  problem,
+  invalid,
   onType,
+  onBlur,
   onRemove,
 }: {
   label: string;
@@ -113,8 +122,11 @@ export function MeasureRow({
   text: string;
   removed: boolean;
   removable: boolean;
-  error?: string;
+  /** What to say when the number is marked; always given, so its line is measured whether shown or not. */
+  problem: string;
+  invalid: boolean;
   onType(text: string): void;
+  onBlur(): void;
   onRemove(gone: boolean): void;
 }): JSX.Element {
   const t = useTranslations("office");
@@ -127,7 +139,7 @@ export function MeasureRow({
       </label>
       <span
         className={`flex w-[7.5rem] items-center border bg-paper transition-colors focus-within:border-ink ${
-          error ? "border-alert" : "border-line-strong"
+          invalid ? "border-alert" : "border-line-strong"
         } ${removed ? "opacity-40" : ""}`}
       >
         <input
@@ -137,23 +149,31 @@ export function MeasureRow({
           autoComplete="off"
           value={text}
           disabled={removed}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? `${id}-error` : undefined}
+          aria-invalid={invalid ? true : undefined}
+          aria-describedby={invalid ? `${id}-error` : undefined}
           onChange={(event) => onType(event.target.value)}
+          onBlur={onBlur}
           className="min-h-12 w-full min-w-0 bg-transparent py-2 pl-3 text-right text-[1rem] tabular-nums text-ink placeholder:text-ink-faint"
         />
         <span aria-hidden className="shrink-0 pl-2 pr-3 text-[0.875rem] text-ink-faint">
           {unit}
         </span>
       </span>
-      <span className="text-[0.8125rem] tabular-nums text-ink-faint">
-        {removed ? (
-          <>
-            <s>{onFile}</s> · {t("clientRemoving")}
-          </>
-        ) : (
-          onFile
-        )}
+      {/* The line on file and the problem share one cell, the hidden one
+          still taking its room, so marking a number never moves the list. */}
+      <span className="grid text-[0.8125rem]">
+        <span className={`col-start-1 row-start-1 tabular-nums text-ink-faint ${invalid ? "invisible" : ""}`}>
+          {removed ? (
+            <>
+              <s>{onFile}</s> · {t("clientRemoving")}
+            </>
+          ) : (
+            onFile
+          )}
+        </span>
+        <span id={`${id}-error`} className={`col-start-1 row-start-1 text-alert ${invalid ? "" : "invisible"}`}>
+          {problem}
+        </span>
       </span>
       {removable ? (
         <button
@@ -166,11 +186,6 @@ export function MeasureRow({
       ) : (
         <span />
       )}
-      {error ? (
-        <p id={`${id}-error`} className="col-span-2 text-[0.8125rem] text-alert">
-          {error}
-        </p>
-      ) : null}
     </li>
   );
 }

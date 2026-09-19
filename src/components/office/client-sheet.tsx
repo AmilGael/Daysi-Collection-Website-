@@ -15,10 +15,12 @@ import {
   archiveKey,
   cardKey,
   newClientKey,
+  revealOnDone,
   sheetProblems,
   shortDate,
   stagedChange,
   startingForm,
+  visibleProblems,
   type ClientSheetForm,
   type OfficeBookRow,
   type SheetMeta,
@@ -39,7 +41,9 @@ import { useOfficeDraft } from "./use-office-draft";
  *
  * The sheet holds what she typed itself (a half-typed number stages
  * nothing, and must not vanish), and keeps it beside the staged change so
- * reopening shows it again. When the change leaves the draft without the
+ * reopening shows it again. A box is marked only once she has left it, and
+ * every box still wrong is marked the first time she taps Listo, which
+ * then waits for a second tap: what is marked stays out of the draft. When the change leaves the draft without the
  * sheet asking (Descartar, or a confirm that went through) it starts again
  * from the card on file, or closes when there is no card to go back to.
  */
@@ -58,6 +62,7 @@ export function ClientSheet({
   undoable,
   locale,
   onClose,
+  doneGuard,
 }: {
   row: OfficeBookRow;
   /** What this sheet staged last time it was open, if it is still in the draft. */
@@ -65,6 +70,8 @@ export function ClientSheet({
   undoable: boolean;
   locale: Locale;
   onClose(): void;
+  /** Set by the sheet for the view's Listo: false means "stay open, there is something to see". */
+  doneGuard: { current: (() => boolean) | null };
 }): JSX.Element {
   const t = useTranslations("office");
   const tc = useTranslations("clientCard");
@@ -79,15 +86,54 @@ export function ClientSheet({
   const key = row.cardId ? cardKey(row.cardId) : (form.key ?? row.key);
   const entry = draft.pending(key);
   const archiving = row.cardId ? draft.pending(archiveKey(row.cardId)) : undefined;
-  const problems = new Set(sheetProblems(form));
+  const problems = sheetProblems(form);
+  // Reopened with something still wrong in it: she has already left those boxes.
+  const [shown, setShown] = useState<ReadonlySet<string>>(() => new Set(staged ? sheetProblems(staged.form) : []));
+  const [warned, setWarned] = useState(false);
+  const visible = visibleProblems(problems, shown);
+  const root = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    doneGuard.current = () => {
+      const next = revealOnDone(form, shown, warned);
+      if (!next) return true;
+      setShown(next);
+      setWarned(true);
+      requestAnimationFrame(() => root.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
+      return false;
+    };
+    return () => {
+      doneGuard.current = null;
+    };
+  });
+
+  /** She left a box: its problem, if any, may show now. */
+  function leave(field: string) {
+    setShown((current) => (current.has(field) ? current : new Set(current).add(field)));
+  }
+
+  /** She is typing in a box again: say nothing about it until she leaves it. */
+  function editing(field: string) {
+    setShown((current) => {
+      if (!current.has(field)) return current;
+      const next = new Set(current);
+      next.delete(field);
+      return next;
+    });
+  }
 
   const unstagedHere = useRef(false);
   const hadEntry = useRef(entry !== undefined);
   const hasEntry = entry !== undefined;
   useEffect(() => {
     if (hadEntry.current && !hasEntry && !unstagedHere.current) {
-      if (row.cardId) setForm(startingForm(row, form.unit));
-      else onClose();
+      if (row.cardId) {
+        setForm(startingForm(row, form.unit));
+        setShown(new Set());
+        setWarned(false);
+      } else {
+        onClose();
+      }
     }
     unstagedHere.current = false;
     hadEntry.current = hasEntry;
@@ -106,10 +152,12 @@ export function ClientSheet({
   }
 
   function setAddress(part: keyof AddressFields, value: string) {
+    editing("address");
     if (form.address) update({ address: { ...form.address, [part]: value } });
   }
 
   function typeValue(id: MeasurementId, text: string) {
+    editing(id);
     const removed = new Set(form.removed);
     removed.delete(id);
     update({ values: { ...form.values, [id]: text }, units: { ...form.units, [id]: form.unit }, removed });
@@ -123,12 +171,24 @@ export function ClientSheet({
     update({ removed, values: gone ? values : form.values });
   }
 
+  // Which of the address boxes to mark once the address is shown as wrong: the same rules the schema holds it to.
+  const address = form.address;
+  const addressMarks =
+    visible.has("address") && address
+      ? {
+          line1: address.line1.trim().length < 3,
+          city: address.city.trim().length < 2,
+          state: address.state.trim().length < 2,
+          zip: !/^\d{5}(-\d{4})?$/.test(address.zip.trim()),
+        }
+      : { line1: false, city: false, state: false, zip: false };
+
   const phone = form.phone.trim();
-  const reachable = phone.replace(/\D/g, "").length >= 7 && !problems.has("phone");
+  const reachable = phone.replace(/\D/g, "").length >= 7 && !problems.includes("phone");
   const firstName = form.name.trim().split(/\s+/)[0] ?? "";
 
   return (
-    <div className="flex flex-col divide-y divide-line">
+    <div ref={root} className="flex flex-col divide-y divide-line">
       {entry || archiving ? (
         <div className="flex flex-col gap-2 pb-5">
           {entry ? <PendingLine entry={entry} onDrop={() => draft.unstage(key)} /> : null}
@@ -152,8 +212,12 @@ export function ClientSheet({
           value={form.name}
           maxLength={80}
           autoComplete="off"
-          error={problems.has("name") && (form.name.length > 0 || !isNewKey(row.key)) ? te("too-short") : undefined}
-          onChange={(event) => update({ name: event.target.value })}
+          error={visible.has("name") ? te("too-short") : undefined}
+          onBlur={() => leave("name")}
+          onChange={(event) => {
+            editing("name");
+            update({ name: event.target.value });
+          }}
         />
         {row.hasAccount ? (
           <div className="flex flex-col gap-1.5">
@@ -169,8 +233,12 @@ export function ClientSheet({
             autoComplete="off"
             maxLength={160}
             value={form.email}
-            error={problems.has("email") ? te("invalid-email") : undefined}
-            onChange={(event) => update({ email: event.target.value })}
+            error={visible.has("email") ? te("invalid-email") : undefined}
+            onBlur={() => leave("email")}
+            onChange={(event) => {
+              editing("email");
+              update({ email: event.target.value });
+            }}
           />
         )}
         <TextField
@@ -180,8 +248,12 @@ export function ClientSheet({
           autoComplete="off"
           maxLength={30}
           value={form.phone}
-          error={problems.has("phone") ? te("invalid-phone") : undefined}
-          onChange={(event) => update({ phone: event.target.value })}
+          error={visible.has("phone") ? te("invalid-phone") : undefined}
+          onBlur={() => leave("phone")}
+          onChange={(event) => {
+            editing("phone");
+            update({ phone: event.target.value });
+          }}
         />
         {reachable ? (
           <a
@@ -197,12 +269,19 @@ export function ClientSheet({
 
       <Section title={t("clientAddress")}>
         {form.address ? (
-          <>
+          <div
+            className="flex flex-col gap-4"
+            // The address is one answer in five boxes: it is left when focus leaves all of them.
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) leave("address");
+            }}
+          >
             <TextField
               label={tc("line1")}
               value={form.address.line1}
               maxLength={120}
               autoComplete="off"
+              invalid={addressMarks.line1}
               onChange={(event) => setAddress("line1", event.target.value)}
             />
             <TextField
@@ -217,6 +296,7 @@ export function ClientSheet({
               value={form.address.city}
               maxLength={60}
               autoComplete="off"
+              invalid={addressMarks.city}
               onChange={(event) => setAddress("city", event.target.value)}
             />
             <div className="grid grid-cols-[2fr_3fr] gap-4">
@@ -225,6 +305,7 @@ export function ClientSheet({
                 value={form.address.state}
                 maxLength={30}
                 autoComplete="off"
+                invalid={addressMarks.state}
                 onChange={(event) => setAddress("state", event.target.value)}
               />
               <TextField
@@ -233,14 +314,15 @@ export function ClientSheet({
                 maxLength={10}
                 inputMode="numeric"
                 autoComplete="off"
+                invalid={addressMarks.zip}
                 onChange={(event) => setAddress("zip", event.target.value)}
               />
             </div>
-            {problems.has("address") ? (
+            {visible.has("address") ? (
               <p className="text-[0.8125rem] leading-relaxed text-ink-faint">{t("clientAddressProblem")}</p>
             ) : null}
             <QuietButton onClick={() => update({ address: null })}>{tc("removeAddress")}</QuietButton>
-          </>
+          </div>
         ) : (
           <QuietButton onClick={() => update({ address: { ...EMPTY_ADDRESS, state: HOME_STATE } })}>
             {tc("addAddress")}
@@ -279,8 +361,10 @@ export function ClientSheet({
                 text={shownText({ text: typed, unit: form.units?.[id] ?? form.unit }, form.unit)}
                 removed={form.removed.has(id)}
                 removable={kept !== undefined}
-                error={problems.has(id) ? tc("errorRange") : undefined}
+                problem={t("clientValueProblem")}
+                invalid={visible.has(id)}
                 onType={(text) => typeValue(id, text)}
+                onBlur={() => leave(id)}
                 onRemove={(gone) => setRemoved(id, gone)}
               />
             );

@@ -932,6 +932,7 @@
     "clientRemove": "Remove",
     "clientRemoving": "Goes when you confirm",
     "clientKeep": "Keep it",
+    "clientValueProblem": "Check this number",
     "clientNotes": "What the client wrote",
     "clientOwnerNote": "Your note",
     "clientOwnerNoteHint": "Only you see it.",

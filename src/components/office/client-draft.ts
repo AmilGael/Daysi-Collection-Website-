@@ -152,6 +152,46 @@ export function sheetProblems(form: ClientSheetForm): SheetProblem[] {
 }
 
 /**
+ * The problems the sheet draws: only those of fields she has left
+ * (`shown`). Typing in a field takes it back off `shown`, so a number is
+ * never marked while she is still writing it ("8" on the way to "80").
+ */
+export function visibleProblems(problems: readonly SheetProblem[], shown: ReadonlySet<string>): Set<SheetProblem> {
+  return new Set(problems.filter((problem) => shown.has(problem)));
+}
+
+/** Nothing typed anywhere: a new client's sheet opened and left as it was. */
+function isBlank(form: ClientSheetForm): boolean {
+  return (
+    !form.name.trim() &&
+    !form.email.trim() &&
+    !form.phone.trim() &&
+    !form.ownerNote.trim() &&
+    form.removed.size === 0 &&
+    MEASUREMENTS.every(({ id }) => !form.values[id]?.trim()) &&
+    !(form.address && addressOf(form.address))
+  );
+}
+
+/**
+ * Listo with anything still wrong: every problem is marked, and the sheet
+ * stays open this once (`warned` is false until then) so she sees what
+ * will be left out of the draft. Once, even for a problem already marked:
+ * the tap on Listo is itself what left the last box, so its mark would
+ * otherwise appear only as the sheet closed. `null` lets Listo close: no
+ * problems, nothing typed, or she has been shown them already.
+ */
+export function revealOnDone(
+  form: ClientSheetForm,
+  shown: ReadonlySet<string>,
+  warned: boolean,
+): ReadonlySet<string> | null {
+  if (warned || isBlank(form)) return null;
+  const problems = sheetProblems(form);
+  return problems.length > 0 ? new Set([...shown, ...problems]) : null;
+}
+
+/**
  * The one `client-save` a sheet stands for: only what changed, and none of
  * what `sheetProblems` would refuse. A row with no card yet makes one, under
  * the sheet's own `client:new-…` key, carrying the contact it shows.

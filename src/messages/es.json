@@ -932,6 +932,7 @@
     "clientRemove": "Quitar",
     "clientRemoving": "Se quita al confirmar",
     "clientKeep": "Dejarla",
+    "clientValueProblem": "Revise este número",
     "clientNotes": "Lo que escribió la clienta",
     "clientOwnerNote": "Su nota",
     "clientOwnerNoteHint": "Solo la ve usted.",

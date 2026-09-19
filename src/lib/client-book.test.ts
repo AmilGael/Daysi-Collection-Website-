@@ -143,6 +143,74 @@ describe("the client book", () => {
     expect(clientBook().map((row) => row.key).sort()).toEqual(["cli_h", "cli_m", "p:7185550101"]);
   });
 
+  /**
+   * A card Daysi writes on a name-only row has no email and no phone to be
+   * found by, so it is found by the same name the row was: otherwise the
+   * book would show the card and the orders as two clients, and every
+   * reopen and save would add another.
+   */
+  it("files name-only orders under a card with no email or phone that has their name", async () => {
+    const { appendRecord } = await import("./records");
+    await appendRecord("client-cards", {
+      id: "cli_c",
+      name: "Doña Carmen",
+      measurements: {},
+      updatedAt: "2026-09-16T00:00:00Z",
+      updatedBy: "office",
+    });
+    await appendRecord(
+      "commission",
+      order({ reference: "COM-1", kind: "commission", client: { name: "doña carmen", email: "" } }),
+    );
+    await appendRecord(
+      "alteration",
+      order({ reference: "ALT-1", kind: "alteration", client: { name: " Doña   Carmen ", email: "" } }),
+    );
+    const { clientBook } = await import("./client-book");
+    const rows = clientBook();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ key: "cli_c", cardId: "cli_c", name: "Doña Carmen", orderCount: 2 });
+  });
+
+  it("does not guess when two cards with no email or phone share a name", async () => {
+    const { appendRecord } = await import("./records");
+    for (const id of ["cli_c1", "cli_c2"]) {
+      await appendRecord("client-cards", {
+        id,
+        name: "Carmen",
+        measurements: {},
+        updatedAt: "2026-09-16T00:00:00Z",
+        updatedBy: "office",
+      });
+    }
+    await appendRecord(
+      "commission",
+      order({ reference: "COM-1", kind: "commission", client: { name: "Carmen", email: "" } }),
+    );
+    const { clientBook } = await import("./client-book");
+    expect(clientBook().map((row) => row.key).sort()).toEqual(["cli_c1", "cli_c2", "n:carmen"]);
+  });
+
+  it("joins by name only for a card with no way to reach them", async () => {
+    const { appendRecord } = await import("./records");
+    await appendRecord("client-cards", {
+      id: "cli_r",
+      name: "Rosa",
+      phone: "7185550101",
+      measurements: {},
+      updatedAt: "2026-09-16T00:00:00Z",
+      updatedBy: "office",
+    });
+    await appendRecord(
+      "alteration",
+      order({ reference: "ALT-1", kind: "alteration", client: { name: "Rosa", email: "" } }),
+    );
+    const { clientBook } = await import("./client-book");
+    const rows = clientBook();
+    expect(rows.map((row) => row.key).sort()).toEqual(["cli_r", "n:rosa"]);
+    expect(rows.find((row) => row.key === "cli_r")?.orderCount).toBe(0);
+  });
+
   it("keeps a client whose only order was retired or closed", async () => {
     const { appendRecord } = await import("./records");
     await appendRecord("order", order({ reference: "ORD-9" }));

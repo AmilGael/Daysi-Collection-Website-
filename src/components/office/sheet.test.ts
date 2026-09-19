@@ -42,6 +42,13 @@ describe("the sheet", () => {
     expect(source).toContain("document.body,");
   });
 
+  it("lets Listo ask first, while every other way out just closes", () => {
+    const header = source.slice(source.indexOf("<header"));
+    expect(header).toContain("onClick={onDone ?? onClose}");
+    expect(source).toContain('if (event.key === "Escape") onClose();');
+    expect(source).toContain("onClick={onClose}\n        className=\"absolute inset-0 bg-ink/40\"");
+  });
+
   it("is closed by Listo in both languages", () => {
     expect(office(es).sheetDone).toBe("Listo");
     expect(office(en).sheetDone).toBe("Done");
@@ -51,7 +58,7 @@ describe("the sheet", () => {
     expect(source).toContain("content.current?.querySelector");
     expect(source).not.toContain('aria-label={t("sheetClose")}\n            className={buttonClass');
     const header = source.slice(source.indexOf("<header"));
-    const doneButton = header.slice(header.indexOf("onClick={onClose}"), header.indexOf('{t("sheetDone")}'));
+    const doneButton = header.slice(header.indexOf("onClick={onDone ?? onClose}"), header.indexOf('{t("sheetDone")}'));
     expect(doneButton).not.toContain("aria-label");
   });
 });

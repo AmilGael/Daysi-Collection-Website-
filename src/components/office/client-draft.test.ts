@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterRows, saveWire, sheetProblems, stagedChange } from "./client-draft";
+import { filterRows, revealOnDone, saveWire, sheetProblems, stagedChange, visibleProblems } from "./client-draft";
 
 const row = (over = {}) => ({ key: "cli_a", cardId: "cli_a", name: "Rosa Pérez", email: "rosa@example.com", phone: "(718) 555-0101", hasAccount: false, measuredCount: 1, orderCount: 2, paidTotal: 0, archived: false, orders: [], card: { id: "cli_a", name: "Rosa Pérez", email: "rosa@example.com", phone: "(718) 555-0101", measurements: { waist: { value: 80, unit: "cm", by: "client", at: "2026-09-01T00:00:00Z" } }, updatedAt: "2026-09-01T00:00:00Z", updatedBy: "client" }, ...over });
 
@@ -72,5 +72,37 @@ describe("what the sheet leaves out of the draft", () => {
     const same = saveWire(row(), form({ email: "Rosa@Example.com" }));
     expect(same.type === "client-save" && same.email).toBeUndefined();
     expect(saveWire(row(), form({ email: "rosa.p@example.com" }))).toMatchObject({ email: "rosa.p@example.com" });
+  });
+});
+
+describe("when the sheet points out a problem", () => {
+  const form = (over = {}) => ({ name: "Rosa Pérez", email: "rosa@example.com", phone: "", unit: "cm" as const, values: {}, removed: new Set<string>(), ownerNote: "", ...over });
+
+  it("marks nothing while she is still typing, and a field once she has left it", () => {
+    const typing = form({ email: "r", values: { waist: "8" } });
+    const problems = sheetProblems(typing);
+    expect(problems).toEqual(expect.arrayContaining(["email", "waist"]));
+    expect([...visibleProblems(problems, new Set())]).toEqual([]);
+    expect([...visibleProblems(problems, new Set(["waist"]))]).toEqual(["waist"]);
+  });
+
+  it("marks every problem the first time she taps Listo and holds the sheet open, then lets her go", () => {
+    const typing = form({ email: "r", values: { waist: "8" } });
+    const shown = revealOnDone(typing, new Set(["waist"]), false);
+    expect(shown && [...visibleProblems(sheetProblems(typing), shown)].sort()).toEqual(["email", "waist"]);
+    expect(revealOnDone(typing, shown!, true)).toBeNull();
+    expect(revealOnDone(form(), new Set(), false)).toBeNull();
+  });
+
+  it("holds Listo once even when the problem is already marked: tapping Listo is what left the box", () => {
+    const typing = form({ values: { waist: "8" } });
+    expect(revealOnDone(typing, new Set(["waist"]), false)).toEqual(new Set(["waist"]));
+  });
+
+  it("lets an empty new client close without a word about the missing name", () => {
+    expect(revealOnDone(form({ name: "", email: "", key: "client:new-3" }), new Set(), false)).toBeNull();
+    expect(revealOnDone(form({ name: "", email: "", phone: "7185550101", key: "client:new-3" }), new Set(), false)).toEqual(
+      new Set(["name"]),
+    );
   });
 });

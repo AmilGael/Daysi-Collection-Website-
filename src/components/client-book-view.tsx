@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type JSX } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from "react";
 import { useTranslations } from "next-intl";
 import { MEASUREMENTS } from "@/content/measurements";
 import type { Locale } from "@/i18n/routing";
@@ -67,6 +67,12 @@ export function ClientBookView({
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   const close = useCallback(() => setOpen(null), []);
+  // Listo asks the open sheet first: it may stay open once to mark what it is leaving out.
+  const doneGuard = useRef<(() => boolean) | null>(null);
+  const done = useCallback(() => {
+    if (doneGuard.current && !doneGuard.current()) return;
+    close();
+  }, [close]);
 
   const active = rows.filter((row) => !row.archived);
   const archived = rows.filter((row) => row.archived && row.cardId);
@@ -167,6 +173,7 @@ export function ClientBookView({
         open={openedRow !== undefined}
         title={openedRow?.name || (open !== null ? stagedByRow.get(open)?.meta.form.name.trim() : "") || t("clientAdd")}
         onClose={close}
+        onDone={done}
       >
         {openedRow ? (
           <ClientSheet
@@ -181,6 +188,7 @@ export function ClientBookView({
             undoable={openedRow.cardId !== undefined && undoable.includes(openedRow.cardId)}
             locale={locale}
             onClose={close}
+            doneGuard={doneGuard}
           />
         ) : null}
       </Sheet>

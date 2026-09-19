@@ -23,6 +23,11 @@ import {
  * never joins an email to a phone by itself, because a family can share one
  * phone; only a card Daysi or the client saved with both does. A phone two
  * cards share is ambiguous and joins neither.
+ *
+ * A card with neither an email nor a phone (Daysi's card for a client she
+ * only knows by name) is found by that name, as a name-only order is, so
+ * saving the card on a name-only row files that row's orders under it. Two
+ * such cards with one name are ambiguous and join neither, like a phone.
  */
 
 const CLIENT_KINDS = ["order", "alteration", "commission", "appointment", "design"] as const satisfies readonly StoredRequestKind[];
@@ -69,6 +74,7 @@ export function clientBook(): BookRow[] {
   const rows = new Map<string, Draft>();
   const byEmail = new Map<string, Draft>();
   const byCardPhone = new Map<string, Draft | null>();
+  const byCardName = new Map<string, Draft | null>();
 
   for (const card of listClientCards()) {
     const row: Draft = {
@@ -84,6 +90,10 @@ export function clientBook(): BookRow[] {
     if (card.email) byEmail.set(card.email, row);
     const digits = card.phone ? phoneDigits(card.phone) : "";
     if (digits.length >= 7) byCardPhone.set(digits, byCardPhone.has(digits) ? null : row);
+    if (!card.email && !card.phone) {
+      const name = normalName(card.name);
+      if (name) byCardName.set(name, byCardName.has(name) ? null : row);
+    }
   }
 
   const rowFor = (key: string, seed: Omit<Draft, "key" | "references" | "hasAccount">): Draft => {
@@ -116,7 +126,7 @@ export function clientBook(): BookRow[] {
     } else if (digits.length >= 7) {
       row = byCardPhone.get(digits) ?? rowFor(`p:${digits}`, { name, phone });
     } else {
-      row = rowFor(`n:${normalName(name)}`, { name });
+      row = byCardName.get(normalName(name)) ?? rowFor(`n:${normalName(name)}`, { name });
     }
     row.references.add(record.reference);
     if (!row.card) {
