@@ -59,7 +59,12 @@ describe("createCheckoutSession", () => {
 });
 
 describe("how long a checkout stays open", () => {
-  const createMock = vi.fn(async (_params: unknown) => ({ url: "https://checkout.stripe.test/s" }));
+  // What Stripe always answers with: the page, its id, and when it closes.
+  const createMock = vi.fn(async (_params: unknown) => ({
+    url: "https://checkout.stripe.test/s",
+    id: "cs_test_1",
+    expires_at: 1_790_000_000,
+  }));
 
   async function sessionArgs(
     request: Parameters<typeof order>[0] | undefined,
@@ -311,5 +316,28 @@ describe("closing a payment page the client backed out of", () => {
     retrieveMock.mockResolvedValueOnce(session("open"));
     expireMock.mockRejectedValueOnce(new Error("connection reset"));
     expect(await expire("cs_test_1", "ORD-1")).toBe("unknown");
+  });
+});
+
+describe("the page createCheckoutSession hands back", () => {
+  it("carries the session's id and when it closes, for a link Daysi sends", async () => {
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_mocked");
+    vi.stubEnv("SITE_URL", "https://example.test");
+    vi.doMock("stripe", () => ({
+      default: class {
+        checkout = {
+          sessions: {
+            create: vi.fn(async () => ({ url: "https://checkout.stripe.test/s", id: "cs_1", expires_at: 1_790_000_000 })),
+          },
+        };
+      },
+    }));
+    const { createCheckoutSession } = await import("./payments");
+    const page = await createCheckoutSession({ ...order(10500), customerEmail: "" });
+    expect(page).toEqual({
+      url: "https://checkout.stripe.test/s",
+      id: "cs_1",
+      expiresAt: new Date(1_790_000_000 * 1000).toISOString(),
+    });
   });
 });

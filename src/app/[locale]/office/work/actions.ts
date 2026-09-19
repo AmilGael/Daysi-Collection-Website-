@@ -3,10 +3,11 @@
 import { ChangeRefused, applyEach, ownerAction } from "@/lib/action-guard";
 import { businessInstant } from "@/lib/availability";
 import { changesOf, workChangeSchema } from "@/lib/office-validation";
-import { estimateNoted, type NotedOrderKind } from "@/lib/pricing";
+import { estimateCharged, estimateNoted, type NotedOrderKind } from "@/lib/pricing";
 import { findRequest, saveRequest, type StoredRequest } from "@/lib/request-store";
 import { setRetired } from "@/lib/retired";
 import { newReference } from "@/lib/security";
+import { chargeRecord } from "@/lib/office-charge";
 
 /** Which reference prefix names an order noted by kind, as the request form
  *  and the cart checkout already use for the same three kinds. */
@@ -42,6 +43,7 @@ export const applyWorkChanges = ownerAction(
           return;
         }
         case "order-note": {
+          if (change.paid && change.charge) throw new ChangeRefused("bad-value");
           const now = new Date().toISOString();
           // Noon, so the calendar day it lands on never rolls with the offset
           // between EST and EDT; absent, it is today, exactly as before this.
@@ -60,13 +62,22 @@ export const applyWorkChanges = ownerAction(
               Description: change.description,
               ...(change.notes ? { Notes: change.notes } : {}),
             },
-            estimate: estimateNoted(change.amount, change.kind),
+            // A charged note is asked of the client, not received: its receipt
+            // must not say "total recibido" before a cent has come in.
+            estimate: change.charge ? estimateCharged(change.amount) : estimateNoted(change.amount, change.kind),
             source: "office",
             status: change.paid ? "paid" : "new",
             paidVia: "office",
             ...(change.paid ? { paidAt: moment } : {}),
           };
           await saveRequest(record);
+          // The note is hers either way; the link is a second step Stripe may
+          // refuse. Refused, the row stays open and its sheet offers the
+          // link again, rather than the whole note being lost to it.
+          if (change.charge) {
+            const charged = await chargeRecord(record.reference, change.amount);
+            if (!charged.ok) console.warn(`[office] No payment link for ${record.reference}: ${charged.error}.`);
+          }
           return;
         }
         case "retire":

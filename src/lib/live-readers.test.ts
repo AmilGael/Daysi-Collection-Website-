@@ -25,7 +25,12 @@ vi.mock("next/headers", () => ({
 }));
 vi.mock("@/lib/auth/session", () => ({ currentViewer: vi.fn(async () => null) }));
 vi.mock("@/lib/payments", () => ({
-  createCheckoutSession: vi.fn(async () => ({ url: "https://checkout.stripe.test/session" })),
+  createCheckoutSession: vi.fn(async () => ({
+    url: "https://checkout.stripe.test/session",
+    id: "cs_test_session",
+    expiresAt: new Date(Date.now() + 23 * 3_600_000).toISOString(),
+  })),
+  expireCheckoutSession: vi.fn(async () => "expired"),
 }));
 // Only the office action tests below reach `ownerAction`, which revalidates
 // paths outside a request's render lifecycle; nothing here checks the call.
@@ -380,6 +385,60 @@ describe("noting an order the office took off-site", () => {
     if (!result.ok) throw new Error(result.error);
     return result.results;
   }
+
+  it("refuses a note that says both paid and charge", async () => {
+    const results = await apply({
+      type: "order-note",
+      key: "order-note:both",
+      kind: "alteration",
+      clientName: "Lía Soto",
+      description: "Ruedo",
+      amount: 2000,
+      paid: true,
+      charge: true,
+    });
+    expect(results[0]).toMatchObject({ ok: false, error: "bad-value" });
+  });
+
+  it("makes the payment link at Confirmar for a note she wants to charge", async () => {
+    await apply({
+      type: "order-note",
+      key: "order-note:charge",
+      kind: "alteration",
+      clientName: "Marta Gil",
+      phone: "7185550100",
+      description: "Ajuste de cintura",
+      amount: 3500,
+      paid: false,
+      charge: true,
+    });
+    const { loadLedger } = await import("./earnings");
+    const noted = loadLedger().find((record) => record.client.name === "Marta Gil")!;
+    expect(noted).toMatchObject({ status: "new", source: "office", awaitingPayment: true });
+    expect(noted.paymentLink).toMatchObject({ sessionId: "cs_test_session", amount: 3500 });
+    // Asked of the client, not received: the receipt must not say "total recibido".
+    expect(noted.estimate?.lines[0]?.label.es).toBe("Daysi Collection · cobro del taller");
+  });
+
+  it("keeps a charged note, open and owed, when Stripe refuses the link", async () => {
+    const { createCheckoutSession } = await import("@/lib/payments");
+    vi.mocked(createCheckoutSession).mockResolvedValueOnce(null);
+    const results = await apply({
+      type: "order-note",
+      key: "order-note:refused",
+      kind: "alteration",
+      clientName: "Iris León",
+      description: "Ruedo",
+      amount: 2000,
+      paid: false,
+      charge: true,
+    });
+    expect(results[0]).toMatchObject({ ok: true });
+    const { loadLedger } = await import("./earnings");
+    const noted = loadLedger().find((record) => record.client.name === "Iris León")!;
+    expect(noted.status).toBe("new");
+    expect(noted.paymentLink).toBeUndefined();
+  });
 
   it("writes a paid $200 order at exactly that total, untaxed, the Hub's ledger and the books both read back", async () => {
     // Well over the $110 clothing exemption, to prove this is never re-taxed:

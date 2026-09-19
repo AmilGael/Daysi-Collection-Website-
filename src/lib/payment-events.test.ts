@@ -739,3 +739,81 @@ describe("applyPaymentEvent", () => {
     expect(findRequest("ORD-1")?.status).toBe("refunded");
   });
 });
+
+describe("a payment link Daysi made from the office", () => {
+  const link = (sessionId: string) => ({
+    url: `https://checkout.stripe.test/${sessionId}`,
+    sessionId,
+    amount: 4500,
+    expiresAt: "2026-09-10T12:00:00.000Z",
+  });
+  const mockNotify = () => {
+    const notifyClientPaid = vi.fn(async () => undefined);
+    vi.doMock("./notify", () => ({
+      notifyOwner: vi.fn(async () => undefined),
+      notifyClientPaid,
+      notifyClientPaymentFailed: vi.fn(async () => undefined),
+    }));
+    return notifyClientPaid;
+  };
+
+  it("keeps the order open, owed, when the link runs out unpaid", async () => {
+    mockNotify();
+    const { saveRequest, findRequest } = await import("./request-store");
+    const { markExpired } = await import("./payment-events");
+    await saveRequest(
+      record({ reference: "ALT-1", kind: "alteration", source: "office", awaitingPayment: true, paymentLink: link("cs_a") }),
+    );
+
+    expect(await markExpired("ALT-1", "cs_a")).toBe("link-closed");
+    const current = findRequest("ALT-1")!;
+    expect(current.status).toBe("new");
+    expect(current.paymentLink).toBeUndefined();
+    expect(current.awaitingPayment).toBeUndefined();
+    expect(current.source).toBe("office");
+  });
+
+  it("ignores the expiry of an older link she already replaced", async () => {
+    mockNotify();
+    const { saveRequest, findRequest } = await import("./request-store");
+    const { markExpired } = await import("./payment-events");
+    await saveRequest(
+      record({ reference: "ALT-2", kind: "alteration", source: "office", awaitingPayment: true, paymentLink: link("cs_new") }),
+    );
+
+    expect(await markExpired("ALT-2", "cs_old")).toBe("not-waiting");
+    expect(findRequest("ALT-2")?.paymentLink?.sessionId).toBe("cs_new");
+  });
+
+  it("marks it paid, drops the link, and keeps the address the client typed on Stripe's page", async () => {
+    mockNotify();
+    const { saveRequest, findRequest } = await import("./request-store");
+    const { markPaid } = await import("./payment-events");
+    await saveRequest(
+      record({
+        reference: "ORD-9",
+        kind: "order",
+        client: { name: "Nina", email: "" },
+        source: "office",
+        awaitingPayment: true,
+        paymentLink: link("cs_b"),
+      }),
+    );
+
+    expect(await markPaid("ORD-9", { ...paidNow, email: "nina@example.com" })).toBe("marked");
+    const current = findRequest("ORD-9")!;
+    expect(current).toMatchObject({ status: "paid", source: "stripe", paidVia: "card" });
+    expect(current.client.email).toBe("nina@example.com");
+    expect(current.paymentLink).toBeUndefined();
+  });
+
+  it("never swaps an address the record already had for the one typed on Stripe's page", async () => {
+    mockNotify();
+    const { saveRequest, findRequest } = await import("./request-store");
+    const { markPaid } = await import("./payment-events");
+    await saveRequest(record({ reference: "ORD-10", kind: "order", paymentLink: link("cs_c"), source: "office" }));
+
+    await markPaid("ORD-10", { ...paidNow, email: "other@example.com" });
+    expect(findRequest("ORD-10")?.client.email).toBe("ana@example.com");
+  });
+});

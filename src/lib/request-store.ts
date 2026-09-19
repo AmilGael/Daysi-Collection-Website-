@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { env } from "./env";
 import type { Estimate } from "./pricing";
+import type { Cents } from "@/content/types";
 import { retiredSet } from "./retired";
 
 /**
@@ -115,6 +116,13 @@ export type StoredRequest = {
   /** When Stripe confirmed it. Earnings count the money in this month, not the order's. */
   readonly paidAt?: string;
   /**
+   * A payment page Daysi made from the office for this record, to send the
+   * client by WhatsApp or email. Stripe closes it at `expiresAt`; the webhook
+   * drops it then, or when it is paid. Only one is ever open: a new one closes
+   * the last first, so the client can never pay the same thing twice.
+   */
+  readonly paymentLink?: PaymentLink;
+  /**
    * The bank refused the debit after the page had completed: nothing was
    * received. Written by the webhook on the line that records it, so the
    * office and the client's own list can say so rather than show a silent
@@ -141,6 +149,13 @@ export function owesNothing(status: StoredRequest["status"]): boolean {
  * office leaves it out. A bank payment on its way, a refusal, and any row
  * she has touched herself are all something that happened, and stay.
  */
+export type PaymentLink = {
+  readonly url: string;
+  readonly sessionId: string;
+  readonly amount: Cents;
+  readonly expiresAt: string;
+};
+
 export function unfinishedCheckout(record: StoredRequest): boolean {
   if (record.awaitingPayment === true && record.source === undefined) return true;
   return record.status === "closed" && record.source === "stripe";

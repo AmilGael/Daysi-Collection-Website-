@@ -471,7 +471,8 @@
       "paid": "Paid",
       "refunded": "Refunded",
       "closed": "Closed"
-    }
+    },
+    "payNow": "Pay {amount}"
   },
   "cart": {
     "title": "Your cart",
@@ -519,8 +520,6 @@
     "chartNote": "Only money that has actually cleared is counted here. What is agreed but unpaid sits under \"owed to you\".",
     "work": "Orders and alterations",
     "noWork": "Nothing has come in yet.",
-    "addOrderNote": "Note an order",
-    "orderNoteTitle": "Note an order",
     "orderNoteLead": "Note an order, an alteration or a custom piece you already took off the site, in person or over WhatsApp, so it counts in your figures and your books.",
     "orderNoteKindLabel": "What it is",
     "orderNoteClientName": "Client's name",
@@ -528,7 +527,6 @@
     "orderNoteEmail": "Email (optional)",
     "orderNoteDescription": "One line that describes it",
     "orderNoteAmount": "Total the client paid (tax included, if you charged it)",
-    "orderNotePaid": "Already paid",
     "orderNoteDate": "Date (optional; blank means today)",
     "orderNoteNotes": "Notes (optional)",
     "orderNoteNameRequired": "Write the client's name (2 to 80 characters).",
@@ -798,7 +796,43 @@
     "stylePhotoRequired": "Add at least one photograph.",
     "styleSizeRequired": "Enter how many pieces you have in at least one size.",
     "stylePriceRequired": "This garment and cloth have no price yet. Set one.",
-    "styleNote": "Write in Spanish. The English is written when you confirm; see and correct it with See the English."
+    "styleNote": "Write in Spanish. The English is written when you confirm; see and correct it with See the English.",
+    "addNote": {
+      "order": "Note an order",
+      "alteration": "Note an alteration",
+      "commission": "Note a made-to-measure piece"
+    },
+    "workGroup": {
+      "order": "Orders",
+      "alteration": "Alterations",
+      "commission": "Made to measure",
+      "design": "Studio designs"
+    },
+    "orderNotePayment": "Payment",
+    "orderNotePaidNow": "Already paid",
+    "orderNoteCharge": "Charge by card",
+    "orderNoteLater": "Pays later",
+    "orderNoteChargeAmount": "How much to charge",
+    "orderNoteOwedAmount": "How much is owed",
+    "orderNoteChargeHint": "Confirming makes a payment link. Tap the order to send it by WhatsApp or email.",
+    "chargeLinkOpen": "Payment link",
+    "chargeTitle": "Charge",
+    "chargeReady": "Link ready to pay {amount} by card. Closes: {until}",
+    "chargeWhatsapp": "Send by WhatsApp",
+    "chargeEmail": "Send by email",
+    "chargeCopy": "Copy link",
+    "chargeRemake": "Make a new link (closes this one)",
+    "chargeAmount": "How much to charge",
+    "chargeMake": "Create payment link",
+    "chargeMaking": "Creating…",
+    "chargeKeepOld": "Keep the one you have",
+    "chargeHint": "The client pays by card on Stripe's page. Once paid, the order moves to Paid on its own and they get the receipt.",
+    "chargeBadAmount": "Type an amount between $1 and $5,000.",
+    "chargeFailed": "The link could not be made. Try again in a moment.",
+    "chargeOldOpen": "The previous link could not be closed, so no new one was made. Try again in a moment.",
+    "chargeEmailed": "Sent to their email.",
+    "chargeEmailFailed": "The email could not be sent. Copy the link and send it another way.",
+    "chargeCopied": "Link copied."
   },
   "gallery": {
     "title": "The work",

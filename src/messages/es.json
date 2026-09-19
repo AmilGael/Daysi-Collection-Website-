@@ -471,7 +471,8 @@
       "paid": "Pagado",
       "refunded": "Reembolsado",
       "closed": "Cerrado"
-    }
+    },
+    "payNow": "Pagar {amount}"
   },
   "cart": {
     "title": "Su carrito",
@@ -519,8 +520,6 @@
     "chartNote": "Aquí solo se cuenta el dinero que ya entró de verdad. Lo acordado y no pagado aparece en \"le deben\".",
     "work": "Pedidos y arreglos",
     "noWork": "Todavía no ha entrado nada.",
-    "addOrderNote": "Anotar un pedido",
-    "orderNoteTitle": "Anotar un pedido",
     "orderNoteLead": "Anote un pedido, un arreglo o una pieza a medida que ya tomó fuera del sitio, en persona o por WhatsApp, para que quede en sus cifras y sus libros.",
     "orderNoteKindLabel": "Qué es",
     "orderNoteClientName": "Nombre de la clienta",
@@ -528,7 +527,6 @@
     "orderNoteEmail": "Correo (opcional)",
     "orderNoteDescription": "Una línea que lo describa",
     "orderNoteAmount": "Total que le pagaron (con impuesto, si lo cobró)",
-    "orderNotePaid": "Ya está pagado",
     "orderNoteDate": "Fecha (opcional; en blanco es hoy)",
     "orderNoteNotes": "Notas (opcional)",
     "orderNoteNameRequired": "Escriba el nombre de la clienta (2 a 80 letras).",
@@ -798,7 +796,43 @@
     "stylePhotoRequired": "Agregue al menos una fotografía.",
     "styleSizeRequired": "Ponga cuántas piezas tiene en al menos una talla.",
     "stylePriceRequired": "Esta prenda y esta tela todavía no tienen precio. Póngale uno.",
-    "styleNote": "Escriba en español. El inglés se escribe solo cuando confirma; puede verlo y corregirlo con Ver inglés."
+    "styleNote": "Escriba en español. El inglés se escribe solo cuando confirma; puede verlo y corregirlo con Ver inglés.",
+    "addNote": {
+      "order": "Anotar un pedido",
+      "alteration": "Anotar un arreglo",
+      "commission": "Anotar una pieza a medida"
+    },
+    "workGroup": {
+      "order": "Pedidos",
+      "alteration": "Arreglos",
+      "commission": "Piezas a medida",
+      "design": "Diseños del taller"
+    },
+    "orderNotePayment": "El pago",
+    "orderNotePaidNow": "Ya me pagó",
+    "orderNoteCharge": "Cobrarle con tarjeta",
+    "orderNoteLater": "Me paga después",
+    "orderNoteChargeAmount": "Cuánto le cobra",
+    "orderNoteOwedAmount": "Cuánto le debe",
+    "orderNoteChargeHint": "Al confirmar se crea un enlace de pago. Toque el pedido para mandárselo por WhatsApp o por correo.",
+    "chargeLinkOpen": "Enlace de pago",
+    "chargeTitle": "Cobrar",
+    "chargeReady": "Enlace listo para pagar {amount} con tarjeta. Vence: {until}",
+    "chargeWhatsapp": "Mandar por WhatsApp",
+    "chargeEmail": "Mandar por correo",
+    "chargeCopy": "Copiar enlace",
+    "chargeRemake": "Hacer otro enlace (cierra este)",
+    "chargeAmount": "Cuánto le cobra",
+    "chargeMake": "Crear enlace de pago",
+    "chargeMaking": "Creando…",
+    "chargeKeepOld": "Dejar el que ya tiene",
+    "chargeHint": "La clienta paga con tarjeta en la página de Stripe. Al pagar, el pedido pasa solo a Pagado y le llega el recibo.",
+    "chargeBadAmount": "Escriba un monto entre $1 y $5,000.",
+    "chargeFailed": "No se pudo crear el enlace. Intente de nuevo en un momento.",
+    "chargeOldOpen": "No se pudo cerrar el enlace anterior, así que no se hizo otro. Intente de nuevo en un momento.",
+    "chargeEmailed": "Enviado a su correo.",
+    "chargeEmailFailed": "No se pudo enviar el correo. Copie el enlace y mándelo por otro lado.",
+    "chargeCopied": "Enlace copiado."
   },
   "gallery": {
     "title": "El trabajo",

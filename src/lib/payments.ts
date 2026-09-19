@@ -31,6 +31,8 @@ export type CheckoutRequest = {
   readonly reference: string;
   readonly description: string;
   readonly estimate: Estimate;
+  /** Prefilled on Stripe's page. Empty for a client Daysi noted without one:
+   *  Stripe then asks for it, and the webhook keeps what they typed. */
   readonly customerEmail: string;
   readonly locale: Locale;
   /**
@@ -78,14 +80,14 @@ export function referenceOf(
  */
 export async function createCheckoutSession(
   request: CheckoutRequest,
-): Promise<{ url: string } | null> {
+): Promise<CheckoutPage | null> {
   if (!paymentsEnabled) return null;
   if (request.estimate.dueNow <= 0) return null;
 
   const session = await stripe().checkout.sessions.create({
     mode: "payment",
     locale: request.locale,
-    customer_email: request.customerEmail,
+    ...(request.customerEmail ? { customer_email: request.customerEmail } : {}),
     client_reference_id: request.reference,
     // One inline amount, already final. `pricing.ts` works out New York sales tax
     // itself (with the clothing exemption under $110) and folds it into `dueNow`,
@@ -125,8 +127,17 @@ export async function createCheckoutSession(
     cancel_url: `${env.siteUrl}/${request.locale}/checkout/cancelled?reference=${request.reference}&session_id={CHECKOUT_SESSION_ID}`,
   });
 
-  return session.url ? { url: session.url } : null;
+  return session.url
+    ? {
+        url: session.url,
+        id: session.id,
+        expiresAt: new Date(session.expires_at * 1000).toISOString(),
+      }
+    : null;
 }
+
+/** The payment page Stripe made: where to send the client, and when it closes. */
+export type CheckoutPage = { readonly url: string; readonly id: string; readonly expiresAt: string };
 
 export type CheckoutPaymentStatus = "paid" | "pending" | "unknown";
 
