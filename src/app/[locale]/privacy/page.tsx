@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 
 const SECTIONS = ["collect", "use", "keep", "rights", "cookies"] as const;
 
-const LAST_UPDATED = "2026-08-06";
+const LAST_UPDATED = "2026-09-19";
 
 export default async function PrivacyPage({
   params,

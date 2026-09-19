@@ -332,7 +332,8 @@
     "cancelledBookingLead": "Nothing was charged and booking {reference} was cancelled. You can choose another time whenever you like.",
     "cancelledDesignLead": "Nothing was charged and design {reference} was not sent. You can go back to the studio whenever you like.",
     "backHome": "Back to the site",
-    "secureNote": "Card details are handled by Stripe on their own secure page. This site never sees them."
+    "secureNote": "Card details are handled by Stripe on their own secure page. This site never sees them.",
+    "saveMeasures": "Leave us your measurements? Save them in your account and Daysi has them for next time."
   },
   "terms": {
     "title": "Terms of service",
@@ -387,11 +388,11 @@
     "updated": "Last updated {date}",
     "intro": "A short notice, because there is not much to say: this site collects what it needs to do the work, and nothing else.",
     "collect": "What is collected",
-    "collectBody": "Your name, the way you asked to be contacted, and what you wrote in the form. If you attach a photograph of a garment, that too. If you pay by card, Stripe handles the payment and this site is never sent your card number.",
+    "collectBody": "Your name, the way you asked to be contacted, and what you wrote in the form. If you attach a photograph of a garment, that too. If you pay by card, Stripe handles the payment and this site is never sent your card number. If you have an account, you can also save your measurements and an address; both are optional.",
     "use": "What it is used for",
     "useBody": "Answering your request and doing the work. Nothing is sold, and nothing is shared with anyone outside the business.",
     "keep": "How long it is kept",
-    "keepBody": "Requests are kept while the work is open and for two years afterwards, so a garment can be traced back if you return. Photographs you send are deleted once the work is finished, unless you ask for them to be kept with your file.",
+    "keepBody": "Requests are kept while the work is open and for two years afterwards, so a garment can be traced back if you return. Photographs you send are deleted once the work is finished, unless you ask for them to be kept with your file. Your measurements and address stay for as long as you have an account, so you are not asked for them again each time. You can clear what you entered from Your details and measurements, and backup copies are gone within thirty days.",
     "rights": "Your choices",
     "rightsBody": "Ask for a copy of what is held about you, or ask for it to be deleted, and it will be done within thirty days. Write to {email}.",
     "cookies": "Cookies",

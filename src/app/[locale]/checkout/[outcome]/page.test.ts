@@ -66,3 +66,33 @@ describe("the cancelled checkout page's booking copy", () => {
     );
   });
 });
+
+/**
+ * A client who has just paid and has not yet given Daysi a measurement gets
+ * one line pointing at their own card — a guest who never signed in counts
+ * as unmeasured too, since there is no card to check. Never shown outside
+ * the paid state, and never carrying a measurement or an address itself.
+ */
+describe("the thank-you page's save-measurements nudge", () => {
+  it("checks the viewer's card only once the payment is confirmed as paid", () => {
+    expect(source).toContain('import { currentViewer } from "@/lib/auth/session"');
+    expect(source).toContain('import { cardForAccount, measuredCount } from "@/lib/client-cards"');
+    expect(source).toContain('if (state === "paid") {');
+    expect(source).toContain("const viewer = await currentViewer();");
+    expect(source).toContain("ask = !viewer || measuredCount(cardForAccount(viewer.account)) === 0;");
+  });
+
+  it("renders the nudge as a text link to the details page", () => {
+    expect(source).toContain('import { ButtonLink, TextLink } from "@/components/ui"');
+    expect(source).toContain('{ask ? <TextLink href="/account/details">{t("saveMeasures")}</TextLink> : null}');
+  });
+
+  it("has the nudge copy in both languages, with no measurement or address in it", () => {
+    expect(checkoutMessages(es).saveMeasures).toBe(
+      "¿Nos deja sus medidas? Guárdelas en su cuenta y Daysi las tiene para la próxima.",
+    );
+    expect(checkoutMessages(en).saveMeasures).toBe(
+      "Leave us your measurements? Save them in your account and Daysi has them for next time.",
+    );
+  });
+});

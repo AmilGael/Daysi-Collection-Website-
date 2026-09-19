@@ -332,7 +332,8 @@
     "cancelledBookingLead": "No se cobró nada y la reserva {reference} quedó cancelada. Puede elegir otra hora cuando quiera.",
     "cancelledDesignLead": "No se cobró nada y el diseño {reference} no se envió. Puede volver al estudio cuando quiera.",
     "backHome": "Volver al sitio",
-    "secureNote": "Los datos de la tarjeta los maneja Stripe en su propia página segura. Este sitio nunca los ve."
+    "secureNote": "Los datos de la tarjeta los maneja Stripe en su propia página segura. Este sitio nunca los ve.",
+    "saveMeasures": "¿Nos deja sus medidas? Guárdelas en su cuenta y Daysi las tiene para la próxima."
   },
   "terms": {
     "title": "Términos del servicio",
@@ -387,11 +388,11 @@
     "updated": "Última actualización: {date}",
     "intro": "Un aviso corto, porque no hay mucho que decir: este sitio recoge lo que necesita para hacer el trabajo, y nada más.",
     "collect": "Qué se recoge",
-    "collectBody": "Su nombre, la manera en que pidió que la contactaran, y lo que escribió en el formulario. Si adjunta una foto de una prenda, esa foto también. Si paga con tarjeta, Stripe maneja el pago y a este sitio nunca le llega el número de su tarjeta.",
+    "collectBody": "Su nombre, la manera en que pidió que la contactaran, y lo que escribió en el formulario. Si adjunta una foto de una prenda, esa foto también. Si paga con tarjeta, Stripe maneja el pago y a este sitio nunca le llega el número de su tarjeta. Si tiene cuenta, también puede guardar sus medidas y una dirección; las dos son opcionales.",
     "use": "Para qué se usa",
     "useBody": "Para responder su solicitud y hacer el trabajo. Nada se vende, y nada se comparte con nadie fuera del negocio.",
     "keep": "Cuánto tiempo se guarda",
-    "keepBody": "Las solicitudes se guardan mientras el trabajo está abierto y dos años después, para poder rastrear una prenda si usted vuelve. Las fotos que envía se borran al terminar el trabajo, salvo que pida que se guarden con su expediente.",
+    "keepBody": "Las solicitudes se guardan mientras el trabajo está abierto y dos años después, para poder rastrear una prenda si usted vuelve. Las fotos que envía se borran al terminar el trabajo, salvo que pida que se guarden con su expediente. Sus medidas y su dirección se quedan mientras tenga cuenta, para no pedírselas de nuevo cada vez. Puede borrar lo que escribió desde Sus datos y medidas, y las copias de respaldo desaparecen dentro de treinta días.",
     "rights": "Sus opciones",
     "rightsBody": "Pida una copia de lo que se tiene sobre usted, o pida que se borre, y se hará dentro de treinta días. Escriba a {email}.",
     "cookies": "Cookies",

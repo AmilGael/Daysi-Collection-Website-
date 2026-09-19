@@ -589,3 +589,85 @@ describe("notifyClientPaid", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * The nudge to save measurements: a client who has never given Daysi a
+ * measurement gets one line in the receipt pointing at their card, in
+ * their own language, before the WhatsApp line. A client whose card
+ * already has a measurement is not asked again.
+ */
+describe("receiptMessage and the measurements nudge", () => {
+  it("leaves the line out when not asked", async () => {
+    const { receiptMessage } = await import("./notify");
+
+    const { text } = receiptMessage(record({ locale: "es" }));
+
+    expect(text).not.toContain("Guarde sus medidas");
+    expect(text).not.toContain("account/details");
+  });
+
+  it("adds the line in Spanish, before the WhatsApp line, when asked", async () => {
+    const { receiptMessage } = await import("./notify");
+
+    const { text } = receiptMessage(record({ locale: "es" }), { askForMeasurements: true });
+
+    expect(text).toContain("Guarde sus medidas para la próxima vez: http://localhost:3000/es/account/details");
+    const lines = text.split("\n");
+    const askIndex = lines.findIndex((line) => line.startsWith("Guarde sus medidas"));
+    const whatsappIndex = lines.findIndex((line) => line.startsWith("¿Preguntas?"));
+    expect(askIndex).toBeGreaterThan(-1);
+    expect(askIndex).toBeLessThan(whatsappIndex);
+  });
+
+  it("adds the line in English, before the WhatsApp line, when asked", async () => {
+    const { receiptMessage } = await import("./notify");
+
+    const { text } = receiptMessage(record({ locale: "en" }), { askForMeasurements: true });
+
+    expect(text).toContain("Save your measurements for next time: http://localhost:3000/en/account/details");
+    const lines = text.split("\n");
+    const askIndex = lines.findIndex((line) => line.startsWith("Save your measurements"));
+    const whatsappIndex = lines.findIndex((line) => line.startsWith("Questions?"));
+    expect(askIndex).toBeGreaterThan(-1);
+    expect(askIndex).toBeLessThan(whatsappIndex);
+  });
+
+  it("never puts a measurement or an address on the line, only the link", async () => {
+    const { receiptMessage } = await import("./notify");
+
+    const { text } = receiptMessage(record({ locale: "en" }), { askForMeasurements: true });
+    const askLine = text.split("\n").find((line) => line.startsWith("Save your measurements"));
+
+    expect(askLine).toBe("Save your measurements for next time: http://localhost:3000/en/account/details");
+  });
+});
+
+describe("notifyClientPaid and the measurements nudge", () => {
+  it("asks for measurements when the client has no card on file", async () => {
+    const { notifyClientPaid } = await import("./notify");
+
+    await notifyClientPaid(record({ locale: "en", status: "paid", source: "stripe" }));
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as { text: string };
+    expect(body.text).toContain("Save your measurements for next time");
+  });
+
+  it("does not ask when the client's card already has a measurement", async () => {
+    const { CLIENT_CARDS } = await import("./client-cards");
+    const { appendRecord } = await import("./records");
+    await appendRecord(CLIENT_CARDS, {
+      id: "cli_1",
+      name: "Ana",
+      email: "ana@example.com",
+      measurements: { waist: { value: 30, unit: "in", by: "client", at: "2026-09-01T00:00:00Z" } },
+      updatedAt: "2026-09-01T00:00:00Z",
+      updatedBy: "client",
+    });
+    const { notifyClientPaid } = await import("./notify");
+
+    await notifyClientPaid(record({ locale: "en", status: "paid", source: "stripe" }));
+
+    const body = JSON.parse(fetchMock.mock.calls[0]![1]!.body as string) as { text: string };
+    expect(body.text).not.toContain("Save your measurements");
+  });
+});

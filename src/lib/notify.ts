@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { translate } from "@/content";
+import { cardForEmail, measuredCount } from "./client-cards";
 import { emailEnabled, env } from "./env";
 import { formatMoney } from "./money";
 import { forNotification } from "./security";
@@ -289,8 +290,15 @@ function paidViaLabel(request: StoredRequest, locale: "es" | "en"): string {
  * paid now and what is still owed, and what happens next. Split from
  * `notifyClientPaid` so the tests can check the words without going through
  * `sendEmail`.
+ *
+ * `askForMeasurements` adds one line pointing at the client's card, for a
+ * client whose card has not one measurement yet — never a measurement or an
+ * address itself, only the link, since a receipt is not the place for either.
  */
-export function receiptMessage(request: StoredRequest): { subject: string; text: string } {
+export function receiptMessage(
+  request: StoredRequest,
+  options: { readonly askForMeasurements?: boolean } = {},
+): { subject: string; text: string } {
   const { locale } = request;
   const name = forNotification(request.client.name);
   const estimate = request.estimate;
@@ -326,6 +334,12 @@ export function receiptMessage(request: StoredRequest): { subject: string; text:
       : `Hi Daysi, about my order ${request.reference}`,
   );
   const ordersUrl = `${env.siteUrl}/${locale}/account/orders`;
+  const measurementsUrl = `${env.siteUrl}/${locale}/account/details`;
+  const askLine = options.askForMeasurements
+    ? locale === "es"
+      ? `Guarde sus medidas para la próxima vez: ${measurementsUrl}`
+      : `Save your measurements for next time: ${measurementsUrl}`
+    : null;
 
   const text =
     locale === "es"
@@ -346,6 +360,7 @@ export function receiptMessage(request: StoredRequest): { subject: string; text:
           "Qué sigue",
           whatsNext(request),
           "",
+          ...(askLine ? [askLine] : []),
           `¿Preguntas? Escríbanos por WhatsApp: ${whatsapp}`,
           `Vea sus pedidos: ${ordersUrl}`,
           "",
@@ -368,6 +383,7 @@ export function receiptMessage(request: StoredRequest): { subject: string; text:
           "What's next",
           whatsNext(request),
           "",
+          ...(askLine ? [askLine] : []),
           `Questions? Reach us on WhatsApp: ${whatsapp}`,
           `See your orders: ${ordersUrl}`,
           "",
@@ -402,7 +418,9 @@ export async function notifyClientPaid(request: StoredRequest): Promise<void> {
   await sendEmail({
     to: request.client.email,
     ...(env.ownerEmails[0] ? { replyTo: env.ownerEmails[0] } : {}),
-    ...receiptMessage(request),
+    ...receiptMessage(request, {
+      askForMeasurements: measuredCount(cardForEmail(request.client.email)) === 0,
+    }),
   });
 }
 

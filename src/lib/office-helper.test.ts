@@ -82,6 +82,29 @@ describe("helperSystem", () => {
     expect(state).toContain("Estrenos");
     expect(state).toContain("Precios");
   });
+
+  it("never carries a client card's private note, address or email", async () => {
+    const { officeSaveCard } = await import("./client-cards");
+    await officeSaveCard({
+      type: "client-save",
+      key: "client:secret-1",
+      name: "Cliente Secreto",
+      email: "secreto@example.com",
+      address: { line1: "1 Grand Concourse", city: "Bronx", state: "NY", zip: "10451" },
+      measurements: { waist: { value: 30, unit: "in" } },
+      ownerNote: "SECRETO",
+    });
+
+    const { helperSystem } = await import("./office-helper");
+    const { manual, state } = helperSystem();
+
+    expect(manual).not.toContain("SECRETO");
+    expect(manual).not.toContain("Grand Concourse");
+    expect(manual).not.toContain("secreto@example.com");
+    expect(state).not.toContain("SECRETO");
+    expect(state).not.toContain("Grand Concourse");
+    expect(state).not.toContain("secreto@example.com");
+  });
 });
 
 describe("askOfficeHelper", () => {

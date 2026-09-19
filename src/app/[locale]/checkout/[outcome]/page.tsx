@@ -2,8 +2,10 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
-import { ButtonLink } from "@/components/ui";
+import { ButtonLink, TextLink } from "@/components/ui";
+import { currentViewer } from "@/lib/auth/session";
 import { cancelledState, thankYouState } from "@/lib/checkout-outcome";
+import { cardForAccount, measuredCount } from "@/lib/client-cards";
 import { callerKey } from "@/lib/rate-limit";
 import { findRequest } from "@/lib/request-store";
 
@@ -92,12 +94,22 @@ export default async function CheckoutOutcomePage({
       : `${copy}Lead`;
   const backHref = cancelledBooking ? "/appointments" : cancelledDesign ? "/design-studio" : "/";
 
+  // The nudge to save measurements: only once payment is confirmed, and only
+  // for a client whose card does not have one yet — a guest who never signed
+  // in counts as unmeasured too, since there is no card to check.
+  let ask = false;
+  if (state === "paid") {
+    const viewer = await currentViewer();
+    ask = !viewer || measuredCount(cardForAccount(viewer.account)) === 0;
+  }
+
   return (
     <div className="shell flex min-h-[60svh] items-center py-24">
       <div className="flex max-w-xl flex-col gap-7">
         <h1 className="text-title">{t(`${copy}Title`)}</h1>
         <p className="text-lead text-ink-soft">{t(leadKey, { reference: reference ?? "-" })}</p>
         {note ? <p className="text-[0.875rem] text-ink-faint">{note}</p> : null}
+        {ask ? <TextLink href="/account/details">{t("saveMeasures")}</TextLink> : null}
         <ButtonLink href={backHref} className="w-fit">
           {t("backHome")}
         </ButtonLink>
