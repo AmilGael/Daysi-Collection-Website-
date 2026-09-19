@@ -40,16 +40,34 @@ export function checkRateLimit(
 }
 
 /**
- * The best available identifier for the caller. Behind Vercel this is the real
- * client address; locally it falls back to a constant, which is fine because
- * there is only ever one caller.
+ * The best available identifier for the caller. Fly sets `Fly-Client-IP` to
+ * the address that actually connected, so that wins whenever it is present.
+ * Failing that, `X-Forwarded-For` is trusted only from the right: Fly's own
+ * edge appends the real address as the last entry, while everything to its
+ * left is whatever the client claimed — trusting the leftmost entry would
+ * let a script hand itself a fresh identity, and so a fresh budget, on
+ * every request. Locally, where neither header exists, there is only ever
+ * one caller.
+ *
+ * `Fly-Client-IP` is only the visitor's own address while the domain's DNS
+ * points straight at Fly (Cloudflare's grey cloud, no proxying). Turning on
+ * Cloudflare's orange-cloud proxy would make Fly see Cloudflare's edge as
+ * "the address that actually connected" for every visitor, so every one of
+ * these limiters would share a single budget site-wide — `CF-Connecting-IP`
+ * would have to be read first, ahead of `Fly-Client-IP`, if that ever changes.
  */
 export function callerKey(
   request: { readonly headers: { get(name: string): string | null } },
   scope: string,
 ): string {
+  const flyClientIp = request.headers.get("fly-client-ip")?.trim();
   const forwarded = request.headers.get("x-forwarded-for");
-  const address = forwarded?.split(",")[0]?.trim() ?? "local";
+  const rightmost = forwarded
+    ?.split(",")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .at(-1);
+  const address = flyClientIp || rightmost || "local";
   return `${scope}:${address}`;
 }
 

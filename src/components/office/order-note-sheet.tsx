@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent, type JSX } from "react";
+import { useCallback, useState, type FormEvent, type JSX } from "react";
 import { useTranslations } from "next-intl";
 import { shopDay } from "@/content";
 import { centsFromInput } from "@/lib/money";
@@ -26,18 +26,19 @@ type NotedKind = (typeof KINDS)[number];
 export function OrderNoteCard(): JSX.Element {
   const t = useTranslations("office");
   const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-center gap-2 border border-dashed border-line-strong px-4 py-3 text-[0.8125rem] text-ink-soft hover:border-ink"
+        className="flex h-full w-full flex-col items-center justify-center gap-2 border border-dashed border-line-strong p-5 text-center text-[0.8125rem] text-ink-soft hover:border-ink"
       >
-        <span className="text-xl leading-none">+</span>
+        <span className="text-2xl leading-none">+</span>
         {t("addOrderNote")}
       </button>
-      <Sheet open={open} title={t("orderNoteTitle")} onClose={() => setOpen(false)}>
-        <OrderNoteForm onDone={() => setOpen(false)} />
+      <Sheet open={open} title={t("orderNoteTitle")} onClose={close}>
+        <OrderNoteForm onDone={close} />
       </Sheet>
     </>
   );

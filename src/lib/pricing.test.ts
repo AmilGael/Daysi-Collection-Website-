@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { liveFindAlteration as findAlteration, liveFindAppointmentType as findAppointmentType } from "./live-pricing";
 import { liveFindPriceEntry as findPriceEntry } from "./live-pricing";
 import {
+  applyPromotion,
   estimateAlteration,
   estimateAppointment,
   estimateCart,
@@ -9,8 +10,10 @@ import {
   estimateDesign,
   estimateNoted,
   estimateReadyMade,
+  isTaxable,
+  type EstimateLine,
 } from "./pricing";
-import { designFee } from "@/content";
+import { designFee, type Promotion } from "@/content";
 
 /**
  * These cover the promises the site makes out loud: that the published price is
@@ -259,5 +262,60 @@ describe("every estimate", () => {
       expect(estimate.dueNow + estimate.dueOnCollection).toBe(estimate.total);
       expect(Number.isInteger(estimate.total)).toBe(true);
     }
+  });
+});
+
+describe("a promotion on a garment line", () => {
+  const percent = (value: number): Promotion => ({
+    id: "prm-aaaaaaaa",
+    label: { es: "Venta de otoño", en: "Autumn sale" },
+    kind: "percent",
+    value,
+    scope: { type: "all" },
+    active: true,
+    updatedAt: "2026-09-18T12:00:00.000Z",
+  });
+  // A $295 heritage set, as the cart writes it: two pieces on one line.
+  const pair: EstimateLine = {
+    label: { en: "Sirena shirt dress", es: "Vestido camisero Sirena" },
+    note: { en: "Size M · 2 pieces", es: "Talla M · 2 piezas" },
+    amount: 59000,
+    unitAmount: 29500,
+    taxBasis: "clothing",
+  };
+  const single: EstimateLine = { label: pair.label, amount: 29500, taxBasis: "clothing" };
+
+  it("is the same line when no promotion reaches it", () => {
+    expect(applyPromotion(pair, undefined, 2)).toBe(pair);
+    expect(applyPromotion(single, undefined)).toBe(single);
+  });
+
+  it("lowers the piece, multiplies back by the quantity, and keeps the list figures", () => {
+    expect(applyPromotion(pair, percent(15), 2)).toEqual({
+      ...pair,
+      amount: 50150,
+      unitAmount: 25075,
+      listAmount: 59000,
+      listUnitAmount: 29500,
+    });
+  });
+
+  it("lowers a single piece without inventing a per-piece figure", () => {
+    expect(applyPromotion(single, percent(15))).toEqual({ ...single, amount: 25075, listAmount: 29500 });
+  });
+
+  it("judges the $110 exemption on the lowered piece: 65 % takes a $295 set under it, 60 % does not", () => {
+    // 65 % off $295 is $103.25 a piece; 60 % off is $118.
+    const underLine = applyPromotion(pair, percent(65), 2);
+    expect(underLine.unitAmount).toBe(10325);
+    expect(isTaxable(underLine)).toBe(false);
+    const overLine = applyPromotion(pair, percent(60), 2);
+    expect(overLine.unitAmount).toBe(11800);
+    expect(isTaxable(overLine)).toBe(true);
+  });
+
+  it("is the same line when the promotion lowers nothing", () => {
+    const free = { ...single, amount: 0 };
+    expect(applyPromotion(free, percent(15))).toBe(free);
   });
 });

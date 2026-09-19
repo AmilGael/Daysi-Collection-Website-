@@ -1,55 +1,98 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useState, type JSX, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { centsFromInput } from "@/lib/money";
-import type { PriceChange, UndoKind } from "@/lib/office-validation";
+import type { Locale } from "@/i18n/routing";
+import { formatMoney } from "@/lib/money";
+import type { PriceChange } from "@/lib/office-validation";
 import { Pending } from "./office/confirm-bar";
-import { RetireButton, RetiredGroup } from "./office/retired-group";
+import {
+  alterationKey,
+  appointmentKey,
+  entryKey,
+  type ManagedAlteration,
+  type ManagedAppointment,
+  type ManagedEntry,
+  type PriceCategoryGroup,
+  type RetiredService,
+} from "./office/price-draft";
+import { AlterationPriceSheet, AppointmentPriceSheet, EntryPriceSheet } from "./office/price-sheet";
+import { RetiredGroup } from "./office/retired-group";
 import { NewAlterationSheet, NewSessionSheet } from "./office/service-sheet";
 import { Sheet } from "./office/sheet";
-import { UndoLink } from "./office/undo-link";
 import { useOfficeDraft } from "./office/use-office-draft";
 
 /** Which list a retire or restore on this tab names. */
 type RetireKind = "price-entry" | "alteration" | "appointment-type";
 
-export type ManagedEntry = {
-  readonly id: string;
-  readonly garment: string;
-  readonly fabric: string;
-  readonly fixedPrice: number;
-  readonly customizationExtra: number;
-  /** Garments on this entry that carry their own price instead of it. */
-  readonly ownPriced: number;
-  readonly retired: boolean;
-  readonly undoable: boolean;
-};
-/** `coded` ones shipped with the site and can only be repriced; the rest she added. */
-export type ManagedAlteration = { readonly id: string; readonly name: string; readonly fixedPrice: number; readonly rushSurcharge: number; readonly coded: boolean; readonly undoable: boolean };
-export type ManagedAppointment = { readonly id: string; readonly name: string; readonly fee: number; readonly coded: boolean; readonly undoable: boolean };
-export type RetiredService = { readonly id: string; readonly name: string };
+type OpenState =
+  | { readonly kind: "entry"; readonly id: string }
+  | { readonly kind: "alteration"; readonly id: string }
+  | { readonly kind: "appointment"; readonly id: string }
+  | "add-alteration"
+  | "add-session"
+  | null;
 
-export function PriceManager({ entries, retiredEntries, alterations, retiredAlterations, appointments, retiredAppointments }: {
-  entries: readonly ManagedEntry[];
+/**
+ * Precios: garment prices grouped by category (a collapsible header per
+ * category, its fabrics as rows below), then Arreglos and Sesiones as rows
+ * of their own. Tapping a row opens its sheet — one row's values at a time,
+ * which fixes the phone bug where tapping into the old table of thirty
+ * inputs dropped the cursor mid-number. Retirados sits at the bottom, as
+ * before.
+ */
+export function PriceManager({
+  groups,
+  retiredEntries,
+  alterations,
+  retiredAlterations,
+  appointments,
+  retiredAppointments,
+  locale,
+}: {
+  groups: readonly PriceCategoryGroup[];
   retiredEntries: readonly ManagedEntry[];
   alterations: readonly ManagedAlteration[];
   retiredAlterations: readonly RetiredService[];
   appointments: readonly ManagedAppointment[];
   retiredAppointments: readonly RetiredService[];
-}) {
+  locale: Locale;
+}): JSX.Element {
   const t = useTranslations("office");
   const draft = useOfficeDraft<PriceChange>();
-  const [adding, setAdding] = useState<"alteration" | "session" | null>(null);
-  const close = useCallback(() => setAdding(null), []);
+  const [open, setOpen] = useState<OpenState>(null);
+  const close = useCallback(() => setOpen(null), []);
 
-  // Added but not yet confirmed: shown in their table until Confirmar.
+  const entries = groups.flatMap((group) => group.entries);
+  const openedEntry = open !== null && typeof open === "object" && open.kind === "entry" ? entries.find((row) => row.id === open.id) ?? null : null;
+  const openedAlteration =
+    open !== null && typeof open === "object" && open.kind === "alteration" ? alterations.find((row) => row.id === open.id) ?? null : null;
+  const openedAppointment =
+    open !== null && typeof open === "object" && open.kind === "appointment" ? appointments.find((row) => row.id === open.id) ?? null : null;
+
+  useEffect(() => {
+    if (open === null || open === "add-alteration" || open === "add-session") return;
+    if (open.kind === "entry" && !openedEntry) close();
+    else if (open.kind === "alteration" && !openedAlteration) close();
+    else if (open.kind === "appointment" && !openedAppointment) close();
+  }, [open, openedEntry, openedAlteration, openedAppointment, close]);
+
+  // Added but not yet confirmed: shown in their list until Confirmar.
   const pendingAlterations: PendingAdd[] = [];
   const pendingSessions: PendingAdd[] = [];
-  for (const entry of draft.entries) {
-    const wire = entry.change.wire;
-    if (wire.type === "alteration-add") pendingAlterations.push({ key: entry.key, label: wire.name, amounts: [wire.fixedPrice, wire.rushSurcharge] });
-    if (wire.type === "appointment-add") pendingSessions.push({ key: entry.key, label: wire.name, amounts: [wire.fee] });
+  for (const draftEntry of draft.entries) {
+    const wire = draftEntry.change.wire;
+    if (wire.type === "alteration-add") {
+      pendingAlterations.push({
+        key: draftEntry.key,
+        label: wire.name,
+        lines: [`${t("pricesPrice")} ${formatMoney(wire.fixedPrice, locale)}`, `${t("pricesRush")} ${formatMoney(wire.rushSurcharge, locale)}`],
+      });
+    }
+    if (wire.type === "appointment-add") {
+      pendingSessions.push({ key: draftEntry.key, label: wire.name, lines: [`${t("pricesFee")} ${formatMoney(wire.fee, locale)}`] });
+    }
   }
 
   // One Retirados for the tab, each row keyed by the change that restores it.
@@ -62,210 +105,225 @@ export function PriceManager({ entries, retiredEntries, alterations, retiredAlte
   for (const alteration of retiredAlterations) restorable("alteration", "alteration", alteration.id, alteration.name);
   for (const appointment of retiredAppointments) restorable("appointment", "appointment-type", appointment.id, appointment.name);
 
-  return <div className="flex flex-col gap-10">
-    <PriceTable
-      caption={t("pricesGarments")}
-      columns={[t("pricesPrice"), t("pricesExtra")]}
-      rows={entries.map((entry) => ({
-        id: entry.id,
-        label: entry.garment,
-        sublabel: entry.fabric,
-        ...(entry.ownPriced > 0 ? { note: t("entryOwnPriced", { count: entry.ownPriced }) } : {}),
-        amounts: [entry.fixedPrice, entry.customizationExtra],
-        retirable: true,
-        undoable: entry.undoable,
-      }))}
-      undoKind="price-entry"
-      retireKind="price-entry"
-      toChange={(id, amounts) => ({ type: "entry", key: `entry:${id}`, id, fixedPrice: amounts[0] ?? 0, customizationExtra: amounts[1] ?? 0 })}
-    />
-    <PriceTable
-      caption={t("pricesAlterations")}
-      columns={[t("pricesPrice"), t("pricesRush")]}
-      rows={alterations.map((alteration) => ({ id: alteration.id, label: alteration.name, sublabel: "", amounts: [alteration.fixedPrice, alteration.rushSurcharge], retirable: !alteration.coded, undoable: alteration.undoable }))}
-      undoKind="alteration"
-      retireKind="alteration"
-      toChange={(id, amounts) => ({ type: "alteration", key: `alteration:${id}`, id, fixedPrice: amounts[0] ?? 0, rushSurcharge: amounts[1] ?? 0 })}
-      pendingAdds={pendingAlterations}
-      addLabel={t("pricesAddAlteration")}
-      onAdd={() => setAdding("alteration")}
-    />
-    <PriceTable
-      caption={t("pricesSessions")}
-      columns={[t("pricesFee")]}
-      rows={appointments.map((appointment) => ({ id: appointment.id, label: appointment.name, sublabel: "", amounts: [appointment.fee], retirable: !appointment.coded, undoable: appointment.undoable }))}
-      undoKind="appointment"
-      retireKind="appointment-type"
-      toChange={(id, amounts) => ({ type: "appointment", key: `appointment:${id}`, id, fee: amounts[0] ?? 0 })}
-      pendingAdds={pendingSessions}
-      addLabel={t("pricesAddSession")}
-      onAdd={() => setAdding("session")}
-    />
-    <RetiredGroup
-      items={[...restores].map(([key, { name }]) => ({ id: key, name }))}
-      restoreKey={(key) => key}
-      onRestore={(key) => {
-        const restore = restores.get(key);
-        if (restore) draft.stage(key, { wire: restore.wire });
-      }}
-    />
-    <Sheet open={adding !== null} title={adding === "session" ? t("newSessionTitle") : t("newAlterationTitle")} onClose={close}>
-      {adding === "alteration" ? <NewAlterationSheet onDone={close} /> : adding === "session" ? <NewSessionSheet onDone={close} /> : null}
-    </Sheet>
-  </div>;
-}
+  const title =
+    open === "add-alteration"
+      ? t("newAlterationTitle")
+      : open === "add-session"
+        ? t("newSessionTitle")
+        : openedEntry
+          ? `${openedEntry.garment} · ${openedEntry.fabric}`
+          : openedAlteration
+            ? openedAlteration.name
+            : openedAppointment
+              ? openedAppointment.name
+              : "";
 
-type Row = {
-  readonly id: string;
-  readonly label: string;
-  readonly sublabel: string;
-  /** Shown after the sublabel; not part of the row's name. */
-  readonly note?: string;
-  readonly amounts: readonly number[];
-  readonly retirable: boolean;
-  readonly undoable: boolean;
-};
+  return (
+    <div className="flex flex-col gap-10">
+      <section className="flex flex-col gap-3">
+        <h3 className="text-[0.9375rem] font-medium">{t("pricesGarments")}</h3>
+        <div className="flex flex-col">
+          {groups.map((group) => (
+            <CategoryGroup key={group.id} label={group.label} count={group.entries.length}>
+              {group.entries.map((entry) => (
+                <PriceRow
+                  key={entry.id}
+                  swatch={entry.fabricSwatch}
+                  title={entry.fabric}
+                  note={entry.ownPriced > 0 ? t("entryOwnPriced", { count: entry.ownPriced }) : undefined}
+                  lines={[
+                    `${t("pricesPrice")} ${formatMoney(entry.fixedPrice, locale)}`,
+                    `${t("pricesExtra")} ${formatMoney(entry.customizationExtra, locale)}`,
+                  ]}
+                  pendingKey={entryKey(entry.id)}
+                  onOpen={() => setOpen({ kind: "entry", id: entry.id })}
+                />
+              ))}
+            </CategoryGroup>
+          ))}
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h3 className="text-[0.9375rem] font-medium">{t("pricesAlterations")}</h3>
+        <ul className="flex flex-col border-t border-line">
+          {alterations.map((alteration) => (
+            <PriceRow
+              key={alteration.id}
+              title={alteration.name}
+              lines={[
+                `${t("pricesPrice")} ${formatMoney(alteration.fixedPrice, locale)}`,
+                `${t("pricesRush")} ${formatMoney(alteration.rushSurcharge, locale)}`,
+              ]}
+              pendingKey={alterationKey(alteration.id)}
+              onOpen={() => setOpen({ kind: "alteration", id: alteration.id })}
+            />
+          ))}
+          {pendingAlterations.map((add) => (
+            <PendingAddRow key={add.key} label={add.label} lines={add.lines} pendingKey={add.key} />
+          ))}
+          <AddRow label={t("pricesAddAlteration")} onAdd={() => setOpen("add-alteration")} />
+        </ul>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h3 className="text-[0.9375rem] font-medium">{t("pricesSessions")}</h3>
+        <ul className="flex flex-col border-t border-line">
+          {appointments.map((appointment) => (
+            <PriceRow
+              key={appointment.id}
+              title={appointment.name}
+              lines={[`${t("pricesFee")} ${formatMoney(appointment.fee, locale)}`]}
+              pendingKey={appointmentKey(appointment.id)}
+              onOpen={() => setOpen({ kind: "appointment", id: appointment.id })}
+            />
+          ))}
+          {pendingSessions.map((add) => (
+            <PendingAddRow key={add.key} label={add.label} lines={add.lines} pendingKey={add.key} />
+          ))}
+          <AddRow label={t("pricesAddSession")} onAdd={() => setOpen("add-session")} />
+        </ul>
+      </section>
+
+      <RetiredGroup
+        items={[...restores].map(([key, { name }]) => ({ id: key, name }))}
+        restoreKey={(key) => key}
+        onRestore={(key) => {
+          const restore = restores.get(key);
+          if (restore) draft.stage(key, { wire: restore.wire });
+        }}
+      />
+
+      <Sheet open={open !== null} title={title} onClose={close}>
+        {open === "add-alteration" ? (
+          <NewAlterationSheet onDone={close} />
+        ) : open === "add-session" ? (
+          <NewSessionSheet onDone={close} />
+        ) : openedEntry ? (
+          <EntryPriceSheet row={openedEntry} />
+        ) : openedAlteration ? (
+          <AlterationPriceSheet row={openedAlteration} />
+        ) : openedAppointment ? (
+          <AppointmentPriceSheet row={openedAppointment} />
+        ) : null}
+      </Sheet>
+    </div>
+  );
+}
 
 /** Something added in this draft, not on the list until she confirms. */
-type PendingAdd = { readonly key: string; readonly label: string; readonly amounts: readonly number[] };
+type PendingAdd = { readonly key: string; readonly label: string; readonly lines: readonly string[] };
 
-function amountsFrom(change: PriceChange, row: Row): readonly number[] {
-  switch (change.type) {
-    case "entry": return [change.fixedPrice, change.customizationExtra];
-    case "alteration": return [change.fixedPrice, change.rushSurcharge];
-    case "appointment": return [change.fee];
-    case "alteration-add":
-    case "appointment-add":
-    case "retire":
-    case "restore": return row.amounts;
-  }
+/**
+ * One category's fabrics, collapsed or open on its own — "open state
+ * local" — behind a button header that names the category and how many
+ * fabrics are priced under it.
+ */
+function CategoryGroup({ label, count, children }: { label: string; count: number; children: ReactNode }): JSX.Element {
+  return (
+    <details className="group border-t border-line" open>
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 py-3 [&::-webkit-details-marker]:hidden">
+        <span className="text-[0.9375rem] font-medium">{label}</span>
+        <span className="flex items-center gap-2 text-[0.75rem] text-ink-faint">
+          <span className="tabular-nums">{count}</span>
+          <svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 transition-transform duration-200 group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M2 4.5 6 8l4-3.5" />
+          </svg>
+        </span>
+      </summary>
+      <ul>{children}</ul>
+    </details>
+  );
 }
 
-function displayAmounts(amounts: readonly number[]): string[] {
-  return amounts.map((amount) => (amount / 100).toFixed(2));
+/**
+ * One garment price, one alteration or one session: a swatch when there is
+ * one, its name, up to two money lines and the pending marker. Tapping it
+ * opens its sheet.
+ */
+function PriceRow({
+  swatch,
+  title,
+  note,
+  lines,
+  pendingKey,
+  onOpen,
+}: {
+  swatch?: string;
+  title: string;
+  note?: string;
+  lines: readonly string[];
+  pendingKey: string;
+  onOpen(): void;
+}): JSX.Element {
+  const draft = useOfficeDraft<PriceChange>();
+  const pending = draft.pending(pendingKey);
+  const retiring = pending?.change.wire.type === "retire";
+
+  return (
+    <li className={`flex flex-col gap-1 border-b border-line py-3 ${retiring ? "opacity-50" : ""}`}>
+      <button type="button" onClick={onOpen} className="flex w-full items-center gap-3 text-left">
+        {swatch !== undefined ? (
+          <span className="relative block h-12 w-12 shrink-0 overflow-hidden bg-paper-warm">
+            {swatch ? <Image src={swatch} alt="" fill sizes="3rem" className="object-cover" /> : null}
+          </span>
+        ) : null}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[0.875rem]">{title}</span>
+          {note ? <span className="block text-[0.75rem] text-ink-faint">{note}</span> : null}
+        </span>
+        <MoneyLines lines={lines} />
+      </button>
+      {pending ? <Pending confirming={pending.confirming} error={pending.error} count={pending.count} /> : null}
+    </li>
+  );
 }
 
-function PriceTable({ caption, columns, rows, toChange, undoKind, retireKind, pendingAdds = [], addLabel, onAdd }: {
-  caption: string;
-  columns: readonly string[];
-  rows: readonly Row[];
-  toChange(id: string, cents: number[]): PriceChange;
-  undoKind: UndoKind;
-  retireKind: RetireKind;
-  pendingAdds?: readonly PendingAdd[];
-  /** With onAdd, a "+" row at the foot of the table that opens the add sheet. */
-  addLabel?: string;
-  onAdd?(): void;
-}) {
+/** A staged alteration-add or appointment-add: static until she confirms, but she can still drop it. */
+function PendingAddRow({ label, lines, pendingKey }: { label: string; lines: readonly string[]; pendingKey: string }): JSX.Element {
   const t = useTranslations("office");
   const draft = useOfficeDraft<PriceChange>();
-  const [typing, setTyping] = useState<Record<string, string[]>>({});
+  const pending = draft.pending(pendingKey);
 
-  useEffect(() => {
-    if (draft.count === 0) setTyping({});
-  }, [draft.count]);
-
-  return <div className="flex flex-col gap-3">
-    <h3 className="text-[0.9375rem] font-medium">{caption}</h3>
-    <div className="flex flex-col border-t border-line">
-      {rows.map((row) => {
-        const probe = toChange(row.id, [...row.amounts]);
-        const key = probe.key;
-        const pending = draft.pending(key);
-        const pendingAmounts = pending ? amountsFrom(pending.change.wire, row) : row.amounts;
-        const shown = typing[row.id] ?? displayAmounts(pendingAmounts);
-        const retiring = pending?.change.wire.type === "retire";
-        return <div key={row.id} className={`flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-line py-3 ${retiring ? "opacity-50" : ""}`}>
-          <div className="min-w-48 flex-1">
-            <p className="text-[0.875rem]">{row.label}</p>
-            {row.sublabel || row.note ? (
-              <p className="text-[0.75rem] text-ink-faint">{[row.sublabel, row.note].filter(Boolean).join(" · ")}</p>
-            ) : null}
-          </div>
-          {shown.map((value, index) => <label key={columns[index]} className="flex items-center gap-2 text-[0.75rem] text-ink-faint">
-            {columns[index]}
-            <span className="flex items-center border border-line bg-paper px-2 focus-within:border-ink">
-              <span className="text-[0.8125rem] text-ink-faint">$</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                autoComplete="off"
-                value={value}
-                disabled={retiring}
-                onFocus={(event) => {
-                  // Deferred a frame: on iOS the tap that focused the box
-                  // places the caret after focus fires, and would undo an
-                  // immediate select().
-                  const box = event.currentTarget;
-                  requestAnimationFrame(() => box.select());
-                }}
-                onChange={(event) => {
-                  const next = [...shown];
-                  next[index] = event.target.value;
-                  setTyping((current) => ({ ...current, [row.id]: next }));
-                  const cents = next.map(centsFromInput);
-                  if (cents.some((amount) => amount === null || amount > 500_000)) return;
-                  // The guard above returned on any null; the ?? 0 only satisfies the type.
-                  const amounts = cents.map((amount) => amount ?? 0);
-                  if (amounts.every((amount, amountIndex) => amount === row.amounts[amountIndex])) draft.unstage(key);
-                  else draft.stage(key, { wire: toChange(row.id, amounts) });
-                }}
-                onBlur={() => setTyping((current) => {
-                  const { [row.id]: _removed, ...rest } = current;
-                  return rest;
-                })}
-                className="min-h-11 w-24 bg-transparent py-1.5 pl-1 text-right text-[0.875rem] tabular-nums"
-              />
-            </span>
-          </label>)}
-          <div className="flex min-w-24 items-center justify-end gap-3">
-            {pending ? (
-              <>
-                <Pending confirming={pending.confirming} error={pending.error} count={pending.count} />
-                <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">
-                  {t("removePending")}
-                </button>
-              </>
-            ) : (
-              <>
-                {row.retirable ? (
-                  <RetireButton
-                    name={[row.label, row.sublabel].filter(Boolean).join(" · ")}
-                    onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: row.id, kind: retireKind } })}
-                  />
-                ) : null}
-                {row.undoable ? <UndoLink kind={undoKind} id={row.id} /> : null}
-              </>
-            )}
-          </div>
-        </div>;
-      })}
-      {pendingAdds.map((add) => {
-        const pending = draft.pending(add.key);
-        return <div key={add.key} className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-line py-3">
-          <p className="min-w-48 flex-1 text-[0.875rem]">{add.label}</p>
-          {displayAmounts(add.amounts).map((value, index) => <span key={columns[index]} className="flex items-center gap-2 text-[0.75rem] text-ink-faint">
-            {columns[index]}
-            <span className="w-24 text-right text-[0.875rem] tabular-nums text-ink">${value}</span>
-          </span>)}
-          <div className="flex min-w-24 items-center justify-end gap-3">
-            <Pending confirming={pending?.confirming} error={pending?.error} count={pending?.count} />
-            <button type="button" onClick={() => draft.unstage(add.key)} className="text-xs underline underline-offset-4">
-              {t("removePending")}
-            </button>
-          </div>
-        </div>;
-      })}
-      {onAdd && addLabel ? (
-        <button
-          type="button"
-          onClick={onAdd}
-          className="flex min-h-12 items-center gap-3 border-b border-dashed border-line-strong py-3 text-left text-[0.875rem] text-ink-soft hover:text-ink"
-        >
-          <span aria-hidden className="text-xl leading-none">+</span>
-          {addLabel}
+  return (
+    <li className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line py-3">
+      <p className="min-w-48 flex-1 text-[0.875rem]">{label}</p>
+      <MoneyLines lines={lines} />
+      <span className="flex items-center gap-3">
+        {pending ? <Pending confirming={pending.confirming} error={pending.error} count={pending.count} /> : null}
+        <button type="button" onClick={() => draft.unstage(pendingKey)} className="text-xs underline underline-offset-4">
+          {t("dropChanges")}
         </button>
-      ) : null}
-    </div>
-  </div>;
+      </span>
+    </li>
+  );
+}
+
+/** The "+" row at the foot of Arreglos or Sesiones that opens the add sheet. */
+function AddRow({ label, onAdd }: { label: string; onAdd(): void }): JSX.Element {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onAdd}
+        className="flex min-h-12 w-full items-center gap-3 border-b border-dashed border-line-strong py-3 text-left text-[0.875rem] text-ink-soft hover:text-ink"
+      >
+        <span aria-hidden className="text-xl leading-none">+</span>
+        {label}
+      </button>
+    </li>
+  );
+}
+
+/** Up to two money lines, right-aligned: the first the price, the second smaller. */
+function MoneyLines({ lines }: { lines: readonly string[] }): JSX.Element {
+  return (
+    <span className="flex flex-col items-end gap-0.5 text-right">
+      {lines.map((line, index) => (
+        <span key={line} className={`tabular-nums ${index === 0 ? "text-[0.875rem]" : "text-[0.6875rem] text-ink-faint"}`}>
+          {line}
+        </span>
+      ))}
+    </span>
+  );
 }

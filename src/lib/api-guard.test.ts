@@ -135,7 +135,13 @@ describe("the office routes", () => {
     }));
 
   it("has routes to check", () => {
-    expect(routes.map((route) => route.name).sort()).toEqual(["books", "photos/[reference]", "uploads"]);
+    expect(routes.map((route) => route.name).sort()).toEqual([
+      "books",
+      "help",
+      "manual",
+      "photos/[reference]",
+      "uploads",
+    ]);
   });
 
   /**

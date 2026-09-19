@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { categories, shopDay } from "@/content";
+import { MOST_AMOUNT } from "./promotions";
 import type { ZodTypeAny } from "zod";
 
 /**
@@ -257,6 +258,37 @@ export const priceChangeSchema = z.discriminatedUnion("type", [
   restoreChangeSchema.extend({ kind: priceRetireKind }),
 ]);
 
+/** A calendar day as a date box gives it, YYYY-MM-DD. */
+const calendarDay = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/);
+
+/**
+ * A promotion, typed in Spanish; the action writes the English. No id is a
+ * new one. How far each kind may go (a percent up to `MOST_PERCENT`, an
+ * amount from `LEAST_AMOUNT`) and an end before the start are refused in the
+ * action, like every
+ * other rule that reads two fields at once: a refinement here would make the
+ * member a `ZodEffects`, which `z.discriminatedUnion` refuses.
+ */
+export const promotionSchema = z.object({
+  id: z.string().regex(/^prm-[a-z0-9]{8}$/).optional(),
+  label: z.string().trim().min(2).max(60),
+  kind: z.enum(["percent", "amount"]),
+  /** A whole percent, or cents off each piece. */
+  value: z.number().int().min(1).max(MOST_AMOUNT),
+  scope: z.discriminatedUnion("type", [
+    z.object({ type: z.literal("all") }),
+    z.object({
+      type: z.literal("category"),
+      categoryId: z.enum(categories.map((category) => category.id) as [string, ...string[]]),
+    }),
+    // A garment's id is checked against the rack in the action, as everywhere.
+    z.object({ type: z.literal("style"), styleId: id }),
+  ]),
+  startsAt: calendarDay.optional(),
+  endsAt: calendarDay.optional(),
+  active: z.boolean(),
+});
+
 export const shopfrontChangeSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("notice"),
@@ -264,7 +296,81 @@ export const shopfrontChangeSchema = z.discriminatedUnion("type", [
     message: z.string().trim().max(200),
     visible: z.boolean(),
   }),
+  promotionSchema.extend({ type: z.literal("promotion"), key: changeKey }),
+  // The visitor-facing "¿Preguntas?" panel's own on/off switch.
+  z.object({
+    type: z.literal("helper"),
+    key: changeKey,
+    visible: z.boolean(),
+  }),
+  // On this tab a retire or a restore always means a promotion.
+  retireChangeSchema,
+  restoreChangeSchema,
 ]);
+
+/** The four Spanish boxes on a premiere. */
+const premiereText = {
+  season: z.string().trim().min(2).max(40),
+  title: z.string().trim().min(2).max(60),
+  story: z.string().trim().min(10).max(600),
+  inspiration: z.string().trim().max(400),
+};
+const premiereNumbers = {
+  piecesPlanned: z.number().int().min(1).max(200),
+  editionSize: z.number().int().min(1).max(500),
+};
+/** A garment's id is checked against the rack in the action, as everywhere else one is taken. */
+const premiereStyleIds = z.array(id).max(40);
+
+/**
+ * A premiere Daysi announces or corrects, typed in Spanish; the action
+ * writes the English. `release ≥ reveal` is checked in the action, like the
+ * promotion dates above: a refinement here would make the member a
+ * `ZodEffects`, which `z.discriminatedUnion` refuses.
+ */
+export const premiereChangeSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("premiere-create"),
+    key: changeKey,
+    ...premiereText,
+    revealDate: calendarDay,
+    releaseDate: calendarDay,
+    ...premiereNumbers,
+    coverImage: uploadPath,
+    styleIds: premiereStyleIds,
+  }),
+  z.object({
+    type: z.literal("premiere-update"),
+    key: changeKey,
+    premiereId: id,
+    season: premiereText.season.optional(),
+    title: premiereText.title.optional(),
+    story: premiereText.story.optional(),
+    inspiration: premiereText.inspiration.optional(),
+    revealDate: calendarDay.optional(),
+    releaseDate: calendarDay.optional(),
+    piecesPlanned: premiereNumbers.piecesPlanned.optional(),
+    editionSize: premiereNumbers.editionSize.optional(),
+    // An upload path or a coded /images/real/… path; checked in the action
+    // against uploadPath, the premiere's own current cover, or its seeded
+    // or added one (an undo may send any of those three).
+    coverImage: z.string().max(200).optional(),
+    // Carried by an undo that lands on a version which also touched the
+    // checklist, so one snapshot can restore words, dates, numbers, cover
+    // and checklist together; a live edit of the checklist alone still
+    // stages its own premiere-styles instead (see premiere-manager.tsx).
+    styleIds: premiereStyleIds.optional(),
+  }),
+  z.object({
+    type: z.literal("premiere-styles"),
+    key: changeKey,
+    premiereId: id,
+    styleIds: premiereStyleIds,
+  }),
+  retireChangeSchema,
+  restoreChangeSchema,
+]);
+export type PremiereChange = z.infer<typeof premiereChangeSchema>;
 
 /** A hyphen-like character that is not a plain ASCII "-": the kind autocorrect
  *  or a paste from WhatsApp leaves in a phone number. */
@@ -349,9 +455,12 @@ export const UNDO_KINDS = [
   "alteration",
   "appointment",
   "notice",
+  "helper",
   "request-status",
   "style-text",
   "work-text",
+  "promotion",
+  "premiere",
 ] as const;
 export type UndoKind = (typeof UNDO_KINDS)[number];
 export const undoQuerySchema = z.object({
@@ -374,4 +483,5 @@ export type OfficeChange =
   | FabricChange
   | PriceChange
   | ShopfrontChange
-  | WorkChange;
+  | WorkChange
+  | PremiereChange;

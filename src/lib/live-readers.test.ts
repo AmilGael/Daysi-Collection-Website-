@@ -68,6 +68,8 @@ beforeEach(async () => {
   vi.stubEnv("SITE_URL", "http://localhost:3000");
   // Read once, when `env` first loads: the cart checkout refuses outright without it.
   vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_placeholder");
+  // No translation service: the office actions copy the Spanish, never call out.
+  vi.stubEnv("ANTHROPIC_API_KEY", "");
 
   const { saveAddedStyle } = await import("./live-catalog");
   const { saveCustomEntry } = await import("./live-pricing");
@@ -323,6 +325,46 @@ describe("the premiere list", () => {
     const names = liveStylesInPremiere(premiere).map((style) => style.name.en);
     expect(names).toContain("Frutera, corrected");
   });
+
+  it("a premiere sign-up for an added premiere is accepted", async () => {
+    const { saveAddedPremiere } = await import("./live-premieres");
+    const { findRequest } = await import("./request-store");
+
+    await saveAddedPremiere({
+      id: "est-a1b2c3d4",
+      slug: "una-nueva-temporada",
+      season: { es: "Invierno 2027", en: "Winter 2027" },
+      title: { es: "Nieve", en: "Snow" },
+      story: { es: "Historia", en: "Story" },
+      inspiration: { es: "Inspiración", en: "Inspiration" },
+      revealDate: "2027-01-05",
+      releaseDate: "2027-02-01",
+      piecesPlanned: 6,
+      editionSize: 12,
+      coverImage: "/uploads/nieve.jpg",
+      styleIds: [],
+      added: true,
+      addedAt: new Date().toISOString(),
+    });
+
+    const { POST } = await import("@/app/api/premiere-signups/route");
+    const response = await POST(
+      post("/api/premiere-signups", {
+        website: "",
+        renderedAt: Date.now() - 10_000,
+        email: "ana@example.com",
+        name: "Ana",
+        locale: "es",
+        premiereId: "est-a1b2c3d4",
+      }),
+    );
+    expect(response.status).toBe(200);
+    const { reference } = (await response.json()) as { reference: string };
+    expect(findRequest(reference)).toMatchObject({
+      kind: "premiere-signup",
+      details: { Premiere: "Snow", Season: "Winter 2027", PremiereId: "est-a1b2c3d4" },
+    });
+  });
 });
 
 describe("noting an order the office took off-site", () => {
@@ -478,5 +520,498 @@ describe("noting an order the office took off-site", () => {
 
     const months = monthlyReceived(ledger, 1, new Date());
     expect(months[0]?.total).toBe(5000);
+  });
+});
+
+describe("a promotion run from the shop window", () => {
+  async function apply(...changes: Record<string, unknown>[]) {
+    const { headers } = await import("next/headers");
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({ origin: "http://localhost:3000", host: "localhost:3000" }),
+    );
+    const { currentViewer } = await import("@/lib/auth/session");
+    vi.mocked(currentViewer).mockResolvedValue({ role: "owner" } as Awaited<ReturnType<typeof currentViewer>>);
+    const { applyShopfrontChanges } = await import("@/app/[locale]/office/shopfront/actions");
+    const result = await applyShopfrontChanges(changes);
+    if (!result.ok) throw new Error(result.error);
+    return result.results;
+  }
+
+  // 65 % off the $295 Sirena set is $103.25 a piece: under the $110 exemption.
+  const onSirena = {
+    type: "promotion",
+    key: "promotion:new",
+    label: "Sirena rebajada",
+    kind: "percent",
+    value: 65,
+    scope: { type: "style", styleId: "sirena" },
+    active: true,
+  };
+
+  it("lowers that garment in the cart, taxes the lowered piece, and leaves the made-to-measure extra and every other garment alone", async () => {
+    expect(await apply(onSirena)).toEqual([{ key: "promotion:new", ok: true }]);
+
+    const { estimateCart, estimateReadyMade } = await import("./pricing");
+    const cart = estimateCart([{ styleSlug: "sirena", sizeId: "s", customize: false, quantity: 2 }]);
+    expect(cart?.lines[0]).toMatchObject({ amount: 20650, unitAmount: 10325, listAmount: 59000, listUnitAmount: 29500 });
+    expect(cart?.salesTax).toBe(0);
+    expect(cart?.total).toBe(20650);
+
+    const measured = estimateReadyMade({ styleSlug: "sirena", sizeId: "m", customize: true });
+    expect(measured?.lines[0]).toMatchObject({ amount: 10325, listAmount: 29500 });
+    expect(measured?.lines[1]?.amount).toBe(9600);
+    expect(measured?.lines[1]).not.toHaveProperty("listAmount");
+
+    const frutera = estimateReadyMade({ styleSlug: "frutera", sizeId: "m", customize: false });
+    expect(frutera?.lines[0]).not.toHaveProperty("listAmount");
+
+    const { manageablePromotions } = await import("./live-promotions");
+    const [saved] = manageablePromotions();
+    expect(saved?.id).toMatch(/^prm-[a-z0-9]{8}$/);
+    // No translation service here, so the English is the Spanish until she asks.
+    expect(saved?.label).toEqual({ es: "Sirena rebajada", en: "Sirena rebajada" });
+  });
+
+  it("stops lowering it once retired, and lowers it again once restored", async () => {
+    await apply(onSirena);
+    const { manageablePromotions } = await import("./live-promotions");
+    const id = manageablePromotions()[0]!.id;
+    const { estimateCart } = await import("./pricing");
+    const sirena = [{ styleSlug: "sirena", sizeId: "s", customize: false, quantity: 1 }];
+
+    expect(await apply({ type: "retire", key: `promotion:${id}`, id })).toEqual([{ key: `promotion:${id}`, ok: true }]);
+    expect(estimateCart(sirena)?.lines[0]).not.toHaveProperty("listAmount");
+    expect(estimateCart(sirena)?.salesTax).toBeGreaterThan(0);
+
+    await apply({ type: "restore", key: `promotion:${id}`, id });
+    expect(estimateCart(sirena)?.lines[0]?.amount).toBe(10325);
+  });
+
+  it("refuses a percent past 90, an amount under a dollar, an end before its start, a garment not on the rack, and an id it never saved", async () => {
+    const results = await apply(
+      { ...onSirena, key: "promotion:a", value: 91 },
+      { ...onSirena, key: "promotion:b", kind: "amount", value: 99 },
+      { ...onSirena, key: "promotion:c", startsAt: "2026-09-27", endsAt: "2026-09-20" },
+      { ...onSirena, key: "promotion:d", scope: { type: "style", styleId: "nobody" } },
+      { ...onSirena, key: "promotion:e", id: "prm-a3c4d6e7" },
+      { type: "retire", key: "promotion:f", id: "prm-a3c4d6e7" },
+    );
+    expect(results.map((result) => result.error)).toEqual([
+      "bad-value",
+      "bad-value",
+      "bad-dates",
+      "unknown-style",
+      "unknown-promotion",
+      "unknown-promotion",
+    ]);
+    const { manageablePromotions } = await import("./live-promotions");
+    expect(manageablePromotions()).toEqual([]);
+  });
+
+  it("never gives a piece away: −$110 on everything charges a $105 shirt $10.50, and the till sends it to Stripe", async () => {
+    await apply({ ...onSirena, scope: { type: "all" }, kind: "amount", value: 11000 });
+
+    const { estimateCart } = await import("./pricing");
+    const cart = estimateCart([{ styleSlug: "amapola", sizeId: "s", customize: false, quantity: 1 }]);
+    expect(cart?.lines[0]).toMatchObject({ amount: 1050, unitAmount: 1050, listAmount: 10500 });
+    expect(cart?.dueNow).toBe(1050);
+
+    // A guest at the till, not Daysi in the office.
+    const { currentViewer } = await import("@/lib/auth/session");
+    vi.mocked(currentViewer).mockResolvedValue(null);
+    const { writeCart } = await import("./cart");
+    await writeCart({ lines: [{ styleSlug: "amapola", sizeId: "s", customize: false, quantity: 1 }] });
+    const { POST } = await import("@/app/api/cart/checkout/route");
+    const { findRequest } = await import("./request-store");
+    const { createCheckoutSession } = await import("@/lib/payments");
+    const response = await POST(
+      post("/api/cart/checkout", {
+        name: client.name,
+        email: client.email,
+        phone: client.phone,
+        preferredContact: client.preferredContact,
+        locale: client.locale,
+        notes: "",
+        acceptedTerms: true,
+      }),
+    );
+    expect(response.status).toBe(200);
+    const { reference, checkoutUrl } = (await response.json()) as { reference: string; checkoutUrl?: string };
+    expect(checkoutUrl).toBe("https://checkout.stripe.test/session");
+    expect(findRequest(reference)).toMatchObject({ awaitingPayment: true, estimate: { dueNow: 1050 } });
+    expect(vi.mocked(createCheckoutSession)).toHaveBeenCalled();
+  });
+
+  it("keeps the English it already has when a saved promotion comes back with the same Spanish", async () => {
+    const { manageablePromotions, savePromotion } = await import("./live-promotions");
+    const saved = {
+      id: "prm-a3c4d6e7",
+      label: { es: "Venta de otoño", en: "Autumn sale" },
+      kind: "percent" as const,
+      value: 15,
+      scope: { type: "all" as const },
+      active: true,
+    };
+    await savePromotion(saved);
+    await savePromotion({ ...saved, label: { es: "Rebaja", en: "Markdown" } });
+
+    // An undo brings back the earlier Spanish; its English comes back with it.
+    await apply({ ...onSirena, ...saved, scope: { type: "all" }, label: "Venta de otoño", active: false });
+    expect(manageablePromotions()[0]).toMatchObject({ label: { es: "Venta de otoño", en: "Autumn sale" }, active: false });
+  });
+});
+
+describe("a premiere announced from the office", () => {
+  async function apply(...changes: Record<string, unknown>[]) {
+    const { headers } = await import("next/headers");
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({ origin: "http://localhost:3000", host: "localhost:3000" }),
+    );
+    const { currentViewer } = await import("@/lib/auth/session");
+    vi.mocked(currentViewer).mockResolvedValue({ role: "owner" } as Awaited<ReturnType<typeof currentViewer>>);
+    const { applyPremiereChanges } = await import("@/app/[locale]/office/premieres/actions");
+    const result = await applyPremiereChanges(changes);
+    if (!result.ok) throw new Error(result.error);
+    return result.results;
+  }
+
+  /** The change `UndoLink` would stage next for this premiere, applied the same way it would be. */
+  async function undo(premiereId: string) {
+    const { previousChangeFor } = await import("./office-history");
+    const change = previousChangeFor("premiere", premiereId);
+    if (!change) throw new Error("nothing to undo");
+    return apply(change as unknown as Record<string, unknown>);
+  }
+
+  const create = {
+    type: "premiere-create",
+    key: "premiere-create:new",
+    season: "Invierno 2027",
+    title: "Nieve",
+    story: "Seis piezas alrededor del primer invierno en el Bronx.",
+    inspiration: "El frío que nunca conoció en la isla.",
+    revealDate: "2027-01-05",
+    releaseDate: "2027-02-01",
+    piecesPlanned: 6,
+    editionSize: 12,
+    coverImage: "/uploads/nieve.jpg",
+    styleIds: ["sirena"],
+  };
+
+  it("announces a season, copies the Spanish (no translation service configured), and slugs it from the title", async () => {
+    expect(await apply(create)).toEqual([{ key: "premiere-create:new", ok: true }]);
+
+    const { manageablePremieres } = await import("./live-premieres");
+    // Newest first: this season releases after both seeded ones.
+    const [saved] = manageablePremieres();
+    expect(saved).toMatchObject({
+      slug: "nieve",
+      title: { es: "Nieve", en: "Nieve" },
+      season: { es: "Invierno 2027", en: "Invierno 2027" },
+      piecesPlanned: 6,
+      editionSize: 12,
+      styleIds: ["sirena"],
+      added: true,
+      retired: false,
+    });
+    expect(saved?.id).toMatch(/^est-[a-z0-9]{8}$/);
+  });
+
+  it("de-duplicates a slug that collides with an existing one", async () => {
+    await apply(create);
+    await apply({ ...create, key: "premiere-create:two" });
+    const { manageablePremieres } = await import("./live-premieres");
+    const slugs = manageablePremieres().map((premiere) => premiere.slug);
+    expect(slugs).toEqual(expect.arrayContaining(["nieve", "nieve-2"]));
+  });
+
+  it("refuses a release before the reveal, and a garment not on the rack or retired", async () => {
+    const { setRetired } = await import("./retired");
+    await setRetired("style", "frutera", true);
+    const results = await apply(
+      { ...create, key: "premiere-create:a", releaseDate: "2027-01-01" },
+      { ...create, key: "premiere-create:b", styleIds: ["nobody"] },
+      { ...create, key: "premiere-create:c", styleIds: ["frutera"] },
+    );
+    expect(results.map((result) => result.error)).toEqual(["bad-dates", "unknown-style", "unknown-style"]);
+  });
+
+  it("updates only the fields she changed, and leaves the rest", async () => {
+    await apply(create);
+    const { manageablePremieres } = await import("./live-premieres");
+    const id = manageablePremieres()[0]!.id;
+
+    await apply({ type: "premiere-update", key: `premiere:${id}`, premiereId: id, piecesPlanned: 5 });
+    const updated = manageablePremieres().find((premiere) => premiere.id === id);
+    expect(updated).toMatchObject({ piecesPlanned: 5, title: { es: "Nieve", en: "Nieve" } });
+  });
+
+  it("refuses an update to a premiere that does not exist, and one whose new dates cross", async () => {
+    const results = await apply(
+      { type: "premiere-update", key: "premiere:nobody", premiereId: "nobody", piecesPlanned: 5 },
+      { type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", releaseDate: "2026-09-01" },
+    );
+    expect(results.map((result) => result.error)).toEqual(["unknown-premiere", "bad-dates"]);
+  });
+
+  it("saves which garments belong to the season, and refuses one that is not live", async () => {
+    await apply({
+      type: "premiere-styles",
+      key: "premiere-styles:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["frutera"],
+    });
+    const { manageablePremieres } = await import("./live-premieres");
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.styleIds).toEqual(["frutera"]);
+
+    const refused = await apply({
+      type: "premiere-styles",
+      key: "premiere-styles:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["nobody"],
+    });
+    expect(refused[0]?.error).toBe("unknown-style");
+  });
+
+  it("retires and restores a season", async () => {
+    await apply({ type: "retire", key: "premiere:otono-2026", id: "otono-2026" });
+    const { manageablePremieres } = await import("./live-premieres");
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.retired).toBe(true);
+
+    await apply({ type: "restore", key: "premiere:otono-2026", id: "otono-2026" });
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.retired).toBe(false);
+  });
+
+  it("keeps every earlier correction: a pieces edit, then a checklist save, then a title edit all survive together", async () => {
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 });
+    await apply({
+      type: "premiere-styles",
+      key: "premiere-styles:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["frutera"],
+    });
+    const { livePremieres } = await import("./live-premieres");
+    // The checklist save alone must not have put pieces back to the seed's 6.
+    expect(livePremieres().find((premiere) => premiere.id === "otono-2026")).toMatchObject({
+      piecesPlanned: 5,
+      styleIds: ["frutera"],
+    });
+
+    await apply({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      title: "Yurumein, corregido",
+    });
+    expect(livePremieres().find((premiere) => premiere.id === "otono-2026")).toMatchObject({
+      piecesPlanned: 5,
+      styleIds: ["frutera"],
+      title: { es: "Yurumein, corregido", en: "Yurumein, corregido" },
+    });
+  });
+
+  it("keeps the current English when the Spanish sent back is unchanged (an undo, most often), and only translates what actually changed", async () => {
+    const { manageablePremieres } = await import("./live-premieres");
+    const seeded = manageablePremieres().find((premiere) => premiere.id === "otono-2026")!;
+
+    // An unrelated edit first, so there is an override for the season to
+    // undo against, then a change sending the season back exactly as it
+    // already reads — the shape an undo to the seeded words takes.
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 });
+    await apply({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      season: seeded.season.es,
+    });
+
+    const after = manageablePremieres().find((premiere) => premiere.id === "otono-2026");
+    // Not { es: seeded.season.es, en: seeded.season.es } — the English a
+    // no-op translation call would have copied the Spanish into.
+    expect(after?.season).toEqual(seeded.season);
+  });
+
+  it("accepts an undo that restores the seeded cover, not only an upload path", async () => {
+    const { manageablePremieres } = await import("./live-premieres");
+    const seeded = manageablePremieres().find((premiere) => premiere.id === "otono-2026")!;
+
+    await apply({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      coverImage: "/uploads/new-cover.jpg",
+    });
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.coverImage).toBe(
+      "/uploads/new-cover.jpg",
+    );
+
+    // The undo sends the season's own seeded cover back: a coded
+    // /images/real/… path, not an upload.
+    await apply({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      coverImage: seeded.coverImage,
+    });
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.coverImage).toBe(
+      seeded.coverImage,
+    );
+  });
+
+  it("undo after a checklist save on top of a pieces edit restores the checklist, not just whatever the pieces edit carried forward", async () => {
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 });
+    await apply({
+      type: "premiere-styles",
+      key: "premiere-styles:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["frutera"],
+    });
+
+    await undo("otono-2026");
+
+    const { manageablePremieres } = await import("./live-premieres");
+    // Undoing the checklist save goes back to the state right before it:
+    // pieces still at 5 (that edit came earlier and stands), but the
+    // checklist back to the seed's own ["sirena"], not left at ["frutera"].
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")).toMatchObject({
+      piecesPlanned: 5,
+      styleIds: ["sirena"],
+    });
+  });
+
+  it("undo after a pieces edit on top of a checklist save restores the pieces, not just whatever the checklist save carried forward", async () => {
+    await apply({
+      type: "premiere-styles",
+      key: "premiere-styles:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["frutera"],
+    });
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 });
+
+    await undo("otono-2026");
+
+    const { manageablePremieres } = await import("./live-premieres");
+    // Pieces back to the seed's own 6, checklist still ["frutera"] from
+    // the edit that came before the one just undone.
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")).toMatchObject({
+      piecesPlanned: 6,
+      styleIds: ["frutera"],
+    });
+  });
+
+  it("undo after a title edit on top of a pieces edit restores the title, not just whatever the pieces edit carried forward", async () => {
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 });
+    await apply({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      title: "Yurumein, corregido",
+    });
+
+    await undo("otono-2026");
+
+    const { manageablePremieres } = await import("./live-premieres");
+    const otono = manageablePremieres().find((premiere) => premiere.id === "otono-2026");
+    expect(otono?.title.es).toBe("Yurumein");
+    expect(otono?.piecesPlanned).toBe(5);
+  });
+
+  it("keeps a retired garment on its season's checklist while another is ticked beside it", async () => {
+    const { setRetired } = await import("./retired");
+    // "sirena" is on otono-2026's seeded checklist. The checklist only
+    // offers live garments, so once she is retired Daysi cannot untick her,
+    // and every save of that checklist sends her id along untouched.
+    await setRetired("style", "sirena", true);
+
+    const results = await apply({
+      type: "premiere-styles",
+      key: "premiere-styles:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["sirena", "frutera"],
+    });
+
+    expect(results).toEqual([{ key: "premiere-styles:otono-2026", ok: true }]);
+    const { manageablePremieres } = await import("./live-premieres");
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.styleIds).toEqual([
+      "sirena",
+      "frutera",
+    ]);
+  });
+
+  it("refuses ticking a retired garment that was not already on the season's checklist", async () => {
+    const { setRetired } = await import("./retired");
+    await setRetired("style", "frutera", true);
+
+    const results = await apply({
+      type: "premiere-styles",
+      key: "premiere-styles:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["sirena", "frutera"],
+    });
+
+    expect(results[0]?.error).toBe("unknown-style");
+    const { manageablePremieres } = await import("./live-premieres");
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.styleIds).toEqual(["sirena"]);
+  });
+
+  it("undo still lands when a garment on the season's checklist has since been retired, and restoring her brings her back to the season", async () => {
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 });
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 4 });
+
+    const { setRetired } = await import("./retired");
+    // "sirena" is on otono-2026's seeded checklist; the undo about to run
+    // carries that checklist along (it never touched it, so it falls back
+    // to the seed), and must not refuse the whole change over one retired
+    // garment on it.
+    await setRetired("style", "sirena", true);
+
+    await undo("otono-2026");
+
+    const { manageablePremieres, liveFindPremiere } = await import("./live-premieres");
+    const { liveStylesInPremiere } = await import("./live-catalog");
+    const otono = manageablePremieres().find((premiere) => premiere.id === "otono-2026");
+    expect(otono?.piecesPlanned).toBe(5);
+    // She stays on the checklist; the public site hides her while retired.
+    expect(otono?.styleIds).toContain("sirena");
+    const shown = () => liveStylesInPremiere(liveFindPremiere("otono-2026")!).map((style) => style.id);
+    expect(shown()).not.toContain("sirena");
+
+    await setRetired("style", "sirena", false);
+    expect(shown()).toContain("sirena");
+  });
+
+  it("undo drops a garment the catalog does not know at all", async () => {
+    const results = await apply({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      styleIds: ["sirena", "nobody"],
+    });
+
+    expect(results).toEqual([{ key: "premiere:otono-2026", ok: true }]);
+    const { manageablePremieres } = await import("./live-premieres");
+    expect(manageablePremieres().find((premiere) => premiere.id === "otono-2026")?.styleIds).toEqual(["sirena"]);
+  });
+
+  it("undo reuses the seeded English when the Spanish it sends back matches the seed, even though the current text is something else entirely", async () => {
+    const { manageablePremieres } = await import("./live-premieres");
+    const seeded = manageablePremieres().find((premiere) => premiere.id === "otono-2026")!;
+
+    await apply({ type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 });
+    await apply({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      story: "Una historia nueva para esta temporada.",
+    });
+
+    // The undo sends the seeded Spanish back, but the *current* merged
+    // story is the one just saved above — a naive "matches the current
+    // text" check would miss the seed entirely and re-translate it.
+    await undo("otono-2026");
+
+    const otono = manageablePremieres().find((premiere) => premiere.id === "otono-2026");
+    expect(otono?.story).toEqual(seeded.story);
+    expect(otono?.piecesPlanned).toBe(5);
   });
 });

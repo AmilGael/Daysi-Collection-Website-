@@ -26,7 +26,7 @@ export function PremiereSignupList({
   }
 
   return (
-    <ul className="flex flex-col border-t border-line">
+    <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
       {records.map((record) => {
         const key = `request:${record.reference}`;
         const pending = draft.pending(key);
@@ -34,26 +34,26 @@ export function PremiereSignupList({
         return (
           <li
             key={record.reference}
-            className={`flex flex-wrap items-baseline justify-between gap-4 border-b border-line py-3 text-[0.875rem] ${retiring ? "opacity-50" : ""}`}
+            className={`flex h-full flex-col gap-2 border border-line p-4 text-[0.875rem] ${retiring ? "opacity-50" : ""}`}
           >
             <span className="break-all">{record.client.email}</span>
-            <span className="shrink-0 text-[0.75rem] text-ink-faint">
-              {String(record.details.Season ?? "")}
+            <span className="text-[0.75rem] text-ink-faint">{String(record.details.Season ?? "")}</span>
+            <span className="mt-auto">
+              {pending ? (
+                <span className="flex flex-wrap items-center gap-3">
+                  <Pending confirming={pending.confirming} error={pending.error} count={pending.count} />
+                  <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">
+                    {t("removePending")}
+                  </button>
+                </span>
+              ) : (
+                <RetireButton
+                  name={record.reference}
+                  prompt={t("retireRequestConfirm", { name: record.reference })}
+                  onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: record.reference } })}
+                />
+              )}
             </span>
-            {pending ? (
-              <span className="flex flex-wrap items-center gap-3">
-                <Pending confirming={pending.confirming} error={pending.error} count={pending.count} />
-                <button type="button" onClick={() => draft.unstage(key)} className="text-xs underline underline-offset-4">
-                  {t("removePending")}
-                </button>
-              </span>
-            ) : (
-              <RetireButton
-                name={record.reference}
-                prompt={t("retireRequestConfirm", { name: record.reference })}
-                onConfirm={() => draft.stage(key, { wire: { type: "retire", key, id: record.reference } })}
-              />
-            )}
           </li>
         );
       })}

@@ -3,9 +3,11 @@ import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { primaryPhoto, translate, type PricedStyle } from "@/content";
 import { formatMoney } from "@/lib/money";
+import { promotedPrice, promotionBadge } from "@/lib/promotions";
 import { Link, type Locale } from "@/i18n/routing";
 import { PHOTO_QUALITY } from "@/lib/images";
 import { StylePhotoSwiper } from "./style-photo-swiper";
+import { Tag } from "./ui";
 
 /**
  * One piece in the lookbook.
@@ -18,16 +20,25 @@ import { StylePhotoSwiper } from "./style-photo-swiper";
  */
 /**
  * The card takes its price already worked out (`withPrices` on the server),
- * the garment's own when Daysi set one: it renders inside client components,
- * which must never reach for the files the live price list is read from.
+ * the garment's own when Daysi set one, with the promotion that reaches it
+ * today: it renders inside client components, which must never reach for
+ * the files the live price list is read from. A promotion shows as the
+ * lowered price with the old one struck after it, and a tag on the photo.
  */
 export function StyleCard({ style, priority = false }: { style: PricedStyle; priority?: boolean }) {
   const locale = useLocale() as Locale;
   const t = useTranslations("collection");
+  const tc = useTranslations("common");
 
   const photo = primaryPhoto(style);
-  const price = style.price;
+  const shown = style.price ? promotedPrice(style.price) : null;
   const href = `/collection/${style.slug}`;
+
+  const badge = shown?.promotion ? (
+    <span className="pointer-events-none absolute left-3 top-3 z-10">
+      <Tag tone="marigold">{promotionBadge(shown.promotion, locale)}</Tag>
+    </span>
+  ) : null;
 
   // A second photograph makes the picture area a swipeable strip; the strip's
   // slides are links of their own, so the card cannot wrap everything in one
@@ -41,7 +52,13 @@ export function StyleCard({ style, priority = false }: { style: PricedStyle; pri
           {translate(style.name, locale)}
         </h3>
         <span className="shrink-0 text-[0.875rem] tabular-nums">
-          {price ? formatMoney(price.fixedPrice, locale) : null}
+          {shown ? formatMoney(shown.amount, locale) : null}
+          {shown?.listAmount !== undefined ? (
+            <s className="ml-2 text-ink-faint">
+              <span className="sr-only">{tc("wasPrice")} </span>
+              {formatMoney(shown.listAmount, locale)}
+            </s>
+          ) : null}
         </span>
       </div>
       <p className="text-[0.6875rem] uppercase tracking-[0.14em] text-ink-faint">
@@ -55,16 +72,19 @@ export function StyleCard({ style, priority = false }: { style: PricedStyle; pri
   if (swipes) {
     return (
       <div className="flex flex-col border-l border-t border-line bg-paper">
-        <StylePhotoSwiper
-          href={href}
-          priority={priority}
-          photos={style.photos.map((item) => ({
-            src: item.src,
-            alt: translate(item.alt, locale),
-          }))}
-          nextLabel={t("nextPhoto")}
-          previousLabel={t("previousPhoto")}
-        />
+        <div className="relative">
+          <StylePhotoSwiper
+            href={href}
+            priority={priority}
+            photos={style.photos.map((item) => ({
+              src: item.src,
+              alt: translate(item.alt, locale),
+            }))}
+            nextLabel={t("nextPhoto")}
+            previousLabel={t("previousPhoto")}
+          />
+          {badge}
+        </div>
         <Link href={href} className="group">
           {caption}
         </Link>
@@ -86,6 +106,7 @@ export function StyleCard({ style, priority = false }: { style: PricedStyle; pri
             className="photo-hover object-cover transition-transform duration-[600ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.03]"
           />
         ) : null}
+        {badge}
       </div>
       {caption}
     </Link>

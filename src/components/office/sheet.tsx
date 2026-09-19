@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type JSX, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { buttonClass } from "@/components/ui";
 
@@ -22,6 +23,14 @@ import { buttonClass } from "@/components/ui";
  * effect runs on `open` and `onClose`, so `onClose` must be stable
  * (`useCallback`): a fresh function on every render would pop the entry
  * while the sheet is still open.
+ *
+ * Rendered through a portal onto `document.body`, so a sheet opened from
+ * inside an element with its own stacking or filter context — the office
+ * header's `backdrop-blur-md`, which makes it the containing block for any
+ * `fixed` descendant — still covers the whole viewport rather than
+ * collapsing into that ancestor's box. Safe wherever this is placed: it
+ * returns null until `open`, and `open` only ever turns true from a click,
+ * which cannot happen before the browser exists to click in.
  */
 export function Sheet({
   open,
@@ -70,7 +79,7 @@ export function Sheet({
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50">
       <button
         type="button"
@@ -97,6 +106,7 @@ export function Sheet({
         </header>
         <div ref={content} className="flex-1 overflow-y-auto px-5 py-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

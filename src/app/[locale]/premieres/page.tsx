@@ -1,8 +1,9 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { premiereListing, translate, type Premiere, type PricedStyle } from "@/content";
+import { translate, type Premiere, type PricedStyle } from "@/content";
 import { liveStylesInPremiere } from "@/lib/live-catalog";
+import { livePremiereListing } from "@/lib/live-premieres";
 import { withPrices } from "@/lib/live-pricing";
 import type { Locale } from "@/i18n/routing";
 import { SectionHeading, Tag, TextLink } from "@/components/ui";
@@ -84,7 +85,7 @@ export default async function PremieresPage({
   // `next` is undefined: the page then opens on the newest season's
   // photograph, says the next one is coming, and offers the atelier's
   // address in place of a list that does not exist yet.
-  const { next, featured, past } = premiereListing(new Date());
+  const { next, featured, past } = livePremiereListing(new Date());
 
   const formatDate = (value: string) =>
     new Intl.DateTimeFormat(language === "es" ? "es-US" : "en-US", {

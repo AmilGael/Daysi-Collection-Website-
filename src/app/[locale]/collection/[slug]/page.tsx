@@ -4,14 +4,15 @@ import type { Metadata } from "next";
 import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import {
   findCategory,
-  findPremiere,
   primaryPhoto,
   publishedStyles,
   sizes,
   translate,
 } from "@/content";
 import { liveStyles } from "@/lib/live-catalog";
+import { livePremieres } from "@/lib/live-premieres";
 import { liveFindFabric, priceFor, withPrices } from "@/lib/live-pricing";
+import { promotedPrice, promotionBadge } from "@/lib/promotions";
 import { routing, type Locale } from "@/i18n/routing";
 import { StyleOrderPanel } from "@/components/style-order-panel";
 import { LookbookGrid, StyleCard } from "@/components/style-card";
@@ -63,9 +64,14 @@ export default async function StylePage({
   // priced through an entry she wrote herself is on sale like any other.
   const price = priceFor(style);
   if (!price) notFound();
+  // What the piece costs today: lowered, with the list price beside it, when a promotion reaches it.
+  const shown = promotedPrice(price);
   const category = findCategory(style.categoryId);
   const fabric = liveFindFabric(price.fabricId);
-  const premiere = style.premiereId ? findPremiere(style.premiereId) : undefined;
+  // From the live checklist, not the garment's own coded premiere field:
+  // adding a garment to a season from Estrenos stages a `premiere-styles`
+  // change, never a garment's own record, so only the checklist stays current.
+  const premiere = livePremieres().find((candidate) => candidate.styleIds.includes(style.id));
 
   const related = withPrices(
     liveStyles()
@@ -101,6 +107,11 @@ export default async function StylePage({
                   {t("partOfPremiere", { season: translate(premiere.season, language) })}
                 </Tag>
               ) : null}
+              {shown.promotion ? (
+                <Tag tone="marigold">
+                  {promotionBadge(shown.promotion, language)} · {translate(shown.promotion.label, language)}
+                </Tag>
+              ) : null}
             </div>
             <h1 className="text-title">{translate(style.name, language)}</h1>
             <p className="text-lead text-ink-soft">{translate(style.description, language)}</p>
@@ -127,7 +138,8 @@ export default async function StylePage({
           <StyleOrderPanel
             style={style}
             sizes={sizes}
-            fixedPrice={price.fixedPrice}
+            fixedPrice={shown.amount}
+            listPrice={shown.listAmount}
             customizationExtra={price.customizationExtra}
             customizationNote={price.customizationNote}
           />

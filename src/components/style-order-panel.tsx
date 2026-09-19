@@ -26,12 +26,16 @@ export function StyleOrderPanel({
   style,
   sizes,
   fixedPrice,
+  listPrice,
   customizationExtra,
   customizationNote,
 }: {
   style: GarmentStyle;
   sizes: readonly Size[];
+  /** What the piece costs today, a promotion taken off. */
   fixedPrice: Cents;
+  /** The price before a promotion lowered it; absent when none did. */
+  listPrice?: Cents;
   customizationExtra: Cents;
   customizationNote: Localized;
 }) {
@@ -46,7 +50,9 @@ export function StyleOrderPanel({
   const [sizeId, setSizeId] = useState<SizeId | undefined>(firstAvailable?.sizeId);
   const [customize, setCustomize] = useState(false);
 
-  const total = fixedPrice + (customize ? customizationExtra : 0);
+  // A promotion lowers the piece, never the made-to-measure extra.
+  const extra = customize ? customizationExtra : 0;
+  const total = fixedPrice + extra;
   // A counted size with none left can still be sewn to measure, never sold ready-made.
   const selected = style.sizes.find((size) => size.sizeId === sizeId);
   const soldOut = selected !== undefined && sizeState(selected) === "soldOut" && !customize;
@@ -147,8 +153,16 @@ export function StyleOrderPanel({
           <span className="text-[0.6875rem] uppercase tracking-[0.18em] text-ink-faint">
             {tc("fixedPrice")}
           </span>
-          <span className="font-display text-[2rem] tabular-nums leading-none">
-            {formatMoney(total, locale)}
+          <span className="flex items-baseline gap-3">
+            {listPrice !== undefined ? (
+              <s className="text-[1rem] tabular-nums text-ink-faint">
+                <span className="sr-only">{tc("wasPrice")} </span>
+                {formatMoney(listPrice + extra, locale)}
+              </s>
+            ) : null}
+            <span className="font-display text-[2rem] tabular-nums leading-none">
+              {formatMoney(total, locale)}
+            </span>
           </span>
         </div>
         <button

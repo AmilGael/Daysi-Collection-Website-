@@ -297,9 +297,20 @@ export function receiptMessage(request: StoredRequest): { subject: string; text:
   const lines = estimate?.lines ?? [];
 
   const itemLines = lines.map((line) => {
-    const qty = line.unitAmount ? Math.round(line.amount / line.unitAmount) : 1;
+    // Counted on the list figures when a promotion lowered the line, which
+    // still holds when it took each piece down to nothing.
+    const [whole, piece] =
+      line.listUnitAmount !== undefined
+        ? [line.listAmount ?? line.amount, line.listUnitAmount]
+        : [line.amount, line.unitAmount];
+    const qty = piece ? Math.round(whole / piece) : 1;
     const label = line.note ? `${translate(line.label, locale)} (${translate(line.note, locale)})` : translate(line.label, locale);
-    return `${label} × ${qty} — ${formatMoney(line.amount, locale)}`;
+    // A promotion lowered the line: what it came to before, for the client to see.
+    const list =
+      line.listAmount === undefined
+        ? ""
+        : ` (${locale === "es" ? "antes" : "was"} ${formatMoney(line.listAmount, locale)})`;
+    return `${label} × ${qty} — ${formatMoney(line.amount, locale)}${list}`;
   });
 
   const subtotal = estimate?.subtotal ?? 0;

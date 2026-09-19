@@ -82,7 +82,10 @@ export function GarmentPhotos({
           </span>
         </li>
       ))}
-      {slots.length < max ? (
+      {/* A single-photo slot (a premiere's cover, say) has no second place to
+          hold a spare: the tile stays offered so a fresh choice replaces the
+          one photo outright, rather than disappearing the moment it is set. */}
+      {slots.length < max || max === 1 ? (
         <li>
           <label className="flex aspect-3/4 cursor-pointer flex-col items-center justify-center gap-1 border border-dashed border-line-strong text-center text-[0.75rem] text-ink-faint hover:border-ink">
             <span className="text-2xl leading-none">+</span>
@@ -90,13 +93,13 @@ export function GarmentPhotos({
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
-              multiple
+              multiple={max > 1}
               disabled={disabled}
               className="sr-only"
               onChange={(event) => {
                 const files = [...(event.target.files ?? [])];
                 if (files.length > 0) {
-                  onChange(addFiles(slots, files, (file) => URL.createObjectURL(file), max));
+                  onChange(addFiles(max === 1 ? [] : slots, files, (file) => URL.createObjectURL(file), max));
                 }
                 event.target.value = "";
               }}

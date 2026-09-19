@@ -35,6 +35,7 @@ next-env.d.ts
 
 # Documentation and local-only tooling, never imported by the build
 docs
+!docs/manual-del-taller.html
 *.md
 scripts
 vitest.config.ts

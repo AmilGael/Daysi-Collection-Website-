@@ -1,4 +1,4 @@
-import { commissionDepositRate, designFee, findCategory, type Cents, type Localized } from "@/content";
+import { commissionDepositRate, designFee, findCategory, type Cents, type Localized, type Promotion } from "@/content";
 // The live catalog, never the coded one: a garment Daysi added from the office
 // has to be priceable, and one she corrected has to be named as she wrote it.
 import { liveStyleBySlug as findStyle } from "./live-catalog";
@@ -10,6 +10,7 @@ import {
   priceFor,
 } from "./live-pricing";
 import { applyRate, sum } from "./money";
+import { discountedAmount } from "./promotions";
 
 /**
  * Every amount a client is ever asked to pay is produced here, on the server,
@@ -41,6 +42,15 @@ export type EstimateLine = {
    */
   readonly unitAmount?: Cents;
   readonly taxBasis: TaxBasis;
+  /**
+   * What the line came to before a promotion lowered it, present only when
+   * one did: the cart and the receipt strike it through, the books note it.
+   * `amount` and `unitAmount` are what is charged. Absent on every line a
+   * promotion never touched, including every record written before them.
+   */
+  readonly listAmount?: Cents;
+  /** The piece's price before the promotion, beside `unitAmount`. */
+  readonly listUnitAmount?: Cents;
 };
 
 export type Estimate = {
@@ -106,6 +116,31 @@ function build(
   };
 }
 
+/**
+ * A garment line with its promotion taken off each piece, before tax, so the
+ * $110 exemption is judged on what a piece actually costs the client. Only
+ * the garment line of a ready-made piece or a cart line comes through here:
+ * a promotion lowers what hangs on the rack, never the made-to-measure extra,
+ * an alteration, a session, a commission or the design fee. The same line
+ * when there is no promotion, or when it lowers nothing.
+ */
+export function applyPromotion(
+  line: EstimateLine,
+  promotion: Promotion | undefined,
+  quantity = 1,
+): EstimateLine {
+  if (!promotion) return line;
+  const unit = line.unitAmount ?? line.amount;
+  const reduced = discountedAmount(unit, promotion);
+  if (reduced === unit) return line;
+  return {
+    ...line,
+    amount: reduced * quantity,
+    listAmount: line.amount,
+    ...(line.unitAmount === undefined ? {} : { unitAmount: reduced, listUnitAmount: line.unitAmount }),
+  };
+}
+
 // ── Ready-made pieces ──────────────────────────────────────────────────────
 
 export type ReadyMadeOrder = {
@@ -119,20 +154,24 @@ export function estimateReadyMade(order: ReadyMadeOrder): Estimate | null {
   if (!style) return null;
   if (!style.sizes.some((size) => size.sizeId === order.sizeId)) return null;
 
-  // The garment's own price when Daysi set one, else its pair's list entry.
+  // The garment's own price when Daysi set one, else its pair's list entry,
+  // with the promotion that reaches it today.
   const price = priceFor(style);
   if (!price) return null;
 
   const lines: EstimateLine[] = [
-    {
-      label: style.name,
-      note: {
-        en: `Size ${order.sizeId.toUpperCase()}`,
-        es: `Talla ${order.sizeId.toUpperCase()}`,
+    applyPromotion(
+      {
+        label: style.name,
+        note: {
+          en: `Size ${order.sizeId.toUpperCase()}`,
+          es: `Talla ${order.sizeId.toUpperCase()}`,
+        },
+        amount: price.fixedPrice,
+        taxBasis: "clothing",
       },
-      amount: price.fixedPrice,
-      taxBasis: "clothing",
-    },
+      price.promotion,
+    ),
   ];
 
   if (order.customize && style.customizationAvailable) {
@@ -178,16 +217,22 @@ export function estimateCart(
     const customised = item.customize && style.customizationAvailable;
     if (customised) anyCustomised = true;
 
-    lines.push({
-      label: style.name,
-      note: {
-        en: `Size ${item.sizeId.toUpperCase()}${quantity > 1 ? ` · ${quantity} pieces` : ""}`,
-        es: `Talla ${item.sizeId.toUpperCase()}${quantity > 1 ? ` · ${quantity} piezas` : ""}`,
-      },
-      amount: price.fixedPrice * quantity,
-      unitAmount: price.fixedPrice,
-      taxBasis: "clothing",
-    });
+    lines.push(
+      applyPromotion(
+        {
+          label: style.name,
+          note: {
+            en: `Size ${item.sizeId.toUpperCase()}${quantity > 1 ? ` · ${quantity} pieces` : ""}`,
+            es: `Talla ${item.sizeId.toUpperCase()}${quantity > 1 ? ` · ${quantity} piezas` : ""}`,
+          },
+          amount: price.fixedPrice * quantity,
+          unitAmount: price.fixedPrice,
+          taxBasis: "clothing",
+        },
+        price.promotion,
+        quantity,
+      ),
+    );
 
     if (customised) {
       lines.push({

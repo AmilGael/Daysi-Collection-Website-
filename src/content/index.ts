@@ -143,33 +143,66 @@ export function shopDay(now: Date): string {
 }
 
 /**
- * The premiere that is currently open for sign-ups, if there is one. A season
- * stays next through the whole of its release day; the list is newest first,
- * so the first entry still to be released is the nearest one.
+ * The premiere that is currently open for sign-ups in a given list, if there
+ * is one: whichever is still to be released and releases soonest. A season
+ * stays next through the whole of its release day. Daysi can have more than
+ * one season written down ahead of time, so this is the earliest release
+ * date among the ones still upcoming, not merely the first entry of a
+ * newest-first list — with two seasons still to come, the one further out
+ * is not "next" just because it sits first in that order.
  */
-export function upcomingPremiere(today: Date): Premiere | undefined {
+export function upcomingIn(list: readonly Premiere[], today: Date): Premiere | undefined {
   const day = shopDay(today);
-  return premieres.find((premiere) => premiere.releaseDate >= day);
+  let next: Premiere | undefined;
+  for (const premiere of list) {
+    if (premiere.releaseDate < day) continue;
+    if (!next || premiere.releaseDate < next.releaseDate) next = premiere;
+  }
+  return next;
+}
+
+export function upcomingPremiere(today: Date): Premiere | undefined {
+  return upcomingIn(premieres, today);
 }
 
 /**
- * What the premiere pages have to show on a given day. `next` is the season
- * still to be released, if one is written down; `featured` is the newest
- * season either way, the one whose photograph the pages show, defined as long
- * as any season has ever been written down; `past` is every season except
- * the next one, newest first. The day after a release there may be no next
- * season yet, and that gap is Daysi's to fill, not a fault in the code, so
- * both pages read from here and stand on their own.
+ * What the premiere pages have to show on a given day, from a list that
+ * already runs newest first. `next` is the season still to be released that
+ * releases soonest, if one is written down; `featured` is that same season
+ * whenever there is one, so the cover photograph and the words next to it
+ * are never two different seasons — a season written down ahead of "next"
+ * (Daysi planning two at once) has the furthest-out release and so must
+ * never be the one pictured. Between seasons, with no next one written
+ * down yet, `featured` falls back to the newest season either way, the one
+ * whose photograph the pages then show; `past` is every season already
+ * released, newest first. A season written down ahead of "next" is itself
+ * neither next nor past, and so is not shown here — the day after a
+ * release there may also be no next season yet, and that gap is Daysi's to
+ * fill, not a fault in the code, so both pages read from here and stand on
+ * their own.
+ *
+ * Pulled out of `premiereListing` so `lib/live-premieres.ts` can run the same
+ * rule over the seed with Daysi's additions and corrections on top, without
+ * this file reaching into the live layer (which itself reads the seed from
+ * here) and creating a cycle.
  */
-export function premiereListing(today: Date): {
+export function premiereListingFrom(
+  list: readonly Premiere[],
+  today: Date,
+): {
   next: Premiere | undefined;
   featured: Premiere | undefined;
   past: readonly Premiere[];
 } {
-  const next = upcomingPremiere(today);
+  const day = shopDay(today);
+  const next = upcomingIn(list, today);
   return {
     next,
-    featured: premieres[0],
-    past: premieres.filter((premiere) => premiere.id !== next?.id),
+    featured: next ?? list[0],
+    past: list.filter((premiere) => premiere.releaseDate < day),
   };
+}
+
+export function premiereListing(today: Date): ReturnType<typeof premiereListingFrom> {
+  return premiereListingFrom(premieres, today);
 }

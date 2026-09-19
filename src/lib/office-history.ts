@@ -1,4 +1,12 @@
-import { alterationServices, appointmentTypes, priceList, styles } from "@/content";
+import {
+  alterationServices,
+  appointmentTypes,
+  premieres,
+  priceList,
+  styles,
+  type Premiere,
+  type Promotion,
+} from "@/content";
 import type { OfficeChange, UndoKind } from "./office-validation";
 import {
   addedStyles,
@@ -8,6 +16,7 @@ import {
   type StyleOverride,
 } from "./live-catalog";
 import { manageableGallery, type GalleryVisibility } from "./live-gallery";
+import { addedPremieres, assemblePremieres, type PremiereOverride } from "./live-premieres";
 import {
   addedAlterations,
   addedAppointmentTypes,
@@ -22,13 +31,14 @@ import {
 import { textKey, type TextField, type TextOverride, type TextSubject } from "./live-text";
 import { readRecords, versionsOf } from "./records";
 import { REQUEST_KINDS, listRequests, requestVersions, type StoredRequest } from "./request-store";
+import type { HelperVisibility } from "./site-helper";
 
 type Stream<R> = {
   readonly all: () => R[];
   readonly key: (record: R) => string;
   readonly versions: (id: string) => R[];
   readonly baseline: (id: string) => OfficeChange | undefined;
-  readonly toChange: (record: R, id: string) => OfficeChange;
+  readonly toChange: (record: R, id: string) => OfficeChange | undefined;
   readonly undoable?: (latest: R) => boolean;
 };
 
@@ -47,7 +57,7 @@ function recordStream<R>(
   collection: string,
   key: (record: R) => string,
   baseline: (id: string) => OfficeChange | undefined,
-  toChange: (record: R, id: string) => OfficeChange,
+  toChange: (record: R, id: string) => OfficeChange | undefined,
 ): Stream<R> {
   return {
     all: () => readRecords<R>(collection),
@@ -196,6 +206,98 @@ const notice = recordStream<SiteNotice>(
   }),
 );
 
+/** Never set at all means shown, so that is the baseline an undo returns to. */
+const helperSwitch = recordStream<HelperVisibility>(
+  "helper-visibility",
+  () => "site",
+  () => ({ type: "helper", key: "helper:site", visible: true }),
+  (record) => ({ type: "helper", key: "helper:site", visible: record.visible }),
+);
+
+/**
+ * No baseline: a promotion did not exist before its first line, and a new
+ * one is taken back by retiring it. Each line after that (a switch turned
+ * off, then on) is undone to the one before it, in Spanish as she typed it;
+ * the action keeps that line's English.
+ */
+const promotion = recordStream<Promotion>(
+  "promotions",
+  (record) => record.id,
+  () => undefined,
+  (record, id) => ({
+    type: "promotion",
+    key: `promotion:${id}`,
+    id,
+    label: record.label.es,
+    kind: record.kind,
+    value: record.value,
+    scope: record.scope,
+    ...(record.startsAt === undefined ? {} : { startsAt: record.startsAt }),
+    ...(record.endsAt === undefined ? {} : { endsAt: record.endsAt }),
+    active: record.active,
+  }),
+);
+
+/**
+ * A premiere's own words, dates, numbers, cover and style checklist,
+ * together. Because the office action forward-merges every save onto the
+ * season's current override (`previousOverrideFields`), each saved record
+ * is a *running total*: it carries every field any earlier save on this
+ * premiere ever touched, not merely the field that one save changed. What
+ * a record can still be missing is a field no save had touched *yet* at
+ * that point in the premiere's history — one a later save is the first to
+ * introduce. So `toChange`/`baseline` cannot return a record as-is: each
+ * rebuilds the *whole* snapshot instead, taking the season as seeded or
+ * added and overlaying only the fields that one particular record (or, for
+ * `baseline`, no record at all) itself carries. Undoing to that snapshot
+ * then correctly puts back a field a later save was the first to touch
+ * (the checklist, say, when an earlier record predates it) as the seed,
+ * rather than leaving it at whatever the newest save happens to carry
+ * forward.
+ */
+function premiereSnapshot(
+  id: string,
+  seeded: Premiere,
+  override: Partial<Omit<PremiereOverride, "premiereId" | "updatedAt">>,
+): OfficeChange {
+  return {
+    type: "premiere-update",
+    key: `premiere:${id}`,
+    premiereId: id,
+    season: (override.season ?? seeded.season).es,
+    title: (override.title ?? seeded.title).es,
+    story: (override.story ?? seeded.story).es,
+    inspiration: (override.inspiration ?? seeded.inspiration).es,
+    revealDate: override.revealDate ?? seeded.revealDate,
+    releaseDate: override.releaseDate ?? seeded.releaseDate,
+    piecesPlanned: override.piecesPlanned ?? seeded.piecesPlanned,
+    editionSize: override.editionSize ?? seeded.editionSize,
+    coverImage: override.coverImage ?? seeded.coverImage,
+    styleIds: [...(override.styleIds ?? seeded.styleIds)],
+  };
+}
+
+function seededPremiere(id: string): Premiere | undefined {
+  return assemblePremieres(premieres, addedPremieres(), []).find((candidate) => candidate.id === id);
+}
+
+const premiere = recordStream<PremiereOverride>(
+  "premiere-overrides",
+  (record) => record.premiereId,
+  (id) => {
+    const seeded = seededPremiere(id);
+    return seeded ? premiereSnapshot(id, seeded, {}) : undefined;
+  },
+  (record, id) => {
+    // A saved override normally means the premiere still exists — but a
+    // season that was never added (an office undo can still reach a
+    // record for one that existed only briefly, in principle) has nothing
+    // to rebuild a snapshot from, so there is nothing to undo to either.
+    const seeded = seededPremiere(id);
+    return seeded ? premiereSnapshot(id, seeded, record) : undefined;
+  },
+);
+
 const requestStatus: Stream<StoredRequest> = {
   all: () => REQUEST_KINDS.flatMap(listRequests),
   key: (record) => record.reference,
@@ -268,9 +370,12 @@ function streamFor(kind: UndoKind): Stream<unknown> {
     case "alteration": return erased(alteration);
     case "appointment": return erased(appointment);
     case "notice": return erased(notice);
+    case "helper": return erased(helperSwitch);
     case "request-status": return erased(requestStatus);
     case "style-text": return erased(styleText);
     case "work-text": return erased(workText);
+    case "promotion": return erased(promotion);
+    case "premiere": return erased(premiere);
   }
 }
 

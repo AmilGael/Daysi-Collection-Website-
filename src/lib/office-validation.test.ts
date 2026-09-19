@@ -6,6 +6,7 @@ import {
   fabricChangeSchema,
   galleryChangeSchema,
   normalizePhone,
+  premiereChangeSchema,
   priceChangeSchema,
   shopfrontChangeSchema,
   styleCreateSchema,
@@ -154,6 +155,20 @@ const fabricAdd = {
   averageColor: "#aabbcc",
   prices: { dresses: 12000 },
 };
+const premiereCreateChange = {
+  type: "premiere-create",
+  key: "premiere-create:one",
+  season: "Invierno 2027",
+  title: "Nieve",
+  story: "Seis piezas alrededor del primer invierno en el Bronx.",
+  inspiration: "El frío que nunca conoció en la isla.",
+  revealDate: "2027-01-05",
+  releaseDate: "2027-02-01",
+  piecesPlanned: 6,
+  editionSize: 12,
+  coverImage: "/uploads/cover-one.jpg",
+  styleIds: ["sirena"],
+};
 
 describe.each([
   ["collection style override", collectionChangeSchema, styleOverrideChange],
@@ -176,6 +191,27 @@ describe.each([
   ["price retire", priceChangeSchema, { type: "retire", key: "entry:x", id: "x" }],
   ["price restore", priceChangeSchema, { type: "restore", key: "entry:x", id: "x" }],
   ["shopfront notice", shopfrontChangeSchema, { type: "notice", key: "notice:site", message: "Open", visible: true }],
+  [
+    "shopfront promotion",
+    shopfrontChangeSchema,
+    { type: "promotion", key: "promotion:new", label: "Venta de otoño", kind: "percent", value: 15, scope: { type: "all" }, active: true },
+  ],
+  ["shopfront helper", shopfrontChangeSchema, { type: "helper", key: "helper:site", visible: false }],
+  ["shopfront retire", shopfrontChangeSchema, { type: "retire", key: "promotion:prm-aaaaaaaa", id: "prm-aaaaaaaa" }],
+  ["shopfront restore", shopfrontChangeSchema, { type: "restore", key: "promotion:prm-aaaaaaaa", id: "prm-aaaaaaaa" }],
+  ["premiere create", premiereChangeSchema, premiereCreateChange],
+  [
+    "premiere update",
+    premiereChangeSchema,
+    { type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026", piecesPlanned: 5 },
+  ],
+  [
+    "premiere styles",
+    premiereChangeSchema,
+    { type: "premiere-styles", key: "premiere-styles:otono-2026", premiereId: "otono-2026", styleIds: ["sirena"] },
+  ],
+  ["premiere retire", premiereChangeSchema, { type: "retire", key: "premiere:otono-2026", id: "otono-2026" }],
+  ["premiere restore", premiereChangeSchema, { type: "restore", key: "premiere:otono-2026", id: "otono-2026" }],
   ["work request status", workChangeSchema, { type: "request-status", key: "request:ALT-1", kind: "alteration", reference: "ALT-1", status: "answered" }],
   [
     "work order note",
@@ -204,7 +240,7 @@ describe.each([
 
 describe("undo query", () => {
   it("accepts a named stream and non-empty id", () => {
-    expect([...UNDO_KINDS]).toEqual(["style-override", "work-visibility", "price-entry", "alteration", "appointment", "notice", "request-status", "style-text", "work-text"]);
+    expect([...UNDO_KINDS]).toEqual(["style-override", "work-visibility", "price-entry", "alteration", "appointment", "notice", "helper", "request-status", "style-text", "work-text", "promotion", "premiere"]);
     expect(undoQuerySchema.safeParse({ kind: "notice", id: "site" }).success).toBe(true);
     expect(undoQuerySchema.safeParse({ kind: "retired:style", id: "x" }).success).toBe(false);
   });
@@ -570,5 +606,99 @@ describe("noting an order that never came through the site", () => {
     expect(workChangeSchema.safeParse({ ...orderNote, date: "2019-12-31" }).success).toBe(false);
     expect(workChangeSchema.safeParse({ ...orderNote, date: "2999-01-01" }).success).toBe(false);
     expect(workChangeSchema.safeParse({ ...orderNote, date: "08/20/2026" }).success).toBe(false);
+  });
+});
+
+describe("a promotion from the shop window", () => {
+  const promotion = {
+    type: "promotion",
+    key: "promotion:new",
+    label: "Venta de otoño",
+    kind: "percent",
+    value: 15,
+    scope: { type: "all" },
+    active: true,
+  };
+  const accepts = (over: Record<string, unknown>) => shopfrontChangeSchema.safeParse({ ...promotion, ...over }).success;
+
+  it("accepts everything, a category or one garment, with or without dates, new or by its id", () => {
+    expect(accepts({ scope: { type: "category", categoryId: "heritage" } })).toBe(true);
+    expect(accepts({ scope: { type: "style", styleId: "sty-nm9pfhxu" } })).toBe(true);
+    expect(accepts({ kind: "amount", value: 2000, startsAt: "2026-09-20", endsAt: "2026-09-27" })).toBe(true);
+    expect(accepts({ id: "prm-a3c4d6e7", active: false })).toBe(true);
+  });
+
+  it("refuses a kind that is neither, a date not shaped YYYY-MM-DD, and a category that does not exist", () => {
+    expect(accepts({ kind: "half" })).toBe(false);
+    expect(accepts({ startsAt: "2026-9-1" })).toBe(false);
+    expect(accepts({ endsAt: "2026-13-01" })).toBe(false);
+    expect(accepts({ scope: { type: "category", categoryId: "hats" } })).toBe(false);
+    expect(accepts({ scope: { type: "style", styleId: "" } })).toBe(false);
+    expect(accepts({ scope: { type: "everything" } })).toBe(false);
+  });
+
+  it("refuses a label shorter than 2 or longer than 60, a value outside 1 to $5,000, and an id that is not one", () => {
+    expect(accepts({ label: "V" })).toBe(false);
+    expect(accepts({ label: "x".repeat(61) })).toBe(false);
+    expect(accepts({ value: 0 })).toBe(false);
+    expect(accepts({ value: 15.5 })).toBe(false);
+    expect(accepts({ kind: "amount", value: 5_000_01 })).toBe(false);
+    expect(accepts({ id: "PRM-A3C4D6E7" })).toBe(false);
+  });
+});
+
+describe("a premiere announced from the office", () => {
+  const accepts = (over: Record<string, unknown>) =>
+    premiereChangeSchema.safeParse({ ...premiereCreateChange, ...over }).success;
+
+  it("accepts a season with a cover, dates and a full checklist of garments", () => {
+    expect(accepts({})).toBe(true);
+    expect(accepts({ styleIds: [] })).toBe(true);
+  });
+
+  it("refuses no pieces planned, an edition past 500, more than 40 garments, and a cover outside uploads", () => {
+    expect(accepts({ piecesPlanned: 0 })).toBe(false);
+    expect(accepts({ editionSize: 501 })).toBe(false);
+    expect(accepts({ styleIds: Array.from({ length: 41 }, (_, index) => `sty-${index}`) })).toBe(false);
+    expect(accepts({ coverImage: "/images/real/premiere-otono.jpg" })).toBe(false);
+  });
+
+  it("refuses a season, a title, or a story outside their lengths, and a date not shaped YYYY-MM-DD", () => {
+    expect(accepts({ season: "x" })).toBe(false);
+    expect(accepts({ title: "x" })).toBe(false);
+    expect(accepts({ story: "too short" })).toBe(false);
+    expect(accepts({ revealDate: "2027-1-5" })).toBe(false);
+  });
+
+  it("accepts an update naming only the fields she is changing", () => {
+    const update = {
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+    };
+    expect(premiereChangeSchema.safeParse(update).success).toBe(true);
+    expect(premiereChangeSchema.safeParse({ ...update, piecesPlanned: 5 }).success).toBe(true);
+    expect(premiereChangeSchema.safeParse({ ...update, season: "Otoño 2026, corregido" }).success).toBe(true);
+    expect(premiereChangeSchema.safeParse({ ...update, piecesPlanned: 0 }).success).toBe(false);
+    expect(premiereChangeSchema.safeParse({ ...update, editionSize: 501 }).success).toBe(false);
+  });
+
+  it("accepts an update that also carries the checklist, so an undo can restore it, up to the same bound", () => {
+    const update = { type: "premiere-update", key: "premiere:otono-2026", premiereId: "otono-2026" };
+    expect(premiereChangeSchema.safeParse({ ...update, styleIds: ["sirena", "frutera"] }).success).toBe(true);
+    expect(premiereChangeSchema.safeParse({ ...update, styleIds: [] }).success).toBe(true);
+    expect(
+      premiereChangeSchema.safeParse({ ...update, styleIds: Array.from({ length: 41 }, (_, index) => `sty-${index}`) })
+        .success,
+    ).toBe(false);
+  });
+
+  it("accepts the styles change naming the whole checklist", () => {
+    const styles = { type: "premiere-styles", key: "premiere-styles:otono-2026", premiereId: "otono-2026" };
+    expect(premiereChangeSchema.safeParse({ ...styles, styleIds: ["sirena", "frutera"] }).success).toBe(true);
+    expect(
+      premiereChangeSchema.safeParse({ ...styles, styleIds: Array.from({ length: 41 }, (_, index) => `sty-${index}`) })
+        .success,
+    ).toBe(false);
   });
 });

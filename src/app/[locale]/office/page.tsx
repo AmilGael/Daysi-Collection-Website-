@@ -10,7 +10,6 @@ import {
 } from "@/lib/request-store";
 import { undoableIds } from "@/lib/office-history";
 import { Figure } from "@/components/office/figure";
-import { OrderNoteCard } from "@/components/office/order-note-sheet";
 import { OfficeRequestList } from "@/components/office-request-list";
 import { PremiereSignupList, WorkRetiredGroup } from "@/components/office/premiere-signup-list";
 import { OfficeDraftProvider } from "@/components/office/use-office-draft";
@@ -66,7 +65,6 @@ export default async function OfficeHubPage({
 
       <section className="flex flex-col gap-6">
         <h2 className="text-heading">{t("work")}</h2>
-        <OrderNoteCard />
         <OfficeRequestList records={withUndoable(work)} locale={language} emptyMessage={t("noWork")} showOrderNotes />
       </section>
 
@@ -79,19 +77,18 @@ export default async function OfficeHubPage({
         />
       </section>
 
-      <section className="grid gap-12 lg:grid-cols-2 lg:gap-16">
-        <div className="flex flex-col gap-6">
-          <h2 className="text-heading">{t("messages")}</h2>
-          <OfficeRequestList
-            records={withUndoable(messages)}
-            locale={language}
-            emptyMessage={t("noMessages")}
-          />
-        </div>
-        <div className="flex flex-col gap-6">
-          <h2 className="text-heading">{t("premiereList")}</h2>
-          <PremiereSignupList records={signups} emptyMessage={t("noSignups")} />
-        </div>
+      <section className="flex flex-col gap-6">
+        <h2 className="text-heading">{t("messages")}</h2>
+        <OfficeRequestList
+          records={withUndoable(messages)}
+          locale={language}
+          emptyMessage={t("noMessages")}
+        />
+      </section>
+
+      <section className="flex flex-col gap-6">
+        <h2 className="text-heading">{t("premiereList")}</h2>
+        <PremiereSignupList records={signups} emptyMessage={t("noSignups")} />
       </section>
 
       <section className="flex flex-col gap-6">

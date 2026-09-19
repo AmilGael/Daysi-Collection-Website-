@@ -81,6 +81,9 @@ export const googleAuthEnabled = env.googleClientId !== null && env.googleClient
 /** English is written by the translation service only when its key is present. */
 export const translationEnabled = env.anthropicApiKey !== null;
 
+/** The office "?" helper only answers, and only shows itself, when its key is present. */
+export const helperEnabled = env.anthropicApiKey !== null;
+
 export const isProduction = process.env.NODE_ENV === "production";
 
 /**

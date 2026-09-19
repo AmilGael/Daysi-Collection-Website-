@@ -338,6 +338,7 @@
       <li><a href="#palabras">Corregir las palabras de una prenda o una foto</a></li>
       <li><a href="#telas">Poner un rollo de tela en la pared</a></li>
       <li><a href="#trabajo">Agregar una pieza terminada a su trabajo</a></li>
+      <li><a href="#estrenos">Anunciar un estreno</a></li>
       <li><a href="#aviso">Poner un aviso en el sitio</a></li>
       <li><a href="#pedidos">Los pedidos, los arreglos y las citas</a></li>
       <li><a href="#deshacer">Deshacer un cambio</a></li>
@@ -374,6 +375,13 @@
       <span class="btn">Descartar</span> bota ese borrador. Si intenta salir
       con cambios pendientes, el sitio le pregunta una vez antes de salir.
     </p>
+    <p>
+      <strong>Ayuda:</strong> junto a las pestañas hay un botón
+      <span class="btn">?</span>. Pregúntele qué hace un botón, qué significa
+      un estado o cómo se compara un precio con la lista, y ábrale este manual
+      con <span class="btn">Abrir el manual</span>. Solo contesta: nunca
+      cambia nada por usted.
+    </p>
     <div class="note">
       <p>
         <strong>Nadie más puede entrar a su oficina.</strong> El sitio conoce su
@@ -399,14 +407,21 @@
     <ol class="steps">
       <li>En la oficina, toque la pestaña <span class="label">Precios</span> (o vaya directo a <span class="path">/es/office/prices</span>).</li>
       <li>
-        Están separados en <span class="label">Prendas, por tela</span>,
-        <span class="label">Arreglos</span> y <span class="label">Sesiones</span>.
-        Busque la línea que quiere cambiar.
+        <span class="label">Prendas, por tela</span> está agrupada por
+        categoría: toque el nombre de la categoría para abrirla o cerrarla, y
+        busque la tela que quiere cambiar. <span class="label">Arreglos</span>
+        y <span class="label">Sesiones</span> están más abajo, cada uno en su
+        propia fila.
       </li>
-      <li>Escriba el número nuevo encima del viejo y toque <span class="btn">Confirmar cambios</span>.</li>
+      <li>
+        Toque la fila y se abre su hoja. Escriba el número nuevo encima del
+        viejo y toque <span class="btn">Listo</span>. Cerrar la hoja no
+        pierde nada: lo pendiente sigue en la barra hasta que toque
+        <span class="btn">Confirmar cambios</span>.
+      </li>
       <li>
         Para sacar un precio de prenda, o un arreglo o una sesión que usted
-        agregó, toque <span class="btn">Retirar</span>.
+        agregó, abra su fila y toque <span class="btn">Retirar</span>.
         Puede devolverlo desde <span class="label">Retirados</span> con
         <span class="btn">Restaurar</span>. Si una prenda del sitio todavía usa
         ese precio, el sitio le dice cuántas son y no lo retira: retire primero
@@ -437,7 +452,7 @@
         después.
       </p>
       <p>
-        En las prendas hay dos columnas: <span class="label">Precio</span> es la
+        En la hoja de una prenda hay dos casillas: <span class="label">Precio</span> es la
         pieza como está, y <span class="label">A la medida</span> es lo que se le
         suma cuando la hace a la medida de la clienta.
       </p>
@@ -617,17 +632,18 @@
         de cerca y bien plano. Mire el punto 11.
       </li>
       <li>
-        <span class="label">Precio de una pieza, por prenda</span>: cuánto
-        cuesta un vestido en esa tela, un pantalón, una blusa. Llene por lo
-        menos uno.
+        <span class="label">Precio</span>: cuánto cuesta una pieza hecha en
+        esa tela. Se escribe igual para vestido, pantalón, blusa y herencia
+        de una vez; después puede darle a una de esas prendas su propio
+        precio desde <span class="label">Precios</span>.
       </li>
       <li>Toque <span class="btn">Agregarla a los cambios</span> y luego <span class="btn">Confirmar cambios</span>.</li>
       <li>
-        Para sacar uno de los rollos que usted agregó, toque
-        <span class="btn">Retirar</span>. Si una prenda todavía usa esa tela, el
-        sitio le dice cuántas son y le pide que retire primero esas prendas.
-        El rollo vuelve desde <span class="label">Retirados</span> con
-        <span class="btn">Restaurar</span>.
+        Para sacar uno de los rollos que usted agregó, toque una tarjeta y,
+        dentro, <span class="btn">Retirar</span>. Si una prenda todavía usa
+        esa tela, el sitio le dice cuántas son y le pide que retire primero
+        esas prendas. El rollo vuelve desde <span class="label">Retirados</span>
+        con <span class="btn">Restaurar</span>.
       </li>
     </ol>
     <p>
@@ -645,6 +661,7 @@
     </p>
     <ol class="steps">
       <li>En la oficina, toque la pestaña <span class="label">Galería</span> (<span class="path">/es/office/gallery</span>).</li>
+      <li>Toque la tarjeta con el signo <span class="btn">+ Agregar una pieza terminada</span>.</li>
       <li>
         <span class="label">Fotografía</span>: la foto de la pieza terminada.
       </li>
@@ -660,68 +677,170 @@
         quién fue. Una línea basta.
       </li>
       <li>Toque <span class="btn">Agregarla a los cambios</span> y luego <span class="btn">Confirmar cambios</span>.</li>
-      <li>Para sacar una foto del todo, toque <span class="btn">Retirar</span>; vuelve desde <span class="label">Retirados</span> con <span class="btn">Restaurar</span>.</li>
+      <li>
+        Para esconder una foto sin retirarla, toque su tarjeta y apague
+        <span class="label">Se ve en el sitio</span> en la hoja. Para
+        sacarla del todo, toque <span class="btn">Retirar</span>; vuelve
+        desde <span class="label">Retirados</span> con
+        <span class="btn">Restaurar</span>.
+      </li>
       <li>
         Para quitar una sección que usted agregó, toque
-        <span class="btn">Retirar</span> junto a su nombre, bajo
-        <span class="label">Secciones</span>. Si todavía queda una foto ahí,
-        el sitio le pide que oculte o retire esas fotos primero. Las seis
-        secciones originales no se pueden quitar; la que usted agregó vuelve
-        desde <span class="label">Retirados</span> con <span class="btn">Restaurar</span>.
+        <span class="btn">Secciones</span> arriba de las tarjetas y, junto a
+        su nombre, toque <span class="btn">Retirar</span>. Si todavía queda
+        una foto ahí, el sitio le pide que oculte o retire esas fotos
+        primero. Las seis secciones originales no se pueden quitar; la que
+        usted agregó vuelve desde <span class="label">Retirados</span> con
+        <span class="btn">Restaurar</span>, en esa misma hoja.
       </li>
     </ol>
   </section>
 
   <!-- 08 ------------------------------------------------------------- -->
+  <section class="task" id="estrenos">
+    <h2><span class="n">08</span>Anunciar un estreno</h2>
+    <p>
+      Un estreno es la temporada que enseña antes de tenerla hecha: la
+      revelación, la fecha en que sale a la venta, cuántas piezas trae y de
+      qué tamaño es la edición. Antes esto solo se podía cambiar en el
+      código; ahora se escribe desde la oficina.
+    </p>
+    <ol class="steps">
+      <li>En la oficina, toque la pestaña <span class="label">Estrenos</span> (<span class="path">/es/office/premieres</span>).</li>
+      <li>Para uno nuevo, toque <span class="btn">+ Agregar un estreno</span>.</li>
+      <li>
+        Suba la foto de portada y escriba en español
+        <span class="label">La temporada</span> (por ejemplo, «Invierno
+        2027»), <span class="label">Cómo se llama</span>,
+        <span class="label">La historia</span> y
+        <span class="label">La inspiración</span>. El inglés se escribe
+        solo cuando confirma.
+      </li>
+      <li>
+        Ponga <span class="label">Revelación</span> (cuándo lo ve primero
+        la gente de la lista) y <span class="label">Estreno</span> (cuándo
+        sale a la venta): el estreno tiene que ser el mismo día que la
+        revelación o después.
+      </li>
+      <li>
+        Ponga <span class="label">Piezas planeadas</span> y
+        <span class="label">Tamaño de la edición</span>.
+      </li>
+      <li>
+        Marque, bajo <span class="label">Las prendas de esta temporada</span>,
+        cuáles piezas del perchero pertenecen a este estreno. Puede
+        dejarlo en blanco y marcarlas después, cuando estén listas.
+      </li>
+      <li>Toque <span class="btn">Agregar a los cambios</span> y luego <span class="btn">Confirmar cambios</span>.</li>
+      <li>
+        Para cambiar un estreno que ya tiene, toque su tarjeta: se abre el
+        mismo formulario con lo que ya escribió. Para quitarlo del todo,
+        toque <span class="btn">Retirar</span>; vuelve desde
+        <span class="label">Retirados</span> con <span class="btn">Restaurar</span>.
+      </li>
+    </ol>
+    <div class="note">
+      <p>
+        Quién se apuntó a la lista de un estreno se ve en
+        <span class="label">Hub</span>, con sus demás pedidos y arreglos,
+        no aquí.
+      </p>
+    </div>
+  </section>
+
+  <!-- 09 ------------------------------------------------------------- -->
   <section class="task" id="aviso">
-    <h2><span class="n">08</span>Poner un aviso en el sitio</h2>
+    <h2><span class="n">09</span>Poner un aviso en el sitio</h2>
     <p>
       Para cuando se va de viaje, cierra por una semana, o los arreglos se están
       tardando más de lo normal. El aviso sale arriba, donde todos lo ven.
     </p>
     <ol class="steps">
       <li>En la oficina, toque la pestaña <span class="label">Vitrina</span> (<span class="path">/es/office/shopfront</span>).</li>
+      <li>Toque la tarjeta <span class="label">Aviso</span>.</li>
       <li>Escriba el aviso. Corto y claro: cuándo vuelve, o cuánto se está tardando.</li>
-      <li>Marque <span class="label">Mostrarlo en el sitio</span>.</li>
-      <li>Toque <span class="btn">Confirmar cambios</span>.</li>
+      <li>Encienda <span class="label">Mostrarlo en el sitio</span>.</li>
+      <li>Toque <span class="btn">Listo</span> y luego <span class="btn">Confirmar cambios</span>.</li>
     </ol>
     <div class="note careful">
       <p>
         <strong>Acuérdese de quitarlo.</strong> Un aviso que dice «cerrado hasta
         el 10» todavía puesto el día 20 le cuesta clientas. Para quitarlo,
-        desmarque <span class="label">Mostrarlo en el sitio</span> y guarde otra
-        vez.
+        toque la tarjeta <span class="label">Aviso</span>, apague
+        <span class="label">Mostrarlo en el sitio</span> y confirme otra vez.
       </p>
     </div>
+    <p>
+      <strong>Poner una promoción.</strong> En la misma pestaña, toque la
+      tarjeta <span class="label">Promociones</span>: se abre una hoja con
+      las que ya tiene. Ahí, toque
+      <span class="btn">+ Agregar una promoción</span>; la misma hoja pasa
+      al formulario, y <span class="btn">Volver</span> arriba regresa a la
+      lista sin agregar nada. Escriba
+      <span class="label">Cómo se llama</span> (por ejemplo, «Venta de
+      otoño»), elija en <span class="label">Cuánto baja</span> entre
+      <span class="label">Un porcentaje</span> y
+      <span class="label">Una cantidad fija</span>, y escoja en
+      <span class="label">A qué se aplica</span>: toda la colección, una
+      categoría o una prenda. Si quiere que tenga fechas, llene
+      <span class="label">Desde (opcional)</span> y
+      <span class="label">Hasta, ese día incluido (opcional)</span>; en
+      blanco, empieza al confirmar y no se acaba sola. Toque <span class="btn">Agregar a los cambios</span> y luego
+      <span class="btn">Confirmar cambios</span>. No hay códigos: el precio
+      baja solo, sale tachado al lado del nuevo, y lo que se cobra por
+      hacerla a su medida no cambia. Nunca más del 90 % de descuento en una
+      pieza: si pone una cantidad fija más grande que eso, el sitio la deja
+      en el 90 %, así ninguna prenda se regala. Si dos promociones tocan la misma
+      prenda, gana la de la prenda, luego la de la categoría; nunca se
+      suman. Para pausarla, apague <span class="label">Activa</span>; para
+      quitarla, <span class="btn">Retirar</span>, y vuelve desde
+      <span class="label">Retirados</span> con <span class="btn">Restaurar</span>,
+      en esa misma hoja.
+    </p>
+    <p>
+      <strong>El asistente para clientes.</strong> Su tarjeta, junto a las
+      otras tres en <span class="label">Vitrina</span>, trae puesto el
+      interruptor <span class="label">Asistente para clientes</span>: prende
+      o apaga el botón «¿Preguntas?» que sus visitantes ven en el sitio.
+      Contesta solo, desde su lista de precios, sus arreglos, sus citas, su
+      horario y sus términos; nunca toma un pedido ni promete una fecha. Sin
+      la clave de Anthropic el interruptor aparece apagado y en gris, con
+      una nota debajo que dice que necesita la clave, y no se puede
+      prender.
+    </p>
   </section>
 
-  <!-- 09 ------------------------------------------------------------- -->
+  <!-- 10 ------------------------------------------------------------- -->
   <section class="task" id="pedidos">
-    <h2><span class="n">09</span>Los pedidos, los arreglos y las citas</h2>
+    <h2><span class="n">10</span>Los pedidos, los arreglos y las citas</h2>
     <p>
       Todo esto vive en la pestaña <span class="label">Hub</span>
       (<span class="path">/es/office</span>), debajo de las cifras del día: los
       pedidos y arreglos, las citas, los mensajes y la lista de estreno.
     </p>
     <p>
-      Todo lo que entra por el sitio aparece en <span class="label">Pedidos y
-      arreglos</span>, lo más reciente primero, con el nombre y el correo de
-      quien lo pidió. Un pedido o una cita con tarjeta aparece aquí cuando el
-      pago se confirma, al mismo tiempo que le llega el correo. Si la clienta
-      deja la página de pago sin pagar, no aparece nada.
+      Todo lo que entra por el sitio aparece como una tarjeta en
+      <span class="label">Pedidos y arreglos</span>, lo más reciente primero,
+      con el nombre y el correo de quien lo pidió. Toque la tarjeta y se abre
+      su hoja: ahí ve todos los datos, cambia el estado, y si la clienta
+      dejó su teléfono, un enlace la escribe por WhatsApp con un toque. Un
+      pedido o una cita con tarjeta aparece aquí cuando el pago se confirma,
+      al mismo tiempo que le llega el correo. Si la clienta deja la página de
+      pago sin pagar, no aparece nada.
     </p>
     <p>
       Los diseños del <span class="label">Taller de diseño</span> llegan ya
       pagados: la clienta paga la tarifa de diseño de $20 y solo entonces le
       llegan como <span class="label">Diseño del taller</span>. El boceto viene
-      adjunto en el correo y se ve pequeño en la fila; tóquelo para verlo
-      grande. La foto que una clienta manda con un arreglo llega igual.
+      adjunto en el correo y se ve pequeño en la tarjeta; toque la tarjeta
+      para verlo grande en la hoja. La foto que una clienta manda con un
+      arreglo llega igual.
     </p>
     <p>
       <strong>Anotar un pedido que le tomó fuera del sitio.</strong> Un pedido,
       un arreglo o una pieza a medida que acordó en persona o por WhatsApp no
-      entra solo, usted lo anota. Encima de <span class="label">Pedidos y
-      arreglos</span> toque <span class="btn">+ Anotar un pedido</span>:
+      entra solo, usted lo anota. En <span class="label">Pedidos y
+      arreglos</span> toque la tarjeta <span class="btn">+ Anotar un pedido</span>:
       elija qué es, escriba el nombre de la clienta (su teléfono y su correo
       son opcionales), una línea que lo describa, el
       <span class="label">Total que le pagaron (con impuesto, si lo
@@ -750,7 +869,9 @@
       <span class="label">Pago rechazado por el banco</span>: el banco no envió el dinero. La fila se queda abierta y el dinero sigue debiéndose, porque la clienta todavía no ha pagado; usted y ella reciben un correo para acordar otra forma de pagar. Cuando usted cambia el estado, la etiqueta se quita.
     </p>
     <p>
-      Puede cambiar varios estados juntos. Ninguno llega a la cuenta de la
+      Toque la tarjeta para cambiar el estado, en la hoja que se abre; ahí
+      mismo está <span class="btn">Retirar</span>. Puede cambiar varios
+      estados juntos, en tarjetas distintas. Ninguno llega a la cuenta de la
       clienta hasta que toca <span class="btn">Confirmar cambios</span> en la
       barra de abajo.
     </p>
@@ -768,9 +889,9 @@
     </div>
   </section>
 
-  <!-- 10 ------------------------------------------------------------- -->
+  <!-- 11 ------------------------------------------------------------- -->
   <section class="task" id="deshacer">
-    <h2><span class="n">10</span>Deshacer un cambio</h2>
+    <h2><span class="n">11</span>Deshacer un cambio</h2>
     <ol class="steps">
       <li>Después de confirmar un cambio, esa línea conserva <span class="btn">Deshacer</span>.</li>
       <li>Al tocarlo, la versión anterior entra en la lista como <span class="label">pendiente</span>.</li>
@@ -790,9 +911,9 @@
     </div>
   </section>
 
-  <!-- 11 ------------------------------------------------------------- -->
+  <!-- 12 ------------------------------------------------------------- -->
   <section class="task" id="libros">
-    <h2><span class="n">11</span>Bajar sus libros para la contadora</h2>
+    <h2><span class="n">12</span>Bajar sus libros para la contadora</h2>
     <p>
       El sitio no le lleva la contabilidad, pero sí le entrega todo lo que
       facturó en un archivo que la contadora abre en Excel o mete en QuickBooks
@@ -801,12 +922,14 @@
     <ol class="steps">
       <li>En la oficina, toque la pestaña <span class="label">Libros</span> (<span class="path">/es/office/books</span>).</li>
       <li>
-        Escoja las fechas: <span class="label">Este año</span>,
+        Cada rango tiene su propia tarjeta: <span class="label">Este año</span>,
         <span class="label">El año pasado</span>,
-        <span class="label">Este trimestre</span>, o ponga usted
-        <span class="label">Desde</span> y <span class="label">Hasta</span>.
+        <span class="label">Este trimestre</span> y
+        <span class="label">Elegir las fechas</span>, con
+        <span class="label">Desde</span> y <span class="label">Hasta</span> si
+        prefiere poner las suyas.
       </li>
-      <li>Toque <span class="btn">Descargar el archivo</span>.</li>
+      <li>Toque <span class="btn">Descargar el archivo</span> dentro de esa misma tarjeta.</li>
       <li>Mándeselo a su contadora tal como está. No hay que arreglarle nada.</li>
     </ol>
     <div class="note">
@@ -818,9 +941,9 @@
     </div>
   </section>
 
-  <!-- 12 ------------------------------------------------------------- -->
+  <!-- 13 ------------------------------------------------------------- -->
   <section class="task" id="fotos">
-    <h2><span class="n">12</span>Qué foto sirve y qué foto no</h2>
+    <h2><span class="n">13</span>Qué foto sirve y qué foto no</h2>
     <p>
       Las fotos son lo que vende la pieza. Con estas cuatro cosas ya salen bien
       desde el teléfono.
@@ -853,9 +976,9 @@
     </div>
   </section>
 
-  <!-- 13 ------------------------------------------------------------- -->
+  <!-- 14 ------------------------------------------------------------- -->
   <section class="task" id="problemas">
-    <h2><span class="n">13</span>Si algo no sale como esperaba</h2>
+    <h2><span class="n">14</span>Si algo no sale como esperaba</h2>
     <ol class="steps">
       <li>
         <strong>«Ese cambio no se guardó».</strong> Casi siempre es el internet.

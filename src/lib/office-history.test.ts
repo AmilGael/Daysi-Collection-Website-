@@ -205,6 +205,132 @@ describe("office undo history", () => {
     });
   });
 
+  it("uses the shown-by-default floor and then the prior switch, for the visitor helper", async () => {
+    const { previousChangeFor, undoableIds } = await import("./office-history");
+    const { saveHelperVisibility } = await import("./site-helper");
+
+    await saveHelperVisibility(false);
+    expect(previousChangeFor("helper", "site")).toEqual({
+      type: "helper",
+      key: "helper:site",
+      visible: true,
+    });
+    expect(undoableIds("helper")).toContain("site");
+
+    await saveHelperVisibility(true);
+    expect(previousChangeFor("helper", "site")).toEqual({
+      type: "helper",
+      key: "helper:site",
+      visible: false,
+    });
+  });
+
+  it("returns the earlier promotion after two saves, and nothing after one", async () => {
+    const { previousChangeFor, undoableIds } = await import("./office-history");
+    const { savePromotion } = await import("./live-promotions");
+    const promotion = {
+      id: "prm-a3c4d6e7",
+      label: { es: "Venta de otoño", en: "Autumn sale" },
+      kind: "percent" as const,
+      value: 15,
+      scope: { type: "category" as const, categoryId: "heritage" },
+      endsAt: "2026-09-30",
+      active: true,
+    };
+
+    // A new promotion is taken back by retiring it, not by an undo.
+    await savePromotion(promotion);
+    expect(previousChangeFor("promotion", "prm-a3c4d6e7")).toBeUndefined();
+    expect(undoableIds("promotion")).not.toContain("prm-a3c4d6e7");
+
+    await savePromotion({ ...promotion, active: false });
+    expect(previousChangeFor("promotion", "prm-a3c4d6e7")).toEqual({
+      type: "promotion",
+      key: "promotion:prm-a3c4d6e7",
+      id: "prm-a3c4d6e7",
+      label: "Venta de otoño",
+      kind: "percent",
+      value: 15,
+      scope: { type: "category", categoryId: "heritage" },
+      endsAt: "2026-09-30",
+      active: true,
+    });
+    expect(undoableIds("promotion")).toContain("prm-a3c4d6e7");
+  });
+
+  it("premiere undo returns the seeded words after one override and the first override after two", async () => {
+    const { previousChangeFor, undoableIds } = await import("./office-history");
+    const { savePremiereOverride } = await import("./live-premieres");
+    const { premieres } = await import("@/content");
+    const autumn = premieres.find((premiere) => premiere.id === "otono-2026")!;
+
+    expect(previousChangeFor("premiere", "otono-2026")).toBeUndefined();
+    expect(undoableIds("premiere")).not.toContain("otono-2026");
+
+    await savePremiereOverride({ premiereId: "otono-2026", piecesPlanned: 5 });
+    expect(previousChangeFor("premiere", "otono-2026")).toEqual({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      season: autumn.season.es,
+      title: autumn.title.es,
+      story: autumn.story.es,
+      inspiration: autumn.inspiration.es,
+      revealDate: autumn.revealDate,
+      releaseDate: autumn.releaseDate,
+      piecesPlanned: autumn.piecesPlanned,
+      editionSize: autumn.editionSize,
+      coverImage: autumn.coverImage,
+      styleIds: [...autumn.styleIds],
+    });
+    expect(undoableIds("premiere")).toContain("otono-2026");
+
+    // Whatever record comes back, `previousChangeFor` returns the *whole*
+    // snapshot — the seeded words, dates, numbers, cover and checklist —
+    // with only piecesPlanned actually overridden by this one record, not
+    // a bare `{ piecesPlanned: 5 }`: a record earlier in the history can
+    // predate a field a later save introduced (see the checklist test
+    // below), so it is never trusted to carry the whole truth on its own.
+    await savePremiereOverride({ premiereId: "otono-2026", piecesPlanned: 4 });
+    expect(previousChangeFor("premiere", "otono-2026")).toEqual({
+      type: "premiere-update",
+      key: "premiere:otono-2026",
+      premiereId: "otono-2026",
+      season: autumn.season.es,
+      title: autumn.title.es,
+      story: autumn.story.es,
+      inspiration: autumn.inspiration.es,
+      revealDate: autumn.revealDate,
+      releaseDate: autumn.releaseDate,
+      piecesPlanned: 5,
+      editionSize: autumn.editionSize,
+      coverImage: autumn.coverImage,
+      styleIds: [...autumn.styleIds],
+    });
+  });
+
+  it("premiere undo rebuilds the whole snapshot, so a field a record never touched comes back to the seed rather than to whatever a later save carried forward", async () => {
+    const { previousChangeFor } = await import("./office-history");
+    const { savePremiereOverride } = await import("./live-premieres");
+    const { premieres } = await import("@/content");
+    const autumn = premieres.find((premiere) => premiere.id === "otono-2026")!;
+
+    // A checklist save alone: undo goes back to the seeded checklist, which
+    // the baseline now carries alongside the seeded words.
+    await savePremiereOverride({ premiereId: "otono-2026", styleIds: ["frutera"] });
+    expect(previousChangeFor("premiere", "otono-2026")).toMatchObject({ styleIds: [...autumn.styleIds] });
+
+    // The action merges every save's own fields forward over the last
+    // (see `previousOverrideFields`), so this second record carries the
+    // checklist too, even though only pieces was named here. The record
+    // *before* this one (the checklist-only save) never named pieces at
+    // all — undoing to it must still read pieces as the seed's 6, not
+    // silently keep whatever this newer record now carries for it.
+    await savePremiereOverride({ premiereId: "otono-2026", styleIds: ["frutera"], piecesPlanned: 5 });
+    const previous = previousChangeFor("premiere", "otono-2026");
+    expect(previous).toMatchObject({ styleIds: ["frutera"], piecesPlanned: autumn.piecesPlanned });
+  });
+
   it("only makes request status undoable after a second line", async () => {
     const { previousChangeFor, undoableIds } = await import("./office-history");
     const { saveRequest } = await import("./request-store");
