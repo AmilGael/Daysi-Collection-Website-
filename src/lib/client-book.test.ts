@@ -5,7 +5,7 @@ import path from "node:path";
 
 /**
  * The client book: everyone Daysi has served, worked out fresh from client
- * cards, accounts and every order line ever written. Grouping follows a
+ * cards, accounts and the latest line of every order ever written. Grouping follows a
  * strict order (a card's email or phone, then an order's email, then an
  * order's phone, then an order's name) and an order alone never bridges an
  * email to a phone, because a family can share one line.
@@ -243,6 +243,35 @@ describe("the client book", () => {
     await appendRecord("accounts", { id: "acc_1", email: "new@example.com", name: "Nueva", locale: "es", createdAt: "2026-09-18T00:00:00Z" });
     const { clientBook } = await import("./client-book");
     expect(clientBook()[0]).toMatchObject({ key: "e:new@example.com", name: "Nueva", hasAccount: true, orderCount: 0 });
+  });
+
+  /**
+   * Daysi's own sign-in (and her helper's) is an account like any other, so
+   * the book listed her as a client with "0 pedidos". An owner address is
+   * a client only when an order or a card says so.
+   */
+  it("leaves the owner's own accounts out, unless an order or a card puts them in", async () => {
+    vi.stubEnv("OWNER_EMAIL", "Daysi@Example.com, help@example.com");
+    const { appendRecord } = await import("./records");
+    await appendRecord("accounts", { id: "acc_d", email: "daysi@example.com", name: "Daysi", locale: "es", createdAt: "2026-09-01T00:00:00Z" });
+    await appendRecord("accounts", { id: "acc_h", email: "HELP@example.com ", name: "Ayuda", locale: "es", createdAt: "2026-09-01T00:00:00Z" });
+    await appendRecord("accounts", { id: "acc_1", email: "new@example.com", name: "Nueva", locale: "es", createdAt: "2026-09-18T00:00:00Z" });
+    await appendRecord("order", order({ reference: "ORD-H", client: { name: "Ayuda", email: "help@example.com" } }));
+    const { clientBook } = await import("./client-book");
+    const rows = clientBook();
+    expect(rows.map((row) => row.key).sort()).toEqual(["e:help@example.com", "e:new@example.com"]);
+    expect(rows.find((row) => row.key === "e:help@example.com")).toMatchObject({ hasAccount: true, orderCount: 1 });
+  });
+
+  it("skips a request line with no client instead of failing the whole book", async () => {
+    const { appendRecord } = await import("./records");
+    await appendRecord("order", order({ reference: "ORD-1" }));
+    const { client: _client, ...broken } = order({ reference: "ORD-2" });
+    await appendRecord("order", broken);
+    const { clientBook } = await import("./client-book");
+    const rows = clientBook();
+    expect(rows.map((row) => row.key)).toEqual(["e:ana@example.com"]);
+    expect(rows[0]?.orderCount).toBe(1);
   });
 });
 

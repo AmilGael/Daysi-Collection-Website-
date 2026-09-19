@@ -1,6 +1,7 @@
 import { listAccounts } from "./auth/accounts";
 import { listClientCards, measuredCount, phoneDigits, type ClientCard } from "./client-cards";
 import { loadLedger } from "./earnings";
+import { env } from "./env";
 import {
   currentRecords,
   listRequests,
@@ -13,10 +14,14 @@ import {
  * Everyone Daysi has served, worked out on every read and never stored.
  *
  * A row exists from a client's first order and never goes away: it is found
- * in the full history of every order line ever written, which nothing
- * deletes, so retiring, closing, refunding or undoing an order leaves its
- * client in the book. Only the figures (orders, paid, last visit) come from
- * the live ledger, so they are always right and never need syncing.
+ * in the latest line of every order ever written, which nothing deletes, so
+ * retiring, closing, refunding or undoing an order leaves its client in the
+ * book. Only the figures (orders, paid, last visit) come from the live
+ * ledger, so they are always right and never need syncing.
+ *
+ * Every account is a row too, except the owner's own (OWNER_EMAIL): Daysi
+ * signing in is not a client. An owner address still appears when an order
+ * or a card puts it in the book, and is marked as having an account.
  *
  * Who is the same person, in order: a card's email or phone, then an
  * order's email, then an order's phone, then an order's name. An order
@@ -105,8 +110,14 @@ export function clientBook(): BookRow[] {
     return row;
   };
 
+  const owners = new Set(env.ownerEmails);
+  const ownerAccounts: string[] = [];
   for (const account of listAccounts()) {
     const email = normalEmail(account.email);
+    if (owners.has(email)) {
+      ownerAccounts.push(email);
+      continue;
+    }
     const row = byEmail.get(email) ?? rowFor(`e:${email}`, { name: account.name, email });
     byEmail.set(email, row);
     row.hasAccount = true;
@@ -116,7 +127,9 @@ export function clientBook(): BookRow[] {
   const history: StoredRequest[] = CLIENT_KINDS.flatMap((kind) => currentRecords(listRequests(kind)));
   for (const record of history) {
     if (unfinishedCheckout(record)) continue;
-    const { name, email: rawEmail, phone } = record.client;
+    // A line with no client names nobody; one malformed line must not take the book (and the Hub) down.
+    if (!record.client) continue;
+    const { name = "", email: rawEmail, phone } = record.client;
     const email = normalEmail(rawEmail);
     const digits = phone ? phoneDigits(phone) : "";
     let row: Draft;
@@ -137,6 +150,11 @@ export function clientBook(): BookRow[] {
       }
     }
     if (!row.lastVisit || record.submittedAt > row.lastVisit) row.lastVisit = record.submittedAt;
+  }
+
+  for (const email of ownerAccounts) {
+    const row = byEmail.get(email);
+    if (row) row.hasAccount = true;
   }
 
   const ledger = new Map(loadLedger().map((record) => [record.reference, record]));
