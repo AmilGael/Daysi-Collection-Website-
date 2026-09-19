@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { silhouettes } from "@/content/silhouettes";
+import { MEASUREMENTS, type MeasurementId } from "@/content/measurements";
+import { UNITS, withinRange } from "./measurements";
 
 /**
  * One schema per form. Every route handler parses its body through the schema
@@ -168,6 +170,41 @@ export const contactSchema = botCheck.extend({
   phone: phone.optional(),
   locale,
   message: message.min(10, "too-short"),
+});
+
+const measurementInput = (id: MeasurementId) =>
+  z
+    .object({ value: z.number().finite().positive(), unit: z.enum(UNITS) })
+    .refine((m) => withinRange(id, m.value, m.unit), "out-of-range");
+
+/**
+ * What a client may save on their own card. Every field but the name is
+ * optional: they fill it in when they can. Unknown measurement ids are
+ * refused (`strict`), so the list in content/measurements.ts is the only
+ * one there is.
+ */
+export const clientCardSchema = z.object({
+  name,
+  phone: phone.optional(),
+  preferredContact: contactMethod.optional(),
+  address: z
+    .object({
+      line1: trimmed(120).min(3, "too-short"),
+      line2: trimmed(60).optional(),
+      city: trimmed(60).min(2, "too-short"),
+      state: trimmed(30).min(2, "too-short"),
+      zip: z.string().trim().regex(/^\d{5}(-\d{4})?$/, "invalid-zip"),
+    })
+    .optional(),
+  measurements: z
+    .object(
+      Object.fromEntries(MEASUREMENTS.map((m) => [m.id, measurementInput(m.id).optional()])) as Record<
+        MeasurementId,
+        z.ZodOptional<ReturnType<typeof measurementInput>>
+      >,
+    )
+    .strict(),
+  notes: trimmed(400).optional(),
 });
 
 /**

@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rename, writeFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { env } from "./env";
@@ -85,6 +85,33 @@ export function previousVersion<T>(
   id: string,
 ): T | undefined {
   return versionsOf(collection, key, id).at(-2);
+}
+
+/**
+ * Rewrites a collection keeping only the lines `keep` accepts.
+ *
+ * Every other write here appends, so history is never lost by accident. This
+ * is the one deliberate exception: a client who clears their card is owed an
+ * erasure, not a newer blank line with the old address still underneath. The
+ * kept lines go to a temporary file beside the collection, renamed over it,
+ * so a crash mid-write leaves the old file whole.
+ *
+ * The caller must hold the collection's own lock: an append landing between
+ * the read and the rename would be lost.
+ */
+export async function rewriteRecords<T>(
+  collection: string,
+  keep: (record: T) => boolean,
+): Promise<void> {
+  await mkdir(DATA_DIRECTORY, { recursive: true, mode: OWNER_ONLY_DIRECTORY });
+  const file = path.join(DATA_DIRECTORY, `${collection}.jsonl`);
+  const kept = readRecords<T>(collection).filter(keep);
+  const temporary = `${file}.${process.pid}.tmp`;
+  await writeFile(temporary, kept.map((record) => `${JSON.stringify(record)}\n`).join(""), {
+    encoding: "utf8",
+    mode: OWNER_ONLY_FILE,
+  });
+  await rename(temporary, file);
 }
 
 /**
