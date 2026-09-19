@@ -119,7 +119,8 @@
     "notInYourSize": "Not in your size? It can be cut for you.",
     "soldOutNote": "This size is sold out ready-made. It can be made to your measurements.",
     "partOfPremiere": "Part of the {season} premiere",
-    "relatedTitle": "Also in this collection"
+    "relatedTitle": "Also in this collection",
+    "readyGone": "The ready pieces of this garment are sold out. You can order it made to measure."
   },
   "services": {
     "title": "Services",

@@ -119,7 +119,8 @@
     "notInYourSize": "¿No está en su talla? Se puede cortar para usted.",
     "soldOutNote": "Esta talla se agotó lista para llevar. Se puede hacer a su medida.",
     "partOfPremiere": "Parte del estreno {season}",
-    "relatedTitle": "También en esta colección"
+    "relatedTitle": "También en esta colección",
+    "readyGone": "Las piezas listas de esta prenda se agotaron. Puede pedirla hecha a su medida."
   },
   "services": {
     "title": "Servicios",

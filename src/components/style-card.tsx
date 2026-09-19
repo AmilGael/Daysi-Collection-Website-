@@ -64,7 +64,13 @@ export function StyleCard({ style, priority = false }: { style: PricedStyle; pri
       <p className="text-[0.6875rem] uppercase tracking-[0.14em] text-ink-faint">
         {translate(style.color, locale)}
         <span className="px-2 text-ink-faint">/</span>
-        {style.sizes.map((size) => size.sizeId.toUpperCase()).join(" ")}
+        {/* A size with no pieces left is not on offer ready-made, so it is not listed. */}
+        {style.sizes.some((size) => size.count !== 0)
+          ? style.sizes
+              .filter((size) => size.count !== 0)
+              .map((size) => size.sizeId.toUpperCase())
+              .join(" ")
+          : tc("soldOut")}
       </p>
     </div>
   );
