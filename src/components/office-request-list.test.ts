@@ -36,23 +36,38 @@ describe("a noted order pending in Pedidos y arreglos", () => {
 });
 
 describe("where Daysi starts one, and where what came in sits", () => {
-  it("puts a box per kind above the list, then the work grouped by kind below", () => {
-    const boxes = source.indexOf("NOTED_KINDS.map((kind)");
+  /**
+   * One box, not one per kind: the sheet already asks which kind it is, and
+   * three boxes stacked on a phone pushed the work itself off the screen.
+   */
+  it("puts one box above the list, then the work grouped by kind below", () => {
+    expect(source).not.toContain("NOTED_KINDS.map((kind)");
+    expect(source.match(/<OrderNoteCard /g)).toHaveLength(1);
+    const box = source.indexOf("<OrderNoteCard ");
     const groups = source.indexOf("WORK_GROUPS.map((kind)");
-    expect(boxes).toBeGreaterThan(-1);
-    expect(groups).toBeGreaterThan(boxes);
+    expect(groups).toBeGreaterThan(box);
     expect(source).toContain('const WORK_GROUPS = ["order", "alteration", "commission", "design"] as const;');
   });
 
-  it("names every group and every box in both languages", () => {
+  it("names every group, and the one box, in both languages", () => {
     for (const kind of ["order", "alteration", "commission", "design"] as const) {
       expect(es.office.workGroup[kind]).toBeTruthy();
       expect(en.office.workGroup[kind]).toBeTruthy();
     }
-    for (const kind of ["order", "alteration", "commission"] as const) {
-      expect(es.office.addNote[kind]).toBeTruthy();
-      expect(en.office.addNote[kind]).toBeTruthy();
-    }
+    expect(es.office.addNoteAny).toBe("Anotar un pedido, arreglo o pieza a medida");
+    expect(en.office.addNoteAny).toBe("Note an order, alteration or made-to-measure piece");
+  });
+
+  /**
+   * Citas and Mensajes said "nothing yet" in a rectangle; Pedidos y arreglos
+   * said it as a bare line under the box, which read as if something were
+   * missing. Every list now draws the same one.
+   */
+  it("says there are no orders yet in the same rectangle the other lists use", () => {
+    expect(source.match(/<EmptyBox message=\{emptyMessage\} \/>/g)).toHaveLength(2);
+    expect(source).not.toContain('<p className="text-[0.9375rem] text-ink-faint">{emptyMessage}</p>');
+    expect(es.office.noWork).toBe("Todavía no hay pedidos.");
+    expect(en.office.noWork).toBe("No orders yet.");
   });
 });
 

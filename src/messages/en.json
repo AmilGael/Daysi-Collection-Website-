@@ -529,7 +529,7 @@
     "lastMonths": "The last six months",
     "chartNote": "Only money that has actually cleared is counted here. What is agreed but unpaid sits under \"owed to you\".",
     "work": "Orders and alterations",
-    "noWork": "Nothing has come in yet.",
+    "noWork": "No orders yet.",
     "orderNoteLead": "Note an order, an alteration or a custom piece you already took off the site, in person or over WhatsApp, so it counts in your figures and your books.",
     "orderNoteKindLabel": "What it is",
     "orderNoteClientName": "Client's name",
@@ -807,11 +807,7 @@
     "styleSizeRequired": "Enter how many pieces you have in at least one size.",
     "stylePriceRequired": "This garment and cloth have no price yet. Set one.",
     "styleNote": "Write in Spanish. The English is written when you confirm; see and correct it with See the English.",
-    "addNote": {
-      "order": "Note an order",
-      "alteration": "Note an alteration",
-      "commission": "Note a made-to-measure piece"
-    },
+    "addNoteAny": "Note an order, alteration or made-to-measure piece",
     "workGroup": {
       "order": "Orders",
       "alteration": "Alterations",
