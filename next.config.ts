@@ -75,12 +75,15 @@ const config: NextConfig = {
     minimumCacheTTL: 30 * 24 * 60 * 60,
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     /**
-     * Next.js 16 refuses any quality not listed here. 85 is PHOTO_QUALITY
+     * Next.js 16 rounds any quality not listed here to the nearest one that
+     * is, and the optimizer refuses it outright. 85 is PHOTO_QUALITY
      * (src/lib/images.ts); 75 is the next/image default, still used by the
      * brand marks and the office thumbnails, and it stops being implicitly
-     * allowed the moment this list exists.
+     * allowed the moment this list exists; 70 is the woven hero backdrop on
+     * the homepage and sign-in page, dimmed to 55% under a gradient, where
+     * the smaller file costs nothing the eye can see.
      */
-    qualities: [75, 85],
+    qualities: [70, 75, 85],
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
