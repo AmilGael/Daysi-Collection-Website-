@@ -7,29 +7,31 @@ import { Link, type Locale } from "@/i18n/routing";
 import type { ShopfrontChange } from "@/lib/office-validation";
 import { promotionActiveToday } from "@/lib/promotions";
 import { HelperSwitch } from "./helper-switch";
-import { NoticeEditor } from "./notice-editor";
+import { AnnouncementEditor } from "./announcement-editor";
 import { Pending } from "./office/confirm-bar";
 import {
+  announcementKeyFor,
   formatDay,
-  NOTICE_KEY,
   promotionKeyFor,
   soonestEnding,
+  type ManagedAnnouncement,
   type ManagedPromotion,
   type ScopeOption,
 } from "./office/shopfront-draft";
+import type { Announcement } from "@/lib/announcements";
 import { Sheet } from "./office/sheet";
 import { useOfficeDraft } from "./office/use-office-draft";
 import { PromotionEditor } from "./promotion-editor";
 import { Tag } from "./ui";
 
-type Notice = { readonly message: string; readonly visible: boolean };
-type OpenSheet = "notice" | "promotions" | "qr" | null;
+type OpenSheet = "announcements" | "promotions" | "qr" | null;
 
 const card =
   "flex h-full w-full flex-col gap-3 border border-line p-5 text-left transition-colors hover:border-ink";
 
 /**
- * Vitrina as four cards: what the site says of itself (Aviso), what lowers
+ * Vitrina as four cards: what the site announces, and on which pages
+ * (Anuncios), what lowers
  * a price by itself (Promociones), the "¿Preguntas?" panel's own switch
  * (Asistente para clientes, right on its card — Task 17's switch never
  * needed a sheet, there is nothing else to it), and the workroom's QR.
@@ -37,8 +39,8 @@ const card =
  * acts where it sits.
  */
 export function ShopfrontCards({
-  notice,
-  noticeUndoable,
+  announcements,
+  retiredAnnouncements,
   promotions,
   retiredPromotions,
   categories,
@@ -50,8 +52,8 @@ export function ShopfrontCards({
   qrThumbnail,
   qrFull,
 }: {
-  notice: Notice;
-  noticeUndoable: boolean;
+  announcements: readonly ManagedAnnouncement[];
+  retiredAnnouncements: readonly Announcement[];
   promotions: readonly ManagedPromotion[];
   retiredPromotions: readonly Promotion[];
   categories: readonly ScopeOption[];
@@ -72,10 +74,23 @@ export function ShopfrontCards({
   const [open, setOpen] = useState<OpenSheet>(null);
   const close = useCallback(() => setOpen(null), []);
 
-  const noticePending = draft.pending(NOTICE_KEY);
-  const noticeWire = noticePending?.change.wire;
-  const noticeMessage = noticeWire?.type === "notice" ? noticeWire.message : notice.message;
-  const noticeVisible = noticeWire?.type === "notice" ? noticeWire.visible : notice.visible;
+  // What is on the site once she confirms: each announcement's own switch
+  // unless an edit or a retire on it is staged, and any new one switched on.
+  const announcementEntries = draft.entries.filter((entry) => entry.key.startsWith("announcement:"));
+  const announcementsShowing = [
+    ...announcements.flatMap((announcement) => {
+      const wire = draft.pending(announcementKeyFor(announcement.id))?.change.wire;
+      if (wire?.type === "retire") return [];
+      const visible = wire?.type === "announcement" ? wire.visible : announcement.visible;
+      return visible ? [wire?.type === "announcement" ? wire.message : translate(announcement.message, locale)] : [];
+    }),
+    ...announcementEntries.flatMap((entry) =>
+      entry.change.wire.type === "announcement" && entry.change.wire.id === undefined && entry.change.wire.visible
+        ? [entry.change.wire.message]
+        : [],
+    ),
+  ];
+  const announcementPending = announcementEntries[0] ? draft.pending(announcementEntries[0].key) : undefined;
 
   // A promotion's own `active` field and dates, unless an edit on it is
   // staged but not yet confirmed; one pending a retire never counts,
@@ -93,24 +108,28 @@ export function ShopfrontCards({
   const soonest = soonestEnding(activePromotions, today);
 
   const title =
-    open === "notice" ? t("noticeTitle") : open === "promotions" ? t("promoTitle") : open === "qr" ? t("qrTitle") : "";
+    open === "announcements" ? t("annTitle") : open === "promotions" ? t("promoTitle") : open === "qr" ? t("qrTitle") : "";
 
   return (
     <div className="flex flex-col gap-6">
       <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         <li>
-          <button type="button" onClick={() => setOpen("notice")} className={card}>
-            <span className="font-display text-[1.0625rem] leading-tight">{t("noticeTitle")}</span>
+          <button type="button" onClick={() => setOpen("announcements")} className={card}>
+            <span className="font-display text-[1.0625rem] leading-tight">{t("annTitle")}</span>
             <span className="line-clamp-2 flex-1 text-[0.8125rem] leading-relaxed text-ink-soft">
-              {noticeMessage || t("noticeEmpty")}
+              {announcementsShowing[0] ?? (announcements.length === 0 ? t("annEmpty") : t("annNoneShowing"))}
             </span>
-            <Tag tone={noticeVisible ? "marigold" : "quiet"}>
-              {noticeVisible ? t("noticeOnChip") : t("noticeOffChip")}
+            <Tag tone={announcementsShowing.length > 0 ? "marigold" : "quiet"}>
+              {t("annShowingCount", { count: announcementsShowing.length })}
             </Tag>
           </button>
-          {noticePending ? (
+          {announcementPending ? (
             <div className="mt-2">
-              <Pending confirming={noticePending.confirming} error={noticePending.error} count={noticePending.count} />
+              <Pending
+                confirming={announcementPending.confirming}
+                error={announcementPending.error}
+                count={announcementPending.count}
+              />
             </div>
           ) : null}
         </li>
@@ -153,8 +172,8 @@ export function ShopfrontCards({
       </Link>
 
       <Sheet open={open !== null} title={title} onClose={close}>
-        {open === "notice" ? (
-          <NoticeEditor initialMessage={notice.message} initialVisible={notice.visible} undoable={noticeUndoable} />
+        {open === "announcements" ? (
+          <AnnouncementEditor announcements={announcements} retired={retiredAnnouncements} />
         ) : open === "promotions" ? (
           <PromotionEditor
             promotions={promotions}

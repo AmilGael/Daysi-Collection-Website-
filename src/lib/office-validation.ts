@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { categories, shopDay } from "@/content";
 import { MOST_AMOUNT } from "./promotions";
+import { ANNOUNCEMENT_PAGE_IDS } from "./announcement-pages";
 import type { ZodTypeAny } from "zod";
 
 /**
@@ -289,13 +290,19 @@ export const promotionSchema = z.object({
   active: z.boolean(),
 });
 
+/** An announcement: what it says in Spanish, where it shows, and whether it is on. */
+export const announcementChangeSchema = z.object({
+  type: z.literal("announcement"),
+  key: changeKey,
+  /** Absent for a new one; the action gives it an id. */
+  id: id.optional(),
+  message: z.string().trim().min(1).max(200),
+  pages: z.union([z.literal("all"), z.array(z.enum(ANNOUNCEMENT_PAGE_IDS)).min(1).max(ANNOUNCEMENT_PAGE_IDS.length)]),
+  visible: z.boolean(),
+});
+
 export const shopfrontChangeSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("notice"),
-    key: changeKey,
-    message: z.string().trim().max(200),
-    visible: z.boolean(),
-  }),
+  announcementChangeSchema,
   promotionSchema.extend({ type: z.literal("promotion"), key: changeKey }),
   // The visitor-facing "¿Preguntas?" panel's own on/off switch.
   z.object({
@@ -303,9 +310,9 @@ export const shopfrontChangeSchema = z.discriminatedUnion("type", [
     key: changeKey,
     visible: z.boolean(),
   }),
-  // On this tab a retire or a restore always means a promotion.
-  retireChangeSchema,
-  restoreChangeSchema,
+  // A retire or a restore names a promotion unless it says it is an announcement.
+  retireChangeSchema.extend({ kind: z.literal("announcement").optional() }),
+  restoreChangeSchema.extend({ kind: z.literal("announcement").optional() }),
 ]);
 
 /** The four Spanish boxes on a premiere. */
@@ -468,7 +475,7 @@ export const UNDO_KINDS = [
   "price-entry",
   "alteration",
   "appointment",
-  "notice",
+  "announcement",
   "helper",
   "request-status",
   "style-text",

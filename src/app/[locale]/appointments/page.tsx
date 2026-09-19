@@ -5,7 +5,6 @@ import { appointmentPrefill } from "@/lib/estimate-handoff";
 import { paymentsEnabled } from "@/lib/env";
 import { PageHeader } from "@/components/page-header";
 import { AppointmentBooking } from "@/components/appointment-booking";
-import { SiteNoticeBar } from "@/components/site-notice";
 
 export default async function AppointmentsPage({
   params,
@@ -30,7 +29,6 @@ export default async function AppointmentsPage({
 
   return (
     <>
-      <SiteNoticeBar />
       <PageHeader title={t("title")} lead={t("lead")} />
       <div className="shell pb-28">
         <AppointmentBooking

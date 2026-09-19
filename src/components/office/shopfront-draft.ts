@@ -1,6 +1,8 @@
 import type { Promotion, PromotionScope } from "@/content";
 import type { Locale } from "@/i18n/routing";
 import type { ShopfrontChange } from "@/lib/office-validation";
+import type { Announcement } from "@/lib/announcements";
+import type { AnnouncementReach } from "@/lib/announcement-pages";
 
 /**
  * Shared types, keys and pure helpers for Vitrina's cards and its sheets —
@@ -12,9 +14,6 @@ import type { ShopfrontChange } from "@/lib/office-validation";
 export type ManagedPromotion = Promotion & { readonly undoable: boolean };
 /** A name to show for a category or a garment; `retired` garments stay nameable but are not offered. */
 export type ScopeOption = { readonly id: string; readonly name: string; readonly retired?: boolean };
-
-/** The notice's one draft key, staged whether the text or the switch changed. */
-export const NOTICE_KEY = "notice:site";
 
 type PromotionWire = Extract<ShopfrontChange, { type: "promotion" }>;
 
@@ -75,4 +74,27 @@ export function soonestEnding<P extends Pick<Promotion, "endsAt">>(
     if (best === null || endsAt < best.endsAt) best = { ...promotion, endsAt };
   }
   return best;
+}
+
+export type ManagedAnnouncement = Announcement & { readonly undoable: boolean };
+type AnnouncementWire = Extract<ShopfrontChange, { type: "announcement" }>;
+
+export function announcementKeyFor(id: string): string {
+  return `announcement:${id}`;
+}
+
+/** An announcement as the change that saves it again, with whatever she changed on top. */
+export function announcementWireOf(
+  announcement: Announcement,
+  changes: { readonly message?: string; readonly pages?: AnnouncementReach; readonly visible?: boolean } = {},
+): AnnouncementWire {
+  const pages = changes.pages ?? announcement.pages;
+  return {
+    type: "announcement",
+    key: announcementKeyFor(announcement.id),
+    id: announcement.id,
+    message: changes.message ?? announcement.message.es,
+    pages: pages === "all" ? "all" : [...pages],
+    visible: changes.visible ?? announcement.visible,
+  };
 }

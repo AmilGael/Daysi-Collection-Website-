@@ -5,6 +5,9 @@ import { getMessages, getTranslations, setRequestLocale } from "next-intl/server
 import { notFound } from "next/navigation";
 import { isSupportedLocale, routing } from "@/i18n/routing";
 import { SiteHeader } from "@/components/site-header";
+import { AnnouncementBars } from "@/components/announcement-bars";
+import { liveAnnouncements } from "@/lib/announcements";
+import { translate } from "@/content";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHelper } from "@/components/site-helper";
 import { Reveal } from "@/components/reveal";
@@ -109,6 +112,13 @@ export default async function LocaleLayout({
             }
             cartCount={cartCount(cart)}
             helperEnabled={helperEnabled}
+          />
+          <AnnouncementBars
+            announcements={liveAnnouncements().map((announcement) => ({
+              id: announcement.id,
+              text: translate(announcement.message, locale),
+              pages: announcement.pages,
+            }))}
           />
           <main id="main">{children}</main>
           <SiteFooter />

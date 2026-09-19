@@ -6,9 +6,9 @@ import es from "@/messages/es.json";
 
 /**
  * Vitrina is four cards and a sheet since 18 September 2026, the same
- * vocabulary Colección, Galería, Telas and Precios were rebuilt in — except
+ * vocabulary Colección, Galería, Telas and Precios were rebuilt in, except
  * there is no "+" card here: each of the four names one fixed feature
- * (Aviso, Promociones, Asistente para clientes, Código QR) rather than a
+ * (Anuncios, Promociones, Asistente para clientes, Código QR) rather than a
  * list of like items. The first, second and fourth open a sheet; the third
  * carries Task 17's own Switch right on its face, since there is nothing
  * else to it. Promotion rows keep Task 13's list, add form and Retirados
@@ -20,7 +20,7 @@ const read = (relative: string) => readFileSync(at(relative), "utf8");
 const office = (bundle: { office: object }) => bundle.office as Record<string, string>;
 
 const cardsSource = read("src/components/shopfront-cards.tsx");
-const noticeSource = read("src/components/notice-editor.tsx");
+const announcementSource = read("src/components/announcement-editor.tsx");
 const promoSource = read("src/components/promotion-editor.tsx");
 const draftSource = read("src/components/office/shopfront-draft.ts");
 const pageSource = read("src/app/[locale]/office/shopfront/page.tsx");
@@ -28,29 +28,30 @@ const pageSource = read("src/app/[locale]/office/shopfront/page.tsx");
 describe("the shopfront tab", () => {
   it("renders the four cards from the page, not the four sections the tab used to lay out itself", () => {
     expect(pageSource).toContain("<ShopfrontCards");
-    expect(pageSource).not.toContain("<NoticeEditor");
+    expect(pageSource).not.toContain("<AnnouncementEditor");
     expect(pageSource).not.toContain("<PromotionEditor");
     expect(pageSource).not.toContain("<HelperSwitch");
   });
 
   it("never asks with a browser pop-up", () => {
     expect(cardsSource).not.toContain("window.confirm(");
-    expect(noticeSource).not.toContain("window.confirm(");
+    expect(announcementSource).not.toContain("window.confirm(");
     expect(promoSource).not.toContain("window.confirm(");
   });
 
-  it("has no raw accent-ink checkbox left over from the old notice box", () => {
+  it("has no raw accent-ink checkbox, the pages being pressed buttons and every on/off a Switch", () => {
     expect(cardsSource).not.toContain("accent-ink");
-    expect(noticeSource).not.toContain("accent-ink");
-    expect(noticeSource).not.toContain('type="checkbox"');
+    expect(announcementSource).not.toContain("accent-ink");
+    expect(announcementSource).not.toContain('type="checkbox"');
+    expect(announcementSource).toContain("aria-pressed={on}");
   });
 
-  it("opens one sheet from the Aviso, Promociones or QR card", () => {
-    expect(cardsSource).toContain('setOpen("notice")');
+  it("opens one sheet from the Anuncios, Promociones or QR card", () => {
+    expect(cardsSource).toContain('setOpen("announcements")');
     expect(cardsSource).toContain('setOpen("promotions")');
     expect(cardsSource).toContain('setOpen("qr")');
     expect(cardsSource).toContain("<Sheet open={open !== null} title={title} onClose={close}>");
-    expect(cardsSource).toContain("<NoticeEditor initialMessage={notice.message}");
+    expect(cardsSource).toContain("<AnnouncementEditor announcements={announcements} retired={retiredAnnouncements} />");
     expect(cardsSource).toContain("<PromotionEditor");
   });
 
@@ -75,12 +76,28 @@ describe("the shopfront tab", () => {
   });
 });
 
-describe("the notice sheet's switch", () => {
-  it("replaced the raw checkbox with the shared Switch, staying on the shared notice key", () => {
-    expect(noticeSource).toContain('import { NOTICE_KEY } from "./office/shopfront-draft";');
-    expect(noticeSource).toContain("import { Switch } from \"./office/switch\";");
-    expect(noticeSource).toContain("<Switch");
-    expect(noticeSource).toContain('label={t("noticeVisible")}');
+describe("the announcements sheet", () => {
+  it("keeps its key and wire in shopfront-draft, beside the promotions'", () => {
+    expect(draftSource).toContain("export function announcementKeyFor(id: string): string {");
+    expect(draftSource).toContain("export function announcementWireOf(");
+    expect(announcementSource).toContain("announcementKeyFor, announcementWireOf, type ManagedAnnouncement");
+  });
+
+  it("swaps the list for the form in place, with no second Sheet, like the promotions", () => {
+    expect(announcementSource).not.toContain("<Sheet");
+    expect(announcementSource).toContain("if (editing) {");
+    expect(announcementSource).toContain("onDone={backToList}");
+  });
+
+  it("retires and restores as an announcement, never as a promotion", () => {
+    expect(announcementSource).toContain('{ type: "retire", key, id: announcement.id, kind: "announcement" }');
+    expect(announcementSource).toContain('{ type: "restore", key: announcementKeyFor(id), id, kind: "announcement" }');
+    expect(announcementSource).toContain('<UndoLink kind="announcement" id={announcement.id} />');
+  });
+
+  it("refuses to stage one with no words, or with no page and Todas off", () => {
+    expect(announcementSource).toContain('if (words.length === 0) return setProblem(t("annMessageRequired"));');
+    expect(announcementSource).toContain('if (!everyPage && pages.length === 0) return setProblem(t("annPagesRequired"));');
   });
 });
 
@@ -147,15 +164,15 @@ describe("the Promociones card's summary", () => {
   });
 });
 
-describe("the Aviso card", () => {
-  it("shows the current text or the empty state, and an on/off chip", () => {
-    expect(cardsSource).toContain("noticeMessage || t(\"noticeEmpty\")");
-    expect(cardsSource).toContain('{noticeVisible ? t("noticeOnChip") : t("noticeOffChip")}');
+describe("the Anuncios card", () => {
+  it("shows the first one on the site, or why there is none, and how many are on", () => {
+    expect(cardsSource).toContain('announcementsShowing[0] ?? (announcements.length === 0 ? t("annEmpty") : t("annNoneShowing"))');
+    expect(cardsSource).toContain('t("annShowingCount", { count: announcementsShowing.length })');
   });
 
-  it("reflects a pending edit before it is confirmed, rather than only the saved notice", () => {
-    expect(cardsSource).toContain('noticeWire?.type === "notice" ? noticeWire.message : notice.message');
-    expect(cardsSource).toContain('noticeWire?.type === "notice" ? noticeWire.visible : notice.visible');
+  it("counts from a pending edit or retire before it is confirmed", () => {
+    expect(cardsSource).toContain('const wire = draft.pending(announcementKeyFor(announcement.id))?.change.wire;');
+    expect(cardsSource).toContain('const visible = wire?.type === "announcement" ? wire.visible : announcement.visible;');
   });
 });
 
@@ -173,19 +190,20 @@ describe("the office copy", () => {
   it("names every label the new cards show, in both languages", () => {
     for (const bundle of [es, en]) {
       const words = office(bundle);
-      for (const key of ["noticeEmpty", "noticeOnChip", "noticeOffChip", "promoActiveCount", "promoBack"]) {
+      for (const key of ["annTitle", "annLead", "annEmpty", "annNoneShowing", "annShowingCount", "annAllPages", "promoActiveCount", "promoBack"]) {
         expect(words[key], key).toBeTruthy();
-        expect(words[key], key).not.toContain("—");
+        expect(words[key], key).not.toMatch(/[\u2013\u2014]/);
       }
     }
-    expect(office(es).noticeEmpty).toBe("Sin aviso");
+    expect(office(es).annTitle).toBe("Anuncios");
     expect(office(es).promoBack).toBe("Volver");
   });
 
-  it("no longer tells her to (un)check a box that is a switch now", () => {
+  it("names every page an announcement can go on, in both languages", async () => {
+    const { ANNOUNCEMENT_PAGES } = await import("@/lib/announcement-pages");
     for (const bundle of [es, en]) {
-      const lead = office(bundle).noticeLead;
-      expect(lead).not.toMatch(/casilla|check.*box/i);
+      const pages = (bundle.office as unknown as { annPage: Record<string, string> }).annPage;
+      for (const page of ANNOUNCEMENT_PAGES) expect(pages[page.id], page.id).toBeTruthy();
     }
   });
 });

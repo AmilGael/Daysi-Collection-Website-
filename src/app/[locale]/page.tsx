@@ -4,7 +4,6 @@ import { services, translate } from "@/content";
 import { liveStyles } from "@/lib/live-catalog";
 import { livePremiereListing } from "@/lib/live-premieres";
 import { liveAlterations, withPrices } from "@/lib/live-pricing";
-import { SiteNoticeBar } from "@/components/site-notice";
 import { DesignStrip } from "@/components/design-strip";
 import { Link, type Locale } from "@/i18n/routing";
 import { ButtonLink, SectionHeading, Tag, TextLink } from "@/components/ui";
@@ -24,7 +23,6 @@ export default async function HomePage({
   return (
     <>
       <Hero />
-      <SiteNoticeBar />
       <TrustStrip />
       <DesignStrip />
       <Story />
