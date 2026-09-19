@@ -39,7 +39,7 @@ export async function DesignStrip() {
             className="relative h-72 shrink-0 snap-start overflow-hidden bg-paper-warm sm:h-96"
             style={{ aspectRatio: photo.aspect }}
           >
-            <Link href={photo.href} className="group block h-full w-full">
+            <Link href={photo.href} className="group relative block h-full w-full">
               <Image
                 src={photo.src}
                 alt={translate(photo.alt, locale)}
