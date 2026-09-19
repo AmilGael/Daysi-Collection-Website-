@@ -104,6 +104,7 @@ const PRIVATE = [
   "/office/prices",
   "/office/shopfront",
   "/office/books",
+  "/office/manual",
 ];
 
 const results = [];

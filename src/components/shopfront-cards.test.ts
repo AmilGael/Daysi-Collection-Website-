@@ -59,9 +59,10 @@ describe("the shopfront tab", () => {
     expect(cardsSource).not.toContain('setOpen("helper")');
   });
 
-  it("links to the manual under the grid, opened in a new tab, as the help sheet does", () => {
-    expect(cardsSource).toContain('href="/api/office/manual"');
-    expect(cardsSource).toContain('target="_blank"');
+  it("links to the manual under the grid, in the office and in the same tab, as the help sheet does", () => {
+    expect(cardsSource).toContain('<Link href="/office/manual"');
+    expect(cardsSource).not.toContain("/api/office/manual");
+    expect(cardsSource).not.toContain('target="_blank"');
     expect(cardsSource).toContain('{t("helpOpenManual")}');
   });
 

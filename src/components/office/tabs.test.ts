@@ -137,13 +137,22 @@ describe("the books tab", () => {
   });
 });
 
+/**
+ * Office pages that are deliberately not tabs. The manual is reached from
+ * "Abrir el manual" in the help sheet and on Vitrina; a ninth tab for a
+ * document she reads once would crowd a strip that already scrolls on a
+ * phone. Still guarded like every tab, and still private in the smoke run.
+ */
+const NON_TAB_PAGES = ["manual/page.tsx"];
+
 describe("every tab in the list", () => {
-  it("matches the pages on disk exactly, and every one of them is guarded", () => {
+  it("matches the pages on disk exactly, less the known non-tab pages, and every one of them is guarded", () => {
     const onDisk = fs
       .readdirSync(officeDir, { recursive: true })
       .map((entry) => entry.toString())
       .filter((entry) => entry.endsWith("page.tsx"))
       .map((entry) => entry.split(path.sep).join("/"))
+      .filter((entry) => !NON_TAB_PAGES.includes(entry))
       .sort();
 
     const listed = OFFICE_TABS.map((tab) =>
@@ -152,7 +161,7 @@ describe("every tab in the list", () => {
 
     expect(onDisk, "an unlisted page.tsx under office/ would show up here").toEqual(listed);
 
-    for (const relative of listed) {
+    for (const relative of [...listed, ...NON_TAB_PAGES]) {
       expectGuarded(relative);
     }
   });
@@ -163,6 +172,14 @@ describe("the smoke script", () => {
     const smoke = fs.readFileSync(path.join(process.cwd(), "scripts/smoke.mjs"), "utf8");
     for (const tab of OFFICE_TABS) {
       expect(smoke, `${tab.href} in PRIVATE`).toContain(`"${tab.href}"`);
+    }
+  });
+
+  it("checks that the pages that are not tabs are private too", () => {
+    const smoke = fs.readFileSync(path.join(process.cwd(), "scripts/smoke.mjs"), "utf8");
+    for (const page of NON_TAB_PAGES) {
+      const href = `/office/${page.slice(0, -"/page.tsx".length)}`;
+      expect(smoke, `${href} in PRIVATE`).toContain(`"${href}"`);
     }
   });
 });
