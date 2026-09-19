@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { MeasurementId } from "@/content/measurements";
 import type { Unit } from "@/lib/measurements";
@@ -5,6 +7,7 @@ import en from "@/messages/en.json";
 import es from "@/messages/es.json";
 import {
   afterClear,
+  clearOutcome,
   formPayload,
   measurementProblems,
   shownText,
@@ -196,6 +199,28 @@ describe("after a clear", () => {
     expect(formPayload(cleared)).toEqual({ name: "Ana", phone: "718 555 0101", preferredContact: "whatsapp", measurements: {} });
     expect(cleared.addressOpen).toBe(false);
     expect(cleared.locked).toEqual(new Set(["bust"]));
+  });
+
+  /**
+   * The route says "nothing-to-clear" (409) when it found no card, which
+   * can mean a file it could not read with the address still in it. Only a
+   * 200 that says `cleared: true` empties the form and says "Borrado".
+   */
+  it("counts as cleared only when the route says it cleared", () => {
+    expect(clearOutcome(200, { cleared: true })).toBe("cleared");
+    expect(clearOutcome(200, { cleared: false })).toBe("failed");
+    expect(clearOutcome(200, null)).toBe("failed");
+    expect(clearOutcome(409, { error: "nothing-to-clear" })).toBe("failed");
+    expect(clearOutcome(500, null)).toBe("failed");
+    expect(clearOutcome(401, { error: "signed-out" })).toBe("signed-out");
+    expect(clearOutcome(429, { error: "rate-limited" })).toBe("rate-limited");
+  });
+
+  it("is what the form goes by, showing the generic error when nothing was cleared", () => {
+    const form = readFileSync(path.join(process.cwd(), "src/components/client-card-form.tsx"), "utf8");
+    const clear = form.slice(form.indexOf("async function clear()"), form.indexOf("/** One address box."));
+    expect(clear).toContain("clearOutcome(response.status, await response.json().catch(() => null))");
+    expect(clear).toContain('if (outcome !== "cleared") {\n        setStatus({ kind: "error", message: t("errorGeneric") });');
   });
 });
 

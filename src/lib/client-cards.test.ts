@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { appendFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -74,11 +74,15 @@ describe("a client's own card", () => {
     expect(card.archived).toBe(true);
   });
 
-  it("erases what the client entered from the file itself, keeping Daysi's numbers", async () => {
+  it("erases what the client entered from the file itself, keeping Daysi's numbers and every other card", async () => {
     const { saveClientCard, clearClientEntries, CLIENT_CARDS } = await import("./client-cards");
     const { appendRecord } = await import("./records");
     const daysi = { value: 81, unit: "cm", by: "daysi", at: "2026-09-12T00:00:00Z" };
     await appendRecord(CLIENT_CARDS, { id: "cli_a", accountId: "acc_1", name: "Ana", email: "ana@example.com", measurements: { waist: daysi }, updatedAt: "2026-09-12T00:00:00Z", updatedBy: "office" });
+    // Another client's card, written the way no JSON.stringify would write it:
+    // the rewrite has to copy her line, not re-serialise it.
+    const other = '{"id":"cli_b", "name":"Beatriz N\\u00fa\\u00f1ez","measurements":{"hips":{"value":96,"unit":"cm","by":"daysi","at":"2026-09-11T00:00:00Z"}},"updatedAt":"2026-09-11T00:00:00Z","updatedBy":"office"}';
+    appendFileSync(path.join(dir, `${CLIENT_CARDS}.jsonl`), `${other}\n`);
     await saveClientCard(account, { name: "Ana", address: { line1: "1 Grand Concourse", city: "Bronx", state: "NY", zip: "10451" }, notes: "hombro", measurements: { hips: { value: 40, unit: "in" } } }, now);
     const cleared = await clearClientEntries(account, now);
     expect(cleared?.address).toBeUndefined();
@@ -86,7 +90,67 @@ describe("a client's own card", () => {
     expect(cleared?.measurements).toEqual({ waist: daysi });
     const file = readFileSync(path.join(dir, `${CLIENT_CARDS}.jsonl`), "utf8");
     expect(file).not.toContain("Grand Concourse");
-    expect(file.trim().split("\n")).toHaveLength(1);
+    const lines = file.trim().split("\n");
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toBe(other);
+  });
+
+  /**
+   * The 2026-09-19 review: a transient EMFILE on the rewrite's own read was
+   * read as an empty book, and the file was rewritten down to one card while
+   * the route said it had cleared. Every other client's address and Daysi's
+   * measurements were gone. The rewrite now refuses instead.
+   */
+  it("rewrites nothing, and fails, when the rewrite cannot read the file", async () => {
+    const collection = path.join(dir, "client-cards.jsonl");
+    let reads = 0;
+    vi.doMock("node:fs", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("node:fs")>();
+      return {
+        ...actual,
+        readFileSync: ((...args: Parameters<typeof actual.readFileSync>) => {
+          if (String(args[0]) === collection && ++reads === 2) {
+            throw Object.assign(new Error("EMFILE: too many open files"), { code: "EMFILE" });
+          }
+          return actual.readFileSync(...args);
+        }) as typeof actual.readFileSync,
+      };
+    });
+    try {
+      const { saveClientCard, clearClientEntries, CLIENT_CARDS } = await import("./client-cards");
+      const { appendRecord } = await import("./records");
+      await appendRecord(CLIENT_CARDS, { id: "cli_b", name: "Beatriz", email: "bea@example.com", address: { line1: "2 Main St", city: "Bronx", state: "NY", zip: "10451" }, measurements: { waist: { value: 70, unit: "cm", by: "daysi", at: "2026-09-11T00:00:00Z" } }, updatedAt: "2026-09-11T00:00:00Z", updatedBy: "office" });
+      await saveClientCard(account, { name: "Ana", address: { line1: "1 Grand Concourse", city: "Bronx", state: "NY", zip: "10451" }, measurements: {} }, now);
+      reads = 0;
+      const before = readFileSync(collection, "utf8");
+
+      await expect(clearClientEntries(account, now)).rejects.toMatchObject({ code: "EMFILE" });
+
+      expect(reads).toBe(2);
+      expect(readFileSync(collection, "utf8")).toBe(before);
+    } finally {
+      vi.doUnmock("node:fs");
+    }
+  });
+
+  it("refuses to rewrite a file with a torn or unreadable line, and leaves it as it was", async () => {
+    const { rewriteRecords } = await import("./records");
+    const collection = path.join(dir, "client-cards.jsonl");
+    const torn = '{"id":"cli_a","name":"Ana","measurements":{}}\n{"id":"cli_b","name":"Bea","measur\n';
+    writeFileSync(collection, torn);
+    await expect(rewriteRecords("client-cards", () => true)).rejects.toThrow(/client-cards/);
+    expect(readFileSync(collection, "utf8")).toBe(torn);
+
+    const notARecord = '{"id":"cli_a","name":"Ana","measurements":{}}\nnull\n';
+    writeFileSync(collection, notARecord);
+    await expect(rewriteRecords("client-cards", () => true)).rejects.toThrow(/client-cards/);
+    expect(readFileSync(collection, "utf8")).toBe(notARecord);
+  });
+
+  it("rewrites a missing collection as an empty one", async () => {
+    const { rewriteRecords } = await import("./records");
+    await expect(rewriteRecords("client-cards", () => true)).resolves.toBeUndefined();
+    expect(readFileSync(path.join(dir, "client-cards.jsonl"), "utf8")).toBe("");
   });
 
   it("counts filled measurements and offers what it knows to the forms", async () => {
@@ -156,6 +220,45 @@ describe("Daysi's side of a card", () => {
     await officeRevertCard(first.id, first.updatedAt, now);
     expect(findClientCard(first.id)?.archived).toBeUndefined();
     expect(findClientCard(first.id)).toMatchObject({ name: "Rosa", updatedAt: now.toISOString() });
+  });
+
+  /**
+   * Undo re-appends an old version as it was, so it must pass the same two
+   * checks a save does: otherwise undoing a move of card A's email, after
+   * card B took the old one, leaves two cards with one email.
+   */
+  it("refuses to revert to an email another card now has", async () => {
+    const { officeSaveCard, officeRevertCard, findClientCard, listClientCards } = await import("./client-cards");
+    const first = await officeSaveCard({ type: "client-save", key: "client:new-5", name: "Rosa", email: "x@example.com", measurements: {} }, new Date("2026-09-10T00:00:00Z"));
+    await officeSaveCard({ type: "client-save", key: `client:${first.id}`, cardId: first.id, name: "Rosa", email: "z@example.com", measurements: {} }, new Date("2026-09-11T00:00:00Z"));
+    const other = await officeSaveCard({ type: "client-save", key: "client:new-6", name: "Otra", email: "x@example.com", measurements: {} }, new Date("2026-09-12T00:00:00Z"));
+
+    await expect(officeRevertCard(first.id, first.updatedAt, now)).rejects.toMatchObject({ code: "taken" });
+
+    expect(findClientCard(first.id)?.email).toBe("z@example.com");
+    expect(listClientCards().filter((card) => card.email === "x@example.com").map((card) => card.id)).toEqual([other.id]);
+  });
+
+  it("refuses to revert an account holder's card to another email", async () => {
+    const { officeSaveCard, officeRevertCard, saveClientCard, findClientCard } = await import("./client-cards");
+    const daysis = await officeSaveCard({ type: "client-save", key: "client:new-7", name: "Ana", email: "old@example.com", measurements: {} }, new Date("2026-09-10T00:00:00Z"));
+    await officeSaveCard({ type: "client-save", key: `client:${daysis.id}`, cardId: daysis.id, name: "Ana", email: "ana@example.com", measurements: {} }, new Date("2026-09-11T00:00:00Z"));
+    const adopted = await saveClientCard(account, { name: "Ana", measurements: {} }, new Date("2026-09-12T00:00:00Z"));
+    expect(adopted.id).toBe(daysis.id);
+
+    await expect(officeRevertCard(daysis.id, daysis.updatedAt, now)).rejects.toMatchObject({ code: "locked-email" });
+
+    expect(findClientCard(daysis.id)).toMatchObject({ email: "ana@example.com", accountId: "acc_1" });
+  });
+
+  it("still reverts an account holder's card when the email stays the same", async () => {
+    const { officeSaveCard, officeRevertCard, saveClientCard, findClientCard } = await import("./client-cards");
+    const mine = await saveClientCard(account, { name: "Ana", measurements: {} }, new Date("2026-09-10T00:00:00Z"));
+    await officeSaveCard({ type: "client-save", key: `client:${mine.id}`, cardId: mine.id, name: "Ana María", email: "ana@example.com", measurements: {} }, new Date("2026-09-11T00:00:00Z"));
+
+    await officeRevertCard(mine.id, mine.updatedAt, now);
+
+    expect(findClientCard(mine.id)).toMatchObject({ name: "Ana", email: "ana@example.com", accountId: "acc_1" });
   });
 });
 

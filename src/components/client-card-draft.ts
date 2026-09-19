@@ -163,6 +163,19 @@ export function hasOwnEntries(payload: ClientCardInput): boolean {
   return Boolean(payload.address || payload.notes || Object.keys(payload.measurements).length > 0);
 }
 
+/**
+ * What the route's answer to "Borrar lo que escribí" means for the form.
+ * Only a 200 saying `cleared: true` is a clear: a 409 ("nothing-to-clear")
+ * or anything else may leave the address on file, so the form says so
+ * rather than emptying itself.
+ */
+export function clearOutcome(status: number, body: unknown): "cleared" | "signed-out" | "rate-limited" | "failed" {
+  if (status === 401) return "signed-out";
+  if (status === 429) return "rate-limited";
+  const cleared = typeof body === "object" && body !== null && (body as { cleared?: unknown }).cleared === true;
+  return status === 200 && cleared ? "cleared" : "failed";
+}
+
 /** The form after "Borrar lo que escribí", as the server left the card: the name, the phone and Daysi's numbers stay. */
 export function afterClear(state: CardFormState): CardFormState {
   return {

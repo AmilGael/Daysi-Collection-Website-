@@ -181,6 +181,10 @@ export function saveClientCard(
  * gone from the file rather than superseded. Daysi's measurements, her note,
  * the name and the phone stay: they are the shop's record of the work.
  * Volume snapshots keep the old file until they expire (30 days).
+ *
+ * Undefined when the account has no card. When the file cannot be read in
+ * full for the rewrite, it rejects and nothing is erased (`rewriteRecords`):
+ * every other client's card is on those lines too.
  */
 export function clearClientEntries(
   account: AccountRef,
@@ -301,11 +305,22 @@ export function officeArchiveCard(id: string, archived: boolean, now: Date = new
   });
 }
 
-/** Undo: a version re-appended as it was, so a client's measurement stays the client's. */
+/**
+ * Undo: a version re-appended as it was, so a client's measurement stays the
+ * client's. It passes the two checks a save does, against the cards as they
+ * are now: its email may not be one another card has taken since (`taken`),
+ * and an account holder's card keeps the account's email (`locked-email`).
+ */
 export function officeRevertCard(id: string, to: string, now: Date = new Date()): Promise<void> {
   return withCardLock(async () => {
     const version = versionsOf<ClientCard>(CLIENT_CARDS, (card) => card.id, id).find((card) => card.updatedAt === to);
     if (!version) throw new CardRefused("unknown-card");
+    const cards = listClientCards();
+    const current = cards.find((card) => card.id === version.id);
+    if (version.email && cards.some((card) => card.email === version.email && card.id !== version.id)) {
+      throw new CardRefused("taken");
+    }
+    if (current?.accountId && version.email !== current.email) throw new CardRefused("locked-email");
     await appendRecord(CLIENT_CARDS, { ...version, updatedAt: now.toISOString(), updatedBy: "office" } satisfies ClientCard);
   });
 }

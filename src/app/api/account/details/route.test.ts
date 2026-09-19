@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -141,5 +141,48 @@ describe("the client's own details route", () => {
     const { CLIENT_CARDS } = await import("@/lib/client-cards");
     const file = readFileSync(path.join(dir, `${CLIENT_CARDS}.jsonl`), "utf8");
     expect(file).not.toContain("Grand Concourse");
+  });
+
+  it("refuses a DELETE from another origin before anything else", async () => {
+    const response = await del({ origin: "https://evil.example" });
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "bad-origin" });
+    const { currentViewer } = await import("@/lib/auth/session");
+    expect(currentViewer).not.toHaveBeenCalled();
+  });
+
+  it("answers a DELETE with 401 when nobody is signed in", async () => {
+    viewer.value = null;
+
+    const response = await del();
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "signed-out" });
+  });
+
+  it("says nothing was cleared when there is no card to clear", async () => {
+    const response = await del();
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: "nothing-to-clear" });
+  });
+
+  /**
+   * A torn line makes the whole collection read as empty, so the card is
+   * not found: the route must not say it cleared an address that is still
+   * on disk.
+   */
+  it("does not claim a clear when the file cannot be read, and leaves it alone", async () => {
+    const { CLIENT_CARDS } = await import("@/lib/client-cards");
+    const file = path.join(dir, `${CLIENT_CARDS}.jsonl`);
+    const torn = `${JSON.stringify({ id: "cli_a", accountId: "acc_1", name: "Ana", email: "ana@example.com", address: { line1: "1 Grand Concourse", city: "Bronx", state: "NY", zip: "10451" }, measurements: {}, updatedAt: "2026-09-12T00:00:00Z", updatedBy: "client" })}\n{"id":"cli_b","na\n`;
+    writeFileSync(file, torn);
+
+    const response = await del();
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: "nothing-to-clear" });
+    expect(readFileSync(file, "utf8")).toBe(torn);
   });
 });

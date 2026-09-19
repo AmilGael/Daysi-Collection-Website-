@@ -94,7 +94,13 @@ export function previousVersion<T>(
  * is the one deliberate exception: a client who clears their card is owed an
  * erasure, not a newer blank line with the old address still underneath. The
  * kept lines go to a temporary file beside the collection, renamed over it,
- * so a crash mid-write leaves the old file whole.
+ * so a crash mid-write leaves the old file whole. Each kept line is copied
+ * as it was, not re-serialised.
+ *
+ * It reads the file itself, strictly (`readForRewrite`), never through
+ * `readRecords`: that one reads anything it cannot read as empty, which is
+ * right for a page and ruinous here, where "empty" means "write an empty
+ * book". On any doubt it throws and the file is left exactly as it was.
  *
  * The caller must hold the collection's own lock: an append landing between
  * the read and the rename would be lost.
@@ -105,13 +111,47 @@ export async function rewriteRecords<T>(
 ): Promise<void> {
   await mkdir(DATA_DIRECTORY, { recursive: true, mode: OWNER_ONLY_DIRECTORY });
   const file = path.join(DATA_DIRECTORY, `${collection}.jsonl`);
-  const kept = readRecords<T>(collection).filter(keep);
+  const kept = readForRewrite<T>(collection, file).filter(({ record }) => keep(record));
   const temporary = `${file}.${process.pid}.tmp`;
-  await writeFile(temporary, kept.map((record) => `${JSON.stringify(record)}\n`).join(""), {
+  await writeFile(temporary, kept.map(({ line }) => `${line}\n`).join(""), {
     encoding: "utf8",
     mode: OWNER_ONLY_FILE,
   });
   await rename(temporary, file);
+}
+
+/**
+ * Every line of a collection with its record, or an error: a missing file is
+ * an empty collection, and anything else it cannot account for (a read that
+ * fails for any other reason, a line that is not a JSON object, a file with
+ * something in it that yields no records) refuses the rewrite.
+ */
+function readForRewrite<T>(collection: string, file: string): { line: string; record: T }[] {
+  let contents: string;
+  try {
+    contents = readFileSync(file, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+  const lines: { line: string; record: T }[] = [];
+  contents.split("\n").forEach((line, index) => {
+    if (line.trim().length === 0) return;
+    let record: unknown;
+    try {
+      record = JSON.parse(line);
+    } catch {
+      throw new Error(`[records] ${collection}: line ${index + 1} is not JSON; refusing to rewrite.`);
+    }
+    if (typeof record !== "object" || record === null || Array.isArray(record)) {
+      throw new Error(`[records] ${collection}: line ${index + 1} is not a record; refusing to rewrite.`);
+    }
+    lines.push({ line, record: record as T });
+  });
+  if (lines.length === 0 && contents.trim().length > 0) {
+    throw new Error(`[records] ${collection}: the file is not empty but holds no records; refusing to rewrite.`);
+  }
+  return lines;
 }
 
 /**

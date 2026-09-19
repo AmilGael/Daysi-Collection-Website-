@@ -51,9 +51,16 @@ export async function POST(request: Request) {
   return NextResponse.json({ saved: true, measured: measuredCount(card) });
 }
 
+/**
+ * "Cleared" only when a card was found and rewritten. No card found (none
+ * yet, or a file that reads as empty because a line is torn) is a 409, so
+ * the form never tells a client her address is gone while it is still on
+ * disk. A rewrite that cannot read the file throws, which is a 500.
+ */
 export async function DELETE(request: Request) {
   const checked = await guard(request);
   if (!checked.ok) return checked.denial;
-  await clearClientEntries(checked.viewer.account);
+  const cleared = await clearClientEntries(checked.viewer.account);
+  if (!cleared) return NextResponse.json({ error: "nothing-to-clear" }, { status: 409 });
   return NextResponse.json({ cleared: true });
 }

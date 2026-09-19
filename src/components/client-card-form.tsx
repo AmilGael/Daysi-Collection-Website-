@@ -7,6 +7,7 @@ import { useRouter, type Locale } from "@/i18n/routing";
 import { bothUnits, type Unit } from "@/lib/measurements";
 import {
   afterClear,
+  clearOutcome,
   EMPTY_ADDRESS,
   formPayload,
   hasOwnEntries,
@@ -144,15 +145,16 @@ export function ClientCardForm({ initial, locale }: { initial: CardFormInitial; 
     setStatus({ kind: "clearing" });
     try {
       const response = await fetch("/api/account/details", { method: "DELETE" });
-      if (response.status === 401) {
+      const outcome = clearOutcome(response.status, await response.json().catch(() => null));
+      if (outcome === "signed-out") {
         router.push("/sign-in");
         return;
       }
-      if (response.status === 429) {
+      if (outcome === "rate-limited") {
         setStatus({ kind: "error", message: te("rateLimited") });
         return;
       }
-      if (!response.ok) {
+      if (outcome !== "cleared") {
         setStatus({ kind: "error", message: t("errorGeneric") });
         return;
       }
