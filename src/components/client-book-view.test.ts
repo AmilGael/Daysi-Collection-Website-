@@ -36,8 +36,7 @@ describe("opening a client", () => {
 describe("the Clientes search", () => {
   /** "Buscar por nombre, teléfono o" was all a 375 px phone showed of the old placeholder. */
   it("has a placeholder short enough for a phone, and a label that says what it searches", () => {
-    for (const bundle of [es, en]) {
-      const office = bundle.office as Record<string, string>;
+    for (const { office } of [es, en]) {
       expect(office.clientsSearch.length).toBeLessThanOrEqual(25);
       expect(office.clientsSearchLabel.length).toBeGreaterThan(office.clientsSearch.length);
       expect(office.clientsSearch).not.toMatch(/[—–]/);
