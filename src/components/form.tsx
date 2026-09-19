@@ -3,6 +3,7 @@
 import { useId, useMemo, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import type { Estimate } from "@/lib/pricing";
+import { InfoTip } from "./info-tip";
 
 /**
  * Form primitives. Every input on the site is one of these, so the label,
@@ -16,12 +17,15 @@ const controlClass =
 export function Field({
   label,
   hint,
+  tip,
   error,
   optional,
   children,
 }: {
   label: string;
   hint?: string;
+  /** An aside kept behind a "?" beside the label, where `hint` sits under it. */
+  tip?: string;
   error?: string;
   optional?: boolean;
   children: (props: { id: string; describedBy: string | undefined }) => ReactNode;
@@ -29,17 +33,31 @@ export function Field({
   const t = useTranslations();
   const id = useId();
   const hintId = hint ? `${id}-hint` : undefined;
+  const tipId = tip ? `${id}-tip` : undefined;
   const errorId = error ? `${id}-error` : undefined;
-  const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
+  const describedBy = [hintId, tipId, errorId].filter(Boolean).join(" ") || undefined;
+
+  const labelElement = (
+    <label htmlFor={id} className="text-[0.8125rem] font-medium text-ink">
+      {label}
+      {optional ? (
+        <span className="ml-2 font-normal lowercase text-ink-faint">({t("common.optional")})</span>
+      ) : null}
+    </label>
+  );
 
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="text-[0.8125rem] font-medium text-ink">
-        {label}
-        {optional ? (
-          <span className="ml-2 font-normal lowercase text-ink-faint">({t("common.optional")})</span>
-        ) : null}
-      </label>
+      {/* The "?" sits beside the <label>, not in it: inside, the button's own
+          name would be read as part of the field's. */}
+      {tip ? (
+        <div className="flex items-center gap-2">
+          {labelElement}
+          <InfoTip id={tipId} text={tip} />
+        </div>
+      ) : (
+        labelElement
+      )}
       {hint ? (
         <p id={hintId} className="text-[0.8125rem] leading-relaxed text-ink-faint">
           {hint}

@@ -146,15 +146,16 @@ function describe(submission: ClientRequest): StoredRequest["details"] {
 }
 
 /**
- * Writes an attached photo to disk after checking it really is an image. A
- * photo that fails the check is dropped, and the request still goes through —
- * losing the request over a bad attachment would be the worse outcome.
+ * Writes an attached photo to disk after checking it really is an image. An
+ * alteration sends the piece to be altered, a commission what the client has
+ * in mind. A photo that fails the check is dropped, and the request still goes
+ * through: losing the request over a bad attachment would be the worse outcome.
  */
 async function storePhoto(
   submission: ClientRequest,
   reference: string,
 ): Promise<string | undefined> {
-  if (submission.kind !== "alteration" || !submission.photoDataUrl) return undefined;
+  if (!submission.photoDataUrl) return undefined;
 
   const image = parseImageDataUrl(submission.photoDataUrl);
   if (!image) return undefined;

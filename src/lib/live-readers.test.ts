@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { GarmentStyle, PriceListEntry } from "@/content/types";
@@ -37,6 +37,10 @@ vi.mock("@/lib/payments", () => ({
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 let dir: string;
+
+// A real one-pixel PNG: the bytes open with the PNG signature the route checks.
+const PNG_BASE64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 
 const SOL: GarmentStyle = {
   id: "sol",
@@ -183,6 +187,68 @@ describe("the request form", () => {
     const { reference } = (await response.json()) as { reference: string };
     expect(findRequest(reference)).toMatchObject({ kind: "commission", details: { Garment: "heritage" } });
     expect(findRequest(reference)?.estimate?.subtotal).toBeGreaterThan(0);
+  });
+
+  // "Algo desde cero" takes a photo too: what the client has in mind, or a
+  // piece like it. It is checked and stored exactly the way an alteration's is.
+  const commissionWithPhoto = (photoDataUrl: string) =>
+    post("/api/requests", {
+      kind: "commission",
+      website: "",
+      renderedAt: Date.now() - 10_000,
+      client,
+      categoryId: "heritage",
+      fabricId: "fish-batik",
+      customize: true,
+      occasion: "A wedding",
+      neededBy: "2026-11-01",
+      notes: "",
+      photoDataUrl,
+      acceptedTerms: true,
+    });
+
+  it("stores the photo a commission carries, the way an alteration's is stored", async () => {
+    const { findRequest, requestPhotoPath } = await import("./request-store");
+    const response = await POST_requests(commissionWithPhoto(`data:image/png;base64,${PNG_BASE64}`));
+    expect(response.status).toBe(200);
+    const { reference } = (await response.json()) as { reference: string };
+    expect(findRequest(reference)?.photoFile).toBe(`${reference}.png`);
+    expect(readFileSync(requestPhotoPath(`${reference}.png`))).toEqual(Buffer.from(PNG_BASE64, "base64"));
+  });
+
+  it("drops a commission's photo that is not really an image, as it does an alteration's", async () => {
+    const { findRequest } = await import("./request-store");
+    const notAnImage = Buffer.from("<svg onload=alert(1)>").toString("base64");
+    const response = await POST_requests(commissionWithPhoto(`data:image/png;base64,${notAnImage}`));
+    expect(response.status).toBe(200);
+    const { reference } = (await response.json()) as { reference: string };
+    expect(findRequest(reference)).toMatchObject({ kind: "commission" });
+    expect(findRequest(reference)?.photoFile).toBeUndefined();
+    expect(existsSync(path.join(dir, "photos"))).toBe(false);
+  });
+
+  it("drops an alteration's photo that is not really an image, and keeps the request", async () => {
+    const { findRequest } = await import("./request-store");
+    const notAnImage = Buffer.from("<svg onload=alert(1)>").toString("base64");
+    const response = await POST_requests(
+      post("/api/requests", {
+        kind: "alteration",
+        website: "",
+        renderedAt: Date.now() - 10_000,
+        client,
+        garmentDescription: "A navy wool jacket that runs a little wide through the body.",
+        alterationIds: ["hem-dress"],
+        rush: false,
+        preferredTiming: "2026-10-20",
+        notes: "",
+        photoDataUrl: `data:image/png;base64,${notAnImage}`,
+        acceptedTerms: true,
+      }),
+    );
+    expect(response.status).toBe(200);
+    const { reference } = (await response.json()) as { reference: string };
+    expect(findRequest(reference)?.photoFile).toBeUndefined();
+    expect(findRequest(reference)?.details.Timing).toBe("2026-10-20");
   });
 
   it("takes an alteration request from a guest who gave only an email", async () => {
