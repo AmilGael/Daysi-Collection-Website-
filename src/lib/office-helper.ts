@@ -7,7 +7,7 @@ import es from "@/messages/es.json";
 import { earningsFrom, loadLedger } from "./earnings";
 import { formatMoney } from "./money";
 import { liveFabrics, manageableAlterations, manageableAppointmentTypes, manageablePriceList } from "./live-pricing";
-import { defaultHelperCall, dropLeadingAssistant, type HelperCall, type HelperTurn } from "./claude-helper";
+import { defaultHelperCall, dropLeadingAssistant, type HelperCall, type HelperTurn, withoutDashes } from "./claude-helper";
 
 /**
  * The office's own "?" — answers about the office itself, from the manual
@@ -60,6 +60,7 @@ const RULES = [
   "No invente un botón, una pestaña ni un paso que no exista.",
   "No cite nunca un precio que no esté en la lista de abajo.",
   "La oficina nunca escribe nada por usted: usted solo contesta preguntas.",
+  "Nunca use raya ni guion largo; use una coma o un punto.",
 ].join(" ");
 
 function fabricName(fabricId: string): string {
@@ -140,5 +141,6 @@ export async function askOfficeHelper(
     { role: "user" as const, content: `[Pestaña: ${input.tab}] ${input.question}` },
   ];
 
-  return call({ system, messages, maxTokens: 2048 });
+  const answer = await call({ system, messages, maxTokens: 2048 });
+  return answer === null ? null : withoutDashes(answer);
 }

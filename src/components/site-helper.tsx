@@ -1,11 +1,12 @@
 "use client";
 
-import { Fragment, useCallback, useState, type JSX, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type JSX, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/routing";
 import type { Locale } from "@/i18n/routing";
 import { tokenizeAnswer } from "@/lib/answer-links";
 import { whatsappLink } from "@/lib/whatsapp";
+import { DaisyMark } from "./logo";
 import { ExternalButtonLink, buttonClass } from "./ui";
 
 type Turn = { readonly role: "user" | "assistant"; readonly text: string };
@@ -21,7 +22,7 @@ type Turn = { readonly role: "user" | "assistant"; readonly text: string };
 function renderAnswer(text: string): ReactNode {
   return tokenizeAnswer(text).map((segment, index) =>
     segment.type === "link" ? (
-      <Link key={index} href={segment.href} className="underline underline-offset-4 hover:text-ink">
+      <Link key={index} href={segment.href} className="font-medium underline underline-offset-4">
         {segment.label}
       </Link>
     ) : (
@@ -93,6 +94,13 @@ function HelperPanel({ onClose }: { onClose(): void }): JSX.Element {
   const [question, setQuestion] = useState("");
   const [asking, setAsking] = useState(false);
   const [failed, setFailed] = useState(false);
+  const scroller = useRef<HTMLDivElement>(null);
+
+  // Newest message in view, as in any chat.
+  useEffect(() => {
+    const box = scroller.current;
+    if (box) box.scrollTop = box.scrollHeight;
+  }, [thread, asking, failed]);
 
   async function ask(text: string) {
     const trimmed = text.trim();
@@ -136,52 +144,65 @@ function HelperPanel({ onClose }: { onClose(): void }): JSX.Element {
     <div
       role="dialog"
       aria-label={t("title")}
-      className="fixed right-4 z-40 flex max-h-[70vh] w-[min(22rem,calc(100vw-2rem))] flex-col gap-4 border border-line bg-paper p-5 shadow-xl bottom-[calc(5.5rem+env(safe-area-inset-bottom))]"
+      className="fixed inset-x-0 bottom-0 z-40 flex h-[min(36rem,88svh)] flex-col overflow-hidden border-t border-line bg-paper shadow-[0_-18px_48px_-24px_rgb(20_17_13/0.45)] sm:inset-x-auto sm:right-4 sm:bottom-[calc(1.25rem+env(safe-area-inset-bottom))] sm:w-[23rem] sm:rounded-[6px] sm:border"
     >
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="font-display text-[1.125rem] text-ink">{t("title")}</h2>
+      {/* A chat's head: who is answering, and the way out. */}
+      <div className="flex items-center gap-3 bg-ink px-4 py-3 text-paper">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-paper">
+          <DaisyMark className="h-7 w-auto" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-display text-[1.0625rem] leading-tight">{t("title")}</h2>
+          <p className="text-[0.75rem] text-paper/70">{t("subtitle")}</p>
+        </div>
         <button
           type="button"
           onClick={onClose}
-          className="text-[0.8125rem] text-ink-soft underline underline-offset-4 hover:text-ink"
+          aria-label={t("close")}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-paper/80 transition-colors hover:bg-paper/10 hover:text-paper"
         >
-          {t("close")}
+          <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6">
+            <path d="M3 3l10 10M13 3L3 13" />
+          </svg>
         </button>
       </div>
 
-      <div className="flex flex-1 flex-col gap-4 overflow-y-auto">
+      <div ref={scroller} className="flex flex-1 flex-col gap-3 overflow-y-auto bg-paper-warm/50 px-4 py-4">
+        <p className={bubble("assistant")}>{t("greeting")}</p>
+
         {thread.length === 0 ? (
-          <div className="flex flex-col gap-2">
+          <div className="mt-1 flex flex-wrap gap-2">
             {SUGGESTIONS.map((key) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => ask(t(key))}
-                className="w-fit text-left text-[0.8125rem] text-ink-soft underline underline-offset-4 hover:text-ink"
+                className="rounded-full border border-line-strong bg-paper px-3.5 py-1.5 text-left text-[0.8125rem] text-ink transition-colors hover:border-ink"
               >
                 {t(key)}
               </button>
             ))}
           </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {thread.map((turn, index) => (
-              <p
-                key={index}
-                className={
-                  turn.role === "user"
-                    ? "text-[0.9375rem] font-medium text-ink"
-                    : "text-[0.9375rem] leading-relaxed text-ink-soft"
-                }
-              >
-                {turn.role === "assistant" ? renderAnswer(turn.text) : turn.text}
-              </p>
-            ))}
-          </div>
-        )}
+        ) : null}
+
+        {thread.map((turn, index) => (
+          <p key={index} className={bubble(turn.role)}>
+            {turn.role === "assistant" ? renderAnswer(turn.text) : turn.text}
+          </p>
+        ))}
+
+        {asking ? (
+          <p className={bubble("assistant")} aria-label={t("asking")}>
+            <span className="inline-flex gap-1 py-1" aria-hidden>
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:-0.3s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint [animation-delay:-0.15s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint" />
+            </span>
+          </p>
+        ) : null}
 
         {failed ? (
-          <p role="alert" className="text-[0.875rem] text-ink-soft">
+          <p role="alert" className={bubble("assistant")}>
             {t("error")}
           </p>
         ) : null}
@@ -192,28 +213,55 @@ function HelperPanel({ onClose }: { onClose(): void }): JSX.Element {
           event.preventDefault();
           void ask(question);
         }}
-        className="flex flex-col gap-2"
+        className="flex items-end gap-2 border-t border-line bg-paper px-3 py-3"
       >
         <textarea
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
+          onKeyDown={(event) => {
+            // Enter sends, as in any chat; Shift+Enter still breaks a line.
+            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              void ask(question);
+            }
+          }}
           maxLength={400}
-          rows={2}
+          rows={1}
+          placeholder={t("placeholder")}
           aria-label={t("questionLabel")}
-          className="w-full border border-line bg-paper px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-faint focus:border-ink"
+          className="max-h-28 min-h-11 flex-1 resize-none rounded-[20px] border border-line bg-paper px-4 py-2.5 text-[0.9375rem] leading-snug text-ink placeholder:text-ink-faint focus:border-ink"
         />
         <button
           type="submit"
           disabled={asking || question.trim().length === 0}
-          className={buttonClass({ tone: "solid" })}
+          aria-label={t("ask")}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-paper transition-opacity disabled:opacity-35"
         >
-          {asking ? t("asking") : t("ask")}
+          <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M8 13V3M3.5 7.5L8 3l4.5 4.5" />
+          </svg>
         </button>
       </form>
 
-      <ExternalButtonLink href={whatsappLink(t("whatsappMessage"))} tone="outline" size="small" className="w-fit">
-        {t("whatsapp")}
-      </ExternalButtonLink>
+      <div className="flex items-center justify-between gap-3 bg-paper px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-[0.75rem] text-ink-faint">
+        <span>{t("whatsappLead")}</span>
+        <ExternalButtonLink
+          href={whatsappLink(t("whatsappMessage"))}
+          tone="outline"
+          size="small"
+          className="shrink-0 whitespace-nowrap"
+        >
+          {t("whatsappShort")}
+        </ExternalButtonLink>
+      </div>
     </div>
   );
+}
+
+/** A chat bubble: the visitor's on the right in ink, the answers on the left on paper. */
+function bubble(role: Turn["role"]): string {
+  const shared = "max-w-[85%] whitespace-pre-line px-3.5 py-2 text-[0.9375rem] leading-relaxed";
+  return role === "user"
+    ? `${shared} self-end rounded-[18px] rounded-br-[4px] bg-ink text-paper`
+    : `${shared} self-start rounded-[18px] rounded-bl-[4px] border border-line bg-paper text-ink`;
 }
