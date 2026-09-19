@@ -36,7 +36,7 @@ export function CartView({
   initialCart: Cart;
   initialEstimate: Estimate | null;
   styles: readonly GarmentStyle[];
-  viewer: { name: string; email: string } | null;
+  viewer: { name: string; email: string; phone: string } | null;
   paymentsEnabled: boolean;
 }) {
   const t = useTranslations("cart");
@@ -51,7 +51,7 @@ export function CartView({
 
   const [name, setName] = useState(viewer?.name ?? "");
   const [email, setEmail] = useState(viewer?.email ?? "");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(viewer?.phone ?? "");
   const [preferredContact, setPreferredContact] = useState<ContactMethod>("whatsapp");
   const [notes, setNotes] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);

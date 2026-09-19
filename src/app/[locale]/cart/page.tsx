@@ -4,6 +4,7 @@ import { readCart } from "@/lib/cart";
 import { estimateCart } from "@/lib/pricing";
 import { paymentsEnabled } from "@/lib/env";
 import { currentViewer } from "@/lib/auth/session";
+import { knownContact } from "@/lib/client-cards";
 import { PageHeader } from "@/components/page-header";
 import { CartView } from "@/components/cart-view";
 
@@ -18,6 +19,7 @@ export default async function CartPage({
 
   const [cart, viewer] = await Promise.all([readCart(), currentViewer()]);
   const estimate = estimateCart(cart.lines);
+  const contact = viewer ? knownContact(viewer.account) : null;
 
   return (
     <>
@@ -28,7 +30,9 @@ export default async function CartPage({
           initialEstimate={estimate}
           styles={liveStyles()}
           viewer={
-            viewer ? { name: viewer.account.name, email: viewer.account.email } : null
+            viewer
+              ? { name: viewer.account.name, email: viewer.account.email, phone: contact?.phone ?? "" }
+              : null
           }
           paymentsEnabled={paymentsEnabled}
         />

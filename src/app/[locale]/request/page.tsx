@@ -2,6 +2,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { categories } from "@/content";
 import { liveAlterations, liveFabrics, livePriceList } from "@/lib/live-pricing";
 import { requestPrefill } from "@/lib/estimate-handoff";
+import { currentViewer } from "@/lib/auth/session";
+import { knownContact } from "@/lib/client-cards";
 import { PageHeader } from "@/components/page-header";
 import { RequestForm } from "@/components/request-form";
 
@@ -30,6 +32,8 @@ export default async function RequestPage({
   const alterations = liveAlterations();
   const fabrics = liveFabrics();
   const priceList = livePriceList();
+  const viewer = await currentViewer();
+  const contact = viewer ? knownContact(viewer.account) : null;
   const prefill = requestPrefill(query, {
     categoryIds: categories.map((category) => category.id),
     fabricIds: fabrics.map((fabric) => fabric.id),
@@ -51,6 +55,7 @@ export default async function RequestPage({
           categories={categories}
           fabrics={fabrics}
           priceList={priceList}
+          contact={contact}
         />
       </div>
     </>

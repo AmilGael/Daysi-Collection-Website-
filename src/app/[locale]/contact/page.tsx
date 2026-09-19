@@ -2,6 +2,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { business, translate } from "@/content";
 import type { Locale } from "@/i18n/routing";
 import { whatsappLink } from "@/lib/whatsapp";
+import { currentViewer } from "@/lib/auth/session";
+import { knownContact } from "@/lib/client-cards";
 import { PageHeader } from "@/components/page-header";
 import { ContactForm } from "@/components/contact-form";
 import { GoogleBusiness } from "@/components/google-business";
@@ -16,6 +18,8 @@ export default async function ContactPage({
   setRequestLocale(locale);
   const language = locale as Locale;
   const t = await getTranslations("contact");
+  const viewer = await currentViewer();
+  const contact = viewer ? knownContact(viewer.account) : null;
 
   return (
     <>
@@ -74,7 +78,7 @@ export default async function ContactPage({
 
         <div className="flex flex-col gap-6">
           <h2 className="text-heading">{t("formTitle")}</h2>
-          <ContactForm />
+          <ContactForm contact={contact} />
         </div>
       </section>
 

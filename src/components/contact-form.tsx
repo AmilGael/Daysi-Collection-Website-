@@ -14,16 +14,21 @@ import {
   useSubmit,
 } from "./form";
 
-export function ContactForm() {
+export function ContactForm({
+  contact,
+}: {
+  /** What a signed-in client's card already knows, to start the form with. */
+  contact?: { name: string; email: string; phone: string } | null;
+} = {}) {
   const t = useTranslations("contact");
   const tr = useTranslations("request");
   const locale = useLocale() as Locale;
   const renderedAt = useRenderedAt();
   const { state, submit } = useSubmit("/api/contact");
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [name, setName] = useState(contact?.name ?? "");
+  const [email, setEmail] = useState(contact?.email ?? "");
+  const [phone, setPhone] = useState(contact?.phone ?? "");
   const [message, setMessage] = useState("");
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {

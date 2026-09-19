@@ -55,6 +55,7 @@ export function RequestForm({
   categories,
   fabrics,
   priceList,
+  contact,
 }: {
   initialKind: Kind;
   lockedKind: Kind | null;
@@ -65,6 +66,8 @@ export function RequestForm({
   fabrics: readonly Fabric[];
   /** Only the cloths a garment is priced in are offered for it. */
   priceList: readonly PriceListEntry[];
+  /** What a signed-in client's card already knows, to start the form with. */
+  contact?: { name: string; email: string; phone: string } | null;
 }) {
   const t = useTranslations("request");
   const tc = useTranslations("common");
@@ -74,9 +77,9 @@ export function RequestForm({
   const { state, submit } = useSubmit("/api/requests");
 
   const [kind, setKind] = useState<Kind>(initialKind);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [name, setName] = useState(contact?.name ?? "");
+  const [email, setEmail] = useState(contact?.email ?? "");
+  const [phone, setPhone] = useState(contact?.phone ?? "");
   const [preferredContact, setPreferredContact] = useState<ContactMethod>("whatsapp");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [notes, setNotes] = useState("");

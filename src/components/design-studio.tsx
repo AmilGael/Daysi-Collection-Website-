@@ -46,6 +46,7 @@ export function DesignStudio({
   priceList,
   fee,
   paymentsEnabled,
+  contact,
 }: {
   silhouettes: readonly Silhouette[];
   fabrics: readonly Fabric[];
@@ -53,6 +54,8 @@ export function DesignStudio({
   /** What sending a design costs, as `estimateDesign` charges it. */
   fee: Cents;
   paymentsEnabled: boolean;
+  /** What a signed-in client's card already knows, to start the form with. */
+  contact?: { name: string; email: string; phone: string } | null;
 }) {
   const t = useTranslations("studio");
   const tr = useTranslations("request");
@@ -62,9 +65,9 @@ export function DesignStudio({
   const renderedAt = useRenderedAt();
   const { state, submit } = useSubmit("/api/design-requests");
 
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState(contact?.email ?? "");
+  const [name, setName] = useState(contact?.name ?? "");
+  const [phone, setPhone] = useState(contact?.phone ?? "");
   const [notes, setNotes] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [preparing, setPreparing] = useState(false);

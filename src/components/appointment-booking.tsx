@@ -42,6 +42,7 @@ export function AppointmentBooking({
   service = null,
   initialTypeId,
   alterations = [],
+  contact,
 }: {
   appointmentTypes: readonly AppointmentType[];
   paymentsEnabled: boolean;
@@ -52,6 +53,8 @@ export function AppointmentBooking({
   initialTypeId?: string;
   /** The published alteration prices, offered for a look right before booking. */
   alterations?: readonly AlterationService[];
+  /** What a signed-in client's card already knows, to start the form with. */
+  contact?: { name: string; email: string; phone: string } | null;
 }) {
   const t = useTranslations("appointments");
   const tr = useTranslations("request");
@@ -71,9 +74,9 @@ export function AppointmentBooking({
   const [date, setDate] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<string | null>(null);
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [name, setName] = useState(contact?.name ?? "");
+  const [email, setEmail] = useState(contact?.email ?? "");
+  const [phone, setPhone] = useState(contact?.phone ?? "");
   const [preferredContact, setPreferredContact] = useState<ContactMethod>("whatsapp");
   const [purpose, setPurpose] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
