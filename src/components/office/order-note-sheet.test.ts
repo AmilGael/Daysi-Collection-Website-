@@ -57,3 +57,12 @@ describe("the order-note sheet's payment", () => {
     expect(source).toContain('...(payment === "charge" ? { charge: true } : {}),');
   });
 });
+
+describe("the one add box", () => {
+  it("names itself for every kind, and opens on the kind it is given", () => {
+    const opener = source.slice(source.indexOf("export function OrderNoteCard("), source.indexOf("function OrderNoteForm("));
+    expect(opener.match(/t\("addNoteAny"\)/g)).toHaveLength(2);
+    expect(opener).not.toContain("addNote.${kind}");
+    expect(opener).toContain("initialKind={kind}");
+  });
+});

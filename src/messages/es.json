@@ -529,7 +529,7 @@
     "lastMonths": "Los últimos seis meses",
     "chartNote": "Aquí solo se cuenta el dinero que ya entró de verdad. Lo acordado y no pagado aparece en \"le deben\".",
     "work": "Pedidos y arreglos",
-    "noWork": "Todavía no ha entrado nada.",
+    "noWork": "Todavía no hay pedidos.",
     "orderNoteLead": "Anote un pedido, un arreglo o una pieza a medida que ya tomó fuera del sitio, en persona o por WhatsApp, para que quede en sus cifras y sus libros.",
     "orderNoteKindLabel": "Qué es",
     "orderNoteClientName": "Nombre de la clienta",
@@ -807,11 +807,7 @@
     "styleSizeRequired": "Ponga cuántas piezas tiene en al menos una talla.",
     "stylePriceRequired": "Esta prenda y esta tela todavía no tienen precio. Póngale uno.",
     "styleNote": "Escriba en español. El inglés se escribe solo cuando confirma; puede verlo y corregirlo con Ver inglés.",
-    "addNote": {
-      "order": "Anotar un pedido",
-      "alteration": "Anotar un arreglo",
-      "commission": "Anotar una pieza a medida"
-    },
+    "addNoteAny": "Anotar un pedido, arreglo o pieza a medida",
     "workGroup": {
       "order": "Pedidos",
       "alteration": "Arreglos",

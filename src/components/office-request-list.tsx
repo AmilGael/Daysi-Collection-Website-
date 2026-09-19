@@ -14,7 +14,7 @@ import { chargeable, openPaymentLink } from "@/lib/payment-link";
 import { MoneyBox } from "@/components/office/garment-sheet";
 import { buttonClass } from "@/components/ui";
 import { Pending } from "@/components/office/confirm-bar";
-import { NOTED_KINDS, OrderNoteCard } from "@/components/office/order-note-sheet";
+import { OrderNoteCard } from "@/components/office/order-note-sheet";
 import { RetireButton } from "@/components/office/retired-group";
 import { Sheet } from "@/components/office/sheet";
 import { UndoLink } from "@/components/office/undo-link";
@@ -69,13 +69,7 @@ export function OfficeRequestList({
   }, [open, opened, close]);
 
   const empty = records.length === 0 && pendingNotes.length === 0;
-  if (empty && !showOrderNotes) {
-    return (
-      <p className="border border-dashed border-line px-6 py-14 text-center text-[0.9375rem] text-ink-faint">
-        {emptyMessage}
-      </p>
-    );
-  }
+  if (empty && !showOrderNotes) return <EmptyBox message={emptyMessage} />;
 
   const renderPending = (entry: (typeof pendingNotes)[number]) => {
           const wire = entry.change.wire;
@@ -181,14 +175,10 @@ export function OfficeRequestList({
     <div className="flex flex-col gap-4">
       {showOrderNotes ? (
         <>
-          {/* Where she starts one: a box per kind, above everything already in. */}
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {NOTED_KINDS.map((kind) => (
-              <li key={kind}>
-                <OrderNoteCard kind={kind} paymentsEnabled={paymentsEnabled} />
-              </li>
-            ))}
-          </ul>
+          {/* Where she starts one: one box above everything already in. The
+              sheet asks which kind it is, so a box per kind only stacked
+              three on a phone and pushed the work below the fold. */}
+          <OrderNoteCard kind="order" paymentsEnabled={paymentsEnabled} />
           {/* What is already in, below, one group per kind so an alteration
               is never hunted for among the orders. */}
           {WORK_GROUPS.map((kind) => {
@@ -215,7 +205,7 @@ export function OfficeRequestList({
         <ul className={grid}>{records.map(renderRecord)}</ul>
       )}
 
-      {empty ? <p className="text-[0.9375rem] text-ink-faint">{emptyMessage}</p> : null}
+      {empty ? <EmptyBox message={emptyMessage} /> : null}
 
       <Sheet
         open={open !== null}
@@ -539,4 +529,13 @@ function detailLines(record: StoredRequest): string[] {
 /** The one line of detail worth showing without opening the sheet. */
 function summarise(record: StoredRequest): string {
   return detailLines(record).slice(0, 2).join(" · ");
+}
+
+/** "Nothing here yet", drawn the same way in every list of the Hub. */
+function EmptyBox({ message }: { message: string }): JSX.Element {
+  return (
+    <p className="border border-dashed border-line px-6 py-14 text-center text-[0.9375rem] text-ink-faint">
+      {message}
+    </p>
+  );
 }

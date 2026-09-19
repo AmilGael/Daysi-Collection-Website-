@@ -45,9 +45,9 @@ export function OrderNoteCard({
         className="flex min-h-14 w-full items-center justify-center gap-3 border border-dashed border-line-strong px-5 py-3 text-center text-[0.8125rem] text-ink-soft transition-colors hover:border-ink hover:text-ink sm:min-h-24 sm:flex-col sm:gap-2"
       >
         <span className="text-xl leading-none sm:text-2xl">+</span>
-        {t(`addNote.${kind}`)}
+        {t("addNoteAny")}
       </button>
-      <Sheet open={open} title={t(`addNote.${kind}`)} onClose={close}>
+      <Sheet open={open} title={t("addNoteAny")} onClose={close}>
         <OrderNoteForm onDone={close} initialKind={kind} paymentsEnabled={paymentsEnabled} />
       </Sheet>
     </>
