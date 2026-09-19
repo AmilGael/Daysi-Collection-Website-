@@ -64,16 +64,17 @@ export function roleFor(account: Account): Role {
 
 export async function findAccountByEmail(email: string): Promise<Account | null> {
   const wanted = normaliseEmail(email);
-  const accounts = await listAccounts();
+  const accounts = listAccounts();
   return accounts.find((account) => account.email === wanted) ?? null;
 }
 
 export async function findAccountById(id: string): Promise<Account | null> {
-  const accounts = await listAccounts();
+  const accounts = listAccounts();
   return accounts.find((account) => account.id === id) ?? null;
 }
 
-export async function listAccounts(): Promise<Account[]> {
+/** Synchronous for the same reason as `readRecords` in lib/records.ts: nothing here is ever awaited. */
+export function listAccounts(): Account[] {
   const records = readRecords<Account>("accounts");
   return latestBy(records, (account) => account.email);
 }
