@@ -160,6 +160,38 @@ export function visibleProblems(problems: readonly SheetProblem[], shown: Readon
   return new Set(problems.filter((problem) => shown.has(problem)));
 }
 
+function isEmptyBox(form: ClientSheetForm, field: string): boolean {
+  switch (field) {
+    case "name":
+      return !form.name.trim();
+    case "email":
+      return !form.email.trim();
+    case "phone":
+      return !form.phone.trim();
+    case "address":
+      return !(form.address && addressOf(form.address));
+    default:
+      return !form.values[field as MeasurementId]?.trim();
+  }
+}
+
+/**
+ * She left a box: `shown` as it is from now on. Leaving an empty box marks
+ * nothing, since passing the name on the way to the phone is not a mistake,
+ * so a new client's missing name is pointed out only at Listo
+ * (`revealOnDone`). The one exception is the name of a client already in
+ * the book: erasing that is a mistake, and it is marked as she leaves it.
+ */
+export function leaveBox(
+  shown: ReadonlySet<string>,
+  field: string,
+  form: ClientSheetForm,
+  newClient: boolean,
+): ReadonlySet<string> {
+  if (isEmptyBox(form, field) && (newClient || field !== "name")) return shown;
+  return shown.has(field) ? shown : new Set(shown).add(field);
+}
+
 /** Nothing typed anywhere: a new client's sheet opened and left as it was. */
 function isBlank(form: ClientSheetForm): boolean {
   return (

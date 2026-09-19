@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterRows, revealOnDone, saveWire, sheetProblems, stagedChange, visibleProblems } from "./client-draft";
+import { filterRows, leaveBox, revealOnDone, saveWire, sheetProblems, stagedChange, visibleProblems } from "./client-draft";
 
 const row = (over = {}) => ({ key: "cli_a", cardId: "cli_a", name: "Rosa Pérez", email: "rosa@example.com", phone: "(718) 555-0101", hasAccount: false, measuredCount: 1, orderCount: 2, paidTotal: 0, archived: false, orders: [], card: { id: "cli_a", name: "Rosa Pérez", email: "rosa@example.com", phone: "(718) 555-0101", measurements: { waist: { value: 80, unit: "cm", by: "client", at: "2026-09-01T00:00:00Z" } }, updatedAt: "2026-09-01T00:00:00Z", updatedBy: "client" }, ...over });
 
@@ -97,6 +97,24 @@ describe("when the sheet points out a problem", () => {
   it("holds Listo once even when the problem is already marked: tapping Listo is what left the box", () => {
     const typing = form({ values: { waist: "8" } });
     expect(revealOnDone(typing, new Set(["waist"]), false)).toEqual(new Set(["waist"]));
+  });
+
+  it("does not mark a new client's empty name when she tabs past it, only at Listo", () => {
+    const nameless = form({ name: "", email: "", phone: "7185550101", key: "client:new-4" });
+    const afterBlur = leaveBox(new Set(), "name", nameless, true);
+    expect([...visibleProblems(sheetProblems(nameless), afterBlur)]).toEqual([]);
+    const afterListo = revealOnDone(nameless, afterBlur, false);
+    expect(afterListo && [...visibleProblems(sheetProblems(nameless), afterListo)]).toEqual(["name"]);
+  });
+
+  it("marks an existing client's name she erased as soon as she leaves it", () => {
+    const erased = form({ name: "" });
+    expect([...visibleProblems(sheetProblems(erased), leaveBox(new Set(), "name", erased, false))]).toEqual(["name"]);
+  });
+
+  it("marks a new client's one-letter name on leaving it, like any box with something wrong in it", () => {
+    const short = form({ name: "R", email: "", key: "client:new-5" });
+    expect([...visibleProblems(sheetProblems(short), leaveBox(new Set(), "name", short, true))]).toEqual(["name"]);
   });
 
   it("lets an empty new client close without a word about the missing name", () => {

@@ -14,6 +14,7 @@ import { EMPTY_ADDRESS, HOME_STATE, shownText, type AddressFields } from "../cli
 import {
   archiveKey,
   cardKey,
+  leaveBox,
   newClientKey,
   revealOnDone,
   sheetProblems,
@@ -107,9 +108,9 @@ export function ClientSheet({
     };
   });
 
-  /** She left a box: its problem, if any, may show now. */
+  /** She left a box: its problem, if any, may show now (an empty one waits for Listo; see `leaveBox`). */
   function leave(field: string) {
-    setShown((current) => (current.has(field) ? current : new Set(current).add(field)));
+    setShown((current) => leaveBox(current, field, form, isNewKey(row.key)));
   }
 
   /** She is typing in a box again: say nothing about it until she leaves it. */
