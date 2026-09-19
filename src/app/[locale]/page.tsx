@@ -112,6 +112,20 @@ async function Hero() {
         </div>
       </div>
 
+      {/*
+        Only the first plate is fetched early. On a phone the three stack and
+        the cover starts about two screens down, so fetching it eagerly would
+        spend the shared machine's CPU on a picture nobody sees until they scroll.
+        On a fresh load, at any width, the largest paint is the woven backdrop
+        above, which is already `priority`.
+
+        Dev still says the cover (or on desktop the basket) "was detected as
+        the Largest Contentful Paint" after a reload while scrolled down to
+        the plates. The browser restores the scroll before the first paint, so
+        the plate on screen is the largest thing painted. That warning is about
+        where the reload left the page, not the fold; measured 2026-09-19 on
+        Next.js 16.3.5.
+      */}
       <div className="shell relative grid gap-10 sm:grid-cols-3 sm:items-start sm:gap-6 lg:gap-10">
         {HERO_PLATES.map((plate, index) => (
           <figure key={plate.src} className="flex flex-col gap-4">
