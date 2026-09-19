@@ -63,7 +63,7 @@ describe("helperData", () => {
     const { helperData } = await import("./site-helper");
 
     const state = helperData("es");
-    expect(state).toContain("Lunes: 10:00–18:00");
+    expect(state).toContain("Lunes: 10:00 a 18:00");
     expect(state).toContain("Domingo: cerrado");
     expect(state).toContain("- WhatsApp");
     expect(state).not.toContain("wa.me");
@@ -156,8 +156,8 @@ describe("askSiteHelper", () => {
     expect(rules).toContain("plain text only");
     expect(rules).toContain("never Markdown");
     expect(rules).toContain("bare path");
-    expect(rules).toContain('just say "WhatsApp"');
-    expect(rules).toContain("never a wa.me address");
+    expect(rules).toContain("just the word WhatsApp");
+    expect(rules).toContain("Never write a wa.me address");
   });
 
   it("drops a leading assistant turn, so a rolled-back thread still starts with the visitor", async () => {
@@ -229,5 +229,42 @@ describe("helperVisible", () => {
 
     await saveHelperVisibility(true);
     expect(helperVisible()).toBe(true);
+  });
+});
+
+describe("what the chat knows and how it writes", () => {
+  it("knows how to sign in, that no account is needed to buy, and where orders are", async () => {
+    const { helperData } = await import("./site-helper");
+    const es = helperData("es");
+    expect(es).toContain("/es/sign-in");
+    expect(es).toContain("No hay contraseña");
+    expect(es).toContain("No hace falta cuenta para comprar");
+    expect(es).toContain("/es/account/orders");
+    const en = helperData("en");
+    expect(en).toContain("/en/sign-in");
+    expect(en).toContain("There is no password");
+  });
+
+  it("writes no dashes: none in the facts, and none left in an answer", async () => {
+    const { helperData, askSiteHelper } = await import("./site-helper");
+    expect(helperData("es")).not.toMatch(/[—–]/);
+    expect(helperData("en")).not.toMatch(/[—–]/);
+    const answer = await askSiteHelper(
+      { question: "¿Horario?", locale: "es", history: [] },
+      async () => "Abrimos de 10:00–18:00 — de lunes a jueves.",
+    );
+    expect(answer).toBe("Abrimos de 10:00-18:00, de lunes a jueves.");
+  });
+
+  it("answers store questions and keeps away from the office", async () => {
+    const { askSiteHelper } = await import("./site-helper");
+    let rules = "";
+    await askSiteHelper({ question: "hi", locale: "en", history: [] }, async ({ system }) => {
+      rules = system.map((block) => block.text).join(" ");
+      return "Hi";
+    });
+    expect(rules).toContain("how to sign in");
+    expect(rules).toContain("never discuss the workshop office");
+    expect(rules).toContain("Never use an em dash or an en dash");
   });
 });

@@ -857,12 +857,17 @@
     "close": "Cerrar",
     "suggestPrice": "¿Cuánto cuesta un vestido a medida?",
     "suggestAlteration": "¿Cuánto cuesta un ruedo de pantalón?",
-    "suggestSession": "¿Cómo reservo una cita?",
+    "suggestSession": "¿Cómo entro a mi cuenta?",
     "questionLabel": "Su pregunta",
     "ask": "Preguntar",
     "asking": "Preguntando…",
     "error": "No pude responder. Escríbanos por WhatsApp.",
     "whatsapp": "Escribir por WhatsApp",
-    "whatsappMessage": "Hola, tengo una pregunta sobre Daysi Collection."
+    "whatsappMessage": "Hola, tengo una pregunta sobre Daysi Collection.",
+    "subtitle": "Daysi Collection · responde al momento",
+    "greeting": "¡Hola! Pregúnteme lo que quiera sobre la tienda: precios, arreglos, citas, cómo entrar o cómo pagar.",
+    "placeholder": "Escriba su pregunta…",
+    "whatsappLead": "¿Prefiere hablar con Daysi?",
+    "whatsappShort": "WhatsApp"
   }
 }
