@@ -99,3 +99,16 @@ export function claudeHelperCall(apiKey: string): HelperCall {
 export function defaultHelperCall(): HelperCall | null {
   return env.anthropicApiKey ? claudeHelperCall(env.anthropicApiKey) : null;
 }
+
+/**
+ * The house style has no em or en dashes, and a model left to itself writes
+ * them. The rules ask it not to; this makes sure. A dash between two numbers
+ * ("10–18") becomes a hyphen; anywhere else it becomes a comma.
+ */
+export function withoutDashes(text: string): string {
+  return text
+    .replace(/(\d)\s*[–—]\s*(\d)/g, "$1-$2")
+    .replace(/\s*[—–]\s*/g, ", ")
+    .replace(/,\s*([.,;:!?])/g, "$1")
+    .replace(/^,\s*/gm, "");
+}
